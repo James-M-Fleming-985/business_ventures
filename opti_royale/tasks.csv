@@ -1,0 +1,49 @@
+% Complete,Constraint Date,Constraint Type,Is Milestone,Milestone,Task Mode,Task Name,Duration,Start,Finish,Predecessors,Work,Resource Names,Baseline Start,Baseline Finish,Actual Start,Actual Finish,Physical % Complete,Number1,Number2
+75%,,,No,Manually Scheduled,OptiRoyale MVP Launch Project,120 days,Mon 28/07/25,Fri 15/09/25,,960 hrs,,Mon 28/07/25,Fri 15/09/25,Mon 28/07/25,NA,0,0,0,0
+100%,,,No,Auto Scheduled,Completed Milestones (July 26-27),2 days,Mon 26/07/25,Tue 27/07/25,,185 hrs,,Mon 26/07/25,Tue 27/07/25,Mon 26/07/25,Tue 27/07/25,100,0,0,0
+100%,,,No,Auto Scheduled,Game Mechanics Database Complete,1 day,Mon 26/07/25,Mon 26/07/25,,45 hrs,Database Team,Mon 26/07/25,Mon 26/07/25,Mon 26/07/25,Mon 26/07/25,100,0,0,0
+100%,,,No,Auto Scheduled,Automated Update System Complete,1 day,Mon 26/07/25,Mon 26/07/25,,32 hrs,DevOps Team,Mon 26/07/25,Mon 26/07/25,Mon 26/07/25,Mon 26/07/25,100,0,0,0
+100%,,,No,Auto Scheduled,Application Owner Dashboard Complete,1 day,Mon 26/07/25,Mon 26/07/25,,28 hrs,Analytics Team,Mon 26/07/25,Mon 26/07/25,Mon 26/07/25,Mon 26/07/25,100,0,0,0
+100%,,,No,Auto Scheduled,Frontend Application Architecture Complete,1 day,Tue 27/07/25,Tue 27/07/25,,35 hrs,Frontend Team,Tue 27/07/25,Tue 27/07/25,Tue 27/07/25,Tue 27/07/25,100,0,0,0
+100%,,,No,Auto Scheduled,Database and Core Data Layer Complete,1 day,Tue 27/07/25,Tue 27/07/25,,40 hrs,Backend Team,Tue 27/07/25,Tue 27/07/25,Tue 27/07/25,Tue 27/07/25,100,0,0,0
+100%,Yes,Auto Scheduled,Foundation Phase Complete Milestone,0 days,Tue 27/07/25,Tue 27/07/25,7,0 hrs,Project Manager,Tue 27/07/25,Tue 27/07/25,Tue 27/07/25,Tue 27/07/25,100,0,0,0,,
+30%,,,No,Auto Scheduled,Week 1-2: Core Video Functionality,10 days,Mon 04/08/25,Fri 15/08/25,,65 hrs,,Mon 04/08/25,Fri 15/08/25,NA,NA,0,0,0,0
+40%,,,No,Auto Scheduled,Complete Video Upload System,3 days,Mon 04/08/25,Wed 06/08/25,8,12 hrs,Video Team,Mon 04/08/25,Wed 06/08/25,NA,NA,0,0,0,0
+35%,,,No,Auto Scheduled,Enhanced Video Player Development,2 days,Thu 07/08/25,Fri 08/08/25,10,8 hrs,Frontend Team,Thu 07/08/25,Fri 08/08/25,NA,NA,0,0,0,0
+30%,,,No,Auto Scheduled,Upload Progress and Feedback System,2 days,Mon 11/08/25,Tue 12/08/25,11,6 hrs,UX Team,Mon 11/08/25,Tue 12/08/25,NA,NA,0,0,0,0
+25%,,,No,Auto Scheduled,Video Library Interface,2 days,Wed 13/08/25,Thu 14/08/25,12,5 hrs,Frontend Team,Wed 13/08/25,Thu 14/08/25,NA,NA,0,0,0,0
+20%,,,No,Auto Scheduled,File System Integration,1 day,Fri 15/08/25,Fri 15/08/25,13,4 hrs,Backend Team,Fri 15/08/25,Fri 15/08/25,NA,NA,0,0,0,0
+20%,,,No,Auto Scheduled,Technical Infrastructure Development,5 days,Mon 04/08/25,Fri 08/08/25,,20 hrs,,Mon 04/08/25,Fri 08/08/25,NA,NA,0,0,0,0
+25%,,,No,Auto Scheduled,FFmpeg Integration,2 days,Mon 04/08/25,Tue 05/08/25,8,8 hrs,Video Processing Team,Mon 04/08/25,Tue 05/08/25,NA,NA,0,0,0,0
+20%,,,No,Auto Scheduled,Cloud Storage Setup,2 days,Wed 06/08/25,Thu 07/08/25,16,6 hrs,Cloud Team,Wed 06/08/25,Thu 07/08/25,NA,NA,0,0,0,0
+15%,,,No,Auto Scheduled,API Endpoints Development,1 day,Fri 08/08/25,Fri 08/08/25,17,6 hrs,Backend Team,Fri 08/08/25,Fri 08/08/25,NA,NA,0,0,0,0
+15%,,,No,Auto Scheduled,Battle Analysis Foundation,3 days,Mon 11/08/25,Wed 13/08/25,,10 hrs,,Mon 11/08/25,Wed 13/08/25,NA,NA,0,0,0,0
+20%,,,No,Auto Scheduled,Mock Analysis Pipeline,2 days,Mon 11/08/25,Tue 12/08/25,18,6 hrs,AI Team,Mon 11/08/25,Tue 12/08/25,NA,NA,0,0,0,0
+10%,,,No,Auto Scheduled,Coordinate Mapping System,1 day,Wed 13/08/25,Wed 13/08/25,20,4 hrs,Game Logic Team,Wed 13/08/25,Wed 13/08/25,NA,NA,0,0,0,0
+0%,Yes,Auto Scheduled,Week 1-2 Complete Milestone,0 days,Fri 15/08/25,Fri 15/08/25,21,0 hrs,Project Manager,Fri 15/08/25,Fri 15/08/25,NA,NA,0,0,0,0,,
+10%,,,No,Auto Scheduled,Week 3-4: AI Analysis and User Experience,10 days,Mon 18/08/25,Fri 29/08/25,,55 hrs,,Mon 18/08/25,Fri 29/08/25,NA,NA,0,0,0,0
+15%,,,No,Auto Scheduled,Basic Computer Vision Implementation,3 days,Mon 18/08/25,Wed 20/08/25,22,12 hrs,Computer Vision Team,Mon 18/08/25,Wed 20/08/25,NA,NA,0,0,0,0
+10%,,,No,Auto Scheduled,Card Recognition System,3 days,Thu 21/08/25,Mon 25/08/25,24,10 hrs,ML Team,Thu 21/08/25,Mon 25/08/25,NA,NA,0,0,0,0
+5%,,,No,Auto Scheduled,Placement Scoring Algorithm,2 days,Tue 26/08/25,Wed 27/08/25,25,8 hrs,Algorithm Team,Tue 26/08/25,Wed 27/08/25,NA,NA,0,0,0,0
+8%,,,No,Auto Scheduled,Visual Feedback System,4 days,Mon 18/08/25,Thu 21/08/25,,15 hrs,,Mon 18/08/25,Thu 21/08/25,NA,NA,0,0,0,0
+10%,,,No,Auto Scheduled,Tile Overlay Renderer,2 days,Mon 18/08/25,Tue 19/08/25,22,8 hrs,Graphics Team,Mon 18/08/25,Tue 19/08/25,NA,NA,0,0,0,0
+5%,,,No,Auto Scheduled,Analysis Results Panel,2 days,Wed 20/08/25,Thu 21/08/25,28,7 hrs,UI Team,Wed 20/08/25,Thu 21/08/25,NA,NA,0,0,0,0
+5%,,,No,Auto Scheduled,User Authentication and Profiles,3 days,Thu 28/08/25,Fri 29/08/25,,10 hrs,,Thu 28/08/25,Fri 29/08/25,NA,NA,0,0,0,0
+8%,,,No,Auto Scheduled,Firebase Auth Integration,2 days,Thu 28/08/25,Fri 29/08/25,26,6 hrs,Auth Team,Thu 28/08/25,Fri 29/08/25,NA,NA,0,0,0,0
+2%,,,No,Auto Scheduled,User Profile System,1 day,Fri 29/08/25,Fri 29/08/25,31,4 hrs,Profile Team,Fri 29/08/25,Fri 29/08/25,NA,NA,0,0,0,0
+0%,Yes,Auto Scheduled,Week 3-4 Complete Milestone,0 days,Fri 29/08/25,Fri 29/08/25,32,0 hrs,Project Manager,Fri 29/08/25,Fri 29/08/25,NA,NA,0,0,0,0,,
+0%,,,No,Auto Scheduled,Week 5-6: Production Deployment and Testing,10 days,Mon 01/09/25,Fri 12/09/25,,45 hrs,,Mon 01/09/25,Fri 12/09/25,NA,NA,0,0,0,0
+0%,,,No,Auto Scheduled,Azure Container Deployment,3 days,Mon 01/09/25,Wed 03/09/25,33,10 hrs,DevOps Team,Mon 01/09/25,Wed 03/09/25,NA,NA,0,0,0,0
+0%,,,No,Auto Scheduled,CDN and Performance Optimization,2 days,Thu 04/09/25,Fri 05/09/25,35,8 hrs,Performance Team,Thu 04/09/25,Fri 05/09/25,NA,NA,0,0,0,0
+0%,,,No,Auto Scheduled,Security and SSL Implementation,2 days,Mon 08/09/25,Tue 09/09/25,36,7 hrs,Security Team,Mon 08/09/25,Tue 09/09/25,NA,NA,0,0,0,0
+0%,,,No,Auto Scheduled,Testing and QA Phase,5 days,Mon 01/09/25,Fri 12/09/25,,20 hrs,,Mon 01/09/25,Fri 12/09/25,NA,NA,0,0,0,0
+0%,,,No,Auto Scheduled,User Acceptance Testing,2 days,Wed 10/09/25,Thu 11/09/25,37,8 hrs,QA Team,Wed 10/09/25,Thu 11/09/25,NA,NA,0,0,0,0
+0%,,,No,Auto Scheduled,Performance Testing,2 days,Mon 01/09/25,Tue 02/09/25,33,6 hrs,Load Testing Team,Mon 01/09/25,Tue 02/09/25,NA,NA,0,0,0,0
+0%,,,No,Auto Scheduled,Mobile Browser Testing,2 days,Fri 12/09/25,Fri 12/09/25,39,6 hrs,Mobile QA Team,Fri 12/09/25,Fri 12/09/25,NA,NA,0,0,0,0
+0%,Yes,Auto Scheduled,Production Ready Milestone,0 days,Fri 12/09/25,Fri 12/09/25,40,0 hrs,Project Manager,Fri 12/09/25,Fri 12/09/25,NA,NA,0,0,0,0,,
+0%,,,No,Auto Scheduled,AI Marketing and Launch Strategy,3 days,Mon 01/09/25,Mon 15/09/25,,85 hrs,,Mon 01/09/25,Mon 15/09/25,NA,NA,0,0,0,0
+0%,,,No,Auto Scheduled,Product Demo Videos Creation,4 days,Mon 01/09/25,Thu 04/09/25,41,12 hrs,Content Team,Mon 01/09/25,Thu 04/09/25,NA,NA,0,0,0,0
+0%,,,No,Auto Scheduled,Tutorial Series Development,3 days,Fri 05/09/25,Tue 09/09/25,43,8 hrs,Educational Content Team,Fri 05/09/25,Tue 09/09/25,NA,NA,0,0,0,0
+0%,,,No,Auto Scheduled,Before/After Content Creation,2 days,Wed 10/09/25,Thu 11/09/25,44,6 hrs,Marketing Team,Wed 10/09/25,Thu 11/09/25,NA,NA,0,0,0,0
+0%,,,No,Auto Scheduled,Product Hunt Preparation,2 days,Fri 12/09/25,Mon 15/09/25,45,6 hrs,Launch Team,Fri 12/09/25,Mon 15/09/25,NA,NA,0,0,0,0
+0%,Yes,Auto Scheduled,OptiRoyale MVP Launch Complete,0 days,Mon 15/09/25,Mon 15/09/25,46,0 hrs,Project Manager,Mon 15/09/25,Mon 15/09/25,NA,NA,0,0,0,0,,

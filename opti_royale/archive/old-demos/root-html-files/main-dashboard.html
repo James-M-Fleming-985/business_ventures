@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OptiRoyale - Main Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            min-height: 100vh;
+        }
+        .nav-block {
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+        }
+        .nav-block:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 25px 35px -5px rgba(0, 0, 0, 0.5);
+        }
+        .blue-block { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+        .green-block { background: linear-gradient(135deg, #10b981, #047857); }
+        .purple-block { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
+        .orange-block { background: linear-gradient(135deg, #f97316, #c2410c); }
+    </style>
+</head>
+<body class="text-white">
+    <!-- Header -->
+    <header class="text-center py-16">
+        <h1 class="text-8xl font-bold mb-6">
+            <span class="bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 bg-clip-text text-transparent">
+                🏆 OptiRoyale
+            </span>
+        </h1>
+        <p class="text-3xl text-gray-300 mb-4">Professional Battle Analysis Platform</p>
+        <p class="text-xl text-gray-400">Choose your path to Clash Royale mastery</p>
+    </header>
+
+    <!-- Main Navigation Grid - 8 Large Blocks (2 rows x 4 columns) -->
+    <div class="container mx-auto px-8 pb-16">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-8xl mx-auto">
+            
+            <!-- Row 1 -->
+            <!-- Block 1: Analysis (Blue) - This was the one that led to analysis page development -->
+            <a href="demo/pages/battle-analysis.html" 
+               class="nav-block blue-block rounded-3xl p-16 text-center h-96 flex flex-col justify-center group">
+                <div class="text-8xl mb-8 group-hover:scale-110 transition-transform">⚔️</div>
+                <h3 class="text-3xl font-bold mb-4">Analysis</h3>
+                <p class="text-xl text-blue-100">Battle analysis & strategy optimization</p>
+            </a>
+
+            <!-- Block 2: Video Processing (Green) -->
+            <a href="archive/old-demos/video-analysis-demo-OLD.html" 
+               class="nav-block green-block rounded-3xl p-16 text-center h-96 flex flex-col justify-center group">
+                <div class="text-8xl mb-8 group-hover:scale-110 transition-transform">🎥</div>
+                <h3 class="text-3xl font-bold mb-4">Video</h3>
+                <p class="text-xl text-green-100">Upload & analyze replays</p>
+            </a>
+
+            <!-- Block 3: Dashboard (Purple) -->
+            <a href="apps/dashboard/main.py" 
+               class="nav-block purple-block rounded-3xl p-16 text-center h-96 flex flex-col justify-center group">
+                <div class="text-8xl mb-8 group-hover:scale-110 transition-transform">📊</div>
+                <h3 class="text-3xl font-bold mb-4">Dashboard</h3>
+                <p class="text-xl text-purple-100">Performance tracking & stats</p>
+            </a>
+
+            <!-- Block 4: API (Orange) -->
+            <a href="demo/api-examples/" 
+               class="nav-block orange-block rounded-3xl p-16 text-center h-96 flex flex-col justify-center group">
+                <div class="text-8xl mb-8 group-hover:scale-110 transition-transform">🔌</div>
+                <h3 class="text-3xl font-bold mb-4">API</h3>
+                <p class="text-xl text-orange-100">Developer tools & integration</p>
+            </a>
+
+            <!-- Row 2 -->
+            <!-- Block 5: Cards (Blue) -->
+            <a href="enhanced_card_database.json" 
+               class="nav-block blue-block rounded-3xl p-16 text-center h-96 flex flex-col justify-center group">
+                <div class="text-8xl mb-8 group-hover:scale-110 transition-transform">🃏</div>
+                <h3 class="text-3xl font-bold mb-4">Cards</h3>
+                <p class="text-xl text-blue-100">Complete card database & stats</p>
+            </a>
+
+            <!-- Block 6: Training (Green) -->
+            <a href="services/ml-pipeline/" 
+               class="nav-block green-block rounded-3xl p-16 text-center h-96 flex flex-col justify-center group">
+                <div class="text-8xl mb-8 group-hover:scale-110 transition-transform">🤖</div>
+                <h3 class="text-3xl font-bold mb-4">Training</h3>
+                <p class="text-xl text-green-100">AI learning & improvement</p>
+            </a>
+
+            <!-- Block 7: Pricing (Purple) -->
+            <a href="demo/pages/pricing.html" 
+               class="nav-block purple-block rounded-3xl p-16 text-center h-96 flex flex-col justify-center group">
+                <div class="text-8xl mb-8 group-hover:scale-110 transition-transform">💰</div>
+                <h3 class="text-3xl font-bold mb-4">Pricing</h3>
+                <p class="text-xl text-purple-100">Subscription plans & features</p>
+            </a>
+
+            <!-- Block 8: Settings (Orange) -->
+            <a href="APPLICATION_OWNER_DASHBOARD.md" 
+               class="nav-block orange-block rounded-3xl p-16 text-center h-96 flex flex-col justify-center group">
+                <div class="text-8xl mb-8 group-hover:scale-110 transition-transform">⚙️</div>
+                <h3 class="text-3xl font-bold mb-4">Settings</h3>
+                <p class="text-xl text-orange-100">Configuration & preferences</p>
+            </a>
+
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="text-center py-12 text-gray-500">
+        <p>&copy; 2025 OptiRoyale - Main Navigation Dashboard</p>
+        <p class="mt-2 text-sm">Click any section above to access that feature</p>
+    </footer>
+</body>
+</html>

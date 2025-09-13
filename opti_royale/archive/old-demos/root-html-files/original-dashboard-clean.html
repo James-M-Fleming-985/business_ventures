@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Opti Royale Dashboard</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1e3a8a, #7c3aed, #1e40af);
+            color: white;
+        }
+
+        .header {
+            background: linear-gradient(90deg, #1e40af, #7c3aed);
+            border-bottom: 2px solid #fbbf24;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 64px;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .crown {
+            width: 32px;
+            height: 32px;
+            color: #fbbf24;
+        }
+
+        .app-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            margin: 0;
+        }
+
+        .tagline {
+            font-size: 14px;
+            color: #fde047;
+            background: rgba(251, 191, 36, 0.2);
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid #fbbf24;
+        }
+
+        .user-area {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .user-details {
+            text-align: right;
+        }
+
+        .welcome {
+            font-size: 14px;
+            color: #fde047;
+        }
+
+        .user-name {
+            font-weight: 600;
+            color: white;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: black;
+            font-weight: bold;
+        }
+
+        .nav-bar {
+            background: linear-gradient(90deg, #1e40af, #7c3aed);
+            border-bottom: 1px solid rgba(251, 191, 36, 0.3);
+        }
+
+        .nav-container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 16px;
+        }
+
+        .nav-button {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 16px 4px;
+            border-bottom: 2px solid #fbbf24;
+            background: none;
+            border-left: none;
+            border-right: none;
+            border-top: none;
+            color: #fde047;
+            font-weight: 500;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .main-area {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 32px 16px;
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .stat-box {
+            border-radius: 8px;
+            padding: 24px;
+            border: 2px solid #fbbf24;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+        }
+
+        .stat-box.blue-bg {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+        }
+
+        .stat-box.green-bg {
+            background: linear-gradient(135deg, #059669, #047857);
+        }
+
+        .stat-box.purple-bg {
+            background: linear-gradient(135deg, #7c3aed, #6d28d9);
+        }
+
+        .stat-box.red-bg {
+            background: linear-gradient(135deg, #ea580c, #dc2626);
+        }
+
+        .stat-icon-box {
+            padding: 8px;
+            background: rgba(251, 191, 36, 0.2);
+            border-radius: 8px;
+            margin-right: 16px;
+            font-size: 24px;
+        }
+
+        .stat-text {
+            font-size: 14px;
+            color: #fef3c7;
+            margin: 0;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: 600;
+            color: white;
+            margin: 0;
+        }
+
+        .main-features {
+            margin-bottom: 32px;
+        }
+
+        .features-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #fbbf24;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        .action-button {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            border: 2px solid #fbbf24;
+            border-radius: 12px;
+            padding: 20px;
+            color: white;
+            text-align: left;
+            cursor: pointer;
+            box-shadow: 0 8px 25px rgba(37, 99, 235, 0.3);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            text-decoration: none;
+        }
+
+        .action-button:hover {
+            transform: translateY(-4px);
+            color: white;
+            text-decoration: none;
+        }
+
+        .action-button.green-theme {
+            background: linear-gradient(135deg, #059669, #047857);
+            box-shadow: 0 8px 25px rgba(5, 150, 105, 0.3);
+        }
+
+        .action-button.purple-theme {
+            background: linear-gradient(135deg, #7c3aed, #6d28d9);
+            box-shadow: 0 8px 25px rgba(124, 58, 237, 0.3);
+        }
+
+        .action-button.red-theme {
+            background: linear-gradient(135deg, #ea580c, #dc2626);
+            box-shadow: 0 8px 25px rgba(234, 88, 12, 0.3);
+        }
+
+        .button-icon {
+            padding: 12px;
+            background: rgba(251, 191, 36, 0.2);
+            border-radius: 10px;
+            font-size: 24px;
+        }
+
+        .button-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .button-desc {
+            font-size: 14px;
+            color: #cbd5e1;
+        }
+
+        .bottom-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 24px;
+        }
+
+        .info-panel {
+            background: linear-gradient(135deg, #334155, #1e293b);
+            border: 2px solid #fbbf24;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .panel-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(251, 191, 36, 0.3);
+            background: rgba(251, 191, 36, 0.1);
+        }
+
+        .panel-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #fbbf24;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .panel-content {
+            padding: 16px 20px;
+        }
+
+        .performer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 0;
+        }
+
+        .performer-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .rank-circle {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: black;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .rank-1 { background: #fbbf24; }
+        .rank-2 { background: #9ca3af; }
+        .rank-3 { background: #ea580c; }
+
+        .performer-name {
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .performer-acc {
+            color: #94a3b8;
+            font-size: 12px;
+        }
+
+        .performer-rating {
+            color: #fbbf24;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .more-button {
+            width: 100%;
+            margin-top: 12px;
+            padding: 8px;
+            background: rgba(251, 191, 36, 0.1);
+            border: 1px solid #fbbf24;
+            border-radius: 6px;
+            color: #fbbf24;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 0;
+        }
+
+        .activity-desc {
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .activity-time {
+            color: #94a3b8;
+            font-size: 12px;
+        }
+
+        .activity-badge {
+            color: #10b981;
+            font-size: 12px;
+            font-weight: bold;
+            background: rgba(16, 185, 129, 0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-container">
+            <div class="logo-area">
+                <div style="font-size: 32px; color: #fbbf24;">👑</div>
+                <h1 class="app-title">Opti Royale</h1>
+                <span class="tagline">Clash Royale Analysis Platform</span>
+            </div>
+            
+            <div class="user-area">
+                <div class="user-details">
+                    <div class="welcome">Welcome back!</div>
+                    <div class="user-name">DeckOptimizer</div>
+                </div>
+                <div class="user-avatar">D</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="nav-bar">
+        <div class="nav-container">
+            <button class="nav-button">
+                <span style="font-size: 20px;">📊</span>
+                Overview
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-area">
+        <!-- Stats Cards -->
+        <div class="stats-row">
+            <div class="stat-box blue-bg">
+                <div class="stat-icon-box">👥</div>
+                <div>
+                    <p class="stat-text">Total Users</p>
+                    <p class="stat-number">15,247</p>
+                </div>
+            </div>
+
+            <div class="stat-box green-bg">
+                <div class="stat-icon-box">⚡</div>
+                <div>
+                    <p class="stat-text">Active Users</p>
+                    <p class="stat-number">3,841</p>
+                </div>
+            </div>
+
+            <div class="stat-box purple-bg">
+                <div class="stat-icon-box">📊</div>
+                <div>
+                    <p class="stat-text">Total Analyses</p>
+                    <p class="stat-number">89,523</p>
+                </div>
+            </div>
+
+            <div class="stat-box red-bg">
+                <div class="stat-icon-box">🎯</div>
+                <div>
+                    <p class="stat-text">Avg Accuracy</p>
+                    <p class="stat-number">78.4%</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Features -->
+        <div class="main-features">
+            <h2 class="features-title">🎮 Main Features</h2>
+            <div class="features-grid">
+                <a href="demo/pages/battle-analysis.html" class="action-button">
+                    <div class="button-icon">🎯</div>
+                    <div>
+                        <div class="button-title">Start New Analysis</div>
+                        <div class="button-desc">Upload gameplay video for AI analysis</div>
+                    </div>
+                </a>
+
+                <button class="action-button green-theme">
+                    <div class="button-icon">🏆</div>
+                    <div>
+                        <div class="button-title">View Leaderboard</div>
+                        <div class="button-desc">Check your global ranking</div>
+                    </div>
+                </button>
+
+                <button class="action-button purple-theme">
+                    <div class="button-icon">🏅</div>
+                    <div>
+                        <div class="button-title">Check Achievements</div>
+                        <div class="button-desc">View your progress & rewards</div>
+                    </div>
+                </button>
+
+                <button class="action-button red-theme">
+                    <div class="button-icon">📈</div>
+                    <div>
+                        <div class="button-title">View Statistics</div>
+                        <div class="button-desc">Analyze your performance data</div>
+                    </div>
+                </button>
+            </div>
+        </div>
+
+        <!-- Bottom Info Panels -->
+        <div class="bottom-section">
+            <!-- Top Performers -->
+            <div class="info-panel">
+                <div class="panel-header">
+                    <h3 class="panel-title">
+                        🏆 Top Performers
+                    </h3>
+                </div>
+                <div class="panel-content">
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <div class="performer">
+                            <div class="performer-left">
+                                <div class="rank-circle rank-1">1</div>
+                                <div>
+                                    <div class="performer-name">CardMaster</div>
+                                    <div class="performer-acc">94.2% accuracy</div>
+                                </div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div class="performer-rating">2847</div>
+                                <div style="color: #94a3b8; font-size: 12px;">rating</div>
+                            </div>
+                        </div>
+                        
+                        <div class="performer">
+                            <div class="performer-left">
+                                <div class="rank-circle rank-2">2</div>
+                                <div>
+                                    <div class="performer-name">OptiPro</div>
+                                    <div class="performer-acc">91.8% accuracy</div>
+                                </div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div class="performer-rating">2756</div>
+                                <div style="color: #94a3b8; font-size: 12px;">rating</div>
+                            </div>
+                        </div>
+                        
+                        <div class="performer">
+                            <div class="performer-left">
+                                <div class="rank-circle rank-3">3</div>
+                                <div>
+                                    <div class="performer-name">DeckWizard</div>
+                                    <div class="performer-acc">89.5% accuracy</div>
+                                </div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div class="performer-rating">2689</div>
+                                <div style="color: #94a3b8; font-size: 12px;">rating</div>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="more-button">View Full Leaderboard →</button>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="info-panel">
+                <div class="panel-header">
+                    <h3 class="panel-title">⚡ Recent Activity</h3>
+                </div>
+                <div class="panel-content">
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <div class="activity-item">
+                            <div>
+                                <div class="activity-desc">Completed deck analysis</div>
+                                <div class="activity-time">2 min ago</div>
+                            </div>
+                            <div class="activity-badge">89.3%</div>
+                        </div>
+                        
+                        <div class="activity-item">
+                            <div>
+                                <div class="activity-desc">Unlocked achievement</div>
+                                <div class="activity-time">1 hr ago</div>
+                            </div>
+                            <div class="activity-badge">+50 XP</div>
+                        </div>
+                        
+                        <div class="activity-item">
+                            <div>
+                                <div class="activity-desc">Climbed to rank #1,247</div>
+                                <div class="activity-time">3 hrs ago</div>
+                            </div>
+                            <div class="activity-badge">+15</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

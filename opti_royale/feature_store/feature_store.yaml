@@ -1,0 +1,9 @@
+project: clash_royale_optimization
+registry: data/registry.db
+provider: local
+online_store:
+    type: redis
+    connection_string: "redis://localhost:6379"
+offline_store:
+    type: file
+repo_path: /workspaces/opti_royale/feature_store

@@ -1,0 +1,65 @@
+{
+  "personal_info": {
+    "name": "Test User",
+    "age": 30,
+    "location": "UK",
+    "currency": "GBP"
+  },
+  "income": {
+    "gross_salary": 55000,
+    "bonuses": 3000,
+    "freelance": 800,
+    "benefits": 0,
+    "other_income": 350
+  },
+  "housing": {
+    "mortgage_rent": 1100,
+    "insurance": 85,
+    "utilities": 120,
+    "maintenance": 0,
+    "council_tax": 0
+  },
+  "transport": {
+    "car_payment": 280,
+    "fuel": 0,
+    "insurance": 0,
+    "maintenance": 0,
+    "public_transport": 0
+  },
+  "lifestyle": {
+    "food_groceries": 350,
+    "dining_out": 0,
+    "entertainment": 180,
+    "subscriptions": 0,
+    "clothing": 0,
+    "healthcare": 0,
+    "personal_care": 0,
+    "miscellaneous": 0
+  },
+  "financial": {
+    "savings_account": 20000,
+    "checking_account": 0,
+    "investments": 12000,
+    "retirement": 0,
+    "emergency_fund": 0
+  },
+  "debts": {
+    "mortgage_balance": 180000,
+    "car_loan": 0,
+    "student_loans": 12000,
+    "credit_cards": 3200,
+    "other_debt": 10000
+  },
+  "goals": {
+    "retirement_age": 65,
+    "target_retirement_income": 3000,
+    "house_deposit_target": 50000,
+    "emergency_fund_months": 6
+  },
+  "metadata": {
+    "created_date": "2025-08-04T19:38:24.961011",
+    "last_updated": "2025-08-04T19:43:18.460299",
+    "version": "1.0",
+    "data_source": "manual_entry"
+  }
+}

@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OptiRoyale Application Overview</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .clash-gradient {
+            background: linear-gradient(45deg, #4f46e5, #7c3aed, #db2777);
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen text-white">
+    <div class="container mx-auto px-4 py-8">
+        
+        <!-- Header -->
+        <div class="text-center mb-12">
+            <h1 class="text-5xl font-bold mb-4 clash-gradient bg-clip-text text-transparent">
+                🏆 OptiRoyale Application Overview
+            </h1>
+            <p class="text-xl text-gray-200">
+                Professional Clash Royale Analysis Platform - Current State
+            </p>
+            <div class="mt-4 text-lg text-yellow-300">
+                ✅ Ready for Production Deployment
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="flex flex-wrap justify-center gap-4 mb-8">
+            <button onclick="showSection('features')" 
+                    class="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors">
+                🎮 Core Features
+            </button>
+            <button onclick="showSection('architecture')" 
+                    class="px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium transition-colors">
+                🏗️ Architecture
+            </button>
+            <button onclick="showSection('demos')" 
+                    class="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg font-medium transition-colors">
+                🎯 Live Demos
+            </button>
+            <button onclick="showSection('tech')" 
+                    class="px-6 py-3 bg-red-600 hover:bg-red-700 rounded-lg font-medium transition-colors">
+                ⚡ Tech Stack
+            </button>
+        </div>
+
+        <!-- Features Section -->
+        <div id="features" class="section bg-white/10 backdrop-blur-sm rounded-xl p-8 mb-8">
+            <h2 class="text-3xl font-bold mb-6 text-center">🎮 Core Application Features</h2>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Battle Analysis -->
+                <div class="bg-gradient-to-br from-blue-500/20 to-purple-500/20 p-6 rounded-lg">
+                    <h3 class="text-xl font-bold mb-3">⚔️ Battle Analysis</h3>
+                    <ul class="space-y-2 text-sm">
+                        <li>✅ 3-window professional interface</li>
+                        <li>✅ Mobile-responsive arena (320x568px)</li>
+                        <li>✅ Official Clash Royale card artwork</li>
+                        <li>✅ Real-time elixir tracking</li>
+                        <li>✅ Player vs opponent comparison</li>
+                    </ul>
+                    <a href="demo/pages/battle-analysis.html" target="_blank" 
+                       class="inline-block mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-sm font-medium">
+                        View Demo →
+                    </a>
+                </div>
+
+                <!-- Dashboard System -->
+                <div class="bg-gradient-to-br from-green-500/20 to-blue-500/20 p-6 rounded-lg">
+                    <h3 class="text-xl font-bold mb-3">📊 Dashboard System</h3>
+                    <ul class="space-y-2 text-sm">
+                        <li>✅ Next.js React application</li>
+                        <li>✅ User profile management</li>
+                        <li>✅ Performance analytics</li>
+                        <li>✅ Leaderboard system</li>
+                        <li>✅ Achievement tracking</li>
+                    </ul>
+                    <span class="inline-block mt-4 px-4 py-2 bg-gray-600 rounded text-sm">
+                        Next.js App (in apps/web/)
+                    </span>
+                </div>
+
+                <!-- API System -->
+                <div class="bg-gradient-to-br from-purple-500/20 to-pink-500/20 p-6 rounded-lg">
+                    <h3 class="text-xl font-bold mb-3">🔌 API Backend</h3>
+                    <ul class="space-y-2 text-sm">
+                        <li>✅ Enhanced card data system</li>
+                        <li>✅ Video analysis endpoints</li>
+                        <li>✅ User authentication</li>
+                        <li>✅ Gamification features</li>
+                        <li>✅ Real-time analysis</li>
+                    </ul>
+                    <a href="demo/api-examples/" 
+                       class="inline-block mt-4 px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded text-sm font-medium">
+                        View APIs →
+                    </a>
+                </div>
+
+                <!-- Pricing System -->
+                <div class="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 p-6 rounded-lg">
+                    <h3 class="text-xl font-bold mb-3">💰 Subscription System</h3>
+                    <ul class="space-y-2 text-sm">
+                        <li>✅ Freemium pricing model</li>
+                        <li>✅ Pro tier features</li>
+                        <li>✅ Enterprise solutions</li>
+                        <li>✅ Stripe integration ready</li>
+                        <li>✅ Responsive pricing page</li>
+                    </ul>
+                    <a href="demo/pages/pricing.html" target="_blank"
+                       class="inline-block mt-4 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 rounded text-sm font-medium">
+                        View Pricing →
+                    </a>
+                </div>
+
+                <!-- UI/UX System -->
+                <div class="bg-gradient-to-br from-indigo-500/20 to-blue-500/20 p-6 rounded-lg">
+                    <h3 class="text-xl font-bold mb-3">🎨 UI/UX Design</h3>
+                    <ul class="space-y-2 text-sm">
+                        <li>✅ Clash Royale-inspired theme</li>
+                        <li>✅ Professional animations</li>
+                        <li>✅ Mobile-first responsive</li>
+                        <li>✅ Tailwind CSS integration</li>
+                        <li>✅ Authentic game aesthetics</li>
+                    </ul>
+                    <span class="inline-block mt-4 px-4 py-2 bg-indigo-600 rounded text-sm">
+                        Production Ready
+                    </span>
+                </div>
+
+                <!-- Performance -->
+                <div class="bg-gradient-to-br from-red-500/20 to-pink-500/20 p-6 rounded-lg">
+                    <h3 class="text-xl font-bold mb-3">⚡ Performance</h3>
+                    <ul class="space-y-2 text-sm">
+                        <li>✅ Optimized file organization</li>
+                        <li>✅ Performance monitoring</li>
+                        <li>✅ Memory management</li>
+                        <li>✅ Docker containerization</li>
+                        <li>✅ Cloud deployment ready</li>
+                    </ul>
+                    <span class="inline-block mt-4 px-4 py-2 bg-red-600 rounded text-sm">
+                        Enterprise Scale
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Architecture Section -->
+        <div id="architecture" class="section hidden bg-white/10 backdrop-blur-sm rounded-xl p-8 mb-8">
+            <h2 class="text-3xl font-bold mb-6 text-center">🏗️ Application Architecture</h2>
+            
+            <div class="grid lg:grid-cols-2 gap-8">
+                <!-- Current Structure -->
+                <div class="bg-gray-800/50 p-6 rounded-lg">
+                    <h3 class="text-xl font-bold mb-4">📁 Current File Structure</h3>
+                    <pre class="text-sm text-green-300 overflow-auto">
+opti_royale/
+├── 📱 apps/
+│   ├── web/          # Next.js application
+│   ├── api/          # Backend services
+│   ├── mobile/       # Mobile app
+│   └── dashboard/    # Admin dashboard
+├── 📚 docs/          # Documentation
+│   ├── strategy/     # Business strategy
+│   ├── guides/       # Dev guides
+│   └── specs/        # Technical specs
+├── 🎮 demo/          # Live demos
+│   ├── pages/        # Demo pages
+│   └── api-examples/ # API examples
+├── 🔧 services/      # Microservices
+├── 🐳 docker/        # Containers
+└── 📊 monitoring/    # Performance
+                    </pre>
+                </div>
+
+                <!-- Tech Architecture -->
+                <div class="bg-gray-800/50 p-6 rounded-lg">
+                    <h3 class="text-xl font-bold mb-4">⚡ Technology Stack</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <strong class="text-blue-300">Frontend:</strong>
+                            <div class="text-sm text-gray-300">Next.js, React, TypeScript, Tailwind CSS</div>
+                        </div>
+                        <div>
+                            <strong class="text-green-300">Backend:</strong>
+                            <div class="text-sm text-gray-300">Node.js, Express, Fastify, Prisma</div>
+                        </div>
+                        <div>
+                            <strong class="text-purple-300">Database:</strong>
+                            <div class="text-sm text-gray-300">PostgreSQL, Redis, SQLite</div>
+                        </div>
+                        <div>
+                            <strong class="text-orange-300">DevOps:</strong>
+                            <div class="text-sm text-gray-300">Docker, Kubernetes, Azure, Turbo</div>
+                        </div>
+                        <div>
+                            <strong class="text-red-300">Monitoring:</strong>
+                            <div class="text-sm text-gray-300">Prometheus, Grafana, Performance Scripts</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Microservices -->
+            <div class="mt-8 bg-gray-800/50 p-6 rounded-lg">
+                <h3 class="text-xl font-bold mb-4">🔧 Microservices Architecture</h3>
+                <div class="grid md:grid-cols-4 gap-4">
+                    <div class="text-center p-4 bg-blue-500/20 rounded">
+                        <div class="text-2xl mb-2">🎮</div>
+                        <div class="font-medium">Frontend</div>
+                        <div class="text-sm text-gray-300">User Interface</div>
+                    </div>
+                    <div class="text-center p-4 bg-green-500/20 rounded">
+                        <div class="text-2xl mb-2">🔌</div>
+                        <div class="font-medium">API Gateway</div>
+                        <div class="text-sm text-gray-300">Request Routing</div>
+                    </div>
+                    <div class="text-center p-4 bg-purple-500/20 rounded">
+                        <div class="text-2xl mb-2">🧠</div>
+                        <div class="font-medium">ML Service</div>
+                        <div class="text-sm text-gray-300">Analysis Engine</div>
+                    </div>
+                    <div class="text-center p-4 bg-orange-500/20 rounded">
+                        <div class="text-2xl mb-2">📊</div>
+                        <div class="font-medium">Analytics</div>
+                        <div class="text-sm text-gray-300">Performance Data</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Demos Section -->
+        <div id="demos" class="section hidden bg-white/10 backdrop-blur-sm rounded-xl p-8 mb-8">
+            <h2 class="text-3xl font-bold mb-6 text-center">🎯 Live Application Demos</h2>
+            
+            <div class="grid lg:grid-cols-2 gap-8">
+                <!-- Battle Analysis Demo -->
+                <div class="bg-gradient-to-br from-blue-600/30 to-purple-600/30 p-6 rounded-xl">
+                    <h3 class="text-2xl font-bold mb-4">⚔️ Professional Battle Analysis</h3>
+                    <div class="aspect-video bg-black/30 rounded-lg mb-4 flex items-center justify-center">
+                        <iframe src="demo/pages/battle-analysis.html" 
+                                class="w-full h-full rounded-lg"
+                                title="Battle Analysis Demo"></iframe>
+                    </div>
+                    <p class="text-sm text-gray-200 mb-4">
+                        3-window professional interface with authentic Clash Royale cards, 
+                        mobile-responsive arena, and real-time analysis capabilities.
+                    </p>
+                    <div class="flex gap-2">
+                        <a href="demo/pages/battle-analysis.html" target="_blank"
+                           class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded font-medium text-sm">
+                            Full Screen Demo →
+                        </a>
+                        <span class="px-4 py-2 bg-green-600 rounded text-sm font-medium">
+                            ✅ Production Ready
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Pricing Demo -->
+                <div class="bg-gradient-to-br from-green-600/30 to-yellow-600/30 p-6 rounded-xl">
+                    <h3 class="text-2xl font-bold mb-4">💰 Subscription Pricing</h3>
+                    <div class="aspect-video bg-black/30 rounded-lg mb-4 flex items-center justify-center">
+                        <iframe src="demo/pages/pricing.html" 
+                                class="w-full h-full rounded-lg"
+                                title="Pricing Demo"></iframe>
+                    </div>
+                    <p class="text-sm text-gray-200 mb-4">
+                        Professional pricing page with freemium model, Pro features, 
+                        and enterprise solutions. Stripe integration ready.
+                    </p>
+                    <div class="flex gap-2">
+                        <a href="demo/pages/pricing.html" target="_blank"
+                           class="px-4 py-2 bg-green-600 hover:bg-green-700 rounded font-medium text-sm">
+                            View Pricing →
+                        </a>
+                        <span class="px-4 py-2 bg-yellow-600 rounded text-sm font-medium">
+                            💳 Payment Ready
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- API Examples -->
+            <div class="mt-8 bg-gray-800/50 p-6 rounded-lg">
+                <h3 class="text-xl font-bold mb-4">🔌 API Implementation Examples</h3>
+                <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <a href="demo/api-examples/real-analysis-api.js" target="_blank"
+                       class="p-4 bg-blue-600/20 hover:bg-blue-600/30 rounded-lg text-center transition-colors">
+                        <div class="text-xl mb-2">🎯</div>
+                        <div class="font-medium">Real Analysis API</div>
+                        <div class="text-sm text-gray-300">Live video analysis</div>
+                    </a>
+                    <a href="demo/api-examples/simple-api-server.js" target="_blank"
+                       class="p-4 bg-green-600/20 hover:bg-green-600/30 rounded-lg text-center transition-colors">
+                        <div class="text-xl mb-2">🌐</div>
+                        <div class="font-medium">API Server</div>
+                        <div class="text-sm text-gray-300">Express backend</div>
+                    </a>
+                    <a href="demo/api-examples/simple-api.js" target="_blank"
+                       class="p-4 bg-purple-600/20 hover:bg-purple-600/30 rounded-lg text-center transition-colors">
+                        <div class="text-xl mb-2">⚡</div>
+                        <div class="font-medium">Simple API</div>
+                        <div class="text-sm text-gray-300">Basic endpoints</div>
+                    </a>
+                    <a href="demo/api-examples/ultra-simple-api.js" target="_blank"
+                       class="p-4 bg-orange-600/20 hover:bg-orange-600/30 rounded-lg text-center transition-colors">
+                        <div class="text-xl mb-2">🚀</div>
+                        <div class="font-medium">Ultra Simple</div>
+                        <div class="text-sm text-gray-300">Minimal setup</div>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tech Stack Section -->
+        <div id="tech" class="section hidden bg-white/10 backdrop-blur-sm rounded-xl p-8 mb-8">
+            <h2 class="text-3xl font-bold mb-6 text-center">⚡ Complete Technology Stack</h2>
+            
+            <div class="grid lg:grid-cols-3 gap-6">
+                <!-- Frontend Technologies -->
+                <div class="bg-gradient-to-b from-blue-600/20 to-blue-800/20 p-6 rounded-lg">
+                    <h3 class="text-xl font-bold mb-4 text-blue-300">🎨 Frontend Stack</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span>Next.js 14</span>
+                            <span class="text-green-400">✅</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>React 18</span>
+                            <span class="text-green-400">✅</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>TypeScript</span>
+                            <span class="text-green-400">✅</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Tailwind CSS</span>
+                            <span class="text-green-400">✅</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Framer Motion</span>
+                            <span class="text-green-400">✅</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Radix UI</span>
+                            <span class="text-green-400">✅</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Backend Technologies -->
+                <div class="bg-gradient-to-b from-green-600/20 to-green-800/20 p-6 rounded-lg">
+                    <h3 class="text-xl font-bold mb-4 text-green-300">🔧 Backend Stack</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span>Node.js</span>
+                            <span class="text-green-400">✅</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Express.js</span>
+                            <span class="text-green-400">✅</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Fastify</span>
+                            <span class="text-green-400">✅</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Prisma ORM</span>
+                            <span class="text-green-400">✅</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>PostgreSQL</span>
+                            <span class="text-green-400">✅</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Redis</span>
+                            <span class="text-green-400">✅</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DevOps & Deployment -->
+                <div class="bg-gradient-to-b from-purple-600/20 to-purple-800/20 p-6 rounded-lg">
+                    <h3 class="text-xl font-bold mb-4 text-purple-300">🚀 DevOps Stack</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span>Docker</span>
+                            <span class="text-green-400">✅</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Kubernetes</span>
+                            <span class="text-green-400">✅</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Azure Cloud</span>
+                            <span class="text-green-400">✅</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Turbo Monorepo</span>
+                            <span class="text-green-400">✅</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Prometheus</span>
+                            <span class="text-green-400">✅</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Grafana</span>
+                            <span class="text-green-400">✅</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance & Monitoring -->
+            <div class="mt-6 grid lg:grid-cols-2 gap-6">
+                <div class="bg-gray-800/50 p-6 rounded-lg">
+                    <h3 class="text-xl font-bold mb-4">📊 Performance Monitoring</h3>
+                    <ul class="space-y-2 text-sm">
+                        <li>✅ Real-time performance scripts</li>
+                        <li>✅ Memory usage tracking</li>
+                        <li>✅ VS Code optimization</li>
+                        <li>✅ Build time monitoring</li>
+                        <li>✅ Resource allocation management</li>
+                    </ul>
+                </div>
+                
+                <div class="bg-gray-800/50 p-6 rounded-lg">
+                    <h3 class="text-xl font-bold mb-4">🔒 Security & Auth</h3>
+                    <ul class="space-y-2 text-sm">
+                        <li>✅ JWT authentication</li>
+                        <li>✅ Rate limiting</li>
+                        <li>✅ CORS configuration</li>
+                        <li>✅ Helmet security headers</li>
+                        <li>✅ Environment variable management</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Footer -->
+        <div class="text-center mt-12 p-6 bg-green-600/20 rounded-xl">
+            <h3 class="text-2xl font-bold mb-4">🎯 Application Status</h3>
+            <div class="grid md:grid-cols-4 gap-4 text-sm">
+                <div>
+                    <div class="text-lg text-green-400">✅</div>
+                    <div class="font-medium">Battle Analysis</div>
+                    <div class="text-gray-300">Production Ready</div>
+                </div>
+                <div>
+                    <div class="text-lg text-green-400">✅</div>
+                    <div class="font-medium">API Backend</div>
+                    <div class="text-gray-300">Fully Functional</div>
+                </div>
+                <div>
+                    <div class="text-lg text-green-400">✅</div>
+                    <div class="font-medium">UI/UX Design</div>
+                    <div class="text-gray-300">Professional</div>
+                </div>
+                <div>
+                    <div class="text-lg text-green-400">✅</div>
+                    <div class="font-medium">Documentation</div>
+                    <div class="text-gray-300">Comprehensive</div>
+                </div>
+            </div>
+            <div class="mt-6 text-lg font-medium text-yellow-300">
+                🚀 Ready for Production Deployment & Performance Optimization
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showSection(sectionId) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.add('hidden');
+            });
+            
+            // Show selected section
+            document.getElementById(sectionId).classList.remove('hidden');
+            
+            // Update button states
+            document.querySelectorAll('button').forEach(btn => {
+                btn.classList.remove('ring-2', 'ring-white');
+            });
+            event.target.classList.add('ring-2', 'ring-white');
+        }
+        
+        // Show features by default
+        document.addEventListener('DOMContentLoaded', () => {
+            showSection('features');
+        });
+    </script>
+</body>
+</html>

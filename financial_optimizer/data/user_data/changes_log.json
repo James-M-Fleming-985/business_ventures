@@ -1,0 +1,105 @@
+{
+  "changes": [
+    {
+      "timestamp": "2025-08-04T19:47:20.360816",
+      "description": "Financial profile saved from Data Input",
+      "change_count": 3,
+      "version_id": "v_20250804_194720",
+      "major_changes": [
+        {
+          "field": "personal_info.name",
+          "old_value": "Test User",
+          "new_value": "",
+          "change_type": "content_change"
+        },
+        {
+          "field": "income.gross_salary",
+          "old_value": 55000,
+          "new_value": 45000,
+          "change_type": "value_change"
+        },
+        {
+          "field": "financial.savings_account",
+          "old_value": 20000,
+          "new_value": 8500,
+          "change_type": "value_change"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-04T19:43:32.543926",
+      "description": "Slider update - gross salary",
+      "change_count": 1,
+      "version_id": "v_20250804_194332",
+      "major_changes": [
+        {
+          "field": "income.gross_salary",
+          "old_value": 50000,
+          "new_value": 55000,
+          "change_type": "value_change"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-04T19:43:32.531174",
+      "description": "Test script modifications",
+      "change_count": 1,
+      "version_id": "v_20250804_194332",
+      "major_changes": [
+        {
+          "field": "income.gross_salary",
+          "old_value": 55000,
+          "new_value": 50000,
+          "change_type": "value_change"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-04T19:43:18.461668",
+      "description": "Slider update - gross salary",
+      "change_count": 1,
+      "version_id": "v_20250804_194318",
+      "major_changes": [
+        {
+          "field": "income.gross_salary",
+          "old_value": 50000,
+          "new_value": 55000,
+          "change_type": "value_change"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-04T19:43:18.455067",
+      "description": "Test script modifications",
+      "change_count": 3,
+      "version_id": "v_20250804_194318",
+      "major_changes": [
+        {
+          "field": "income.gross_salary",
+          "old_value": 45000,
+          "new_value": 50000,
+          "change_type": "value_change"
+        },
+        {
+          "field": "financial.savings_account",
+          "old_value": 8500,
+          "new_value": 20000,
+          "change_type": "value_change"
+        },
+        {
+          "field": "personal_info.name",
+          "old_value": "",
+          "new_value": "Test User",
+          "change_type": "content_change"
+        }
+      ]
+    },
+    {
+      "timestamp": "2025-08-04T19:23:49.354305",
+      "description": "Financial profile saved from Data Input",
+      "change_count": 0,
+      "version_id": "v_20250804_192349",
+      "major_changes": []
+    }
+  ]
+}

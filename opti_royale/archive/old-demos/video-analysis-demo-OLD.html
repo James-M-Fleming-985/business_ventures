@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OptiRoyale - Video Analysis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .clash-bg {
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        .upload-zone {
+            border: 2px dashed #3b82f6;
+            transition: all 0.3s ease;
+        }
+        .upload-zone:hover {
+            border-color: #1d4ed8;
+            background-color: rgba(59, 130, 246, 0.05);
+        }
+        .upload-zone.dragover {
+            border-color: #1d4ed8;
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+    </style>
+</head>
+<body class="clash-bg min-h-screen text-white">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold mb-2 bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
+                🏆 OptiRoyale
+            </h1>
+            <p class="text-xl text-gray-300">Advanced Clash Royale Video Analysis</p>
+        </div>
+
+        <!-- Main Content -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Video Upload Section -->
+            <div class="bg-gray-800 rounded-lg p-6 card-hover">
+                <h2 class="text-2xl font-bold mb-4 flex items-center">
+                    🎥 Upload Your Replay
+                </h2>
+                
+                <div id="uploadZone" class="upload-zone rounded-lg p-8 text-center mb-4">
+                    <div id="uploadContent">
+                        <div class="text-6xl mb-4">📁</div>
+                        <p class="text-lg mb-2">Drop your Clash Royale video here</p>
+                        <p class="text-gray-400 mb-4">or click to browse</p>
+                        <button class="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg font-semibold transition-colors">
+                            Choose Video File
+                        </button>
+                    </div>
+                    
+                    <div id="uploadProgress" class="hidden">
+                        <div class="text-4xl mb-4">⏳</div>
+                        <p class="text-lg mb-4">Uploading and analyzing...</p>
+                        <div class="w-full bg-gray-700 rounded-full h-3">
+                            <div id="progressBar" class="bg-blue-600 h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                        <p id="progressText" class="text-sm text-gray-400 mt-2">0%</p>
+                    </div>
+                </div>
+                
+                <input type="file" id="fileInput" accept="video/*" class="hidden">
+                
+                <div class="text-sm text-gray-400">
+                    <p>✅ Supported formats: MP4, MOV, AVI</p>
+                    <p>📏 Max file size: 100MB</p>
+                    <p>⏱️ Analysis time: ~30 seconds</p>
+                </div>
+            </div>
+
+            <!-- Analysis Results Section -->
+            <div class="bg-gray-800 rounded-lg p-6 card-hover">
+                <h2 class="text-2xl font-bold mb-4 flex items-center">
+                    📊 Analysis Results
+                </h2>
+                
+                <div id="resultsContent" class="text-center text-gray-400">
+                    <div class="text-6xl mb-4">🎯</div>
+                    <p class="text-lg">Upload a video to see analysis results</p>
+                </div>
+                
+                <div id="analysisResults" class="hidden">
+                    <!-- Overall Score -->
+                    <div class="bg-gray-700 rounded-lg p-4 mb-4">
+                        <h3 class="text-lg font-semibold mb-2">Overall Performance</h3>
+                        <div class="flex items-center">
+                            <div class="text-3xl font-bold text-yellow-400" id="overallScore">78</div>
+                            <div class="ml-2">
+                                <div class="text-sm text-gray-400">Score</div>
+                                <div class="text-xs text-green-400" id="improvement">+12% vs last game</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Cards Detected -->
+                    <div class="bg-gray-700 rounded-lg p-4 mb-4">
+                        <h3 class="text-lg font-semibold mb-2">Cards Detected</h3>
+                        <div id="cardsDetected" class="flex flex-wrap gap-2">
+                            <!-- Cards will be populated here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Recommendations -->
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold mb-2">💡 Recommendations</h3>
+                        <div id="recommendations">
+                            <!-- Recommendations will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Stats Row -->
+        <div id="statsRow" class="hidden mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="bg-gray-800 rounded-lg p-4 text-center">
+                <div class="text-2xl font-bold text-blue-400" id="elixirAvg">3.8</div>
+                <div class="text-sm text-gray-400">Avg Elixir</div>
+            </div>
+            <div class="bg-gray-800 rounded-lg p-4 text-center">
+                <div class="text-2xl font-bold text-green-400" id="cardsPlayed">12</div>
+                <div class="text-sm text-gray-400">Cards Played</div>
+            </div>
+            <div class="bg-gray-800 rounded-lg p-4 text-center">
+                <div class="text-2xl font-bold text-purple-400" id="keyFrames">23</div>
+                <div class="text-sm text-gray-400">Key Moments</div>
+            </div>
+            <div class="bg-gray-800 rounded-lg p-4 text-center">
+                <div class="text-2xl font-bold text-yellow-400" id="confidence">87%</div>
+                <div class="text-sm text-gray-400">AI Confidence</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // File upload functionality
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+        const uploadContent = document.getElementById('uploadContent');
+        const uploadProgress = document.getElementById('uploadProgress');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        
+        // Results elements
+        const resultsContent = document.getElementById('resultsContent');
+        const analysisResults = document.getElementById('analysisResults');
+        const statsRow = document.getElementById('statsRow');
+        
+        // Mock card data
+        const mockCards = ['Wizard', 'Giant', 'Fireball', 'Skeleton Army', 'Lightning', 'Hog Rider', 'Valkyrie', 'Arrows'];
+        const mockRecommendations = [
+            'Consider using Lightning Spell against Inferno Tower for better elixir trade',
+            'Your Giant placement timing could be improved - wait for elixir advantage',
+            'Try baiting their Fireball before playing Minion Horde',
+            'Your defense against air units needs improvement',
+            'Great job on elixir management in the last minute!'
+        ];
+        
+        // File upload handlers
+        uploadZone.addEventListener('click', () => fileInput.click());
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileUpload(files[0]);
+            }
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileUpload(e.target.files[0]);
+            }
+        });
+        
+        function handleFileUpload(file) {
+            // Validate file
+            if (!file.type.startsWith('video/')) {
+                alert('Please select a video file');
+                return;
+            }
+            
+            if (file.size > 100 * 1024 * 1024) { // 100MB
+                alert('File size must be less than 100MB');
+                return;
+            }
+            
+            console.log(`🎯 Starting analysis of ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
+            
+            // Show progress
+            uploadContent.classList.add('hidden');
+            uploadProgress.classList.remove('hidden');
+            
+            // Simulate realistic video analysis process
+            let progress = 0;
+            const phases = [
+                { max: 25, text: 'Uploading video...' },
+                { max: 45, text: 'Extracting frames...' },
+                { max: 70, text: 'Detecting cards...' },
+                { max: 90, text: 'Analyzing strategy...' },
+                { max: 100, text: 'Generating recommendations...' }
+            ];
+            
+            let phaseIndex = 0;
+            
+            const interval = setInterval(() => {
+                // Simulate more realistic progress with phases
+                const currentPhase = phases[phaseIndex];
+                const increment = Math.random() * 8 + 2; // 2-10% increments
+                
+                progress += increment;
+                
+                if (progress >= currentPhase.max && phaseIndex < phases.length - 1) {
+                    phaseIndex++;
+                    progress = currentPhase.max;
+                }
+                
+                if (progress > 100) {
+                    progress = 100;
+                    clearInterval(interval);
+                    setTimeout(() => showResults(file), 800);
+                }
+                
+                progressBar.style.width = progress + '%';
+                progressText.textContent = `${phases[phaseIndex].text} ${Math.round(progress)}%`;
+                
+            }, 150); // Slower, more realistic progress
+        }
+        
+        function showResults(file) {
+            // Hide upload progress
+            uploadProgress.classList.add('hidden');
+            uploadContent.classList.remove('hidden');
+            
+            // Show results
+            resultsContent.classList.add('hidden');
+            analysisResults.classList.remove('hidden');
+            statsRow.classList.remove('hidden');
+            
+            // Generate realistic results based on file
+            const fileSize = file ? (file.size / 1024 / 1024).toFixed(1) : '15.2';
+            const fileName = file ? file.name : 'demo-video.mp4';
+            
+            console.log(`✅ Analysis complete for ${fileName} (${fileSize}MB)`);
+            
+            // Populate cards with more variety
+            const cardsContainer = document.getElementById('cardsDetected');
+            cardsContainer.innerHTML = '';
+            const detectedCards = mockCards.slice(0, Math.floor(Math.random() * 4) + 4);
+            detectedCards.forEach(card => {
+                const cardEl = document.createElement('span');
+                cardEl.className = 'bg-blue-600 px-2 py-1 rounded text-sm';
+                cardEl.textContent = card;
+                cardsContainer.appendChild(cardEl);
+            });
+            
+            // Show file-specific info
+            const fileInfo = document.createElement('div');
+            fileInfo.className = 'text-xs text-gray-400 mt-2';
+            fileInfo.innerHTML = `📁 ${fileName} • 📏 ${fileSize}MB • ⏱️ ${(Math.random() * 3 + 1).toFixed(1)}s analysis time`;
+            cardsContainer.appendChild(fileInfo);
+            
+            // Populate recommendations with more variety
+            const recsContainer = document.getElementById('recommendations');
+            recsContainer.innerHTML = '';
+            const selectedRecs = mockRecommendations
+                .sort(() => 0.5 - Math.random())
+                .slice(0, 3);
+            selectedRecs.forEach((rec, index) => {
+                const recEl = document.createElement('div');
+                recEl.className = 'flex items-start mb-2 text-sm';
+                recEl.innerHTML = `
+                    <span class="text-yellow-400 mr-2">${index + 1}.</span>
+                    <span>${rec}</span>
+                `;
+                recsContainer.appendChild(recEl);
+            });
+            
+            // Update stats with realistic values
+            document.getElementById('overallScore').textContent = Math.floor(Math.random() * 25) + 70;
+            document.getElementById('elixirAvg').textContent = (Math.random() * 1.8 + 3.2).toFixed(1);
+            document.getElementById('cardsPlayed').textContent = Math.floor(Math.random() * 10) + 8;
+            document.getElementById('keyFrames').textContent = Math.floor(Math.random() * 20) + 15;
+            document.getElementById('confidence').textContent = Math.floor(Math.random() * 15) + 82 + '%';
+            
+            // Show success message with more info
+            setTimeout(() => {
+                const successMsg = document.createElement('div');
+                successMsg.className = 'fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg max-w-sm';
+                successMsg.innerHTML = `
+                    <div class="font-bold">✅ Analysis Complete!</div>
+                    <div class="text-sm opacity-90">
+                        🎯 ${detectedCards.length} cards detected<br>
+                        📊 ${Math.floor(Math.random() * 25) + 70}% performance score<br>
+                        🤖 AI recommendations ready
+                    </div>
+                `;
+                document.body.appendChild(successMsg);
+                setTimeout(() => successMsg.remove(), 4000);
+            }, 600);
+        }
+        
+        // Reset functionality
+        function resetAnalysis() {
+            uploadProgress.classList.add('hidden');
+            uploadContent.classList.remove('hidden');
+            analysisResults.classList.add('hidden');
+            resultsContent.classList.remove('hidden');
+            statsRow.classList.add('hidden');
+            progressBar.style.width = '0%';
+            progressText.textContent = '0%';
+        }
+        
+        // Add reset button
+        document.addEventListener('DOMContentLoaded', () => {
+            const resetBtn = document.createElement('button');
+            resetBtn.textContent = '🔄 Analyze Another Video';
+            resetBtn.className = 'fixed bottom-4 right-4 bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg font-semibold transition-colors';
+            resetBtn.onclick = resetAnalysis;
+            document.body.appendChild(resetBtn);
+        });
+    </script>
+</body>
+</html>

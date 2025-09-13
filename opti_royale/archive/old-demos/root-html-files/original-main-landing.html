@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OptiRoyale - Professional Battle Analysis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            min-height: 100vh;
+        }
+        .feature-card {
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .feature-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 25px 30px -5px rgba(0, 0, 0, 0.4);
+        }
+    </style>
+</head>
+<body class="text-white min-h-screen">
+    <!-- Header Section -->
+    <header class="text-center py-16">
+        <h1 class="text-7xl font-bold mb-6">
+            <span class="bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 bg-clip-text text-transparent">
+                🏆 OptiRoyale
+            </span>
+        </h1>
+        <p class="text-2xl text-gray-300 mb-4">Professional Clash Royale Analysis Platform</p>
+        <p class="text-lg text-gray-400">Dominate the arena with AI-powered battle insights</p>
+    </header>
+
+    <!-- Main Feature Grid - 8 Large Blocks -->
+    <div class="container mx-auto px-8 pb-16">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-8 max-w-8xl mx-auto">
+            
+            <!-- Block 1: Real-Time Battle Analysis (Blue) -->
+            <a href="demo/pages/battle-analysis.html" 
+               class="feature-card bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl p-12 text-center h-80 flex flex-col justify-center group">
+                <div class="text-6xl mb-6 group-hover:scale-110 transition-transform">⚔️</div>
+                <h3 class="text-2xl font-bold mb-3">Battle Analysis</h3>
+                <p class="text-blue-100 text-lg">Real-time arena analysis with AI insights</p>
+            </a>
+
+            <!-- Block 2: Video Processing Engine (Green) -->
+            <a href="archive/old-demos/video-analysis-demo-OLD.html" 
+               class="feature-card bg-gradient-to-br from-green-600 to-green-800 rounded-2xl p-12 text-center h-80 flex flex-col justify-center group">
+                <div class="text-6xl mb-6 group-hover:scale-110 transition-transform">🎥</div>
+                <h3 class="text-2xl font-bold mb-3">Video Analysis</h3>
+                <p class="text-green-100 text-lg">Upload and analyze battle recordings</p>
+            </a>
+
+            <!-- Block 3: API Integration Hub (Purple) -->
+            <a href="demo/api-examples/" 
+               class="feature-card bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl p-12 text-center h-80 flex flex-col justify-center group">
+                <div class="text-6xl mb-6 group-hover:scale-110 transition-transform">🔌</div>
+                <h3 class="text-2xl font-bold mb-3">API Hub</h3>
+                <p class="text-purple-100 text-lg">Developer tools and integrations</p>
+            </a>
+
+            <!-- Block 4: Subscription Plans (Orange) -->
+            <a href="demo/pages/pricing.html" 
+               class="feature-card bg-gradient-to-br from-orange-600 to-orange-800 rounded-2xl p-12 text-center h-80 flex flex-col justify-center group">
+                <div class="text-6xl mb-6 group-hover:scale-110 transition-transform">💰</div>
+                <h3 class="text-2xl font-bold mb-3">Pro Plans</h3>
+                <p class="text-orange-100 text-lg">Choose your competitive edge</p>
+            </a>
+
+            <!-- Block 5: Machine Learning Engine (Green) -->
+            <a href="services/ml-pipeline/" 
+               class="feature-card bg-gradient-to-br from-emerald-600 to-emerald-800 rounded-2xl p-12 text-center h-80 flex flex-col justify-center group">
+                <div class="text-6xl mb-6 group-hover:scale-110 transition-transform">🤖</div>
+                <h3 class="text-2xl font-bold mb-3">AI Engine</h3>
+                <p class="text-emerald-100 text-lg">Advanced battle predictions</p>
+            </a>
+
+            <!-- Block 6: Professional Dashboard (Blue) -->
+            <a href="apps/dashboard/main.py" 
+               class="feature-card bg-gradient-to-br from-cyan-600 to-cyan-800 rounded-2xl p-12 text-center h-80 flex flex-col justify-center group">
+                <div class="text-6xl mb-6 group-hover:scale-110 transition-transform">📊</div>
+                <h3 class="text-2xl font-bold mb-3">Pro Dashboard</h3>
+                <p class="text-cyan-100 text-lg">Advanced analytics and tracking</p>
+            </a>
+
+            <!-- Block 7: Card Database (Purple) -->
+            <a href="enhanced_card_database.json" 
+               class="feature-card bg-gradient-to-br from-violet-600 to-violet-800 rounded-2xl p-12 text-center h-80 flex flex-col justify-center group">
+                <div class="text-6xl mb-6 group-hover:scale-110 transition-transform">🃏</div>
+                <h3 class="text-2xl font-bold mb-3">Card Database</h3>
+                <p class="text-violet-100 text-lg">Complete card information</p>
+            </a>
+
+            <!-- Block 8: Enterprise Solutions (Orange) -->
+            <a href="APPLICATION_OWNER_DASHBOARD.md" 
+               class="feature-card bg-gradient-to-br from-red-600 to-red-800 rounded-2xl p-12 text-center h-80 flex flex-col justify-center group">
+                <div class="text-6xl mb-6 group-hover:scale-110 transition-transform">🏢</div>
+                <h3 class="text-2xl font-bold mb-3">Enterprise</h3>
+                <p class="text-red-100 text-lg">Team and organization tools</p>
+            </a>
+
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <footer class="text-center py-12 border-t border-gray-700/50">
+        <div class="mb-6">
+            <h3 class="text-xl font-bold mb-4 text-gray-300">Quick Links</h3>
+            <div class="flex justify-center space-x-8 flex-wrap">
+                <a href="application-overview.html" class="text-blue-400 hover:text-blue-300 transition-colors">📋 Complete Overview</a>
+                <a href="README.md" class="text-green-400 hover:text-green-300 transition-colors">📖 Documentation</a>
+                <a href="index.html" class="text-purple-400 hover:text-purple-300 transition-colors">🏠 Simple View</a>
+                <a href="demo/pages/test.html" class="text-orange-400 hover:text-orange-300 transition-colors">🧪 Test Page</a>
+            </div>
+        </div>
+        <p class="text-gray-500">&copy; 2025 OptiRoyale. The ultimate Clash Royale analysis platform.</p>
+    </footer>
+</body>
+</html>

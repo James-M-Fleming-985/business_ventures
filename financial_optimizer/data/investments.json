@@ -1,0 +1,144 @@
+[
+  {
+    "name": "Test Investment",
+    "type": "Capital Equipment",
+    "business_model": "Cost Center",
+    "cost": 50000,
+    "timeline": 12,
+    "priority": "High",
+    "roi": 15.0,
+    "actions": "Edit | Delete"
+  },
+  {
+    "name": "test investment",
+    "type": "capital",
+    "cost": 50000.0,
+    "status": "Active"
+  },
+  {
+    "name": "test ivestment",
+    "type": "capital",
+    "cost": 50000.0,
+    "status": "Active"
+  },
+  {
+    "name": "test",
+    "type": "capital",
+    "cost": 50000.0,
+    "status": "Planning",
+    "business_mode": true,
+    "actions": "Edit | Delete"
+  },
+  {
+    "name": "test",
+    "type": "capital",
+    "cost": 50000.0,
+    "status": "Planning",
+    "business_mode": true,
+    "actions": "Edit | Delete"
+  },
+  {
+    "name": "test",
+    "type": "capital",
+    "cost": 50000.0,
+    "status": "Planning",
+    "business_mode": true,
+    "actions": "Edit | Delete"
+  },
+  {
+    "name": "test",
+    "type": "capital",
+    "cost": 15000.0,
+    "status": "Planning"
+  },
+  {
+    "name": "test",
+    "type": "capital",
+    "cost": 15000.0,
+    "status": "Planning"
+  },
+  {
+    "name": "test",
+    "type": "capital",
+    "cost": 15000.0,
+    "status": "Planning"
+  },
+  {
+    "name": "test",
+    "type": "capital",
+    "cost": 15000.0,
+    "status": "Planning"
+  },
+  {
+    "name": "test",
+    "type": "equipment",
+    "cost": 50000.0,
+    "date_added": "2025-07-24"
+  },
+  {
+    "name": "test",
+    "type": "equipment",
+    "cost": 50000.0,
+    "date_added": "2025-07-24"
+  },
+  {
+    "name": "test",
+    "type": "equipment",
+    "cost": 50000.0,
+    "date_added": "2025-07-24"
+  },
+  {
+    "name": "test",
+    "type": "equipment",
+    "cost": 50000.0,
+    "date_added": "2025-07-24"
+  },
+  {
+    "name": "test",
+    "type": "equipment",
+    "cost": 50000.0,
+    "date_added": "2025-07-24"
+  },
+  {
+    "name": "test",
+    "type": "equipment",
+    "cost": 50000.0,
+    "date_added": "2025-07-24"
+  },
+  {
+    "name": "test",
+    "type": "equipment",
+    "cost": 50000.0,
+    "date_added": "2025-07-24"
+  },
+  {
+    "name": "Chiller Optimization",
+    "type": "equipment",
+    "cost": 15000.0,
+    "date_added": "2025-07-24"
+  },
+  {
+    "name": "Chiller Optimization",
+    "type": "equipment",
+    "cost": 15000.0,
+    "date_added": "2025-07-24"
+  },
+  {
+    "name": "Chiller Optimization",
+    "type": "equipment",
+    "cost": 15000.0,
+    "date_added": "2025-07-24"
+  },
+  {
+    "name": "Chiller Optimization",
+    "type": "equipment",
+    "cost": 15000.0,
+    "date_added": "2025-07-24"
+  },
+  {
+    "name": "Chiller Optimization",
+    "type": "equipment",
+    "cost": 15000.0,
+    "date_added": "2025-07-24"
+  }
+]

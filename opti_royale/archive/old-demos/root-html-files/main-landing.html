@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OptiRoyale - Pro Battle Analysis Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            min-height: 100vh;
+        }
+        .feature-block {
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .feature-block:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+        .bg-blue-block { background: linear-gradient(135deg, #3b82f6, #1e40af); }
+        .bg-green-block { background: linear-gradient(135deg, #10b981, #059669); }
+        .bg-purple-block { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+        .bg-orange-block { background: linear-gradient(135deg, #f97316, #ea580c); }
+    </style>
+</head>
+<body class="text-white">
+    <!-- Header -->
+    <header class="text-center py-12">
+        <h1 class="text-6xl font-bold mb-4">
+            <span class="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
+                🏆 OptiRoyale
+            </span>
+        </h1>
+        <p class="text-xl text-gray-300">Professional Clash Royale Battle Analysis Platform</p>
+    </header>
+
+    <!-- Main Features Grid - 8 Blocks -->
+    <div class="container mx-auto px-6 pb-12">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-7xl mx-auto">
+            
+            <!-- Block 1: Battle Analysis -->
+            <a href="demo/pages/battle-analysis.html" 
+               class="feature-block bg-blue-block rounded-xl p-8 text-center h-64 flex flex-col justify-center">
+                <div class="text-4xl mb-4">⚔️</div>
+                <h3 class="text-xl font-bold mb-2">Battle Analysis</h3>
+                <p class="text-sm opacity-90">Real-time arena analysis with AI-powered insights</p>
+            </a>
+
+            <!-- Block 2: Video Processing -->
+            <a href="archive/old-demos/video-analysis-demo-OLD.html" 
+               class="feature-block bg-green-block rounded-xl p-8 text-center h-64 flex flex-col justify-center">
+                <div class="text-4xl mb-4">🎥</div>
+                <h3 class="text-xl font-bold mb-2">Video Analysis</h3>
+                <p class="text-sm opacity-90">Upload and analyze your battle recordings</p>
+            </a>
+
+            <!-- Block 3: API Access -->
+            <a href="demo/api-examples/" 
+               class="feature-block bg-purple-block rounded-xl p-8 text-center h-64 flex flex-col justify-center">
+                <div class="text-4xl mb-4">🔌</div>
+                <h3 class="text-xl font-bold mb-2">API Integration</h3>
+                <p class="text-sm opacity-90">Powerful APIs for developers and third-party tools</p>
+            </a>
+
+            <!-- Block 4: Pricing Plans -->
+            <a href="demo/pages/pricing.html" 
+               class="feature-block bg-orange-block rounded-xl p-8 text-center h-64 flex flex-col justify-center">
+                <div class="text-4xl mb-4">💰</div>
+                <h3 class="text-xl font-bold mb-2">Pricing Plans</h3>
+                <p class="text-sm opacity-90">Choose the perfect plan for your needs</p>
+            </a>
+
+            <!-- Block 5: Pro Dashboard -->
+            <a href="apps/dashboard/main.py" 
+               class="feature-block bg-green-block rounded-xl p-8 text-center h-64 flex flex-col justify-center">
+                <div class="text-4xl mb-4">📊</div>
+                <h3 class="text-xl font-bold mb-2">Pro Dashboard</h3>
+                <p class="text-sm opacity-90">Advanced analytics and performance tracking</p>
+            </a>
+
+            <!-- Block 6: Machine Learning -->
+            <a href="services/ml-pipeline/" 
+               class="feature-block bg-blue-block rounded-xl p-8 text-center h-64 flex flex-col justify-center">
+                <div class="text-4xl mb-4">🤖</div>
+                <h3 class="text-xl font-bold mb-2">AI Engine</h3>
+                <p class="text-sm opacity-90">Advanced machine learning for battle predictions</p>
+            </a>
+
+            <!-- Block 7: Card Database -->
+            <a href="enhanced_card_database.json" 
+               class="feature-block bg-purple-block rounded-xl p-8 text-center h-64 flex flex-col justify-center">
+                <div class="text-4xl mb-4">🃏</div>
+                <h3 class="text-xl font-bold mb-2">Card Database</h3>
+                <p class="text-sm opacity-90">Complete database of all Clash Royale cards</p>
+            </a>
+
+            <!-- Block 8: Enterprise -->
+            <a href="APPLICATION_OWNER_DASHBOARD.md" 
+               class="feature-block bg-orange-block rounded-xl p-8 text-center h-64 flex flex-col justify-center">
+                <div class="text-4xl mb-4">🏢</div>
+                <h3 class="text-xl font-bold mb-2">Enterprise</h3>
+                <p class="text-sm opacity-90">Enterprise-grade solutions for teams and organizations</p>
+            </a>
+
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="text-center py-8 text-gray-400">
+        <p>&copy; 2025 OptiRoyale. Professional Battle Analysis Platform.</p>
+        <div class="mt-4">
+            <a href="application-overview.html" class="text-blue-400 hover:text-blue-300 mx-4">📋 Full Overview</a>
+            <a href="README.md" class="text-blue-400 hover:text-blue-300 mx-4">📖 Documentation</a>
+            <a href="index.html" class="text-blue-400 hover:text-blue-300 mx-4">🏠 Simple View</a>
+        </div>
+    </footer>
+</body>
+</html>

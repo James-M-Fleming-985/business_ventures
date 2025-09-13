@@ -1,0 +1,1452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OptiRoyale Dev - Video Upload & Analysis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Copy all existing styles from main file */
+        .clash-bg {
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Video Upload Specific Styles */
+        .video-upload-zone {
+            border: 3px dashed #fbbf24;
+            background: rgba(251, 191, 36, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .video-upload-zone:hover {
+            border-color: #f59e0b;
+            background: rgba(251, 191, 36, 0.2);
+        }
+        .video-upload-zone.dragover {
+            border-color: #10b981;
+            background: rgba(16, 185, 129, 0.2);
+            transform: scale(1.02);
+        }
+        .video-upload-zone.uploading {
+            border-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.2);
+        }
+        .video-upload-zone.success {
+            border-color: #10b981;
+            background: rgba(16, 185, 129, 0.2);
+        }
+        .video-upload-zone.error {
+            border-color: #ef4444;
+            background: rgba(239, 68, 68, 0.2);
+        }
+        
+        /* Processing Animation */
+        .processing-spinner {
+            border: 4px solid #374151;
+            border-top: 4px solid #fbbf24;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Progress Bar */
+        .progress-bar {
+            background: #374151;
+            border-radius: 10px;
+            overflow: hidden;
+            height: 8px;
+        }
+        .progress-fill {
+            background: linear-gradient(90deg, #fbbf24, #f59e0b);
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+        
+        /* Video Player Enhancements */
+        .custom-video-player {
+            position: relative;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .video-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 10;
+        }
+        .placement-marker {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: #ef4444;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 20;
+        }
+        .optimal-marker {
+            background: #10b981;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+        }
+    </style>
+</head>
+<body class="clash-bg min-h-screen text-white">
+    <!-- DEV BANNER -->
+    <div class="bg-yellow-600 text-black text-center py-2 font-bold">
+        🔧 DEVELOPMENT VERSION - Video Upload & Analysis Features
+    </div>
+
+    <!-- Header -->
+    <div class="bg-gray-900 shadow-lg">
+        <div class="container mx-auto px-4 py-3">
+            <div class="flex items-center justify-between">
+                <h1 class="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
+                    🏆 OptiRoyale Pro - Dev
+                </h1>
+                <div class="text-sm text-gray-300">
+                    Video Analysis Development
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-4 py-6">
+        
+        <!-- 3-Window Development Layout -->
+        <div class="grid grid-cols-12 gap-6 h-screen max-h-[calc(100vh-120px)]">
+            
+            <!-- Window 1: Enhanced Video Upload (Left) -->
+            <div class="col-span-3 bg-gray-800 rounded-lg p-4 overflow-y-auto">
+                <h2 class="text-lg font-bold mb-4 flex items-center">
+                    📁 Video Upload & Processing
+                </h2>
+                
+                <!-- Upload Zone -->
+                <div id="upload-zone" class="video-upload-zone rounded-lg p-6 text-center mb-4">
+                    <div id="upload-content">
+                        <div class="text-4xl mb-2">📹</div>
+                        <div class="font-semibold mb-2">Drop Video Here</div>
+                        <div class="text-sm text-gray-400 mb-3">MP4, MOV, M4V up to 500MB</div>
+                        <input type="file" id="video-input" accept="video/mp4,video/quicktime,video/x-m4v" class="hidden">
+                        <button id="browse-btn" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded font-semibold mb-2">
+                            Browse Files
+                        </button>
+                        <div class="text-xs text-gray-500 mb-2">or</div>
+                        <button id="demo-video-btn" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded font-semibold text-sm">
+                            🎯 Load Demo Video (for testing)
+                        </button>
+                        <div class="text-xs text-gray-500 mt-2">
+                            <button onclick="console.log('🧪 Test button clicked!'); alert('JavaScript is working!');" 
+                                    class="bg-yellow-600 hover:bg-yellow-700 px-2 py-1 rounded text-xs">
+                                🧪 Test JS
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Upload Progress (Hidden initially) -->
+                    <div id="upload-progress" class="hidden">
+                        <div class="text-2xl mb-2">⬆️</div>
+                        <div class="font-semibold mb-3">Uploading Video...</div>
+                        <div class="progress-bar mb-2">
+                            <div id="upload-progress-fill" class="progress-fill" style="width: 0%"></div>
+                        </div>
+                        <div id="upload-progress-text" class="text-sm text-gray-400">Preparing upload...</div>
+                        <div id="upload-speed" class="text-xs text-gray-500 mt-1">Speed: calculating...</div>
+                    </div>
+                    
+                    <!-- Upload Success -->
+                    <div id="upload-success" class="hidden">
+                        <div class="text-4xl mb-2">✅</div>
+                        <div class="font-semibold mb-2">Upload Complete!</div>
+                        <div class="text-sm text-gray-400">Video ready for analysis</div>
+                    </div>
+                    
+                    <!-- Upload Error -->
+                    <div id="upload-error" class="hidden">
+                        <div class="text-4xl mb-2">❌</div>
+                        <div class="font-semibold mb-2">Upload Failed</div>
+                        <div id="error-message" class="text-sm text-red-400 mb-3">Unknown error occurred</div>
+                        <button id="retry-upload" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded text-sm">
+                            Try Again
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Processing Status -->
+                <div id="processing-status" class="hidden">
+                    <div class="bg-gray-700 rounded-lg p-4 mb-4">
+                        <div class="flex items-center mb-3">
+                            <div class="processing-spinner mr-3"></div>
+                            <span class="font-semibold">Processing Video...</span>
+                        </div>
+                        <div class="progress-bar mb-2">
+                            <div id="progress-fill" class="progress-fill" style="width: 0%"></div>
+                        </div>
+                        <div id="progress-text" class="text-sm text-gray-400">Initializing...</div>
+                    </div>
+                </div>
+
+                <!-- Video Info -->
+                <div id="video-info" class="hidden bg-gray-700 rounded-lg p-3 mb-4">
+                    <h3 class="font-semibold mb-2">📊 Video Details</h3>
+                    <div class="text-sm space-y-1">
+                        <div>Duration: <span id="video-duration">--</span></div>
+                        <div>Resolution: <span id="video-resolution">--</span></div>
+                        <div>Format: <span id="video-format">--</span></div>
+                        <div>Size: <span id="video-size">--</span></div>
+                    </div>
+                </div>
+
+                <!-- Analysis Controls -->
+                <div id="analysis-controls" class="hidden space-y-3">
+                    <button id="start-analysis" class="w-full bg-green-600 hover:bg-green-700 py-2 rounded font-semibold">
+                        🤖 Start AI Analysis
+                    </button>
+                    <button id="frame-analysis" class="w-full bg-purple-600 hover:bg-purple-700 py-2 rounded font-semibold">
+                        🎯 Analyze Current Frame
+                    </button>
+                </div>
+            </div>
+
+            <!-- Window 2: Enhanced Video Player (Center) -->
+            <div class="col-span-6 bg-gray-800 rounded-lg p-4 relative">
+                <h2 class="text-lg font-bold mb-4 flex items-center justify-between">
+                    🎮 Interactive Video Player
+                    <div id="video-title" class="text-sm text-gray-400">No video loaded</div>
+                </h2>
+                
+                <!-- Custom Video Player -->
+                <div class="custom-video-player mx-auto mb-4" style="width: 360px; height: 640px;">
+                    <video id="main-video" width="360" height="640" style="width: 100%; height: 100%; object-fit: cover;">
+                        Your browser does not support the video tag.
+                    </video>
+                    
+                    <!-- Video Overlay for Analysis -->
+                    <div id="video-overlay" class="video-overlay">
+                        <!-- Placement markers will be added here dynamically -->
+                    </div>
+                    
+                    <!-- No Video Placeholder -->
+                    <div id="no-video-placeholder" class="absolute inset-0 flex items-center justify-center bg-gray-900">
+                        <div class="text-center">
+                            <div class="text-6xl mb-4">🎬</div>
+                            <div class="text-xl font-bold mb-2">Upload a video to begin</div>
+                            <div class="text-gray-400">Drag and drop your Clash Royale gameplay</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Enhanced Video Controls -->
+                <div class="bg-black bg-opacity-80 rounded-lg p-3">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center space-x-3">
+                            <button id="play-pause" class="bg-blue-600 hover:bg-blue-700 rounded-full w-10 h-10 flex items-center justify-center" disabled>
+                                ▶️
+                            </button>
+                            <button id="frame-prev" class="bg-gray-600 hover:bg-gray-700 rounded px-3 py-1 text-sm" disabled>
+                                ⏮️ Frame
+                            </button>
+                            <button id="frame-next" class="bg-gray-600 hover:bg-gray-700 rounded px-3 py-1 text-sm" disabled>
+                                Frame ⏭️
+                            </button>
+                            <select id="playback-speed" class="bg-gray-600 rounded px-2 py-1 text-sm" disabled>
+                                <option value="0.25">0.25x</option>
+                                <option value="0.5">0.5x</option>
+                                <option value="1" selected>1x</option>
+                                <option value="1.5">1.5x</option>
+                                <option value="2">2x</option>
+                            </select>
+                        </div>
+                        <div id="time-display" class="text-sm text-gray-300">
+                            00:00 / 00:00
+                        </div>
+                    </div>
+                    
+                    <!-- Timeline -->
+                    <div class="relative">
+                        <input type="range" id="video-timeline" class="w-full h-2 bg-gray-600 rounded-lg appearance-none" 
+                               min="0" max="100" value="0" disabled>
+                        <div id="timeline-markers" class="absolute top-0 w-full h-2 pointer-events-none">
+                            <!-- Analysis markers will be added here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Analysis Trigger -->
+                    <div class="mt-3 text-center">
+                        <button id="analyze-moment" class="bg-green-600 hover:bg-green-700 px-6 py-2 rounded font-semibold" disabled>
+                            🎯 Analyze This Moment
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Window 3: Real-time Analysis Panel (Right) -->
+            <div class="col-span-3 bg-gray-800 rounded-lg p-4 overflow-y-auto">
+                <h2 class="text-lg font-bold mb-4 flex items-center">
+                    🔬 Live Analysis Results
+                </h2>
+                
+                <!-- Analysis Status -->
+                <div id="analysis-status" class="bg-gray-700 rounded-lg p-3 mb-4">
+                    <div class="text-center text-gray-400">
+                        <div class="text-3xl mb-2">🤖</div>
+                        <div>Ready for analysis</div>
+                        <div class="text-sm">Upload a video to begin</div>
+                    </div>
+                </div>
+
+                <!-- Current Frame Analysis -->
+                <div id="frame-analysis-result" class="hidden bg-gray-700 rounded-lg p-3 mb-4">
+                    <h3 class="font-semibold text-yellow-400 mb-2">📊 Current Frame</h3>
+                    <div class="text-sm space-y-2">
+                        <div>Game Time: <span id="game-time">--</span></div>
+                        <div>Elixir: <span id="elixir-detected">--</span></div>
+                        <div>Cards Detected: <span id="cards-detected">--</span></div>
+                        <div>Confidence: <span id="detection-confidence">--</span></div>
+                    </div>
+                </div>
+
+                <!-- Placement Analysis -->
+                <div id="placement-analysis" class="hidden bg-gray-700 rounded-lg p-3 mb-4">
+                    <h3 class="font-semibold text-green-400 mb-2">🎯 Placement Analysis</h3>
+                    <div class="text-sm space-y-2">
+                        <div class="flex justify-between">
+                            <span>Card Placed:</span>
+                            <span id="placed-card" class="font-bold">--</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Optimality Score:</span>
+                            <span id="optimality-score" class="font-bold text-yellow-300">--</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Strategic Value:</span>
+                            <span id="strategic-value" class="font-bold">--</span>
+                        </div>
+                    </div>
+                    
+                    <div id="placement-feedback" class="mt-3 p-2 bg-blue-900 rounded text-xs">
+                        <!-- Feedback will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Processing Log -->
+                <div class="bg-gray-700 rounded-lg p-3 mb-4">
+                    <h3 class="font-semibold text-blue-400 mb-2">📋 Processing Log</h3>
+                    <div id="processing-log" class="text-xs space-y-1 max-h-40 overflow-y-auto">
+                        <div class="text-gray-400">Waiting for video upload...</div>
+                    </div>
+                </div>
+
+                <!-- Frame Analysis -->
+                <div class="bg-gray-700 rounded-lg p-3 mb-4">
+                    <h3 class="font-semibold text-purple-400 mb-2">🔍 Frame Analysis</h3>
+                    <div id="frame-analysis" class="text-sm space-y-2">
+                        <div class="text-gray-400">No frame selected</div>
+                    </div>
+                </div>
+
+                <!-- Full Video Analysis -->
+                <div class="bg-gray-700 rounded-lg p-3 mb-4">
+                    <h3 class="font-semibold text-green-400 mb-2">📈 Full Video Analysis</h3>
+                    <div id="full-analysis" class="text-sm space-y-2">
+                        <div class="text-gray-400">Analysis pending...</div>
+                    </div>
+                </div>
+
+                <!-- Analysis Results (Hidden initially) -->
+                <div id="analysis-results" class="hidden">
+                    <!-- Results will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simple test to verify JavaScript is working
+        console.log('🧪 Basic JavaScript test - script loaded');
+        
+        // Test immediately when script loads (not waiting for DOM)
+        setTimeout(() => {
+            console.log('⏱️ Testing after 1 second delay');
+            const testDiv = document.getElementById('processing-log');
+            if (testDiv) {
+                testDiv.innerHTML = '<div class="text-blue-400">🔵 Basic test successful - DOM accessible</div>';
+                console.log('✅ Successfully wrote to processing log');
+            } else {
+                console.log('❌ processing-log element not found');
+            }
+        }, 1000);
+
+        // Development Video Upload & Analysis System
+        class VideoAnalysisDevSystem {
+            constructor() {
+                this.video = document.getElementById('main-video');
+                this.isProcessing = false;
+                this.currentFile = null;
+                this.uploadProgress = 0;
+                this.analysisData = {};
+                this.supportedFormats = ['video/mp4', 'video/quicktime', 'video/x-m4v'];
+                this.maxFileSize = 500 * 1024 * 1024; // 500MB
+                this.initializeEventListeners();
+            }
+
+            initializeEventListeners() {
+                // File upload handlers
+                const uploadZone = document.getElementById('upload-zone');
+                const videoInput = document.getElementById('video-input');
+                const browseBtn = document.getElementById('browse-btn');
+                const retryBtn = document.getElementById('retry-upload');
+
+                // Debug: Check if elements exist
+                console.log('🔍 Element check - uploadZone:', uploadZone ? 'found' : 'not found');
+                console.log('🔍 Element check - videoInput:', videoInput ? 'found' : 'not found');
+                console.log('🔍 Element check - browseBtn:', browseBtn ? 'found' : 'not found');
+                this.logMessage(`🔍 Element check - uploadZone: ${uploadZone ? 'found' : 'not found'}`);
+                this.logMessage(`🔍 Element check - videoInput: ${videoInput ? 'found' : 'not found'}`);
+                this.logMessage(`🔍 Element check - browseBtn: ${browseBtn ? 'found' : 'not found'}`);
+
+                if (!browseBtn) {
+                    console.error('❌ Browse button not found! Cannot attach event listener.');
+                    this.logMessage('❌ Browse button not found! Cannot attach event listener.');
+                    return;
+                }
+
+                if (!videoInput) {
+                    console.error('❌ Video input not found! Cannot attach event listener.');
+                    this.logMessage('❌ Video input not found! Cannot attach event listener.');
+                    return;
+                }
+
+                if (!uploadZone) {
+                    console.error('❌ Upload zone not found! Cannot attach drag/drop listeners.');
+                    this.logMessage('❌ Upload zone not found! Cannot attach drag/drop listeners.');
+                    return;
+                }
+
+                // Enhanced drag and drop with visual feedback
+                console.log('🔧 Attaching drag and drop listeners...');
+                uploadZone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('📦 Drag over upload zone');
+                    uploadZone.classList.add('dragover');
+                });
+
+                uploadZone.addEventListener('dragleave', (e) => {
+                    console.log('📦 Drag leave upload zone');
+                    // Only remove if leaving the upload zone completely
+                    if (!uploadZone.contains(e.relatedTarget)) {
+                        uploadZone.classList.remove('dragover');
+                    }
+                });
+
+                uploadZone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('📦 File dropped!');
+                    uploadZone.classList.remove('dragover');
+                    const files = e.dataTransfer.files;
+                    console.log(`📁 ${files.length} files dropped`);
+                    this.logMessage(`📦 File dropped - ${files.length} files detected`);
+                    if (files.length > 0) {
+                        const file = files[0];
+                        console.log('📄 Processing dropped file:', file.name);
+                        this.logMessage(`📄 Processing dropped file: ${file.name}`);
+                        this.handleVideoUpload(file);
+                    }
+                });
+                console.log('✅ Drag and drop listeners attached');
+
+                // Demo video button
+                const demoBtn = document.getElementById('demo-video-btn');
+                if (demoBtn) {
+                    demoBtn.addEventListener('click', () => {
+                        this.loadDemoVideo();
+                    });
+                }
+
+                // Browse button - simplified event listener
+                console.log('🔧 Attaching browse button event listener...');
+                browseBtn.addEventListener('click', (e) => {
+                    console.log('🖱️ Browse button clicked!');
+                    this.logMessage('🖱️ Browse button clicked - opening file dialog');
+                    this.logMessage(`🔍 videoInput element: ${videoInput ? 'exists' : 'missing'}`);
+                    
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    try {
+                        videoInput.click();
+                        console.log('✅ File dialog triggered');
+                        this.logMessage('✅ File dialog triggered successfully');
+                    } catch (error) {
+                        console.error('❌ Error opening file dialog:', error);
+                        this.logMessage(`❌ Error opening file dialog: ${error.message}`);
+                    }
+                });
+                console.log('✅ Browse button event listener attached');
+
+                // File input change
+                videoInput.addEventListener('change', (e) => {
+                    this.logMessage(`📁 File input changed - ${e.target.files.length} files selected`);
+                    if (e.target.files.length > 0) {
+                        const file = e.target.files[0];
+                        this.logMessage(`📄 Selected file: ${file.name} (${this.formatFileSize(file.size)})`);
+                        this.handleVideoUpload(file);
+                    } else {
+                        this.logMessage('⚠️ No file selected');
+                    }
+                });
+
+                // Retry upload
+                retryBtn.addEventListener('click', () => {
+                    this.resetUploadState();
+                });
+
+                // Video controls
+                document.getElementById('play-pause').addEventListener('click', () => {
+                    this.togglePlayback();
+                });
+
+                document.getElementById('analyze-moment').addEventListener('click', () => {
+                    this.analyzeCurrentMoment();
+                });
+
+                document.getElementById('start-analysis').addEventListener('click', () => {
+                    this.startFullAnalysis();
+                });
+
+                document.getElementById('frame-analysis').addEventListener('click', () => {
+                    this.analyzeCurrentFrame();
+                });
+
+                // Video player events
+                this.video.addEventListener('loadedmetadata', () => {
+                    this.updateVideoControls();
+                });
+
+                this.video.addEventListener('timeupdate', () => {
+                    this.updateTimeDisplay();
+                });
+
+                // Timeline scrubbing
+                const timeline = document.getElementById('video-timeline');
+                timeline.addEventListener('input', (e) => {
+                    const percentage = e.target.value / 100;
+                    this.video.currentTime = this.video.duration * percentage;
+                });
+
+                // Playback speed control
+                document.getElementById('playback-speed').addEventListener('change', (e) => {
+                    this.video.playbackRate = parseFloat(e.target.value);
+                    this.logMessage(`🎬 Playback speed: ${e.target.value}x`);
+                });
+            }
+
+            async handleVideoUpload(file) {
+                this.logMessage(`🚀 handleVideoUpload called with file: ${file ? file.name : 'null'}`);
+                
+                // Validate file
+                const validationResult = this.validateFile(file);
+                if (!validationResult.valid) {
+                    this.logMessage(`❌ Validation failed: ${validationResult.error}`);
+                    this.showUploadError(validationResult.error);
+                    return;
+                }
+
+                this.logMessage(`✅ File validation passed`);
+                this.currentFile = file;
+                this.showUploadProgress();
+                this.logMessage(`📁 Starting upload: ${file.name} (${this.formatFileSize(file.size)})`);
+                
+                try {
+                    // Simulate realistic upload with actual file processing
+                    await this.simulateUploadWithProgress(file);
+                    
+                    // Process the video file
+                    await this.processVideoFile(file);
+                    
+                    this.showUploadSuccess();
+                    this.logMessage('✅ Video upload and processing complete');
+                    
+                } catch (error) {
+                    this.showUploadError(error.message);
+                    this.logMessage(`❌ Upload failed: ${error.message}`);
+                }
+            }
+
+            validateFile(file) {
+                this.logMessage(`🔍 Validating file: ${file.name} (${file.type})`);
+                
+                // Check file type
+                if (!this.supportedFormats.includes(file.type)) {
+                    return {
+                        valid: false,
+                        error: `Unsupported format: ${file.type}. Please use MP4, MOV, or M4V.`
+                    };
+                }
+
+                // Check file size
+                if (file.size > this.maxFileSize) {
+                    return {
+                        valid: false,
+                        error: `File too large: ${this.formatFileSize(file.size)}. Maximum size is ${this.formatFileSize(this.maxFileSize)}.`
+                    };
+                }
+
+                // Check if file is actually a video
+                if (!file.type.startsWith('video/')) {
+                    return {
+                        valid: false,
+                        error: 'Selected file is not a video. Please choose a video file.'
+                    };
+                }
+
+                // Additional codec/format checks
+                const fileName = file.name.toLowerCase();
+                const hasValidExtension = fileName.endsWith('.mp4') || fileName.endsWith('.mov') || fileName.endsWith('.m4v');
+                
+                if (!hasValidExtension) {
+                    return {
+                        valid: false,
+                        error: 'File extension not supported. Please use .mp4, .mov, or .m4v files.'
+                    };
+                }
+
+                // Warn about potential codec issues for certain formats
+                if (file.type === 'video/quicktime' || fileName.endsWith('.mov')) {
+                    this.logMessage(`⚠️ MOV files may have codec compatibility issues. MP4 is recommended.`);
+                }
+
+                this.logMessage(`✅ File validation passed`);
+                return { valid: true };
+            }
+
+            async simulateUploadWithProgress(file) {
+                return new Promise((resolve) => {
+                    let progress = 0;
+                    const fileSize = file.size;
+                    const uploadSpeed = 1024 * 1024 * 2; // Simulate 2MB/s upload speed
+                    const totalTime = (fileSize / uploadSpeed) * 1000; // Convert to milliseconds
+                    const updateInterval = 100; // Update every 100ms
+                    const progressStep = (uploadSpeed * updateInterval / 1000) / fileSize * 100;
+
+                    const uploadInterval = setInterval(() => {
+                        progress += progressStep;
+                        
+                        if (progress >= 100) {
+                            progress = 100;
+                            clearInterval(uploadInterval);
+                            
+                            // Update final progress
+                            this.updateUploadProgress(progress, 'Upload complete - Processing video...', '2.1 MB/s');
+                            
+                            setTimeout(resolve, 500);
+                        } else {
+                            const currentSpeed = `${(uploadSpeed / (1024 * 1024)).toFixed(1)} MB/s`;
+                            const eta = ((100 - progress) / progressStep * updateInterval / 1000).toFixed(0);
+                            this.updateUploadProgress(
+                                progress, 
+                                `Uploading... ${progress.toFixed(0)}% complete`,
+                                `${currentSpeed} • ETA: ${eta}s`
+                            );
+                        }
+                    }, updateInterval);
+                });
+            }
+
+            async processVideoFile(file) {
+                this.logMessage(`🎬 Processing video file: ${file.name}`);
+                this.logMessage(`📄 File type: ${file.type}`);
+                this.logMessage(`📊 File size: ${this.formatFileSize(file.size)}`);
+                
+                // Create object URL for the video
+                const videoURL = URL.createObjectURL(file);
+                this.logMessage(`🔗 Created object URL: ${videoURL.substring(0, 50)}...`);
+                
+                // Clear any existing source
+                this.video.removeAttribute('src');
+                this.video.load();
+                
+                // Set new source
+                this.video.src = videoURL;
+                this.logMessage(`✅ Video src set, waiting for metadata...`);
+                
+                // Wait for video to load
+                await new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => {
+                        this.logMessage(`⏰ Video load timeout after 10 seconds`);
+                        reject(new Error('Video load timeout'));
+                    }, 10000);
+                    
+                    this.video.addEventListener('loadedmetadata', () => {
+                        clearTimeout(timeout);
+                        this.logMessage(`📊 Video metadata loaded - duration: ${this.video.duration}s, readyState: ${this.video.readyState}`);
+                        resolve();
+                    }, { once: true });
+                    
+                    this.video.addEventListener('error', (e) => {
+                        clearTimeout(timeout);
+                        const error = this.video.error;
+                        let errorMessage = 'Video load failed';
+                        let suggestion = '';
+                        
+                        if (error) {
+                            this.logMessage(`❌ Video error code: ${error.code}`);
+                            this.logMessage(`🔍 Error message: ${error.message || 'Unknown'}`);
+                            
+                            // Provide specific guidance based on error
+                            switch (error.code) {
+                                case 3: // MEDIA_ERR_DECODE
+                                    errorMessage = 'Video codec not supported by browser';
+                                    suggestion = 'Try converting to MP4 with H.264 codec';
+                                    break;
+                                case 4: // MEDIA_ERR_SRC_NOT_SUPPORTED
+                                    errorMessage = 'Video format not supported';
+                                    suggestion = 'Use MP4 format with standard codecs (H.264/AAC)';
+                                    break;
+                                default:
+                                    errorMessage = error.message || 'Video playback error';
+                                    suggestion = 'Try a different video file or convert to MP4';
+                            }
+                        }
+                        
+                        // Check for specific DEMUXER error
+                        const errorString = e.toString() || '';
+                        if (errorString.includes('DEMUXER_ERROR') || errorString.includes('FFmpegDemuxer')) {
+                            errorMessage = 'Video codec incompatible with browser';
+                            suggestion = 'Convert video to MP4 with H.264 video and AAC audio codecs';
+                            this.logMessage(`🔧 Codec suggestion: Use HandBrake or FFmpeg to convert to web-compatible format`);
+                        }
+                        
+                        this.logMessage(`❌ ${errorMessage}`);
+                        if (suggestion) {
+                            this.logMessage(`💡 Suggestion: ${suggestion}`);
+                        }
+                        
+                        reject(new Error(`${errorMessage}. ${suggestion}`));
+                    }, { once: true });
+                    
+                    this.video.addEventListener('loadstart', () => {
+                        this.logMessage(`🎬 Video load started`);
+                    }, { once: true });
+                    
+                    this.video.addEventListener('canplaythrough', () => {
+                        this.logMessage(`✅ Video can play through`);
+                    }, { once: true });
+                });
+
+                // Update UI
+                document.getElementById('no-video-placeholder').style.display = 'none';
+                document.getElementById('video-info').classList.remove('hidden');
+                document.getElementById('analysis-controls').classList.remove('hidden');
+                
+                // Extract and display video metadata
+                this.displayVideoInfo(file);
+                
+                // Enable controls
+                this.enableControls();
+
+                // Update video title
+                document.getElementById('video-title').textContent = file.name;
+            }
+
+            displayVideoInfo(file) {
+                document.getElementById('video-format').textContent = file.type;
+                document.getElementById('video-size').textContent = this.formatFileSize(file.size);
+                
+                // Duration will be set by updateVideoControls when metadata loads
+                // Resolution will be set by updateVideoControls when metadata loads
+            }
+
+            updateUploadProgress(percentage, message, speed) {
+                const progressFill = document.getElementById('upload-progress-fill');
+                const progressText = document.getElementById('upload-progress-text');
+                const speedText = document.getElementById('upload-speed');
+                
+                progressFill.style.width = percentage + '%';
+                progressText.textContent = message;
+                speedText.textContent = speed;
+            }
+
+            showUploadProgress() {
+                const uploadZone = document.getElementById('upload-zone');
+                uploadZone.className = 'video-upload-zone uploading rounded-lg p-6 text-center mb-4';
+                
+                // Hide other states
+                document.getElementById('upload-content').classList.add('hidden');
+                document.getElementById('upload-success').classList.add('hidden');
+                document.getElementById('upload-error').classList.add('hidden');
+                
+                // Show progress
+                document.getElementById('upload-progress').classList.remove('hidden');
+            }
+
+            showUploadSuccess() {
+                const uploadZone = document.getElementById('upload-zone');
+                uploadZone.className = 'video-upload-zone success rounded-lg p-6 text-center mb-4';
+                
+                // Hide other states
+                document.getElementById('upload-content').classList.add('hidden');
+                document.getElementById('upload-progress').classList.add('hidden');
+                document.getElementById('upload-error').classList.add('hidden');
+                
+                // Show success
+                document.getElementById('upload-success').classList.remove('hidden');
+            }
+
+            showUploadError(errorMessage) {
+                const uploadZone = document.getElementById('upload-zone');
+                uploadZone.className = 'video-upload-zone error rounded-lg p-6 text-center mb-4';
+                
+                // Hide other states
+                document.getElementById('upload-content').classList.add('hidden');
+                document.getElementById('upload-progress').classList.add('hidden');
+                document.getElementById('upload-success').classList.add('hidden');
+                
+                // Show error with enhanced message
+                document.getElementById('upload-error').classList.remove('hidden');
+                
+                // Enhanced error message with troubleshooting
+                const errorDiv = document.getElementById('error-message');
+                if (errorMessage.includes('codec') || errorMessage.includes('DEMUXER') || errorMessage.includes('format')) {
+                    errorDiv.innerHTML = `
+                        <div class="text-red-400 mb-2">${errorMessage}</div>
+                        <div class="text-yellow-300 text-xs mb-2">🔧 Quick Fix:</div>
+                        <div class="text-gray-300 text-xs mb-2">
+                            • Use MP4 format with H.264 video codec<br>
+                            • Record with standard settings on your device<br>
+                            • Try a different video file
+                        </div>
+                        <div class="text-blue-300 text-xs">
+                            💡 Most phone recordings work best when saved as MP4
+                        </div>
+                    `;
+                } else {
+                    errorDiv.textContent = errorMessage;
+                }
+            }
+
+            loadDemoVideo() {
+                this.logMessage('🎯 Loading demo video for testing...');
+                this.logMessage('📋 Initializing mock Clash Royale battle data...');
+                
+                // Create mock battle scenario
+                this.logMessage('⚔️ Battle Type: Ladder Match');
+                this.logMessage('🏆 Trophy Range: 5,400-5,500');
+                this.logMessage('🎴 Player Deck: Wizard Cycle (2.8 avg elixir)');
+                this.logMessage('🎴 Opponent Deck: Golem Beatdown (4.1 avg elixir)');
+                
+                // Simulate video processing
+                setTimeout(() => {
+                    this.logMessage('📊 Video metadata extracted successfully');
+                    this.logMessage('🎬 Duration: 2:45 | Resolution: 360x640 | FPS: 30');
+                    this.logMessage('✅ Demo video ready for analysis');
+                    
+                    // Set up functional demo video
+                    this.setupDemoVideo();
+                }, 1000);
+            }
+
+            setupDemoVideo() {
+                const video = this.video;
+                let isPlaying = false;
+                let currentTime = 0;
+                let timeUpdateInterval = null;
+                const duration = 165; // 2:45 battle duration
+                
+                // Clear existing source
+                video.src = '';
+                video.load();
+                
+                // Set up mock properties that actually work
+                Object.defineProperty(video, 'duration', { value: duration, configurable: true, writable: true });
+                Object.defineProperty(video, 'currentTime', { 
+                    get: () => currentTime,
+                    set: (val) => { 
+                        currentTime = Math.max(0, Math.min(duration, val));
+                        this.updateTimeDisplay();
+                    },
+                    configurable: true 
+                });
+                Object.defineProperty(video, 'videoWidth', { value: 360, configurable: true });
+                Object.defineProperty(video, 'videoHeight', { value: 640, configurable: true });
+                Object.defineProperty(video, 'readyState', { value: 4, configurable: true });
+                Object.defineProperty(video, 'paused', { 
+                    get: () => !isPlaying,
+                    configurable: true 
+                });
+                Object.defineProperty(video, 'playbackRate', { 
+                    value: 1,
+                    writable: true,
+                    configurable: true 
+                });
+                
+                // Mock playback controls with proper logging
+                video.play = () => {
+                    return new Promise((resolve) => {
+                        isPlaying = true;
+                        this.logMessage('▶️ Demo video playback started');
+                        this.logMessage(`⏱️ Playing from ${this.formatTime(currentTime)}`);
+                        
+                        // Start time progression
+                        timeUpdateInterval = setInterval(() => {
+                            if (isPlaying && currentTime < duration) {
+                                currentTime += 0.1 * video.playbackRate;
+                                this.updateTimeDisplay();
+                            } else if (currentTime >= duration) {
+                                clearInterval(timeUpdateInterval);
+                                isPlaying = false;
+                                currentTime = duration;
+                                document.getElementById('play-pause').textContent = '▶️';
+                                this.logMessage('🏁 Demo video playback completed');
+                            }
+                        }, 100);
+                        
+                        resolve();
+                    });
+                };
+                
+                video.pause = () => {
+                    isPlaying = false;
+                    if (timeUpdateInterval) {
+                        clearInterval(timeUpdateInterval);
+                        timeUpdateInterval = null;
+                    }
+                    this.logMessage(`⏸️ Demo video paused at ${this.formatTime(currentTime)}`);
+                };
+                
+                // Enhanced demo display with battle info
+                const placeholder = document.getElementById('no-video-placeholder');
+                placeholder.innerHTML = `
+                    <div class="text-center">
+                        <div class="text-6xl mb-4">🎮</div>
+                        <div class="text-xl font-bold mb-2 text-green-400">DEMO BATTLE LOADED</div>
+                        <div class="text-gray-400 mb-4">Wizard Cycle vs Golem Beatdown</div>
+                        <div class="bg-gradient-to-r from-blue-900 to-purple-900 rounded p-4 mb-4 text-sm">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <div class="text-blue-300 font-bold mb-1">Player</div>
+                                    <div>🧙‍♂️ Wizard Cycle</div>
+                                    <div>🏆 5,432 Trophies</div>
+                                    <div>⚡ 2.8 Avg Elixir</div>
+                                </div>
+                                <div>
+                                    <div class="text-red-300 font-bold mb-1">Opponent</div>
+                                    <div>🗿 Golem Beatdown</div>
+                                    <div>🏆 5,456 Trophies</div>
+                                    <div>⚡ 4.1 Avg Elixir</div>
+                                </div>
+                            </div>
+                            <div class="mt-3 text-center text-yellow-300 text-xs">
+                                ⚔️ Ladder Match • Duration: 2:45 • Arena: Legendary
+                            </div>
+                        </div>
+                        <div class="text-xs text-blue-400">All controls and analysis features functional!</div>
+                        <div class="text-xs text-green-400 mt-1">Click Play to test video controls</div>
+                    </div>
+                `;
+                
+                // Update UI
+                document.getElementById('video-info').classList.remove('hidden');
+                document.getElementById('analysis-controls').classList.remove('hidden');
+                
+                // Set demo video info
+                document.getElementById('video-format').textContent = 'Demo MP4 (H.264/AAC)';
+                document.getElementById('video-size').textContent = '15.2 MB';
+                document.getElementById('video-title').textContent = 'Ladder: Wizard Cycle vs Golem Beatdown';
+                document.getElementById('video-duration').textContent = this.formatTime(duration);
+                document.getElementById('video-resolution').textContent = '360x640';
+                
+                this.enableControls();
+                this.showUploadSuccess();
+                
+                // Final setup logging
+                this.logMessage('🎮 Demo battle environment ready');
+                this.logMessage('🎯 Click "Analyze Current Frame" to test AI features');
+                this.logMessage('📊 Click "Start AI Analysis" to simulate full analysis');
+                this.logMessage('⚡ All video controls (play/pause/seek) are functional');
+                
+                // Initialize controls properly
+                this.updateVideoControls();
+                
+                // Populate Frame Analysis and Full Video Analysis sections
+                this.populateDemoAnalysisSections();
+            }
+
+            populateDemoAnalysisSections() {
+                // Populate Frame Analysis
+                const frameAnalysis = document.getElementById('frame-analysis');
+                frameAnalysis.innerHTML = `
+                    <div class="flex justify-between mb-2">
+                        <span>Time:</span>
+                        <span class="font-bold">1:23</span>
+                    </div>
+                    <div class="flex justify-between mb-2">
+                        <span>Cards Detected:</span>
+                        <span class="font-bold text-green-400">3</span>
+                    </div>
+                    <div class="flex justify-between mb-2">
+                        <span>Wizard Placement:</span>
+                        <span class="font-bold text-yellow-400">87% Optimal</span>
+                    </div>
+                    <div class="flex justify-between mb-2">
+                        <span>Elixir State:</span>
+                        <span class="font-bold text-purple-400">7/10</span>
+                    </div>
+                    <div class="text-xs text-gray-400 mt-2">
+                        💡 Suggestion: Place 1 tile higher for better splash coverage
+                    </div>
+                `;
+                
+                // Populate Full Video Analysis
+                const fullAnalysis = document.getElementById('full-analysis');
+                fullAnalysis.innerHTML = `
+                    <div class="space-y-2 text-xs">
+                        <div class="flex justify-between">
+                            <span>Overall Performance:</span>
+                            <span class="font-bold text-green-400">Good (78%)</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Best Play:</span>
+                            <span class="text-blue-400">Wizard counter @ 1:23</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Missed Opportunity:</span>
+                            <span class="text-yellow-400">Fireball value @ 2:15</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Elixir Efficiency:</span>
+                            <span class="text-green-400">+12 advantage</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Card Accuracy:</span>
+                            <span class="text-blue-400">6/8 optimal</span>
+                        </div>
+                        <div class="mt-3 p-2 bg-blue-900 rounded">
+                            <strong>� Key Insight:</strong> Great defensive positioning, work on offensive timing
+                        </div>
+                        <div class="mt-2 p-2 bg-green-900 rounded">
+                            <strong>✅ Strength:</strong> Excellent counter-play with Wizard
+                        </div>
+                        <div class="mt-2 p-2 bg-yellow-900 rounded">
+                            <strong>⚠️ Area for Improvement:</strong> Elixir management during rushes
+                        </div>
+                    </div>
+                `;
+                
+                this.logMessage('📊 Frame Analysis populated with demo data');
+                this.logMessage('📈 Full Video Analysis completed with insights');
+                this.logMessage('✅ All analysis sections now have demo content');
+            }
+
+            resetUploadState() {
+                // Reset upload state logic can be added here
+            }
+
+            analyzeCurrentFrame() {
+                if (!this.video.src) {
+                    this.logMessage('⚠️ No video loaded for frame analysis');
+                    return;
+                }
+
+                const currentTime = this.video.currentTime;
+                this.logMessage(`🎯 Analyzing frame at ${this.formatTime(currentTime)}`);
+                
+                // Show analysis result
+                document.getElementById('frame-analysis-result').classList.remove('hidden');
+                
+                // Simulate frame analysis with enhanced data
+                setTimeout(() => {
+                    const frameData = this.generateFrameAnalysisData(currentTime);
+                    this.displayFrameAnalysis(frameData);
+                    this.logMessage('✅ Frame analysis complete');
+                }, 800);
+            }
+
+            generateFrameAnalysisData(currentTime) {
+                // Generate realistic frame analysis data based on video time
+                const gameTimeMinutes = Math.floor(currentTime / 60);
+                const gameTimeSeconds = Math.floor(currentTime % 60);
+                const gameTime = `${gameTimeMinutes}:${gameTimeSeconds.toString().padStart(2, '0')}`;
+                
+                const elixirOptions = ['5/10', '6/10', '7/10', '8/10', '9/10', '10/10'];
+                const cardCombinations = [
+                    'Wizard, Giant, Archers',
+                    'Hog Rider, Fireball, Zap',
+                    'Golem, Baby Dragon, Lightning',
+                    'Balloon, Freeze, Minions',
+                    'Knight, Archers, Fireball'
+                ];
+                
+                return {
+                    gameTime: gameTime,
+                    elixir: elixirOptions[Math.floor(Math.random() * elixirOptions.length)],
+                    cardsDetected: cardCombinations[Math.floor(Math.random() * cardCombinations.length)],
+                    confidence: `${85 + Math.floor(Math.random() * 15)}%`,
+                    boardState: this.generateBoardState(),
+                    recommendations: this.generateRecommendations()
+                };
+            }
+
+            generateBoardState() {
+                const states = [
+                    'Balanced - Equal elixir advantage',
+                    'Defensive - Opponent pushing',
+                    'Offensive - Counter-attack opportunity',
+                    'Neutral - Building elixir advantage'
+                ];
+                return states[Math.floor(Math.random() * states.length)];
+            }
+
+            generateRecommendations() {
+                const recommendations = [
+                    'Consider placing defensive unit behind tower',
+                    'Good time for counter-push opportunity',
+                    'Wait for opponent to commit more elixir',
+                    'Place spell to support your push',
+                    'Defensive positioning recommended'
+                ];
+                return recommendations[Math.floor(Math.random() * recommendations.length)];
+            }
+
+            displayFrameAnalysis(data) {
+                document.getElementById('game-time').textContent = data.gameTime;
+                document.getElementById('elixir-detected').textContent = data.elixir;
+                document.getElementById('cards-detected').textContent = data.cardsDetected;
+                document.getElementById('detection-confidence').textContent = data.confidence;
+                
+                // Update analysis status
+                const statusDiv = document.getElementById('analysis-status');
+                statusDiv.innerHTML = `
+                    <div class="text-center">
+                        <div class="text-3xl mb-2">🎯</div>
+                        <div class="font-bold text-green-400">Frame Analysis Complete</div>
+                        <div class="text-sm text-gray-400">${data.boardState}</div>
+                        <div class="text-xs text-blue-400 mt-2">${data.recommendations}</div>
+                    </div>
+                `;
+            }
+
+            analyzeCurrentMoment() {
+                if (!this.video.src) {
+                    this.logMessage('⚠️ No video loaded for moment analysis');
+                    return;
+                }
+
+                const currentTime = this.video.currentTime;
+                this.logMessage(`🎯 Analyzing placement moment at ${this.formatTime(currentTime)}`);
+                
+                // Show analysis results
+                document.getElementById('frame-analysis-result').classList.remove('hidden');
+                document.getElementById('placement-analysis').classList.remove('hidden');
+                
+                // Simulate analysis with realistic data
+                setTimeout(() => {
+                    const analysisData = this.generatePlacementAnalysis(currentTime);
+                    this.displayAnalysisResults(analysisData);
+                    this.logMessage('✅ Placement analysis complete - High confidence results');
+                }, 1500);
+            }
+
+            generatePlacementAnalysis(currentTime) {
+                const cards = ['🧙‍♂️ Wizard', '⚔️ Knight', '🏹 Archers', '🐷 Hog Rider', '💥 Fireball', '⚡ Zap'];
+                const placedCard = cards[Math.floor(Math.random() * cards.length)];
+                const score = (7 + Math.random() * 3).toFixed(1); // 7.0 - 10.0
+                
+                const feedbackOptions = [
+                    'Excellent placement! Optimal positioning for maximum value.',
+                    'Good placement! Consider 1 tile adjustment for better coverage.',
+                    'Solid choice! This position covers key defensive angles.',
+                    'Great timing! Perfect counter to opponent\'s strategy.',
+                    'Strong placement! Maximizes damage while staying safe.'
+                ];
+                
+                return {
+                    gameTime: this.formatTime(currentTime),
+                    elixir: '7/10',
+                    cardsDetected: 'Multiple units detected',
+                    confidence: '94%',
+                    placedCard: placedCard,
+                    optimalityScore: `${score}/10`,
+                    strategicValue: score > 8.5 ? 'Excellent' : score > 7.5 ? 'Good' : 'Fair',
+                    feedback: feedbackOptions[Math.floor(Math.random() * feedbackOptions.length)]
+                };
+            }
+
+            updateVideoControls() {
+                if (this.video.duration) {
+                    document.getElementById('video-duration').textContent = this.formatTime(this.video.duration);
+                    document.getElementById('video-resolution').textContent = `${this.video.videoWidth}x${this.video.videoHeight}`;
+                    
+                    // Set timeline max value
+                    document.getElementById('video-timeline').max = 100;
+                }
+            }
+
+            updateTimeDisplay() {
+                if (this.video.duration) {
+                    const current = this.video.currentTime;
+                    const duration = this.video.duration;
+                    document.getElementById('time-display').textContent = 
+                        `${this.formatTime(current)} / ${this.formatTime(duration)}`;
+                    
+                    // Update timeline
+                    const progress = (current / duration) * 100;
+                    document.getElementById('video-timeline').value = progress;
+                }
+            }
+
+            enableControls() {
+                const controls = [
+                    'play-pause', 'frame-prev', 'frame-next', 'playback-speed', 
+                    'video-timeline', 'analyze-moment', 'start-analysis', 'frame-analysis'
+                ];
+                controls.forEach(id => {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        element.disabled = false;
+                    }
+                });
+            }
+
+            simulateUploadProgress(callback) {
+                let progress = 0;
+                const progressFill = document.getElementById('progress-fill');
+                const progressText = document.getElementById('progress-text');
+                
+                const steps = [
+                    { progress: 15, text: 'Validating video format...' },
+                    { progress: 30, text: 'Uploading to server...' },
+                    { progress: 50, text: 'Processing video data...' },
+                    { progress: 70, text: 'Extracting metadata...' },
+                    { progress: 85, text: 'Preparing for analysis...' },
+                    { progress: 100, text: 'Upload complete!' }
+                ];
+                
+                let stepIndex = 0;
+                const interval = setInterval(() => {
+                    if (stepIndex < steps.length) {
+                        const step = steps[stepIndex];
+                        progressFill.style.width = step.progress + '%';
+                        progressText.textContent = step.text;
+                        stepIndex++;
+                    } else {
+                        clearInterval(interval);
+                        callback();
+                    }
+                }, 600);
+            }
+
+            displayAnalysisResults(data) {
+                // Update frame analysis data
+                document.getElementById('game-time').textContent = data.gameTime;
+                document.getElementById('elixir-detected').textContent = data.elixir;
+                document.getElementById('cards-detected').textContent = data.cardsDetected;
+                document.getElementById('detection-confidence').textContent = data.confidence;
+                
+                // Update placement analysis data (if available)
+                if (data.placedCard) {
+                    document.getElementById('placed-card').textContent = data.placedCard;
+                    document.getElementById('optimality-score').textContent = data.optimalityScore;
+                    document.getElementById('strategic-value').textContent = data.strategicValue;
+                    document.getElementById('placement-feedback').textContent = data.feedback;
+                }
+            }
+
+            startFullAnalysis() {
+                if (!this.video.src) {
+                    this.logMessage('⚠️ No video loaded for full analysis');
+                    return;
+                }
+
+                this.logMessage('🤖 Starting full video analysis...');
+                this.logMessage('⚙️ Loading AI models...');
+                this.logMessage('🔍 Scanning for placement moments...');
+                
+                setTimeout(() => {
+                    this.logMessage('📊 Found 8 significant placement moments');
+                    this.logMessage('🎯 Analysis complete - Ready for review');
+                    
+                    // Show comprehensive results
+                    const resultsContainer = document.getElementById('analysis-results');
+                    resultsContainer.innerHTML = `
+                        <div class="bg-gray-800 rounded-lg p-6 mb-4">
+                            <h3 class="text-xl font-bold text-blue-400 mb-4">📊 Full Analysis Results</h3>
+                            <div class="grid grid-cols-2 gap-4 mb-4">
+                                <div class="bg-gray-700 p-4 rounded">
+                                    <div class="text-green-400 font-bold">Performance Score</div>
+                                    <div class="text-2xl text-white">8.3/10</div>
+                                </div>
+                                <div class="bg-gray-700 p-4 rounded">
+                                    <div class="text-blue-400 font-bold">Key Moments</div>
+                                    <div class="text-2xl text-white">8</div>
+                                </div>
+                            </div>
+                            <div class="text-sm text-gray-400">Analysis complete with high confidence ratings</div>
+                        </div>
+                    `;
+                    resultsContainer.classList.remove('hidden');
+                }, 3000);
+            }
+
+            togglePlayback() {
+                this.logMessage(`🎥 Toggle playback called - video.src: ${this.video.src ? 'exists' : 'missing'}`);
+                
+                if (!this.video.src) {
+                    this.logMessage('⚠️ No video loaded');
+                    return;
+                }
+                
+                const btn = document.getElementById('play-pause');
+                this.logMessage(`🎮 Video state - paused: ${this.video.paused}, readyState: ${this.video.readyState}`);
+                
+                if (this.video.paused) {
+                    this.logMessage('▶️ Attempting to play video...');
+                    this.video.play().then(() => {
+                        btn.textContent = '⏸️';
+                        this.logMessage('✅ Video playback started successfully');
+                    }).catch(error => {
+                        this.logMessage(`❌ Video play failed: ${error.message}`);
+                    });
+                } else {
+                    this.video.pause();
+                    btn.textContent = '▶️';
+                    this.logMessage('⏸️ Playback paused');
+                }
+            }
+
+            stepFrame(direction) {
+                if (!this.video.src) {
+                    this.logMessage('⚠️ No video loaded');
+                    return;
+                }
+                
+                const frameTime = 1/30; // 30 FPS
+                const newTime = Math.max(0, Math.min(this.video.duration, 
+                    this.video.currentTime + (direction * frameTime)));
+                
+                this.video.currentTime = newTime;
+                this.logMessage(`🎞️ ${direction > 0 ? 'Next' : 'Previous'} frame: ${this.formatTime(newTime)}`);
+            }
+
+            changePlaybackSpeed() {
+                const speedSelect = document.getElementById('playback-speed');
+                const speed = parseFloat(speedSelect.value);
+                this.video.playbackRate = speed;
+                this.logMessage(`⚡ Playback speed: ${speed}x`);
+            }
+
+            seekToTime(percentage) {
+                if (!this.video.duration) return;
+                
+                const newTime = (percentage / 100) * this.video.duration;
+                this.video.currentTime = newTime;
+                this.logMessage(`⏭️ Seeked to: ${this.formatTime(newTime)}`);
+            }
+
+            logMessage(message) {
+                const console = document.getElementById('processing-log');
+                if (!console) {
+                    // Fallback to browser console if element not found
+                    console.log('📝 ' + message);
+                    return;
+                }
+                
+                const timestamp = new Date().toLocaleTimeString();
+                const logEntry = document.createElement('div');
+                logEntry.className = 'text-sm text-gray-300 border-l-2 border-blue-500 pl-3 py-1';
+                logEntry.innerHTML = `<span class="text-gray-500">[${timestamp}]</span> ${message}`;
+                
+                console.appendChild(logEntry);
+                console.scrollTop = console.scrollHeight;
+                
+                // Limit console to last 50 messages
+                while (console.children.length > 50) {
+                    console.removeChild(console.firstChild);
+                }
+            }
+
+            formatTime(seconds) {
+                if (!seconds || isNaN(seconds)) return '0:00';
+                const minutes = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${minutes}:${secs.toString().padStart(2, '0')}`;
+            }
+
+            formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+        }
+
+        // Initialize the system when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 DOM Content Loaded - Starting initialization');
+            
+            // Test basic console functionality
+            const testConsole = document.getElementById('processing-log');
+            if (testConsole) {
+                testConsole.innerHTML = '<div class="text-green-400">🟢 JavaScript is working - System initializing...</div>';
+                console.log('✅ Console element found');
+            } else {
+                console.log('❌ Console element not found');
+            }
+
+            // Initialize the video analysis system
+            try {
+                window.videoAnalysisSystem = new VideoAnalysisDevSystem();
+                console.log('✅ VideoAnalysisDevSystem created successfully');
+            } catch (error) {
+                console.log('❌ Error creating VideoAnalysisDevSystem:', error);
+                if (testConsole) {
+                    testConsole.innerHTML += '<div class="text-red-400">❌ System initialization failed: ' + error.message + '</div>';
+                }
+            }
+            
+            // Tab switching functionality
+            window.switchTab = function(tab) {
+                console.log('Switching to tab:', tab);
+                // Hide all tab contents
+                document.querySelectorAll('[id$="-tab"]').forEach(tabContent => {
+                    tabContent.classList.add('hidden');
+                });
+                
+                // Remove active class from all buttons
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.classList.remove('bg-blue-600');
+                    btn.classList.add('bg-gray-700');
+                });
+                
+                // Show selected tab
+                document.getElementById(tab + '-tab').classList.remove('hidden');
+                
+                // Activate selected button
+                event.target.classList.remove('bg-gray-700');
+                event.target.classList.add('bg-blue-600');
+            };
+            
+            console.log('🔧 OptiRoyale Development System Setup Complete');
+        });
+    </script>
+</body>
+</html>

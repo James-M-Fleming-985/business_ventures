@@ -1,0 +1,176 @@
+/* Main styling for the Financial Optimizer application */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f5f7fa;
+    color: #333;
+}
+
+.header {
+    background-color: #1a365d;
+    color: white;
+    padding: 1rem 0;
+    margin-bottom: 2rem;
+}
+
+.metric-card {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+    margin-bottom: 1rem;
+}
+
+.control-panel {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+}
+
+/* Add any additional styling you need here */
+"@ | Out-File -FilePath "financial_optimizer\assets\css\style.css"
+
+/* Tab scrolling styles */
+#main-tabs .nav-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    white-space: nowrap;
+    scrollbar-width: thin;
+}
+
+#main-tabs .nav-tabs .nav-item {
+    float: none;
+}
+
+#main-tabs .nav-tabs::-webkit-scrollbar {
+    height: 4px;
+}
+
+#main-tabs .nav-tabs::-webkit-scrollbar-thumb {
+    background-color: rgba(0,0,0,0.2);
+}
+
+/* Add after the tab scrolling styles */
+
+/* Dashboard Styles */
+.dashboard-container {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 5px;
+}
+
+.dashboard-card {
+    background: white;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    padding: 15px;
+    overflow: hidden;
+}
+
+.dashboard-card h5 {
+    font-size: 1rem;
+    margin-bottom: 15px;
+    font-weight: 500;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+.dashboard-metric {
+    padding: 10px;
+    border-radius: 5px;
+    background: #f8f9fa;
+    height: 100%;
+}
+
+.dashboard-metric h6 {
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 10px;
+    color: #495057;
+}
+
+.dashboard-metric h5 {
+    font-size: 1.1rem;
+    margin: 0;
+    font-weight: 600;
+    color: #212529;
+    border: none;
+    padding: 0;
+}
+
+.dashboard-metric small {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+.close-btn {
+    cursor: pointer;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
+
+.close-btn:hover {
+    opacity: 1;
+}
+
+/* Add this to your assets/css/style.css file */
+.grid-item {
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    padding: 0;
+    overflow: hidden;
+}
+
+.chart-container {
+    width: 100%;
+    height: 100%;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    padding: 15px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.chart-title {
+    font-size: 16px;
+    margin-bottom: 15px;
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    line-height: 1;
+    padding: 0 8px;
+    cursor: pointer;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    opacity: 0.6;
+}
+
+.close-btn:hover {
+    opacity: 1;
+}
+
+/* Fix for chart resizing */
+.js-plotly-plot, .plot-container {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* Ensure the chart containers fill available space */
+.chart-container .dash-graph {
+    flex: 1;
+    min-height: 0;
+}

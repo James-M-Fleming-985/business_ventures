@@ -1,0 +1,510 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// CORE USER MANAGEMENT
+// ============================================================================
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  username  String   @unique
+  password  String
+  avatar    String?
+  
+  // Profile Information
+  clashRoyaleTag     String?  @unique
+  trophyCount        Int?     @default(0)
+  kingLevel          Int?     @default(1)
+  favoriteArchetype  String?  // e.g., "Hog Cycle", "Golem Beatdown"
+  skillLevel         SkillLevel @default(BEGINNER)
+  
+  // Account Status
+  isEmailVerified    Boolean  @default(false)
+  isActive           Boolean  @default(true)
+  premiumExpiresAt   DateTime?
+  lastActiveAt       DateTime @default(now())
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  videos             Video[]
+  placementAnalyses  PlacementAnalysis[]
+  achievements       UserAchievement[]
+  progressTracking   ProgressTracking[]
+  subscriptions      Subscription[]
+  analyticsEvents    AnalyticsEvent[]
+  
+  @@index([email])
+  @@index([clashRoyaleTag])
+  @@index([lastActiveAt])
+  @@map("users")
+}
+
+enum SkillLevel {
+  BEGINNER     // 0-4000 trophies
+  INTERMEDIATE // 4000-6000 trophies  
+  ADVANCED     // 6000-7000 trophies
+  EXPERT       // 7000+ trophies
+  PROFESSIONAL // Top 10K players
+}
+
+// ============================================================================
+// VIDEO MANAGEMENT & PROCESSING
+// ============================================================================
+
+model Video {
+  id          String   @id @default(cuid())
+  userId      String
+  
+  // Video Metadata
+  filename    String
+  originalName String
+  fileSize    Int      // Size in bytes
+  duration    Float?   // Duration in seconds
+  resolution  String?  // e.g., "1920x1080"
+  fps         Int?     // Frames per second
+  
+  // Processing Status
+  status      VideoStatus @default(UPLOADED)
+  processingStartedAt DateTime?
+  processingCompletedAt DateTime?
+  errorMessage String?
+  
+  // Game Context
+  gameMode    String?  // e.g., "Ladder", "Tournament", "2v2"
+  matchResult MatchResult?
+  playerDeck  Json?    // Array of 8 card IDs
+  opponentDeck Json?   // If detected
+  
+  // Storage
+  azureBlobUrl     String
+  thumbnailUrl     String?
+  processedVideoUrl String?
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  user              User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  placementAnalyses PlacementAnalysis[]
+  
+  @@index([status])
+  @@index([userId, createdAt])
+  @@map("videos")
+}
+
+enum VideoStatus {
+  UPLOADED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum MatchResult {
+  WIN
+  LOSS
+  DRAW
+}
+
+// ============================================================================
+// CORE FEATURE: PLACEMENT ANALYSIS SYSTEM
+// ============================================================================
+
+model PlacementAnalysis {
+  id       String @id @default(cuid())
+  userId   String
+  videoId  String
+  
+  // Analysis Context
+  frameTimestamp Float    // Timestamp in video (seconds)
+  gameTimestamp  Float?   // Timestamp in match (seconds)
+  elixirCount    Int?     // Player's elixir at moment
+  opponentElixir Int?     // Opponent's elixir (if detected)
+  
+  // Card Placement Details
+  placedCard     String   // Card ID that was placed
+  userPlacement  Json     // {x: number, y: number} - tile coordinates
+  
+  // AI Analysis Results
+  optimalPlacement    Json     // {x: number, y: number} - optimal tile coordinates
+  placementScore      Float    // 1-10 score for user's placement
+  confidenceLevel     Float    // 0-1 AI confidence in analysis
+  
+  // Feedback & Reasoning
+  feedbackMessage     String   // e.g., "Good placement! Consider 1 tile left for better targeting"
+  strategicReasoning  String   // Detailed explanation of why placement was good/bad
+  improvementTip      String?  // Specific tip for improvement
+  
+  // Game State Context (JSON for flexibility)
+  boardState         Json     // Units, towers, etc. at analysis moment
+  tacticalSituation  String?  // e.g., "Defending push", "Counter-attacking"
+  
+  // Learning Metrics
+  userRating         Int?     // User's rating of analysis helpfulness (1-5)
+  wasHelpful         Boolean? // Did user find this analysis helpful?
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  card  Card  @relation("PlacedCard", fields: [placedCard], references: [id])
+  
+  @@index([userId, createdAt])
+  @@index([videoId])
+  @@index([placedCard])
+  @@index([placementScore])
+  @@map("placement_analyses")
+}
+
+// ============================================================================
+// PROGRESS TRACKING & USER IMPROVEMENT
+// ============================================================================
+
+model ProgressTracking {
+  id     String @id @default(cuid())
+  userId String
+  
+  // Time Period
+  trackingDate    DateTime // Daily tracking
+  weekNumber      Int      // Week of year for weekly aggregation
+  monthNumber     Int      // Month for monthly aggregation
+  
+  // Placement Analysis Metrics
+  totalAnalyses           Int   @default(0)
+  averagePlacementScore   Float @default(0)
+  bestPlacementScore      Float @default(0)
+  worstPlacementScore     Float @default(0)
+  
+  // Card-Specific Improvements
+  mostAnalyzedCard        String? // Card they analyzed most
+  strongestCard           String? // Card with highest avg score
+  weakestCard            String?  // Card with lowest avg score
+  
+  // Learning Progress
+  scoreImprovement        Float  @default(0) // Change from previous period
+  consistencyScore        Float  @default(0) // How consistent their scores are
+  learningVelocity        Float  @default(0) // Rate of improvement
+  
+  // Engagement Metrics
+  sessionsCount           Int    @default(0)
+  avgSessionDuration      Float  @default(0) // Minutes
+  videosUploaded          Int    @default(0)
+  
+  // Skill Development
+  skillLevelProgress      Float  @default(0) // Progress toward next skill level
+  masteredConcepts        Json   @default("[]") // Array of strategy concepts learned
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, trackingDate])
+  @@index([userId, trackingDate])
+  @@index([weekNumber])
+  @@index([monthNumber])
+  @@map("progress_tracking")
+}
+
+// ============================================================================
+// GAMIFICATION & ACHIEVEMENTS
+// ============================================================================
+
+model Achievement {
+  id          String @id @default(cuid())
+  
+  // Achievement Details
+  name        String
+  description String
+  category    AchievementCategory
+  rarity      AchievementRarity
+  
+  // Unlock Criteria
+  unlockCriteria Json    // Flexible criteria definition
+  xpReward       Int     @default(0)
+  
+  // Display
+  iconUrl        String?
+  badgeColor     String? // For UI theming
+  
+  // Status
+  isActive       Boolean @default(true)
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  userAchievements UserAchievement[]
+  
+  @@map("achievements")
+}
+
+model UserAchievement {
+  id            String @id @default(cuid())
+  userId        String
+  achievementId String
+  
+  // Unlock Details
+  unlockedAt    DateTime @default(now())
+  progress      Float    @default(1.0) // 0-1, for partial progress tracking
+  
+  // Context
+  triggerData   Json?    // What triggered the achievement
+  
+  // Relations
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, achievementId])
+  @@map("user_achievements")
+}
+
+enum AchievementCategory {
+  PLACEMENT_MASTERY  // Placement analysis achievements
+  IMPROVEMENT        // Improvement-based achievements
+  CONSISTENCY        // Regular usage achievements
+  SOCIAL             // Sharing and community achievements
+  MILESTONE          // General milestones
+}
+
+enum AchievementRarity {
+  COMMON
+  RARE
+  EPIC
+  LEGENDARY
+  CHAMPION
+}
+
+// ============================================================================
+// SUBSCRIPTION & MONETIZATION
+// ============================================================================
+
+model Subscription {
+  id       String @id @default(cuid())
+  userId   String
+  
+  // Subscription Details
+  planType              SubscriptionPlan
+  status                SubscriptionStatus
+  
+  // Billing
+  currentPeriodStart    DateTime
+  currentPeriodEnd      DateTime
+  cancelAtPeriodEnd     Boolean @default(false)
+  
+  // Payment Integration
+  stripeCustomerId      String?
+  stripeSubscriptionId  String? @unique
+  stripePriceId         String?
+  
+  // Usage Tracking
+  analysesUsedThisPeriod Int @default(0)
+  analysesLimit          Int @default(5) // Free tier limit
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([status])
+  @@index([stripeSubscriptionId])
+  @@map("subscriptions")
+}
+
+enum SubscriptionPlan {
+  FREE
+  PREMIUM  // $9.99/month
+  PRO      // $19.99/month
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED
+  PAST_DUE
+  INCOMPLETE
+  TRIALING
+}
+
+// ============================================================================
+// ANALYTICS & EVENTS TRACKING
+// ============================================================================
+
+model AnalyticsEvent {
+  id       String @id @default(cuid())
+  userId   String?
+  
+  // Event Details
+  eventType    EventType
+  eventName    String
+  properties   Json      // Flexible event properties
+  
+  // Context
+  sessionId    String?
+  deviceInfo   Json?     // Device, OS, app version, etc.
+  userAgent    String?
+  ipAddress    String?
+  
+  // Timestamps
+  timestamp    DateTime @default(now())
+  
+  // Relations
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  @@index([eventType, timestamp])
+  @@index([userId, timestamp])
+  @@index([sessionId])
+  @@map("analytics_events")
+}
+
+enum EventType {
+  USER_ACTION      // Button clicks, navigation, etc.
+  PLACEMENT_ANALYSIS // Analysis-specific events
+  VIDEO_UPLOAD     // Video upload events
+  SUBSCRIPTION     // Subscription events
+  ACHIEVEMENT      // Achievement events
+  ERROR           // Error tracking
+  PERFORMANCE     // Performance metrics
+}
+
+// ============================================================================
+// CARD & GAME DATA (Reference Tables)
+// ============================================================================
+
+model Card {
+  id       String @id // Clash Royale card ID
+  
+  // Basic Card Details
+  name     String
+  type     CardType
+  rarity   CardRarity
+  cost     Int        // Elixir cost
+  
+  // Combat Statistics (for units/buildings)
+  hitpoints        Int?     // HP at tournament standard
+  damage           Int?     // Damage per hit
+  dps              Float?   // Damage per second
+  attackSpeed      Float?   // Attack speed in seconds
+  range            Float?   // Attack range in tiles
+  
+  // Movement & Deployment
+  speed            String?  // Fast, Medium, Slow, Very Fast, etc.
+  deployTime       Float?   // Deploy time in seconds
+  targetType       String?  // Ground, Air, Buildings, etc.
+  
+  // Area Effects (for splash units/spells)
+  splashRadius     Float?   // Splash damage radius
+  splashDamage     Int?     // Splash damage amount
+  spellRadius      Float?   // Spell effect radius
+  spellDuration    Float?   // Spell duration in seconds
+  
+  // Special Mechanics
+  count            Int?     // Number of units spawned (e.g., Skeleton Army = 15)
+  lifetime         Float?   // Building lifetime in seconds
+  productionSpeed  Float?   // For spawner buildings
+  spawnedUnit      String?  // What unit does spawner create
+  
+  // Visual/Gameplay Properties
+  tileCoverage     Json?    // Which tiles the unit covers (for placement analysis)
+  description      String?  // Card description
+  imageUrl         String?  // Card image URL
+  
+  // Metadata for Analysis
+  category         String   // e.g., "Win Condition", "Support", "Spell", "Defense"
+  archetype        String?  // e.g., "Beatdown", "Cycle", "Control", "Siege"
+  synergies        Json?    // Cards that work well together
+  counters         Json?    // Cards that counter this card
+  tags             Json     // Flexible tags for analysis
+  
+  // Balance History & Versioning
+  gameVersion      String   @default("current") // Supercell game version
+  balanceChanges   Json?    // History of nerfs/buffs
+  lastBalanceDate  DateTime?
+  
+  // Analytics
+  pickRate         Float?   // How often picked in decks
+  winRate          Float?   // Win rate when used
+  usageByArena     Json?    // Usage stats by arena level
+  
+  // Relations
+  cardStats        CardStats[]
+  placementAnalyses PlacementAnalysis[] @relation("PlacedCard")
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([gameVersion])
+  @@index([category])
+  @@index([cost])
+  @@map("cards")
+}
+
+// Separate table for version-specific card statistics
+model CardStats {
+  id String @id @default(cuid())
+  
+  cardId      String
+  gameVersion String // e.g., "2024.12.1", "2025.01.2"
+  
+  // All the combat stats that can change with balance updates
+  hitpoints        Int?
+  damage           Int?
+  dps              Float?
+  attackSpeed      Float?
+  range            Float?
+  splashRadius     Float?
+  splashDamage     Int?
+  deployTime       Float?
+  lifetime         Float?
+  spellDuration    Float?
+  cost             Int?
+  
+  // Balance change metadata
+  changeDescription String? // "Damage increased by 4%"
+  isActive         Boolean @default(true)
+  releaseDate      DateTime @default(now())
+  
+  // Relations
+  card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  
+  @@unique([cardId, gameVersion])
+  @@index([gameVersion])
+  @@index([isActive])
+  @@map("card_stats")
+}
+
+enum CardType {
+  TROOP
+  SPELL
+  BUILDING
+}
+
+enum CardRarity {
+  COMMON
+  RARE
+  EPIC
+  LEGENDARY
+  CHAMPION
+}

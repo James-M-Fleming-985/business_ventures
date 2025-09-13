@@ -1,0 +1,274 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// CORE USER MANAGEMENT - SIMPLIFIED FOR SQLITE
+// ============================================================================
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  username  String   @unique
+  
+  // Basic Profile
+  firstName     String?
+  lastName      String?
+  avatarUrl     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Clash Royale Profile  
+  playerTag         String?  @unique // Clash Royale player tag
+  trophies          Int?
+  maxTrophies       Int?
+  skillLevel        String   @default("BEGINNER") // Store as string instead of enum
+  
+  // Relationships
+  videos            Video[]
+  placementAnalyses PlacementAnalysis[]
+  subscriptions     Subscription[]
+  analyticsEvents   AnalyticsEvent[]
+  userAchievements  UserAchievement[]
+  progressTracking  ProgressTracking[]
+  
+  @@map("users")
+}
+
+// ============================================================================
+// VIDEO MANAGEMENT - SIMPLIFIED
+// ============================================================================
+
+model Video {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // File Information
+  filename    String
+  filePath    String
+  fileSize    Int
+  duration    Float?   // in seconds
+  uploadedAt  DateTime @default(now())
+  
+  // Processing
+  status      String   @default("UPLOADED") // Store as string: UPLOADED, PROCESSING, COMPLETED, FAILED
+  
+  // Analysis Results (simplified - store as text instead of JSON)
+  matchResult     String?  // Store as string: WIN, LOSS, DRAW
+  playerDeckText  String?  // Store deck as comma-separated card IDs
+  opponentDeckText String? // Store deck as comma-separated card IDs
+  
+  // Relationships
+  placementAnalyses PlacementAnalysis[]
+  
+  @@map("videos")
+}
+
+// ============================================================================
+// PLACEMENT ANALYSIS - SIMPLIFIED
+// ============================================================================
+
+model PlacementAnalysis {
+  id        String   @id @default(cuid())
+  videoId   String
+  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Analysis Context
+  timestamp      Float    // Time in video (seconds)
+  placedCard     String   // Card ID that was placed
+  
+  // Placement coordinates (simplified - store as separate fields)
+  userPlacementX    Float   // User's placement X coordinate
+  userPlacementY    Float   // User's placement Y coordinate
+  
+  // AI Analysis Results
+  optimalPlacementX   Float   // Optimal placement X coordinate  
+  optimalPlacementY   Float   // Optimal placement Y coordinate
+  placementScore      Float   // 1-10 score for user's placement
+  
+  // Explanation
+  reasoning          String? // Why this was optimal/suboptimal
+  alternativesText   String? // Alternative placements as text
+  
+  // Game State Context (simplified)
+  tacticalSituation  String? // e.g., "Defending push", "Counter-attacking"
+  
+  // Timestamps
+  analyzedAt    DateTime @default(now())
+  
+  @@map("placement_analyses")
+}
+
+// ============================================================================
+// SIMPLIFIED CARD DATABASE
+// ============================================================================
+
+model Card {
+  id   String @id // Clash Royale card ID
+  name String
+  
+  // Basic Properties
+  cardType    String    // Store as string: TROOP, SPELL, BUILDING
+  rarity      String    // Store as string: COMMON, RARE, EPIC, LEGENDARY, CHAMPION
+  cost        Int       // Elixir cost
+  
+  // Stats (flexible for different card types)
+  hitpoints   Int?
+  damage      Int?
+  attackSpeed Float?
+  range       Float?
+  
+  // Meta Information
+  description      String?
+  gameVersion      String   @default("current")
+  
+  // Usage Statistics
+  usageRate        Float?   // 0-100 percentage
+  winRate          Float?   // Win rate when used
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("cards")
+}
+
+// ============================================================================
+// ACHIEVEMENTS SYSTEM - SIMPLIFIED
+// ============================================================================
+
+model Achievement {
+  id          String @id @default(cuid())
+  name        String
+  description String
+  
+  // Classification
+  category    String @default("MILESTONE") // Store as string
+  rarity      String @default("COMMON")    // Store as string
+  
+  // Requirements (simplified)
+  unlockCriteriaText String // Store criteria as text description
+  xpReward           Int    @default(0)
+  
+  // Status
+  isActive    Boolean @default(true)
+  createdAt   DateTime @default(now())
+  
+  // Relationships
+  userAchievements UserAchievement[]
+  
+  @@map("achievements")
+}
+
+model UserAchievement {
+  id            String @id @default(cuid())
+  userId        String
+  user          User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievementId String
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  
+  // Achievement Details
+  unlockedAt    DateTime @default(now())
+  triggerText   String?  // What triggered the achievement (as text)
+  
+  @@unique([userId, achievementId])
+  @@map("user_achievements")
+}
+
+// ============================================================================
+// PROGRESS TRACKING - SIMPLIFIED
+// ============================================================================
+
+model ProgressTracking {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Skill Progression
+  overallLevel            Int    @default(1)
+  xpPoints               Int    @default(0)
+  xpToNextLevel          Int    @default(100)
+  
+  // Placement Analysis Stats
+  totalAnalyses          Int    @default(0)
+  averageScore           Float  @default(0)
+  improvementTrend       Float  @default(0) // Positive = improving
+  
+  // Skill Development
+  skillLevelCurrent      String @default("BEGINNER")
+  skillLevelProgress     Float  @default(0)
+  masteredConceptsText   String @default("") // Comma-separated list
+  
+  // Timestamps
+  lastAnalysisAt DateTime?
+  updatedAt      DateTime @updatedAt
+  
+  @@map("progress_tracking")
+}
+
+// ============================================================================
+// SUBSCRIPTION MANAGEMENT - SIMPLIFIED
+// ============================================================================
+
+model Subscription {
+  id       String @id @default(cuid())
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Subscription Details
+  plan            String   @default("FREE") // Store as string: FREE, PREMIUM, PRO
+  status          String   @default("ACTIVE") // Store as string
+  
+  // Billing
+  stripeCustomerId      String?
+  stripeSubscriptionId  String?
+  stripePriceId         String?
+  
+  // Lifecycle
+  startDate       DateTime @default(now())
+  endDate         DateTime?
+  trialEndsAt     DateTime?
+  canceledAt      DateTime?
+  
+  // Features
+  analysesPerMonth     Int @default(10)   // Free tier limit
+  maxVideoLength       Int @default(300)  // 5 minutes for free
+  
+  @@map("subscriptions")
+}
+
+// ============================================================================
+// ANALYTICS - SIMPLIFIED
+// ============================================================================
+
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Event Data
+  eventType    String   // Store as string: USER_ACTION, VIDEO_UPLOAD, etc.
+  eventName    String
+  propertiesText String // Store properties as text instead of JSON
+  
+  // Context
+  sessionId    String?
+  deviceInfoText String? // Store device info as text
+  userAgent    String?
+  
+  // Timestamps
+  timestamp    DateTime @default(now())
+  
+  @@map("analytics_events")
+}

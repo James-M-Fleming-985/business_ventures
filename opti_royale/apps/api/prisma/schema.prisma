@@ -1,0 +1,468 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// CORE USER MANAGEMENT - SIMPLIFIED FOR SQLITE
+// ============================================================================
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  username  String   @unique
+  
+  // Basic Profile
+  firstName     String?
+  lastName      String?
+  avatarUrl     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Clash Royale Profile  
+  playerTag         String?  @unique // Clash Royale player tag
+  trophies          Int?
+  maxTrophies       Int?
+  skillLevel        String   @default("BEGINNER") // Store as string instead of enum
+  
+  // Relationships
+  videos            Video[]
+  placementAnalyses PlacementAnalysis[]
+  subscriptions     Subscription[]
+  analyticsEvents   AnalyticsEvent[]
+  userAchievements  UserAchievement[]
+  progressTracking  ProgressTracking[]
+  
+  @@map("users")
+}
+
+// ============================================================================
+// VIDEO MANAGEMENT - SIMPLIFIED
+// ============================================================================
+
+model Video {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // File Information
+  filename    String
+  filePath    String
+  fileSize    Int
+  duration    Float?   // in seconds
+  uploadedAt  DateTime @default(now())
+  
+  // Processing
+  status      String   @default("UPLOADED") // Store as string: UPLOADED, PROCESSING, COMPLETED, FAILED
+  
+  // Analysis Results (simplified - store as text instead of JSON)
+  matchResult     String?  // Store as string: WIN, LOSS, DRAW
+  playerDeckText  String?  // Store deck as comma-separated card IDs
+  opponentDeckText String? // Store deck as comma-separated card IDs
+  
+  // Relationships
+  placementAnalyses PlacementAnalysis[]
+  
+  @@map("videos")
+}
+
+// ============================================================================
+// PLACEMENT ANALYSIS - SIMPLIFIED
+// ============================================================================
+
+model PlacementAnalysis {
+  id        String   @id @default(cuid())
+  videoId   String
+  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Analysis Context
+  timestamp      Float    // Time in video (seconds)
+  placedCard     String   // Card ID that was placed
+  cardId         String   // Reference to card
+  card           Card     @relation(fields: [cardId], references: [id])
+  
+  // Level-Aware Analysis
+  userCardLevel     Int     @default(1)    // User's card level
+  opponentCardLevel Int?    // Opponent's estimated card level
+  userTowerLevel    Int     @default(1)    // User's tower level
+  opponentTowerLevel Int?   // Opponent's tower level
+  levelAdvantage    Float?  // Calculated level advantage (-3 to +3)
+  
+  // Tower Type Context
+  userTowerType     String  @default("PRINCESS") // User's tower type
+  opponentTowerType String? // Opponent's tower type (if detected)
+  towerAbilityActive Boolean @default(false)     // Was tower ability available?
+  
+  // Evolution Context
+  isCardEvolved     Boolean @default(false) // Was the card evolved when placed?
+  evolutionCycle    Int?    // Which cycle this card was on (if trackable)
+  willEvolveNext    Boolean @default(false) // Will evolve on next cycle?
+  
+  // Placement coordinates
+  userPlacementX    Float   // User's placement X coordinate
+  userPlacementY    Float   // User's placement Y coordinate
+  
+  // Level-Aware AI Analysis Results
+  optimalPlacementX   Float   // Optimal placement X coordinate  
+  optimalPlacementY   Float   // Optimal placement Y coordinate
+  placementScore      Float   // 1-10 score for user's placement
+  
+  // Level-specific scoring
+  levelAwarePlacementX Float?  // Different optimal placement considering levels
+  levelAwarePlacementY Float?  // Different optimal placement considering levels
+  levelAwareScore      Float?  // Score adjusted for level differences
+  
+  // Evolution-aware scoring
+  evolutionAdvantage   Float?  // Additional advantage from evolution (0-5)
+  evolvedOptimalX     Float?  // Different optimal placement if evolved
+  evolvedOptimalY     Float?  // Different optimal placement if evolved
+  
+  // Tower-aware analysis
+  towerThreatLevel    Float?  // How much tower threatens this placement (0-10)
+  towerAbilityImpact  Float?  // Impact of special tower abilities (0-10)
+  towerInteractionBonus Float? // Bonus from leveraging tower abilities
+  
+  // Critical Interactions
+  criticalInteractions String? // JSON of level-dependent interactions that occurred
+  damageCalculations   String? // JSON of actual vs predicted damage
+  survivalPrediction   String? // JSON of survival analysis
+  
+  // Explanation
+  reasoning          String? // Why this was optimal/suboptimal
+  alternativesText   String? // Alternative placements as text
+  evolutionImpact    String? // How evolution affects this placement
+  levelImpact        String? // How level differences affect this placement
+  towerImpact        String? // How tower mechanics affect this placement
+  
+  // Game State Context
+  tacticalSituation  String? // e.g., "Defending push", "Counter-attacking"
+  elixirAdvantage    Float?  // Elixir advantage at time of placement
+  
+  // Timestamps
+  analyzedAt    DateTime @default(now())
+  
+  @@map("placement_analyses")
+}
+
+// ============================================================================
+// SIMPLIFIED CARD DATABASE
+// ============================================================================
+
+model Card {
+  id   String @id // Clash Royale card ID
+  name String
+  
+  // Basic Properties
+  cardType    String    // Store as string: TROOP, SPELL, BUILDING
+  rarity      String    // Store as string: COMMON, RARE, EPIC, LEGENDARY, CHAMPION
+  cost        Int       // Elixir cost
+  
+  // Level System
+  minLevel              Int     @default(1)   // Minimum level for this rarity
+  maxLevel              Int     @default(15)  // Maximum level for this rarity
+  levelStatMultiplier   Float   @default(0.1) // Stat increase per level (10% default)
+  
+  // Evolution Properties
+  canEvolve          Boolean @default(false)  // Can this card evolve?
+  evolutionCycles    Int?    // Cycles needed to evolve (2-3 typically)
+  baseCardId         String? // Reference to base form if this is evolved
+  evolvedCardId      String? // Reference to evolved form if this can evolve
+  isEvolved          Boolean @default(false)  // Is this the evolved version?
+  
+  // Base Stats (Level 1 for Commons, appropriate base for others)
+  hitpoints   Int?
+  damage      Int?
+  attackSpeed Float?
+  range       Float?
+  
+  // Evolved-specific stats (only used when isEvolved = true)
+  evolvedHitpoints   Int?
+  evolvedDamage      Int?
+  evolvedAttackSpeed Float?
+  evolvedRange       Float?
+  evolvedAbilities   String? // JSON string of special abilities
+  
+  // Level-dependent interaction tracking
+  criticalInteractions String? // JSON of level-dependent interactions
+  
+  // Meta Information
+  description      String?
+  gameVersion      String   @default("current")
+  
+  // Usage Statistics (separate for base vs evolved forms)
+  usageRate        Float?   // 0-100 percentage for base form
+  winRate          Float?   // Win rate when used (base form)
+  evolvedUsageRate Float?   // Usage rate when evolved
+  evolvedWinRate   Float?   // Win rate when evolved
+  
+  // Relationships
+  placementAnalyses PlacementAnalysis[]
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("cards")
+}
+
+// ============================================================================
+// CARD EVOLUTION SYSTEM
+// ============================================================================
+
+model CardEvolution {
+  id            String @id @default(cuid())
+  
+  // Evolution Chain
+  baseCardId    String   // The original card
+  evolvedCardId String   // The evolved version
+  
+  // Evolution Requirements
+  cyclesRequired    Int     @default(2)     // Cycles needed (2-3 typically)
+  elixirCostSame    Boolean @default(true)  // Does evolved card cost same elixir?
+  
+  // Evolution Mechanics
+  statMultipliers   String? // JSON: {"hitpoints": 1.5, "damage": 1.2}
+  newAbilities      String? // JSON array of new abilities gained
+  visualChanges     String? // Description of visual differences
+  
+  // Meta Information
+  releaseVersion    String? // When this evolution was introduced
+  isActive          Boolean @default(true)
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("card_evolutions")
+}
+
+// ============================================================================
+// CROWN TOWER SYSTEM
+// ============================================================================
+
+model CrownTower {
+  id            String @id @default(cuid())
+  
+  // Tower Type
+  towerType     String   // PRINCESS, KING, CHEF, DAGGER_DUCHESS, CANNONEER
+  name          String   // Display name
+  
+  // Level System
+  minLevel      Int      @default(1)
+  maxLevel      Int      @default(13)
+  
+  // Base Stats (Level 1)
+  baseHitpoints    Int
+  baseDamage       Int
+  attackSpeed      Float   @default(0.8)
+  range            Float   @default(7.0)
+  
+  // Special Abilities (for tower skins)
+  hasSpecialAbility   Boolean @default(false)
+  abilityName         String?
+  abilityDescription  String?
+  abilityCooldown     Float?  // seconds
+  abilityRadius       Float?  // tiles
+  abilityDamage       Int?    // base damage
+  
+  // Level scaling
+  hpPerLevel       Int      // HP increase per level
+  damagePerLevel   Int      // Damage increase per level
+  
+  // Game mechanics
+  activationRange  Float?   // For King Tower activation
+  retargetSpeed    Float    @default(0.1) // How fast it retargets
+  
+  // Meta Information
+  releaseVersion   String?
+  isActive         Boolean  @default(true)
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("crown_towers")
+}
+
+// ============================================================================
+// GAME MECHANICS TRACKING
+// ============================================================================
+
+model GameMechanicsUpdate {
+  id            String @id @default(cuid())
+  
+  // Update Information
+  updateType    String   // BALANCE_CHANGE, NEW_CARD, EVOLUTION_UPDATE, TOWER_UPDATE
+  gameVersion   String   // Game version (e.g., "4.1.2")
+  updateTitle   String   // "March 2025 Balance Changes"
+  
+  // Affected Components
+  affectedCards  String?  // JSON array of card IDs
+  affectedTowers String?  // JSON array of tower types
+  affectedMechanics String? // JSON array of game mechanics
+  
+  // Change Details
+  changeDescription String  // Detailed description of changes
+  statChanges      String?  // JSON of specific stat changes
+  newFeatures      String?  // JSON of new features added
+  removedFeatures  String?  // JSON of features removed
+  
+  // Impact Assessment
+  impactLevel     String   // LOW, MEDIUM, HIGH, CRITICAL
+  analysisUpdate  Boolean  @default(false) // Does this require AI analysis updates?
+  specUpdate      Boolean  @default(false) // Does this require spec updates?
+  
+  // Source Information
+  sourceType      String   // OFFICIAL, COMMUNITY, DETECTED
+  sourceUrl       String?  // Link to announcement
+  detectedBy      String?  // System/person who detected the change
+  
+  // Processing Status
+  processed       Boolean  @default(false)
+  implementedAt   DateTime?
+  
+  // Timestamps
+  announcedAt     DateTime? // When officially announced
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@map("game_mechanics_updates")
+}
+
+// ============================================================================
+// ACHIEVEMENTS SYSTEM - SIMPLIFIED
+// ============================================================================
+
+model Achievement {
+  id          String @id @default(cuid())
+  name        String
+  description String
+  
+  // Classification
+  category    String @default("MILESTONE") // Store as string
+  rarity      String @default("COMMON")    // Store as string
+  
+  // Requirements (simplified)
+  unlockCriteriaText String // Store criteria as text description
+  xpReward           Int    @default(0)
+  
+  // Status
+  isActive    Boolean @default(true)
+  createdAt   DateTime @default(now())
+  
+  // Relationships
+  userAchievements UserAchievement[]
+  
+  @@map("achievements")
+}
+
+model UserAchievement {
+  id            String @id @default(cuid())
+  userId        String
+  user          User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievementId String
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  
+  // Achievement Details
+  unlockedAt    DateTime @default(now())
+  triggerText   String?  // What triggered the achievement (as text)
+  
+  @@unique([userId, achievementId])
+  @@map("user_achievements")
+}
+
+// ============================================================================
+// PROGRESS TRACKING - SIMPLIFIED
+// ============================================================================
+
+model ProgressTracking {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Skill Progression
+  overallLevel            Int    @default(1)
+  xpPoints               Int    @default(0)
+  xpToNextLevel          Int    @default(100)
+  
+  // Placement Analysis Stats
+  totalAnalyses          Int    @default(0)
+  averageScore           Float  @default(0)
+  improvementTrend       Float  @default(0) // Positive = improving
+  
+  // Skill Development
+  skillLevelCurrent      String @default("BEGINNER")
+  skillLevelProgress     Float  @default(0)
+  masteredConceptsText   String @default("") // Comma-separated list
+  
+  // Timestamps
+  lastAnalysisAt DateTime?
+  updatedAt      DateTime @updatedAt
+  
+  @@map("progress_tracking")
+}
+
+// ============================================================================
+// SUBSCRIPTION MANAGEMENT - SIMPLIFIED
+// ============================================================================
+
+model Subscription {
+  id       String @id @default(cuid())
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Subscription Details
+  plan            String   @default("FREE") // Store as string: FREE, PREMIUM, PRO
+  status          String   @default("ACTIVE") // Store as string
+  
+  // Billing
+  stripeCustomerId      String?
+  stripeSubscriptionId  String?
+  stripePriceId         String?
+  
+  // Lifecycle
+  startDate       DateTime @default(now())
+  endDate         DateTime?
+  trialEndsAt     DateTime?
+  canceledAt      DateTime?
+  
+  // Features
+  analysesPerMonth     Int @default(10)   // Free tier limit
+  maxVideoLength       Int @default(300)  // 5 minutes for free
+  
+  @@map("subscriptions")
+}
+
+// ============================================================================
+// ANALYTICS - SIMPLIFIED
+// ============================================================================
+
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Event Data
+  eventType    String   // Store as string: USER_ACTION, VIDEO_UPLOAD, etc.
+  eventName    String
+  propertiesText String // Store properties as text instead of JSON
+  
+  // Context
+  sessionId    String?
+  deviceInfoText String? // Store device info as text
+  userAgent    String?
+  
+  // Timestamps
+  timestamp    DateTime @default(now())
+  
+  @@map("analytics_events")
+}

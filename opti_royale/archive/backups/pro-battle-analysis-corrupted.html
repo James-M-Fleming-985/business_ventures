@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OptiRoyale - Professional Battle Analysis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .clash-bg {
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+        .optimal-placement {
+            border: 3px solid #10b981;
+            border-radius: 4px;
+            animation: pulse-green 1.5s infinite;
+        }
+        @keyframes pulse-green {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+            50% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+        }
+        .placement-analysis {
+            background: linear-gradient(135deg, #059669, #10b981);
+        }
+        .video-controls {
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+        }
+        .player-deck {
+            background: linear-gradient(135deg, #1f2937, #374151);
+        }
+        .card-slot {
+            background: linear-gradient(135deg, #4b5563, #6b7280);
+            border: 2px solid #9ca3af;
+        }
+        .elixir-bar {
+            background: linear-gradient(90deg, #ec4899, #f97316);
+            position: relative;
+        }
+        .elixir-divider {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background: #9333ea;
+            box-shadow: 0 0 3px #9333ea;
+        }
+        .card-image {
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            border-radius: 8px;
+            border: 2px solid #d1d5db;
+            background-color: #374151;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
+    </style>
+</head>
+<body class="clash-bg min-h-screen text-white">
+    <!-- Header -->
+    <div class="bg-gray-900 shadow-lg">
+        <div class="container mx-auto px-4 py-3">
+            <div class="flex items-center justify-between">
+                <h1 class="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
+                    🏆 OptiRoyale Pro
+                </h1>
+                <div class="text-sm text-gray-300">
+                    Battle Analysis • Connected to Clash Royale API
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-4 py-6">
+        <!-- 3-Window Layout - DEBUG: Should show 3 distinct panels -->
+        <div class="grid grid-cols-12 gap-6 h-screen max-h-[calc(100vh-120px)]">
+            
+            <!-- Window 1: Battle Selection & Upload (Left) - DEBUG: 25% width -->
+            <div class="col-span-3 bg-red-900 border-4 border-red-500 rounded-lg p-4 overflow-y-auto">
+                <h2 class="text-lg font-bold mb-4 flex items-center text-red-200">
+                    📋 Window 1: Battle Selection
+                </h2>
+                
+                <!-- Battle Log Connection -->
+                <div class="mb-4 p-3 bg-gray-700 rounded-lg">
+                    <h3 class="font-semibold mb-2">🔗 Connect Battle Log</h3>
+                    <input type="text" placeholder="Player Tag #ABC123" 
+                           class="w-full p-2 bg-gray-600 rounded text-white placeholder-gray-400">
+                    <button class="w-full mt-2 bg-blue-600 hover:bg-blue-700 py-2 rounded font-semibold">
+                        Load Battles
+                    </button>
+                </div>
+
+                <!-- Recent Battles -->
+                <div class="space-y-3">
+                    <h3 class="font-semibold text-gray-300">Recent Battles:</h3>
+                    
+                    <div class="battle-item p-3 bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-600 card-hover">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-green-400 font-bold">Victory</span>
+                            <span class="text-xs text-gray-400">2 min ago</span>
+                        </div>
+                        <div class="text-sm">
+                            <div class="flex justify-between">
+                                <span>vs JamesPro</span>
+                                <span class="text-yellow-400">+32 🏆</span>
+                            </div>
+                            <div class="text-gray-400 text-xs">Arena 15 • 3:47</div>
+                        </div>
+                    </div>
+
+                    <div class="battle-item p-3 bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-600 card-hover">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-red-400 font-bold">Defeat</span>
+                            <span class="text-xs text-gray-400">5 min ago</span>
+                        </div>
+                        <div class="text-sm">
+                            <div class="flex justify-between">
+                                <span>vs CRMaster</span>
+                                <span class="text-red-400">-28 🏆</span>
+                            </div>
+                            <div class="text-gray-400 text-xs">Arena 15 • 4:12</div>
+                        </div>
+                    </div>
+
+                    <div class="battle-item p-3 bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-600 card-hover">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-green-400 font-bold">Victory</span>
+                            <span class="text-xs text-gray-400">12 min ago</span>
+                        </div>
+                        <div class="text-sm">
+                            <div class="flex justify-between">
+                                <span>vs SkeletonKing</span>
+                                <span class="text-yellow-400">+35 🏆</span>
+                            </div>
+                            <div class="text-gray-400 text-xs">Arena 15 • 2:23</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Video Upload Alternative -->
+                <div class="mt-6 p-3 bg-gray-700 rounded-lg">
+                    <h3 class="font-semibold mb-2">📹 Or Upload Video</h3>
+                    <div class="border-2 border-dashed border-gray-500 rounded-lg p-4 text-center text-sm text-gray-400">
+                        Drop video here
+                    </div>
+                </div>
+            </div>
+
+            <!-- Window 2: Interactive Video Player (Center) - DEBUG: 50% width -->
+            <div class="col-span-6 bg-blue-900 border-4 border-blue-500 rounded-lg p-4 relative">
+                <h2 class="text-lg font-bold mb-4 flex items-center justify-between text-blue-200">
+                    🎮 Window 2: Battle Replay
+                    <div class="text-sm text-blue-300">Victory vs JamesPro • 3:47</div>
+                </h2>
+                
+                <!-- Video/Replay Area - Mobile/iPad Dimensions -->
+                <div class="relative bg-gray-900 rounded-lg mx-auto mb-4 overflow-hidden" style="width: 300px; height: 533px;">
+                    <!-- Simulated Battle Arena - Mobile Aspect Ratio -->
+                    <div class="w-full h-full bg-gradient-to-b from-blue-900 via-green-700 to-blue-900 relative">
+                        <!-- River divider in middle -->
+                        <div class="absolute w-full h-1 bg-blue-400" style="top: 50%; transform: translateY(-50%);"></div>
+                        
+                        <!-- Arena Grid Overlay -->
+                        <div class="absolute inset-0 grid grid-cols-8 grid-rows-16 opacity-20">
+                            <div class="border border-white" style="grid-column: 1/-1; grid-row: 1/-1;"></div>
+                        </div>
+                        
+                        <!-- Optimal Placement Indicator -->
+                        <div class="absolute optimal-placement" style="top: 60%; left: 40%; width: 12%; height: 8%;">
+                        </div>
+                        
+                        <!-- Sample Card Placement -->
+                        <div class="absolute bg-blue-600 rounded-full w-8 h-8 flex items-center justify-center text-xs font-bold" 
+                             style="top: 65%; left: 42%;">
+                            🧙
+                        </div>
+                        
+                        <!-- Click Instructions -->
+                        <div class="absolute top-4 left-4 bg-black bg-opacity-50 rounded px-2 py-1 text-xs">
+                            🖱️ Click on placements to analyze
+                        </div>
+                        
+                        <!-- Analysis Overlay -->
+                        <div class="absolute bottom-4 right-4 placement-analysis rounded-lg px-3 py-2 text-sm">
+                            Selected: Wizard placement<br>
+                            <span class="text-yellow-300">Optimality: 87%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Video Controls -->
+                </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Video Controls (Fixed at Bottom) -->
+                <div class="video-controls rounded-lg p-3 mt-auto">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center space-x-3">
+                            <button class="bg-blue-600 hover:bg-blue-700 rounded-full w-10 h-10 flex items-center justify-center">
+                                ▶️
+                            </button>
+                            <button class="bg-gray-600 hover:bg-gray-700 rounded px-3 py-1 text-sm">
+                                Frame ⏭️
+                            </button>
+                            <button class="bg-green-600 hover:bg-green-700 rounded px-3 py-1 text-sm">
+                                📍 Analyze
+                            </button>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs text-gray-300">Scale:</span>
+                                <input type="range" min="50" max="150" value="100" class="w-16 h-1 bg-gray-600 rounded">
+                            </div>
+                        </div>
+                        <div class="text-sm text-gray-300">
+                            1:23 / 3:47
+                        </div>
+                    </div>
+                    
+                    <!-- Timeline -->
+                    <div class="w-full h-2 bg-gray-600 rounded-full relative">
+                        <div class="h-full bg-blue-600 rounded-full" style="width: 35%;"></div>
+                        <div class="absolute top-0 left-1/4 w-2 h-2 bg-yellow-400 rounded-full"></div>
+                        <div class="absolute top-0 left-1/2 w-2 h-2 bg-red-400 rounded-full"></div>
+                        <div class="absolute top-0 left-3/4 w-2 h-2 bg-green-400 rounded-full"></div>
+                    </div>
+                    <div class="flex justify-between text-xs text-gray-400 mt-1">
+                        <span>Card Play</span>
+                        <span>Tower Hit</span>
+                        <span>Optimal</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Window 3: Analysis Panel (Right) - DEBUG: 25% width -->
+            <div class="col-span-3 bg-green-900 border-4 border-green-500 rounded-lg p-4 overflow-y-auto">
+                <h2 class="text-lg font-bold mb-4 flex items-center text-green-200">
+                    📊 Window 3: Battle Analysis
+                </h2>
+                
+                <!-- Player Decks -->
+                <div class="space-y-4 mb-6">
+                    <!-- You -->
+                    <div class="player-deck rounded-lg p-3">
+                        <h3 class="font-semibold text-green-400 mb-2">🟢 You (James_admin)</h3>
+                        <div class="grid grid-cols-4 gap-2 mb-2">
+                            <div class="card-image aspect-square" title="Wizard">🧙‍♂️</div>
+                            <div class="card-image aspect-square" title="Giant">🗿</div>
+                            <div class="card-image aspect-square" title="Fireball">🔥</div>
+                            <div class="card-image aspect-square" title="Archers">🏹</div>
+                            <div class="card-image aspect-square" title="Skeleton Army">💀</div>
+                            <div class="card-image aspect-square" title="Hog Rider">🐗</div>
+                            <div class="card-image aspect-square" title="Zap">⚡</div>
+                            <div class="card-image aspect-square" title="Valkyrie">🛡️</div>
+                        </div>
+                        <div class="elixir-bar h-3 rounded-full mb-1 relative">
+                            <div class="bg-purple-500 h-full rounded-full" style="width: 70%;"></div>
+                            <!-- Elixir Dividers -->
+                            <div class="elixir-divider" style="left: 10%;"></div>
+                            <div class="elixir-divider" style="left: 20%;"></div>
+                            <div class="elixir-divider" style="left: 30%;"></div>
+                            <div class="elixir-divider" style="left: 40%;"></div>
+                            <div class="elixir-divider" style="left: 50%;"></div>
+                            <div class="elixir-divider" style="left: 60%;"></div>
+                            <div class="elixir-divider" style="left: 70%;"></div>
+                            <div class="elixir-divider" style="left: 80%;"></div>
+                            <div class="elixir-divider" style="left: 90%;"></div>
+                        </div>
+                        <div class="text-xs text-gray-300">Elixir: 7/10</div>
+                    </div>
+
+                    <!-- Opponent -->
+                    <div class="player-deck rounded-lg p-3">
+                        <h3 class="font-semibold text-red-400 mb-2">🔴 JamesPro</h3>
+                        <div class="grid grid-cols-4 gap-2 mb-2">
+                            <div class="card-image aspect-square" title="Golem">🏰</div>
+                            <div class="card-image aspect-square" title="Balloon">🎈</div>
+                            <div class="card-image aspect-square" title="Freeze">❄️</div>
+                            <div class="card-image aspect-square" title="Minions">🦇</div>
+                            <div class="card-image aspect-square" title="Knight">⚔️</div>
+                            <div class="card-image aspect-square" title="Dragon">🐲</div>
+                            <div class="card-image aspect-square" title="Lumberjack">🪓</div>
+                            <div class="card-image aspect-square" title="Poison">🔮</div>
+                        </div>
+                        <div class="bg-gray-600 h-3 rounded-full mb-1 relative">
+                            <div class="bg-purple-500 h-full rounded-full" style="width: 60%;"></div>
+                            <!-- Elixir Dividers -->
+                            <div class="elixir-divider" style="left: 10%;"></div>
+                            <div class="elixir-divider" style="left: 20%;"></div>
+                            <div class="elixir-divider" style="left: 30%;"></div>
+                            <div class="elixir-divider" style="left: 40%;"></div>
+                            <div class="elixir-divider" style="left: 50%;"></div>
+                            <div class="elixir-divider" style="left: 60%;"></div>
+                            <div class="elixir-divider" style="left: 70%;"></div>
+                            <div class="elixir-divider" style="left: 80%;"></div>
+                            <div class="elixir-divider" style="left: 90%;"></div>
+                        </div>
+                        <div class="text-xs text-gray-300">Elixir: 6/10</div>
+                    </div>
+                </div>
+
+                <!-- Placement Analysis -->
+                <div class="bg-gray-700 rounded-lg p-3 mb-4">
+                    <h3 class="font-semibold text-yellow-400 mb-2">🎯 Selected Placement</h3>
+                    <div class="text-sm space-y-2">
+                        <div class="flex justify-between">
+                            <span>Card:</span>
+                            <span className="font-bold">🧙 Wizard</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Optimality:</span>
+                            <span className="text-yellow-300 font-bold">87%</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Elixir Trade:</span>
+                            <span className="text-green-400">+2 ⚡</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3 p-2 bg-green-900 rounded text-xs">
+                        <strong>💡 Optimal:</strong> Place 1 tile higher for better splash damage coverage
+                    </div>
+                </div>
+
+                <!-- Key Insights -->
+                <div class="bg-gray-700 rounded-lg p-3">
+                    <h3 class="font-semibold text-blue-400 mb-2">🔍 Key Insights</h3>
+                    <div class="text-sm space-y-2">
+                        <div class="flex items-start">
+                            <span class="text-green-400 mr-2">✅</span>
+                            <span>Great counter to Balloon with Wizard</span>
+                        </div>
+                        <div class="flex items-start">
+                            <span class="text-yellow-400 mr-2">⚠️</span>
+                            <span>Vulnerable to Lightning spell</span>
+                        </div>
+                        <div class="flex items-start">
+                            <span class="text-blue-400 mr-2">💡</span>
+                            <span>Consider Fireball for better value</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Interactive battle selection
+        document.querySelectorAll('.battle-item').forEach(item => {
+            item.addEventListener('click', () => {
+                // Remove previous selection
+                document.querySelectorAll('.battle-item').forEach(i => i.classList.remove('ring-2', 'ring-blue-500'));
+                // Add selection to clicked item
+                item.classList.add('ring-2', 'ring-blue-500');
+                
+                console.log('🎮 Loading battle replay...');
+            });
+        });
+        
+        // Simulate real-time battle log connection
+        setTimeout(() => {
+            console.log('🔗 Connected to Clash Royale API');
+            console.log('📊 Loaded 25 recent battles');
+            console.log('🎯 Ready for analysis');
+        }, 1000);
+    </script>
+</body>
+</html>

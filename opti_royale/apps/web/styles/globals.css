@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles for Clash Royale theme */
+body {
+  @apply bg-gradient-to-br from-blue-900 via-purple-900 to-blue-800 min-h-screen;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-800;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-yellow-500 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-yellow-400;
+}
+
+/* Animation classes */
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+}
+
+.shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Card hover effects */
+.card-hover {
+  transition: all 0.3s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+/* Clash Royale button styles */
+.cr-button {
+  @apply relative overflow-hidden font-bold text-white transition-all duration-300;
+  background: linear-gradient(45deg, #4f46e5, #7c3aed);
+  border: 2px solid #fbbf24;
+  box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4);
+}
+
+.cr-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.6);
+}
+
+.cr-button:active {
+  transform: translateY(0);
+}
+
+/* Rarity gradients */
+.rarity-common {
+  background: linear-gradient(135deg, #3b82f6, #1e40af);
+}
+
+.rarity-rare {
+  background: linear-gradient(135deg, #f97316, #ea580c);
+}
+
+.rarity-epic {
+  background: linear-gradient(135deg, #a855f7, #7c3aed);
+}
+
+.rarity-legendary {
+  background: linear-gradient(135deg, #64748b, #475569);
+  border: 2px solid #a855f7;
+}
+
+.rarity-champion {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  border: 2px solid #eab308;
+}
+
+/* Text shadows for better readability */
+.text-shadow {
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}

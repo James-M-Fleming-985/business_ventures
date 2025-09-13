@@ -1,0 +1,32 @@
+% Complete,Constraint Date,Constraint Type,Is Milestone,Milestone,Task Mode,Task Name,Duration,Start,Finish,Predecessors,Work,Resource Names,Baseline Start,Baseline Finish,Actual Start,Actual Finish,Physical % Complete,Number1,Number2
+0%,,No,Manually Scheduled,Financial Optimizer Development Project,240 days,Mon 01/01/25,Fri 15/11/25,,960 hrs,,Mon 01/01/25,Fri 15/11/25,Mon 01/01/25,NA,0,0,0,0
+
+30%,,No,Auto Scheduled,Phase 1: Multi-Mode Support Implementation,60 days,Mon 01/01/25,Fri 14/03/25,,240 hrs,,Mon 01/01/25,Fri 14/03/25,Mon 01/01/25,NA,0,0,0,0
+40%,,No,Auto Scheduled,Real-time optimization mode development,20 days,Mon 01/01/25,Fri 24/01/25,,80 hrs,Algorithm Team,Mon 01/01/25,Fri 24/01/25,Mon 01/01/25,NA,0,0,0,0
+30%,,No,Auto Scheduled,Batch processing mode implementation,20 days,Mon 27/01/25,Fri 21/02/25,3,80 hrs,Backend Team,Mon 27/01/25,Fri 21/02/25,Mon 27/01/25,NA,0,0,0,0
+20%,,No,Auto Scheduled,Historical analysis mode development,20 days,Mon 24/02/25,Fri 14/03/25,4,80 hrs,Analytics Team,Mon 24/02/25,Fri 14/03/25,NA,NA,0,0,0,0
+0%,Yes,Auto Scheduled,Multi-Mode Support Complete,0 days,Fri 14/03/25,Fri 14/03/25,5,0 hrs,Technical Lead,Fri 14/03/25,Fri 14/03/25,NA,NA,0,0,0,0
+
+15%,,No,Auto Scheduled,Phase 2: Investment Management Module,60 days,Mon 17/03/25,Fri 30/05/25,,240 hrs,,Mon 17/03/25,Fri 30/05/25,NA,NA,0,0,0,0
+20%,,No,Auto Scheduled,Portfolio tracking and management,25 days,Mon 17/03/25,Fri 18/04/25,6,100 hrs,Finance Team,Mon 17/03/25,Fri 18/04/25,NA,NA,0,0,0,0
+15%,,No,Auto Scheduled,Risk assessment and analysis tools,20 days,Mon 21/04/25,Fri 16/05/25,8,80 hrs,Risk Team,Mon 21/04/25,Fri 16/05/25,NA,NA,0,0,0,0
+10%,,No,Auto Scheduled,Investment recommendation engine,15 days,Mon 19/05/25,Fri 30/05/25,9,60 hrs,AI Team,Mon 19/05/25,Fri 30/05/25,NA,NA,0,0,0,0
+0%,Yes,Auto Scheduled,Investment Management Complete,0 days,Fri 30/05/25,Fri 30/05/25,10,0 hrs,Technical Lead,Fri 30/05/25,Fri 30/05/25,NA,NA,0,0,0,0
+
+10%,,No,Auto Scheduled,Phase 3: Dynamic Tabs Implementation,60 days,Mon 02/06/25,Fri 22/08/25,,240 hrs,,Mon 02/06/25,Fri 22/08/25,NA,NA,0,0,0,0
+15%,,No,Auto Scheduled,Tab configuration and management system,20 days,Mon 02/06/25,Fri 27/06/25,11,80 hrs,Frontend Team,Mon 02/06/25,Fri 27/06/25,NA,NA,0,0,0,0
+10%,,No,Auto Scheduled,Dynamic content loading and rendering,20 days,Mon 30/06/25,Fri 25/07/25,13,80 hrs,UI Team,Mon 30/06/25,Fri 25/07/25,NA,NA,0,0,0,0
+5%,,No,Auto Scheduled,Performance optimization for dynamic tabs,20 days,Mon 28/07/25,Fri 22/08/25,14,80 hrs,Performance Team,Mon 28/07/25,Fri 22/08/25,NA,NA,0,0,0,0
+0%,Yes,Auto Scheduled,Dynamic Tabs Complete,0 days,Fri 22/08/25,Fri 22/08/25,15,0 hrs,Technical Lead,Fri 22/08/25,Fri 22/08/25,NA,NA,0,0,0,0
+
+5%,,No,Auto Scheduled,Phase 4: Advanced Analytics and Reporting,60 days,Mon 25/08/25,Fri 07/11/25,,240 hrs,,Mon 25/08/25,Fri 07/11/25,NA,NA,0,0,0,0
+8%,,No,Auto Scheduled,Advanced charting and visualization,25 days,Mon 25/08/25,Fri 26/09/25,16,100 hrs,Visualization Team,Mon 25/08/25,Fri 26/09/25,NA,NA,0,0,0,0
+5%,,No,Auto Scheduled,Custom report generation engine,20 days,Mon 29/09/25,Fri 24/10/25,18,80 hrs,Reporting Team,Mon 29/09/25,Fri 24/10/25,NA,NA,0,0,0,0
+0%,,No,Auto Scheduled,Export and sharing capabilities,15 days,Mon 27/10/25,Fri 07/11/25,19,60 hrs,Integration Team,Mon 27/10/25,Fri 07/11/25,NA,NA,0,0,0,0
+0%,Yes,Auto Scheduled,Analytics and Reporting Complete,0 days,Fri 07/11/25,Fri 07/11/25,20,0 hrs,Technical Lead,Fri 07/11/25,Fri 07/11/25,NA,NA,0,0,0,0
+
+0%,,No,Auto Scheduled,Phase 5: Production Deployment and Testing,8 days,Mon 10/11/25,Fri 15/11/25,,32 hrs,,Mon 10/11/25,Fri 15/11/25,NA,NA,0,0,0,0
+0%,,No,Auto Scheduled,Production environment setup,3 days,Mon 10/11/25,Wed 12/11/25,21,12 hrs,DevOps Team,Mon 10/11/25,Wed 12/11/25,NA,NA,0,0,0,0
+0%,,No,Auto Scheduled,Load testing and performance validation,3 days,Thu 13/11/25,Thu 13/11/25,23,12 hrs,QA Team,Thu 13/11/25,Thu 13/11/25,NA,NA,0,0,0,0
+0%,,No,Auto Scheduled,User acceptance testing and go-live,2 days,Fri 14/11/25,Fri 15/11/25,24,8 hrs,Product Team,Fri 14/11/25,Fri 15/11/25,NA,NA,0,0,0,0
+0%,Yes,Auto Scheduled,Financial Optimizer Production Ready,0 days,Fri 15/11/25,Fri 15/11/25,25,0 hrs,Project Manager,Fri 15/11/25,Fri 15/11/25,NA,NA,0,0,0,0

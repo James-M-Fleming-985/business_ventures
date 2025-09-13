@@ -1,0 +1,89 @@
+{
+    "files.exclude": {
+        "**/__pycache__": true,
+        "**/.mypy_cache": true,
+        "**/.pytest_cache": true,
+        "**/node_modules": true,
+        "**/.venv": true,
+        "**/venv": true,
+        "**/*.pyc": true,
+        "**/.coverage": true,
+        "**/htmlcov": true,
+        "**/.tox": true,
+        "**/dist": true,
+        "**/build": true,
+        "**/*.egg-info": true
+    },
+    "search.exclude": {
+        "**/__pycache__": true,
+        "**/.mypy_cache": true,
+        "**/.pytest_cache": true,
+        "**/node_modules": true,
+        "**/.venv": true,
+        "**/venv": true,
+        "**/dist": true,
+        "**/build": true,
+        "**/*.egg-info": true
+    },
+    "files.watcherExclude": {
+        "**/__pycache__/**": true,
+        "**/.mypy_cache/**": true,
+        "**/.pytest_cache/**": true,
+        "**/node_modules/**": true,
+        "**/.venv/**": true,
+        "**/venv/**": true,
+        "**/dist/**": true,
+        "**/build/**": true,
+        "**/*.egg-info/**": true
+    },
+    "python.analysis.exclude": [
+        "**/__pycache__",
+        "**/.mypy_cache",
+        "**/.pytest_cache",
+        "**/node_modules",
+        "**/.venv",
+        "**/venv",
+        "**/dist",
+        "**/build",
+        "**/*.egg-info"
+    ],
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.typeCheckingMode": "basic",
+    "python.defaultInterpreterPath": "./.venv/bin/python",
+    "python.terminal.activateEnvironment": true,
+    "python.formatting.provider": "black",
+    // File Organization Protection
+    "files.defaultLocation": "current",
+    "files.associations": {
+        "*.py": "python",
+        "*.md": "markdown"
+    },
+    // Auto-save and backup protection
+    "files.autoSave": "afterDelay",
+    "files.autoSaveDelay": 5000,
+    "files.hotExit": "onExitAndWindowClose",
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true,
+    // Explorer and file organization
+    "explorer.confirmDelete": true,
+    "explorer.confirmDragAndDrop": true,
+    "explorer.sortOrder": "type",
+    "explorer.fileNesting.enabled": false,
+    "explorer.fileNesting.patterns": {
+        "*.py": "${capture}_test.py,${capture}.py.bak",
+        "*.md": "${capture}.md.bak,${capture}_v*.md",
+        "requirements.txt": "requirements-*.txt,pip.conf"
+    },
+    // Editor settings
+    "editor.formatOnSave": true,
+    "workbench.startupEditor": "none",
+    // GitHub Copilot file creation controls
+    "github.copilot.enable": {
+        "*": true,
+        "plaintext": false,
+        "markdown": true,
+        "python": true
+    },
+    // Prevent accidental expansion outside project structure
+    "emmet.showExpandedAbbreviation": "never"
+}

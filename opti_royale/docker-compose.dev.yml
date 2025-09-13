@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: opti-royale-db
+    environment:
+      POSTGRES_DB: opti_royale
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    networks:
+      - opti-royale-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: opti-royale-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - opti-royale-network
+
+  # Optional: Database management UI
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: opti-royale-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@optiroyale.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    networks:
+      - opti-royale-network
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
+
+networks:
+  opti-royale-network:
+    driver: bridge

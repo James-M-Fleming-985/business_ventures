@@ -1,0 +1,92 @@
+{
+  "updateMonitoring": {
+    "enabled": true,
+    "checkInterval": "6h",
+    "dailyCheckTime": "06:00",
+    "weeklyCheckDay": "monday",
+    "monthlyCheckDate": 7
+  },
+  "notifications": {
+    "enabled": true,
+    "criticalChangesOnly": false,
+    "channels": ["console", "file"],
+    "webhookUrl": null,
+    "emailRecipients": []
+  },
+  "updateTriggers": {
+    "autoUpdateOnCritical": true,
+    "autoUpdateOnHigh": true,
+    "autoUpdateOnMedium": false,
+    "requiresManualApproval": ["new_card", "removed_card", "targeting_change"]
+  },
+  "balanceChangeDetection": {
+    "statThresholds": {
+      "hitpoints": 0.05,
+      "damage": 0.05,
+      "attackSpeed": 0.1,
+      "range": 0.1,
+      "speed": 0.1
+    },
+    "criticalStats": [
+      "targeting",
+      "canEvolve",
+      "evolutionLevels",
+      "type"
+    ],
+    "monitoredFields": [
+      "hitpoints",
+      "damage",
+      "attackSpeed",
+      "range",
+      "speed",
+      "targeting",
+      "canEvolve",
+      "maxEvolutionLevel",
+      "type",
+      "rarity",
+      "elixirCost"
+    ]
+  },
+  "dataSources": {
+    "primary": {
+      "name": "Supercell Official API",
+      "url": "https://api.clashroyale.com/v1/cards",
+      "requiresAuth": true,
+      "rateLimitPerHour": 1000,
+      "timeout": 30
+    },
+    "backup": {
+      "name": "RoyaleAPI",
+      "url": "https://royaleapi.com/api/cards",
+      "requiresAuth": false,
+      "rateLimitPerHour": 100,
+      "timeout": 30
+    }
+  },
+  "mechanicsDatabase": {
+    "filePath": "/workspaces/opti_royale/enhanced_card_database.json",
+    "backupPath": "/workspaces/opti_royale/backups/enhanced_card_database_backup.json",
+    "generatorScript": "/workspaces/opti_royale/scripts/generate-enhanced-database.py",
+    "versioning": {
+      "enabled": true,
+      "maxVersions": 10,
+      "versionPrefix": "v"
+    }
+  },
+  "logging": {
+    "level": "INFO",
+    "file": "/workspaces/opti_royale/logs/mechanics-update.log",
+    "maxSizeBytes": 10485760,
+    "backupCount": 5,
+    "consoleOutput": true
+  },
+  "features": {
+    "enableStatChangeDetection": true,
+    "enableNewCardDetection": true,
+    "enableRemovedCardDetection": true,
+    "enableEvolutionChanges": true,
+    "enableTargetingChanges": true,
+    "enableMechanicsValidation": true,
+    "enableAutoBackup": true
+  }
+}

@@ -1,0 +1,134 @@
+config:
+  target: 'http://localhost'
+  phases:
+    # Warm up phase
+    - duration: 60
+      arrivalRate: 10
+      name: "Warm up"
+    
+    # Normal load simulation
+    - duration: 300
+      arrivalRate: 100
+      name: "Normal load - 100 users/sec"
+    
+    # Peak hours simulation  
+    - duration: 600
+      arrivalRate: 500
+      name: "Peak hours - 500 users/sec"
+    
+    # Stress test simulation
+    - duration: 300
+      arrivalRate: 1000
+      name: "Stress test - 1000 users/sec"
+    
+    # Video upload surge
+    - duration: 180
+      arrivalRate: 200
+      name: "Video upload surge"
+
+  environments:
+    production:
+      target: 'https://api.optiroyale.com'
+    staging:
+      target: 'https://staging-api.optiroyale.com'
+
+scenarios:
+  # API health checks and user authentication
+  - name: "API Health and Auth"
+    weight: 30
+    flow:
+      - get:
+          url: "/api/health"
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "test@example.com"
+            password: "password"
+      - get:
+          url: "/api/user/profile"
+          headers:
+            Authorization: "Bearer {{ token }}"
+
+  # Video upload and analysis simulation
+  - name: "Video Analysis Workflow"
+    weight: 50
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "test@example.com"
+            password: "password"
+          capture:
+            - json: "$.token"
+              as: "token"
+      
+      # Simulate video upload
+      - post:
+          url: "/api/videos/upload"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          formData:
+            video: "@test-video.mp4"
+          capture:
+            - json: "$.videoId"
+              as: "videoId"
+      
+      # Poll for analysis results
+      - loop:
+        - get:
+            url: "/api/videos/{{ videoId }}/status"
+            headers:
+              Authorization: "Bearer {{ token }}"
+        - think: 5
+        count: 20
+      
+      # Get analysis results
+      - get:
+          url: "/api/videos/{{ videoId }}/analysis"
+          headers:
+            Authorization: "Bearer {{ token }}"
+
+  # Real-time features testing
+  - name: "Real-time Features"
+    weight: 20
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "test@example.com"
+            password: "password"
+          capture:
+            - json: "$.token"
+              as: "token"
+      
+      # WebSocket connection simulation
+      - ws:
+          url: "/ws"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          send:
+            - '{"type": "subscribe", "channel": "analysis_updates"}'
+          receive:
+            - '{"type": "connected"}'
+
+# Performance metrics and SLA targets
+expect:
+  - statusCode: 200
+  - contentType: json
+  - maxErrorRate: 1  # Max 1% error rate
+  - p95: 500         # 95th percentile response time < 500ms
+  - p99: 1000        # 99th percentile response time < 1s
+
+plugins:
+  expect: {}
+  metrics-by-endpoint: {}
+  
+# Custom metrics collection
+custom:
+  video_upload_time:
+    metric: "custom.video_upload_duration"
+    threshold: 30000  # 30 seconds max upload time
+  
+  analysis_completion_time:
+    metric: "custom.analysis_duration" 
+    threshold: 60000  # 60 seconds max analysis time

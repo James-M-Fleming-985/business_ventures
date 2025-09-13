@@ -1,0 +1,366 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Cluster with Read Replicas (High Performance)
+  postgres-primary:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: opti_royale
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_REPLICATION_MODE: master
+      POSTGRES_REPLICATION_USER: replicator
+      POSTGRES_REPLICATION_PASSWORD: replicator_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_primary_data:/var/lib/postgresql/data
+      - ./postgresql.conf:/etc/postgresql/postgresql.conf
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    command: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]
+    networks:
+      - opti-royale-network
+
+  postgres-replica:
+    image: postgres:15
+    environment:
+      POSTGRES_MASTER_SERVICE: postgres-primary
+      POSTGRES_REPLICATION_MODE: slave
+      POSTGRES_REPLICATION_USER: replicator
+      POSTGRES_REPLICATION_PASSWORD: replicator_password
+    ports:
+      - "5433:5432"
+    depends_on:
+      - postgres-primary
+    networks:
+      - opti-royale-network
+
+  # Redis Cluster for High Availability
+  redis-master:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --maxmemory 2gb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_master_data:/data
+    networks:
+      - opti-royale-network
+
+  redis-replica:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+    command: redis-server --slaveof redis-master 6379 --appendonly yes
+    depends_on:
+      - redis-master
+    networks:
+      - opti-royale-network
+
+  # Load Balancer
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx-performance.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - api
+      - web
+    networks:
+      - opti-royale-network
+
+  # API Service Cluster (Multiple Instances)
+  api-1:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile.production
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://postgres:password@postgres-primary:5432/opti_royale
+      - DATABASE_READ_URL=postgresql://postgres:password@postgres-replica:5432/opti_royale
+      - REDIS_URL=redis://redis-master:6379
+      - REDIS_CLUSTER_NODES=redis-master:6379,redis-replica:6379
+      - PORT=3001
+      - INSTANCE_ID=api-1
+    depends_on:
+      - postgres-primary
+      - redis-master
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
+    networks:
+      - opti-royale-network
+
+  api-2:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile.production
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://postgres:password@postgres-primary:5432/opti_royale
+      - DATABASE_READ_URL=postgresql://postgres:password@postgres-replica:5432/opti_royale
+      - REDIS_URL=redis://redis-master:6379
+      - PORT=3002
+      - INSTANCE_ID=api-2
+    depends_on:
+      - postgres-primary
+      - redis-master
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+    networks:
+      - opti-royale-network
+
+  # Computer Vision Service Cluster with GPU Support
+  cv-analyzer-1:
+    build:
+      context: ./services/cv-analyzer
+      dockerfile: Dockerfile.gpu
+    environment:
+      - REDIS_URL=redis://redis-master:6379
+      - CELERY_BROKER_URL=redis://redis-master:6379
+      - MODEL_CACHE_SIZE=1000
+      - BATCH_SIZE=32
+      - INSTANCE_ID=cv-1
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+        limits:
+          cpus: '4.0'
+          memory: 8G
+    volumes:
+      - model_cache:/app/models
+      - ./uploads:/app/uploads
+    networks:
+      - opti-royale-network
+
+  cv-analyzer-2:
+    build:
+      context: ./services/cv-analyzer
+      dockerfile: Dockerfile.gpu
+    environment:
+      - REDIS_URL=redis://redis-master:6379
+      - CELERY_BROKER_URL=redis://redis-master:6379
+      - INSTANCE_ID=cv-2
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    volumes:
+      - model_cache:/app/models
+      - ./uploads:/app/uploads
+    networks:
+      - opti-royale-network
+
+  # Celery Workers for Background Processing
+  celery-worker-1:
+    build:
+      context: ./services/cv-analyzer
+      dockerfile: Dockerfile.gpu
+    command: celery -A app.celery worker --loglevel=info --concurrency=8 --prefetch-multiplier=1
+    environment:
+      - REDIS_URL=redis://redis-master:6379
+      - CELERY_BROKER_URL=redis://redis-master:6379
+    depends_on:
+      - redis-master
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 8G
+    volumes:
+      - model_cache:/app/models
+    networks:
+      - opti-royale-network
+
+  # Message Queue Monitoring
+  flower:
+    build:
+      context: ./services/cv-analyzer
+    command: celery -A app.celery flower --port=5555
+    environment:
+      - CELERY_BROKER_URL=redis://redis-master:6379
+    ports:
+      - "5555:5555"
+    depends_on:
+      - redis-master
+    networks:
+      - opti-royale-network
+
+  # Monitoring Stack
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    networks:
+      - opti-royale-network
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3003:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - opti-royale-network
+    build:
+      context: ./services/cv-analyzer
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - API_BASE_URL=http://api:3001
+    depends_on:
+      - redis
+    volumes:
+      - ./services/cv-analyzer:/app
+      - ./uploads:/app/uploads
+    networks:
+      - opti-royale-network
+
+  # Web Application
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:3001
+      - NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=your-stripe-publishable-key
+    depends_on:
+      - api
+    volumes:
+      - ./apps/web:/app
+      - /app/node_modules
+    networks:
+      - opti-royale-network
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - web
+      - api
+    networks:
+      - opti-royale-network
+
+  # Mechanics Update Monitor
+  mechanics-monitor:
+    build:
+      context: .
+      dockerfile: docker/mechanics-monitor.Dockerfile
+    environment:
+      - CLASH_ROYALE_API_KEY=${CLASH_ROYALE_API_KEY}
+    volumes:
+      - ./enhanced_card_database.json:/app/enhanced_card_database.json
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./backups:/app/backups
+    restart: always
+    healthcheck:
+      test: ["CMD", "python", "-c", "import json; open('data/last_mechanics_scan.json').read()"]
+      interval: 30m
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    networks:
+      - opti-royale-network
+
+  # Application Owner Dashboard
+  dashboard:
+    build:
+      context: ./apps/dashboard
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@postgres-primary:5432/opti_royale
+      - REDIS_URL=redis://redis-master:6379
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./enhanced_card_database.json:/app/enhanced_card_database.json
+      - ./data:/app/data
+      - ./logs:/app/logs
+    depends_on:
+      - postgres-primary
+      - redis-master
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/api/dashboard/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - opti-royale-network
+
+  # Prometheus Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    networks:
+      - opti-royale-network
+
+  # Grafana Dashboard
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - opti-royale-network
+
+volumes:
+  postgres_primary_data:
+  redis_master_data:
+  model_cache:
+  prometheus_data:
+  grafana_data:
+  uploads:
+
+networks:
+  opti-royale-network:
+    driver: bridge

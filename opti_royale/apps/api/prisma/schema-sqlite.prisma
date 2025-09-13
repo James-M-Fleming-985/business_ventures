@@ -1,0 +1,156 @@
+// Simplified Prisma schema for SQLite compatibility
+// This is a development-focused schema to get video upload working quickly
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// CORE USER MANAGEMENT
+// ============================================================================
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  username  String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Profile
+  displayName String?
+  avatar      String?
+  
+  // Game Info
+  trophyCount   Int?
+  skillLevel    String? // BEGINNER, INTERMEDIATE, ADVANCED, EXPERT, PROFESSIONAL
+  
+  // Relationships
+  videos            Video[]
+  placementAnalyses PlacementAnalysis[]
+  
+  @@map("users")
+}
+
+// ============================================================================
+// VIDEO MANAGEMENT
+// ============================================================================
+
+model Video {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // File Info
+  filename    String
+  originalName String?
+  fileSize    Int
+  duration    Float?   // seconds
+  filePath    String   // Storage path
+  thumbnailPath String? // Generated thumbnail
+  
+  // Upload Info
+  uploadedAt  DateTime @default(now())
+  processedAt DateTime?
+  status      String   @default("UPLOADED") // UPLOADED, PROCESSING, COMPLETED, FAILED
+  
+  // Analysis Info
+  matchResult String?  // WIN, LOSS, DRAW
+  playerDeckString  String? // JSON string: ["knight", "archer", ...]
+  opponentDeckString String? // JSON string: ["wizard", "dragon", ...]
+  
+  // Relationships
+  analyses PlacementAnalysis[]
+  
+  @@map("videos")
+}
+
+// ============================================================================
+// PLACEMENT ANALYSIS
+// ============================================================================
+
+model PlacementAnalysis {
+  id      String @id @default(cuid())
+  videoId String
+  video   Video  @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  
+  userId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Analysis Timestamp
+  createdAt   DateTime @default(now())
+  timestamp   Float    // Video timestamp in seconds
+  
+  // Placement Info
+  placedCard     String   // Card ID that was placed
+  userPlacementX  Float    // X coordinate
+  userPlacementY  Float    // Y coordinate
+  
+  // AI Analysis Results
+  optimalPlacementX    Float    // Optimal X coordinate  
+  optimalPlacementY    Float    // Optimal Y coordinate
+  placementScore      Float    // 1-10 score for user's placement
+  improvementTip      String?  // How to improve this placement
+  
+  // Context
+  tacticalSituation  String?  // e.g., "Defending push", "Counter-attacking"
+  
+  @@map("placement_analyses")
+}
+
+// ============================================================================
+// CARD DATABASE (Simplified)
+// ============================================================================
+
+model Card {
+  id        String   @id // e.g., "knight", "archer"
+  name      String
+  cardType  String   // TROOP, SPELL, BUILDING
+  rarity    String   // COMMON, RARE, EPIC, LEGENDARY, CHAMPION
+  
+  // Basic Stats
+  elixirCost   Int
+  hitpoints    Int?
+  damage       Int?
+  attackSpeed  Float?
+  
+  // Visual Properties
+  description  String?
+  imageUrl     String?
+  
+  // Meta Data
+  usageRate    Float?   // Usage rate %
+  winRate      Float?   // Win rate when used
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("cards")
+}
+
+// ============================================================================
+// ANALYTICS (Simplified)
+// ============================================================================
+
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  userId    String?
+  
+  timestamp DateTime @default(now())
+  eventType String   // USER_ACTION, VIDEO_UPLOAD, PLACEMENT_ANALYSIS, etc.
+  eventName String
+  
+  // Simplified properties as text fields
+  property1 String?
+  property2 String?
+  property3 String?
+  
+  sessionId String?
+  userAgent String?
+  
+  @@map("analytics_events")
+}

@@ -1,0 +1,35 @@
+{
+  "name": "@opti-royale/clash-royale-api",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "nodemon src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "sync:cards": "node dist/sync-cards.js",
+    "sync:balance": "node dist/sync-balance-changes.js",
+    "test": "jest"
+  },
+  "dependencies": {
+    "fastify": "^4.24.0",
+    "@fastify/cors": "^8.4.0",
+    "@fastify/schedule": "^4.0.0",
+    "axios": "^1.6.0",
+    "node-cron": "^3.0.0",
+    "dotenv": "^16.3.0",
+    "pg": "^8.11.0",
+    "ioredis": "^5.3.0",
+    "pino": "^8.16.0",
+    "zod": "^3.22.0",
+    "date-fns": "^2.30.0",
+    "lodash": "^4.17.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/pg": "^8.10.0",
+    "typescript": "^5.0.0",
+    "nodemon": "^3.0.0",
+    "ts-node": "^10.9.0",
+    "jest": "^29.0.0"
+  }
+}

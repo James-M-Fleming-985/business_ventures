@@ -1,0 +1,137 @@
+# Performance Monitoring Configuration for OptiRoyale
+
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+rule_files:
+  - "alert_rules.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+scrape_configs:
+  # API Services Monitoring
+  - job_name: 'api-services'
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['api-1:9090', 'api-2:9090']
+    metrics_path: /metrics
+    
+  # Computer Vision Services
+  - job_name: 'cv-services'
+    scrape_interval: 10s
+    static_configs:
+      - targets: ['cv-analyzer-1:8090', 'cv-analyzer-2:8090']
+    
+  # Database Monitoring
+  - job_name: 'postgres'
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['postgres-primary:9187', 'postgres-replica:9187']
+    
+  # Redis Monitoring
+  - job_name: 'redis'
+    scrape_interval: 10s
+    static_configs:
+      - targets: ['redis-master:9121', 'redis-replica:9121']
+    
+  # Node Exporter (System Metrics)
+  - job_name: 'node-exporter'
+    scrape_interval: 10s
+    static_configs:
+      - targets: ['node-exporter:9100']
+    
+  # NVIDIA GPU Metrics
+  - job_name: 'nvidia-gpu'
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['nvidia-exporter:9445']
+    
+  # Nginx Metrics
+  - job_name: 'nginx'
+    scrape_interval: 10s
+    static_configs:
+      - targets: ['nginx:9113']
+    
+  # Celery Workers
+  - job_name: 'celery'
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['celery-worker-1:8080', 'celery-worker-2:8080']
+
+# Performance Alerting Rules
+- name: high_performance_alerts
+  rules:
+  # API Response Time Alert
+  - alert: HighAPIResponseTime
+    expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 0.5
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High API response time detected"
+      description: "95th percentile response time is {{ $value }} seconds"
+
+  # High CPU Usage
+  - alert: HighCPUUsage
+    expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High CPU usage detected"
+      description: "CPU usage is {{ $value }}%"
+
+  # High Memory Usage
+  - alert: HighMemoryUsage
+    expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High memory usage detected"
+      description: "Memory usage is {{ $value }}%"
+
+  # Database Connection Pool Exhaustion
+  - alert: DatabaseConnectionPoolExhaustion
+    expr: pg_stat_database_numbackends / pg_settings_max_connections * 100 > 90
+    for: 2m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Database connection pool nearly exhausted"
+      description: "{{ $value }}% of connections are in use"
+
+  # Redis Memory Usage
+  - alert: RedisHighMemoryUsage
+    expr: redis_memory_used_bytes / redis_config_maxmemory * 100 > 90
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Redis memory usage is high"
+      description: "Redis memory usage is {{ $value }}%"
+
+  # GPU Utilization
+  - alert: LowGPUUtilization
+    expr: nvidia_gpu_utilization_gpu < 70
+    for: 10m
+    labels:
+      severity: info
+    annotations:
+      summary: "GPU utilization is low"
+      description: "GPU utilization is {{ $value }}%"
+
+  # Video Processing Queue Backlog
+  - alert: VideoProcessingBacklog
+    expr: celery_tasks_pending > 100
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Video processing queue has backlog"
+      description: "{{ $value }} tasks pending in queue"
