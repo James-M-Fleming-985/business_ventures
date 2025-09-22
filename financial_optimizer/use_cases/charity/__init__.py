@@ -1,1 +1,0 @@
-# Charity use case implementation
