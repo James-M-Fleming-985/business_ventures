@@ -1,0 +1,407 @@
+# SYSTEM-CA-003: Drift Forecasting & Timing Engine
+# =================================================
+
+metadata:
+  system_id: SYSTEM-CA-003
+  system_name: Drift Forecasting & Timing Engine
+  parent_project: PROJECT-CAUSAL_AFFECT
+  created_date: 2025-10-13
+  status: planned
+  priority: critical
+  
+  purpose: |
+    Predictive modeling system that forecasts correlation drift over time.
+    Provides 70%+ accuracy on 30-day forecasts for timing decisions.
+  
+  business_value: |
+    - Identifies time-sensitive opportunities
+    - Optimizes timing for MVP deployment
+    - Reduces risk of missed opportunities
+    - Enables strategic planning with forecast confidence
+
+deployment:
+  platform: Railway
+  service_type: Backend worker service (Celery workers)
+  scaling: 1-2 workers (Phase 1) → 4-8 workers (Phase 2)
+  estimated_cost: "$20/month (Phase 1) → $80/month (Phase 2)"
+  
+  railway_config:
+    builder: NIXPACKS
+    build_command: "pip install -r requirements.txt"
+    start_command: "celery -A app.forecasting worker --loglevel=info"
+    health_check: "/health"
+    restart_policy: ON_FAILURE
+
+system_requirements:
+  performance_phase_1:
+    forecast_calculation_time: "5-10 minutes per opportunity"
+    scenario_modeling: "Best/worst/likely (3 scenarios)"
+    real_time_monitoring: "Detect threshold breaches within 2 minutes"
+    batch_processing: "Analyze 5-10 opportunities concurrently"
+  
+  performance_phase_2:
+    forecast_calculation_time: "<5 minutes per opportunity"
+    scenario_modeling: "100+ scenarios per opportunity"
+    batch_processing: "Analyze 20+ opportunities concurrently"
+  
+  accuracy:
+    forecast_accuracy: ">70% on 30-day windows"
+    confidence_intervals: "Provide 80%, 90%, 95% confidence bands"
+    alert_precision: "False alert rate <10%"
+  
+  time_windows:
+    short_term: "7-day forecasts"
+    medium_term: "30-day forecasts"
+    long_term: "90-day trend analysis"
+
+features:
+  - feature_id: FEATURE-CA-003-01
+    feature_name: Time-Series Forecasting Models
+    description: |
+      Ensemble of forecasting models (ARIMA, Prophet, LSTM) for predicting
+      variable drift with accuracy validation and confidence intervals
+    estimated_layers: 5-6
+    priority: critical
+    
+  - feature_id: FEATURE-CA-003-02
+    feature_name: Exploitation Window Calculator
+    description: |
+      Determines optimal time windows for opportunity exploitation based on
+      drift forecasts, market conditions, and deployment constraints
+    estimated_layers: 4-5
+    priority: critical
+    
+  - feature_id: FEATURE-CA-003-03
+    feature_name: Threshold Detection & Alerting
+    description: |
+      Real-time monitoring that triggers alerts when drift exceeds
+      configured thresholds or opportunities become time-critical
+    estimated_layers: 3-4
+    priority: high
+    
+  - feature_id: FEATURE-CA-003-04
+    feature_name: Historical Validation & Backtesting
+    description: |
+      Continuously validates forecast accuracy against historical data
+      and adjusts models to improve predictions over time
+    estimated_layers: 4-5
+    priority: high
+
+acceptance_criteria:
+  - criterion_id: AC-SYS-003-01
+    criterion: "Forecast accuracy exceeds 70% on 30-day windows"
+    verification: "Backtesting against 12+ months historical data"
+    priority: critical
+    
+  - criterion_id: AC-SYS-003-02
+    criterion: "Generate forecasts for opportunities within 5 minutes"
+    verification: "Performance test with 20 concurrent opportunities"
+    priority: critical
+    
+  - criterion_id: AC-SYS-003-03
+    criterion: "Threshold alerts trigger within 2 minutes of breach"
+    verification: "Real-time monitoring simulation"
+    priority: high
+    
+  - criterion_id: AC-SYS-003-04
+    criterion: "Exploitation windows identified with 90%+ confidence"
+    verification: "Historical validation of window accuracy"
+    priority: high
+    
+  - criterion_id: AC-SYS-003-05
+    criterion: "False alert rate remains below 10%"
+    verification: "Alert precision tracking over 3+ months"
+    priority: medium
+
+forecasting_models:
+  statistical:
+    - model: "ARIMA (AutoRegressive Integrated Moving Average)"
+      use_case: "Linear time-series trends"
+      strengths: "Well-understood, interpretable"
+      
+    - model: "SARIMA (Seasonal ARIMA)"
+      use_case: "Time-series with seasonal patterns"
+      strengths: "Handles cyclical behavior"
+      
+    - model: "Prophet (Facebook)"
+      use_case: "Time-series with holidays and events"
+      strengths: "Robust to missing data, outliers"
+  
+  machine_learning:
+    - model: "LSTM (Long Short-Term Memory)"
+      use_case: "Complex non-linear patterns"
+      strengths: "Captures long-term dependencies"
+      
+    - model: "XGBoost Time-Series"
+      use_case: "Multi-variate forecasting"
+      strengths: "Feature engineering, fast training"
+      
+    - model: "Random Forest Regressor"
+      use_case: "Ensemble predictions"
+      strengths: "Handles non-linearity, feature importance"
+  
+  ensemble:
+    strategy: "Weighted average based on historical accuracy"
+    weights: "Dynamic adjustment using recent performance"
+    fallback: "Use most accurate single model if ensemble fails"
+
+drift_indicators:
+  correlation_strength_change:
+    description: "Rate of change in correlation coefficient"
+    threshold: ">0.1 change per week = high drift"
+  
+  volatility_increase:
+    description: "Standard deviation of correlation over time"
+    threshold: "2x historical volatility = alert"
+  
+  directional_change:
+    description: "Positive to negative correlation flip"
+    threshold: "Sign change = critical alert"
+  
+  data_quality_degradation:
+    description: "Missing data or outliers increasing"
+    threshold: ">20% data quality issues = warning"
+
+exploitation_window_criteria:
+  minimum_duration:
+    value: "14 days"
+    reason: "Enough time to build and deploy MVP"
+  
+  maximum_duration:
+    value: "180 days"
+    reason: "Beyond this, uncertainty too high"
+  
+  confidence_threshold:
+    value: "80%"
+    reason: "Balance between opportunities and risk"
+  
+  drift_stability:
+    value: "±5% variation"
+    reason: "Acceptable fluctuation within window"
+
+technology_stack:
+  forecasting_libraries: "statsmodels, fbprophet, TensorFlow/Keras"
+  time_series_analysis: "pandas, NumPy"
+  model_management: "MLflow for experiment tracking"
+  storage: "PostgreSQL for forecasts, TimescaleDB for historical"
+  alerting: "Celery beat for scheduled checks, Redis for triggers"
+  visualization: "Plotly for interactive forecast charts"
+
+dependencies:
+  internal:
+    - "SYSTEM-CA-002: Correlation Analysis (provides correlation data)"
+  
+  external:
+    - "PostgreSQL/TimescaleDB for time-series data"
+    - "Redis for real-time alerting"
+    - "MLflow for model tracking"
+
+testing_requirements:
+  philosophy: |
+    ALL TESTS MUST VERIFY ACTUAL FORECAST ACCURACY AND MATHEMATICAL CORRECTNESS.
+    No fake forecasts or stubbed predictions. Use real historical data. Verify models work.
+    
+    1. Tests verify actual behavior, not just interfaces
+    2. Tests check side effects (forecasts stored, alerts triggered correctly)
+    3. Tests use mocks to VERIFY calls, not just STUB returns
+    4. Integration tests run with REAL time-series data and REAL model predictions
+    5. Manual verification confirms forecasts are accurate and actionable
+  
+  unit_tests:
+    minimum_count: 35
+    coverage_threshold: 0.85
+    
+    required_verifications:
+      time_series_model_tests:
+        - "VERIFY: ARIMA model produces mathematically valid forecasts"
+        - "VERIFY: Prophet model produces mathematically valid forecasts"
+        - "VERIFY: Known time series produces expected forecast (test data)"
+        - "VERIFY: Seasonal patterns detected correctly (yearly, monthly, weekly)"
+        - "VERIFY: Trend detection works (upward, downward, flat)"
+        - "VERIFY: Model confidence intervals calculated correctly (95%, 99%)"
+        - "VERIFY: Forecast horizon respected (30 days, 60 days, 90 days)"
+        - "NO MOCKING: Use real statsmodels/Prophet libraries"
+        - "EDGE CASE: Insufficient data, all zeros, extreme volatility"
+        
+      exploitation_window_tests:
+        - "VERIFY: Window calculation mathematically correct"
+        - "VERIFY: Drift trajectory produces expected window start/end"
+        - "VERIFY: Multiple scenarios generated (best, worst, likely)"
+        - "VERIFY: Scenario probabilities sum to 1.0"
+        - "VERIFY: Window constraints respected (min 7 days, max 180 days)"
+        - "VERIFY: Edge detection triggers at correct thresholds"
+        - "VERIFY: Window persisted to database with opportunity ID"
+        - "SIDE EFFECT: Check database for window records"
+        - "MATH CHECK: Manual calculation vs algorithm output"
+        
+      alert_detection_tests:
+        - "VERIFY: Threshold crossing detected correctly"
+        - "VERIFY: Alert triggered within 2-minute SLA"
+        - "VERIFY: Alert contains required fields (opportunity, window, urgency)"
+        - "VERIFY: No duplicate alerts for same opportunity"
+        - "VERIFY: Alert severity calculated correctly (low, medium, high, critical)"
+        - "VERIFY: Notification sent to correct channels (email, Slack, webhook)"
+        - "SIDE EFFECT: Mock notification service, verify call made"
+        - "TIMING: Measure alert latency from detection to notification"
+        
+      backtesting_framework_tests:
+        - "VERIFY: Historical validation uses data before forecast date"
+        - "VERIFY: Forecast accuracy calculated correctly (MAE, RMSE, MAPE)"
+        - "VERIFY: Accuracy >70% on 30-day forecasts (historical validation)"
+        - "VERIFY: Model selection based on accuracy (best model wins)"
+        - "VERIFY: Backtesting results persisted for analysis"
+        - "VERIFY: Performance metrics calculated (bias, variance)"
+        - "REAL DATA: Use actual 12+ months historical data"
+        - "NO CHERRY-PICKING: Test on diverse time periods, not just easy ones"
+  
+  integration_tests:
+    minimum_count: 20
+    coverage_threshold: 0.80
+    
+    required_scenarios:
+      end_to_end_forecasting_pipeline:
+        description: "Complete forecast from correlation to alert"
+        requirements:
+          - "INPUT: Real correlation data from correlation analysis system"
+          - "VERIFY: Time-series data loaded from TimescaleDB"
+          - "VERIFY: Multiple models trained (ARIMA, Prophet, ensemble)"
+          - "VERIFY: Best model selected based on backtesting"
+          - "VERIFY: 30-day forecast generated"
+          - "VERIFY: Exploitation window calculated"
+          - "VERIFY: Results stored in PostgreSQL (query to confirm)"
+          - "VERIFY: Completion time < 5 minutes (measured)"
+          - "NO MOCKING: All components real, verify end state"
+          - "MANUAL: Review forecast charts, check if reasonable"
+        
+      concurrent_opportunity_processing:
+        description: "20+ opportunities processed simultaneously"
+        requirements:
+          - "SPAWN: 20 parallel forecasting tasks"
+          - "VERIFY: All forecasts complete successfully"
+          - "VERIFY: No race conditions or data corruption"
+          - "VERIFY: Results isolated per opportunity (no cross-contamination)"
+          - "VERIFY: Performance scales linearly with workers"
+          - "MEASURE: Total time, per-opportunity time, resource usage"
+          - "VERIFY: All 20 opportunities have valid forecasts in database"
+          - "REAL PARALLELISM: Use actual Celery/Ray, not mocked"
+        
+      threshold_crossing_alert:
+        description: "Alert triggered when drift crosses threshold"
+        requirements:
+          - "SETUP: Configure threshold for test correlation"
+          - "INJECT: Time-series data that crosses threshold"
+          - "VERIFY: Alert detected within 2 minutes (measured)"
+          - "VERIFY: Alert contains correct opportunity, urgency, window"
+          - "VERIFY: Notification sent to configured channels"
+          - "VERIFY: Alert logged in database with timestamp"
+          - "VERIFY: No false positive alerts (threshold not crossed)"
+          - "SIDE EFFECT: Check notification service received message"
+        
+      model_accuracy_validation:
+        description: "Backtesting confirms >70% accuracy"
+        requirements:
+          - "INPUT: 12+ months historical data (real correlations)"
+          - "BACKTEST: Generate forecasts for multiple historical dates"
+          - "VERIFY: Forecast vs actual comparison calculated"
+          - "VERIFY: Accuracy metrics exceed 70% threshold"
+          - "VERIFY: Accuracy tracked over time (detect degradation)"
+          - "VERIFY: Poor-performing models flagged for retraining"
+          - "REAL DATA: Use actual historical data, not synthetic"
+          - "MANUAL: Spot-check forecasts against what actually happened"
+  
+  performance_tests:
+    required: true
+    
+    scenarios:
+      forecast_generation_speed:
+        target: "5-minute forecast generation per opportunity"
+        verification:
+          - "LOAD: Real correlation with 12+ months time-series data"
+          - "EXECUTE: Full forecasting pipeline (all models)"
+          - "MEASURE: Time from start to forecast completion"
+          - "VERIFY: Completion within 5-minute SLA"
+          - "VERIFY: Forecast quality not sacrificed for speed"
+          - "PROFILE: Identify bottlenecks (data loading, model training, etc.)"
+        
+      concurrent_processing_capacity:
+        target: "20 concurrent opportunity processing"
+        verification:
+          - "SPAWN: 20 parallel forecasting tasks with real data"
+          - "MEASURE: Per-task completion time"
+          - "VERIFY: No significant slowdown vs sequential (< 20% overhead)"
+          - "VERIFY: All 20 complete successfully"
+          - "MEASURE: Resource usage (CPU, memory, I/O)"
+          - "VERIFY: No resource exhaustion or throttling"
+        
+      alert_detection_latency:
+        target: "2-minute alert detection from threshold crossing"
+        verification:
+          - "INJECT: Time-series data that crosses threshold"
+          - "MEASURE: Time from data ingestion to alert notification"
+          - "VERIFY: Latency < 2 minutes (measured)"
+          - "VERIFY: Alert accuracy (no false positives/negatives)"
+          - "VERIFY: Notification delivery confirmed"
+  
+  backtesting:
+    required: true
+    historical_data: "12+ months for validation"
+    accuracy_target: ">70% on 30-day forecasts"
+    
+    validation_requirements:
+      - "USE: Real historical correlation data (not synthetic)"
+      - "VERIFY: Forecast vs actual comparison for 100+ historical dates"
+      - "VERIFY: Accuracy calculation correct (MAE, RMSE, MAPE)"
+      - "VERIFY: Accuracy exceeds 70% threshold on average"
+      - "VERIFY: Accuracy consistent across time periods (no cherry-picking)"
+      - "VERIFY: Model performance tracked over time"
+      - "VERIFY: Poor models flagged and retrained"
+      - "MANUAL: Review sample forecasts, verify against actual outcomes"
+  
+  manual_verification:
+    required: true
+    description: "Human verification that forecasts are accurate and useful"
+    
+    checklist:
+      - "START: Run full forecasting cycle with real correlation data"
+      - "OBSERVE: Watch logs for errors (should be clean)"
+      - "CHECK: Query database for forecast records"
+      - "VALIDATE: Spot-check forecasts look reasonable (not all zeros, not NaN)"
+      - "INSPECT: Grafana dashboard shows forecasting metrics"
+      - "TEST: Inject threshold-crossing data, confirm alert triggered"
+      - "REVIEW: Backtest results show >70% accuracy"
+      - "COMPARE: Manual forecast vs system forecast (sanity check)"
+      - "DOCUMENT: Screenshot evidence of working forecasts"
+
+estimated_effort:
+  total_days: 8
+  team_size: 2 developers
+
+implementation_phases:
+  phase_1:
+    duration: 3 days
+    deliverable: "Time-series forecasting models (ARIMA, Prophet)"
+  
+  phase_2:
+    duration: 2 days
+    deliverable: "Exploitation window calculation logic"
+  
+  phase_3:
+    duration: 2 days
+    deliverable: "Threshold detection and alerting system"
+  
+  phase_4:
+    duration: 1 day
+    deliverable: "Historical validation and backtesting framework"
+
+risks:
+  - risk: "Forecast accuracy may not reach 70% target"
+    mitigation: "Ensemble multiple models, continuous tuning"
+    severity: high
+  
+  - risk: "Black swan events not captured in historical data"
+    mitigation: "Manual override capability, confidence bands"
+    severity: medium
+  
+  - risk: "Computational cost of 100+ scenarios per opportunity"
+    mitigation: "Model optimization, caching, parallel processing"
+    severity: medium

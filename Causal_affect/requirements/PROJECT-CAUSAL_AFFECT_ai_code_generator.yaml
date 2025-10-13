@@ -1,0 +1,632 @@
+# PROJECT-CAUSAL_AFFECT: Causal Affect - Automated Opportunity Exploitation Platform
+# ======================================================================================
+# Real-time correlation analysis, opportunity identification, and automated MVP deployment system
+
+metadata:
+  project_id: PROJECT-CAUSAL_AFFECT
+  project_name: Causal Affect
+  project_type: Application Project - Mission Critical
+  created_date: 2025-10-13
+  status: planned
+  priority: critical
+  
+  purpose: |
+    Automated platform for identifying variable correlations across massive datasets, 
+    forecasting exploitation windows, and deploying MVPs to capture emerging opportunities.
+    
+    Core mission: Identify needs earliest, adapt seamlessly, exploit aggressively, 
+    act on feedback optimally.
+    
+    The system operates autonomously with strategic decision points, processing terabytes
+    of data from multiple sources to identify relationships before competitors, then
+    rapidly deploying solutions at scale.
+  
+  business_value: |
+    - First-mover advantage on emerging market needs (4-hour response time)
+    - Automated opportunity pipeline generating multiple revenue streams
+    - Scalable deployment of MVPs without manual development overhead
+    - Data-driven decision making with quantified exploitation windows
+    - Continuous optimization through automated feedback loops
+    - Portfolio approach maximizes probability of capturing high-value opportunities
+
+project_scope:
+  systems:
+    - SYSTEM-CA-001: Data Ingestion & Processing Engine
+    - SYSTEM-CA-002: Correlation Analysis & Pattern Recognition
+    - SYSTEM-CA-003: Drift Forecasting & Timing Engine
+    - SYSTEM-CA-004: Opportunity Assessment & Solution Modeling
+    - SYSTEM-CA-005: MVP Generation & Deployment Pipeline
+    - SYSTEM-CA-006: Feedback Collection & Iteration Orchestrator
+  
+  total_features: 30  # 5 features per system
+  total_layers: 121-147  # Estimated from system requirements
+  
+  estimated_effort:
+    total_hours: 640-800
+    total_days: 80-100
+    team_size: 1 developer + automation
+  
+  deployment_strategy:
+    platform: Railway (primary) + managed services
+    approach: Lean startup, scale with revenue
+    philosophy: Solo founder optimized, automation-first
+  
+  data_scale_requirements:
+    phase_1_launch: 50-100 GB per cycle (Month 1-3)
+    phase_2_growth: 500 GB - 1 TB per cycle (Month 4-12)
+    phase_3_scale: 5-10 TB per cycle (Year 2+)
+    concurrent_data_sources: 8-12 APIs (launch) → 15-20 APIs (scale)
+    correlation_calculations_per_cycle: 1000-2000 (launch) → 10000+ (scale)
+    analysis_cycle_time: 30-60 minutes (launch) → 15 minutes (scale)
+    mvp_deployment_time: 10-15 minutes (Railway optimized)
+
+# Testing requirements for PROJECT level
+testing_requirements:
+  unit_tests:
+    required: true
+    minimum_count: 200
+    coverage_threshold: 0.85  # Mission-critical application
+    
+  integration_tests:
+    required: true
+    minimum_count: 100
+    coverage_threshold: 0.80
+    
+  e2e_tests:
+    required: true
+    minimum_count: 50
+    coverage_threshold: 0.75
+  
+  performance_tests:
+    required: true
+    phase_1_targets:
+      load_testing: "Simulate 50-100 GB data ingestion"
+      stress_testing: "1000-2000 concurrent correlations"
+      latency_requirements: "API response <500ms, Analysis cycle <60min"
+    phase_2_targets:
+      load_testing: "Simulate 500 GB - 1 TB data ingestion"
+      stress_testing: "5000-10000 concurrent correlations"
+      latency_requirements: "API response <200ms, Analysis cycle <15min"
+
+quality_gates:
+  no_mocks_unless_specified: true
+  real_failing_tests_required: true
+  solo_founder_enforcement: true
+  automation_first: true
+  full_requirements_verification: true
+  
+  performance_gates_phase_1:
+    data_ingestion_time: "50-100 GB in 30-60 minutes"
+    correlation_calculation_time: "1000-2000 correlations in <20 minutes"
+    mvp_deployment_time: "<15 minutes from trigger to live (Railway)"
+    system_uptime: "99% availability target (launch)"
+    api_response_time: "<500ms for all user-facing endpoints"
+    
+  performance_gates_phase_2:
+    data_ingestion_time: "500 GB - 1 TB in 15-30 minutes"
+    correlation_calculation_time: "5000-10000 correlations in <15 minutes"
+    mvp_deployment_time: "<10 minutes from trigger to live"
+    system_uptime: "99.9% availability required"
+    api_response_time: "<200ms for all user-facing endpoints"
+
+# Project-level acceptance criteria
+acceptance_criteria:
+  # PHASE 1 (LAUNCH) CRITERIA
+  - criterion_id: AC-DATA-001-P1
+    criterion: "System ingests and processes 50-100 GB of data per analysis cycle within 60 minutes"
+    status: planned
+    priority: critical
+    phase: 1
+    verification: "Load test with 50-100 GB dataset from 8-12 concurrent API sources on Railway infrastructure"
+    
+  - criterion_id: AC-DATA-002-P1
+    criterion: "System maintains 8-12 concurrent API connections without degradation"
+    status: planned
+    priority: critical
+    phase: 1
+    verification: "Integration test with 8-12 real API endpoints under load"
+    
+  - criterion_id: AC-DATA-003
+    criterion: "Data pipeline handles API failures gracefully with automatic retry and fallback"
+    status: planned
+    priority: high
+    phase: 1
+    verification: "Chaos engineering test with simulated API failures"
+  
+  # CORRELATION ANALYSIS CRITERIA (PHASE 1)
+  - criterion_id: AC-CORR-001-P1
+    criterion: "System calculates 1000-2000 variable correlations within 20 minutes"
+    status: planned
+    priority: critical
+    phase: 1
+    verification: "Performance test with 1000-2000 correlation pairs from real datasets"
+    
+  - criterion_id: AC-CORR-002
+    criterion: "Correlation engine identifies relationships with statistical significance (p<0.05)"
+    status: planned
+    priority: critical
+    phase: 1
+    verification: "Validation against known correlations in test dataset"
+    
+  - criterion_id: AC-CORR-003
+    criterion: "System prioritizes correlations by strength, novelty, and exploitability scores"
+    status: planned
+    priority: critical
+    phase: 1
+    verification: "Algorithm validation with historical data showing exploitation success"
+    
+  # PHASE 2 (GROWTH) CRITERIA
+  - criterion_id: AC-DATA-001-P2
+    criterion: "System ingests and processes 500 GB - 1 TB of data per analysis cycle within 15-30 minutes"
+    status: planned
+    priority: critical
+    phase: 2
+    verification: "Load test with 500 GB - 1 TB dataset from 15-20 concurrent API sources"
+    
+  - criterion_id: AC-CORR-001-P2
+    criterion: "System calculates 5000-10000 variable correlations within 15 minutes"
+    status: planned
+    priority: critical
+    phase: 2
+    verification: "Performance test with 5000-10000 correlation pairs from real datasets"
+  
+  # DRIFT FORECASTING CRITERIA
+  - criterion_id: AC-DRIFT-001
+    criterion: "Drift model predicts exploitation window with 70%+ accuracy"
+    status: planned
+    priority: critical
+    verification: "Backtesting against historical data with known outcomes"
+    
+  - criterion_id: AC-DRIFT-002
+    criterion: "System flags opportunities when drift exceeds threshold within 2 minutes of detection"
+    status: planned
+    priority: high
+    verification: "Real-time monitoring test with simulated drift scenarios"
+  
+  # OPPORTUNITY ASSESSMENT CRITERIA
+  - criterion_id: AC-OPP-001
+    criterion: "System assesses opportunity viability using multi-factor scoring model"
+    status: planned
+    priority: critical
+    verification: "Model validation with 100+ historical opportunities"
+    
+  - criterion_id: AC-OPP-002
+    criterion: "Solution modeling selects appropriate framework from library within 5 minutes"
+    status: planned
+    priority: critical
+    verification: "Integration test covering all solution framework types"
+  
+  # MVP DEPLOYMENT CRITERIA
+  - criterion_id: AC-DEPLOY-001
+    criterion: "System generates MVP from scaffolding and deploys to production in <30 minutes"
+    status: planned
+    priority: critical
+    verification: "End-to-end test from opportunity trigger to live MVP"
+    
+  - criterion_id: AC-DEPLOY-002
+    criterion: "Deployed MVPs are fully functional with monitoring and feedback collection enabled"
+    status: planned
+    priority: critical
+    verification: "Smoke test suite on deployed MVPs, monitoring validation"
+    
+  - criterion_id: AC-DEPLOY-003
+    criterion: "System maintains deployment success rate of 95%+ for generated MVPs"
+    status: planned
+    priority: high
+    verification: "Statistical tracking over 100+ deployments"
+  
+  # FEEDBACK & ITERATION CRITERIA
+  - criterion_id: AC-FEED-001
+    criterion: "System collects engagement metrics from all deployed MVPs in real-time"
+    status: planned
+    priority: critical
+    verification: "Integration test with analytics tracking across MVPs"
+    
+  - criterion_id: AC-FEED-002
+    criterion: "Iteration pipeline automatically prioritizes MVPs exceeding engagement thresholds"
+    status: planned
+    priority: critical
+    verification: "Automation test with simulated engagement data"
+    
+  - criterion_id: AC-FEED-003
+    criterion: "System archives non-performing MVPs after defined evaluation period"
+    status: planned
+    priority: high
+    verification: "Lifecycle management test with low-engagement MVPs"
+  
+  # END-TO-END CRITERIA
+  - criterion_id: AC-E2E-001
+    criterion: "Complete cycle from data ingestion to MVP deployment executes in <4 hours"
+    status: planned
+    priority: critical
+    verification: "Full system integration test with real data and deployment"
+    
+  - criterion_id: AC-E2E-002
+    criterion: "System processes minimum 5 opportunities simultaneously without resource conflicts"
+    status: planned
+    priority: high
+    verification: "Concurrent execution test with 5 parallel opportunity pipelines"
+    
+  - criterion_id: AC-E2E-003
+    criterion: "Dashboard provides real-time visibility into all pipeline stages and metrics"
+    status: planned
+    priority: high
+    verification: "UI/UX validation with real-time data streams"
+
+dependencies:
+  external_projects:
+    - control_tower: Repository management and development workflows
+  
+  data_sources:
+    - Financial APIs: "Alpha Vantage, Yahoo Finance, IEX Cloud"
+    - Weather APIs: "OpenWeatherMap, NOAA, Weather.gov"
+    - Social Media: "Twitter API, Reddit API, News API"
+    - Economic Indicators: "FRED API, World Bank API, IMF API"
+    - Commodity Data: "Quandl, EIA API, USDA API"
+    - Demographics: "Census Bureau API, UN Data API"
+    - News Sentiment: "News API, GDELT, Aylien"
+    - Environmental: "EPA API, Climate.gov, Copernicus"
+  
+  infrastructure_services:
+    - Cloud Platform: "AWS or Azure or GCP"
+    - Message Queue: "RabbitMQ or Apache Kafka"
+    - Cache Layer: "Redis"
+    - Time-Series DB: "InfluxDB or TimescaleDB"
+    - Object Storage: "S3 or Azure Blob"
+    - Container Orchestration: "Kubernetes or Docker Swarm"
+    - CI/CD: "GitHub Actions or GitLab CI"
+    - Monitoring: "Prometheus + Grafana"
+  
+  backend_libraries:
+    - fastapi>=0.104.0
+    - uvicorn>=0.24.0
+    - sqlalchemy>=2.0.0
+    - pydantic>=2.0.0
+    - pandas>=2.0.0
+    - numpy>=1.24.0
+    - scipy>=1.11.0
+    - scikit-learn>=1.3.0
+    - aiohttp>=3.9.0
+    - celery>=5.3.0
+    - redis>=5.0.0
+    - psycopg2>=2.9.0
+    
+  frontend_libraries:
+    - react>=18.0.0
+    - typescript>=5.0.0
+    - tailwindcss>=3.0.0
+    - recharts>=2.5.0
+    - axios>=1.6.0
+    - react-query>=4.0.0
+
+technology_stack:
+  deployment_platform:
+    primary: Railway (Pro account)
+    philosophy: Solo founder optimized, automation-first, lean + scalable
+    deployment_target: 10-15 minute MVP deployments
+    configuration: railway.json per service
+    
+  frontend:
+    framework: React 18+
+    language: TypeScript 5+
+    styling: TailwindCSS
+    state_management: Zustand (simpler than Redux for solo dev)
+    build_tool: Vite (Railway-native fast builds)
+    charts: Recharts (simpler than D3.js for MVP)
+    testing: Vitest + React Testing Library
+    deployment: Railway (automatic Git deploys)
+  
+  backend:
+    framework: FastAPI
+    language: Python 3.11+
+    async_runtime: asyncio + uvicorn
+    task_queue: Celery (Railway-hosted workers)
+    cache: Redis (Railway add-on)
+    message_broker: Upstash Kafka (managed) or Railway Redis
+    testing: pytest + pytest-asyncio
+    deployment: Railway (automatic Git deploys)
+  
+  data_layer:
+    primary_db: PostgreSQL (Railway add-on, phase 1)
+    time_series_optimization: TimescaleDB Cloud (phase 2, if needed)
+    cache: Redis (Railway add-on)
+    object_storage: Cloudflare R2 (S3-compatible, $0.015/GB)
+    backup_db: Supabase or Neon (serverless PostgreSQL)
+    orm: SQLAlchemy 2.0 (portable across providers)
+  
+  analytics_processing:
+    data_processing: Pandas + NumPy (phase 1, sufficient for 50-100 GB)
+    statistical_analysis: SciPy + statsmodels
+    forecasting: Prophet (Facebook, easy to use) + statsmodels ARIMA
+    parallel_processing: Dask (phase 2, when scaling to 500 GB+)
+    
+  infrastructure:
+    containerization: Docker (Railway-native)
+    orchestration: Railway (built-in, not Kubernetes initially)
+    reverse_proxy: Railway (built-in)
+    load_balancer: Railway (built-in)
+    monitoring: Railway metrics + Uptime Robot (free tier)
+    logging: Railway logs + Papertrail (optional)
+    error_tracking: Sentry (free tier, 5k errors/month)
+    
+  deployment:
+    ci_cd: Railway (automatic Git deploys) + GitHub Actions (testing only)
+    infrastructure_as_code: railway.json + railway.toml
+    secrets_management: Railway environment variables
+    hosting: Railway US/EU regions
+    
+  external_managed_services:
+    analytics_providers:
+      - Google Analytics (free)
+      - Mixpanel (free tier → $25/mo)
+      - Amplitude (free tier → $50/mo)
+    data_sources:
+      - Alpha Vantage (stocks, forex, crypto) - $50/mo
+      - CoinGecko (crypto) - Free tier
+      - Google Trends API - Free
+      - Reddit API - Free tier
+      - GitHub API - Free tier
+      - Yahoo Finance - Free
+    authentication: Supabase Auth (free tier → $25/mo)
+    email: SendGrid or Resend (free tiers)
+    
+  cost_optimization:
+    phase_1_monthly_budget: $200-300
+    phase_2_monthly_budget: $500-1000
+    revenue_target_for_profitability: $500/mo MRR (5 MVPs @ $100/mo)
+
+success_metrics:
+  phase_1_technical_metrics:
+    data_processing:
+      - "Process 50-100 GB of data per analysis cycle"
+      - "Maintain <60 minute cycle time from ingestion to analysis completion"
+      - "99%+ uptime for data ingestion pipeline"
+      - "Successfully handle 8-12 concurrent API data sources"
+    
+    correlation_analysis:
+      - "Identify and prioritize 50+ correlations per cycle"
+      - "Calculate 1000-2000 correlation pairs in <20 minutes"
+      - "Detect novel correlations with 95%+ statistical confidence (p<0.05)"
+      - "False positive rate <5% on correlation significance"
+    
+    opportunity_identification:
+      - "Identify and score 5-10 exploitable opportunities per week"
+      - "Opportunity-to-MVP pipeline completes in <6 hours end-to-end"
+      - "Drift forecast accuracy >70% on 30-day windows"
+      - "Solution framework selection accuracy >80%"
+    
+    deployment:
+      - "Deploy MVP from opportunity trigger in <15 minutes (Railway)"
+      - "95%+ deployment success rate"
+      - "Monitor 10-20 active MVPs concurrently"
+  
+  phase_1_business_metrics:
+    revenue:
+      - "1 MVP generating $500+/month within 6 months"
+      - "5 MVPs generating $100+/month within 9 months"
+      - "10 MVPs generating $50+/month within 12 months"
+      - "Total MRR: $2000+/month by end of year 1"
+    
+    efficiency:
+      - "Infrastructure costs: $200-300/month (month 1-3)"
+      - "Cost per MVP: <$10/month"
+      - "Operator time: <5 hours/week on maintenance"
+      - "Automation handles 95%+ of operations"
+  
+  phase_2_technical_metrics:
+    data_processing:
+      - "Process 500 GB - 1 TB of data per analysis cycle"
+      - "Maintain <15-30 minute cycle time"
+      - "99.5%+ uptime"
+      - "Successfully handle 15-20 concurrent API data sources"
+    
+    correlation_analysis:
+      - "Identify and prioritize 200+ correlations per cycle"
+      - "Calculate 5000-10000 correlation pairs in <15 minutes"
+      
+    deployment:
+      - "Deploy MVP in <10 minutes"
+      - "Monitor 50-100 active MVPs concurrently"
+  
+  phase_2_business_metrics:
+    revenue:
+      - "20 MVPs generating $100+/month"
+      - "Total MRR: $5000+/month"
+      - "Infrastructure costs: $500-1000/month"
+      - "Net profit: $4000+/month"
+    
+    operations:
+      - "Zero-downtime deployments for MVP updates"
+      - "5+ concurrent MVP deployments without resource conflicts"
+      - "Operator time: <10 hours/week on operations"
+      - "Automation handles 90%+ of MVP lifecycle"
+  
+  ongoing_operational_metrics:
+    feedback_optimization:
+      - "Real-time engagement tracking across all deployed MVPs (<5 min latency)"
+      - "Automatic iteration prioritization for MVPs exceeding 80th percentile engagement"
+      - "Archive non-performing MVPs within 48 hours of threshold failure"
+      - "Portfolio maintains 10+ active MVPs in iteration pipeline"
+    
+    financial_tracking:
+      - "Track revenue per deployed MVP"
+      - "Calculate ROI for each opportunity identified"
+      - "Aggregate portfolio revenue tracking"
+      - "Cost per opportunity <$100 (Railway infrastructure + API costs)"
+      - "Revenue per successful MVP: $100+/month average"
+    
+  system_performance_metrics:
+    - "API response times <200ms (95th percentile)"
+    - "Dashboard renders <1 second with real-time data"
+    - "System handles 5 concurrent opportunity pipelines without degradation"
+    - "Resource utilization <70% during peak processing"
+
+implementation_timeline:
+  phase_1_infrastructure:
+    duration_days: 10
+    systems: ["SYSTEM-CA-001"]
+    deliverables:
+      - "Data ingestion pipeline with 15-20 API integrations"
+      - "PostgreSQL + TimescaleDB setup with partitioning"
+      - "Redis caching layer"
+      - "Message queue (RabbitMQ/Kafka)"
+      - "Monitoring and logging infrastructure"
+  
+  phase_2_correlation_engine:
+    duration_days: 10
+    systems: ["SYSTEM-CA-002"]
+    deliverables:
+      - "Parallel correlation calculation engine"
+      - "Statistical significance testing"
+      - "Correlation scoring and prioritization algorithm"
+      - "Results storage and indexing"
+  
+  phase_3_forecasting:
+    duration_days: 8
+    systems: ["SYSTEM-CA-003"]
+    deliverables:
+      - "Drift modeling and forecasting algorithms"
+      - "Exploitation window calculation"
+      - "Threshold detection and alerting"
+      - "Historical validation framework"
+  
+  phase_4_opportunity_assessment:
+    duration_days: 7
+    systems: ["SYSTEM-CA-004"]
+    deliverables:
+      - "Multi-factor opportunity scoring model"
+      - "Solution framework library and selection logic"
+      - "Target audience identification algorithms"
+      - "ROI projection calculations"
+  
+  phase_5_mvp_pipeline:
+    duration_days: 10
+    systems: ["SYSTEM-CA-005"]
+    deliverables:
+      - "MVP scaffolding templates library"
+      - "Automated generation from templates"
+      - "Deployment automation (CI/CD pipeline)"
+      - "Infrastructure provisioning automation"
+      - "Smoke testing automation"
+  
+  phase_6_feedback_loop:
+    duration_days: 7
+    systems: ["SYSTEM-CA-006"]
+    deliverables:
+      - "Analytics integration for all MVPs"
+      - "Engagement metric collection"
+      - "Automated prioritization logic"
+      - "Archive and cleanup automation"
+      - "Financial tracking and reporting"
+  
+  phase_7_integration_testing:
+    duration_days: 5
+    deliverables:
+      - "End-to-end integration testing"
+      - "Performance testing and optimization"
+      - "Load testing at scale"
+      - "Security audit and hardening"
+  
+  phase_8_dashboard_ux:
+    duration_days: 5
+    deliverables:
+      - "Real-time operational dashboard"
+      - "Opportunity pipeline visualization"
+      - "MVP portfolio management interface"
+      - "Metrics and analytics views"
+      - "Decision point workflows"
+
+documentation:
+  required_documents:
+    - ARCHITECTURE.md: "System architecture and component interactions"
+    - API_DOCUMENTATION.md: "All API endpoints with request/response schemas"
+    - DATA_SOURCES.md: "API integrations, rate limits, authentication"
+    - DEPLOYMENT_GUIDE.md: "Infrastructure setup and deployment procedures"
+    - OPERATIONS_MANUAL.md: "Monitoring, alerting, incident response"
+    - SCALING_GUIDE.md: "Horizontal and vertical scaling procedures"
+    - SECURITY.md: "Security model, authentication, authorization"
+    - PERFORMANCE_TUNING.md: "Optimization guidelines and benchmarks"
+    - TROUBLESHOOTING.md: "Common issues and resolution procedures"
+    - METRICS_DICTIONARY.md: "All tracked metrics and their meanings"
+
+status_tracking:
+  current_phase: "Requirements Definition Complete"
+  next_milestone: "Create SYSTEM-level specifications for all 6 systems"
+  blockers: []
+  risks:
+    - risk: "API rate limits may constrain data ingestion speed"
+      mitigation: "Implement request queueing, use multiple API keys, negotiate enterprise plans"
+      severity: high
+    
+    - risk: "Correlation calculation at scale may exceed time requirements"
+      mitigation: "Implement parallel processing with Dask/Ray, optimize algorithms, use GPU acceleration"
+      severity: high
+    
+    - risk: "MVP deployment automation complexity underestimated"
+      mitigation: "Start with 3-5 proven scaffolding templates, expand gradually"
+      severity: medium
+    
+    - risk: "Cost of infrastructure and API access may be prohibitive"
+      mitigation: "Implement cost monitoring, optimize resource usage, phase rollout"
+      severity: medium
+    
+    - risk: "Drift forecasting accuracy may not meet 70% target"
+      mitigation: "Use ensemble models, continuous backtesting, multiple forecasting algorithms"
+      severity: medium
+
+# SYSTEM ARCHITECTURE OVERVIEW
+system_architecture:
+  description: |
+    Causal Affect is an automated opportunity identification and exploitation platform.
+    
+    MISSION: Identify needs earliest, adapt seamlessly, exploit aggressively, act on feedback optimally.
+    
+    The platform operates as a continuous pipeline:
+    1. Data Ingestion: Pull from 15-20 concurrent APIs (finance, weather, social, economic, etc.)
+    2. Correlation Analysis: Identify strong variable relationships across massive datasets
+    3. Drift Forecasting: Model timing windows for exploitation
+    4. Opportunity Assessment: Score viability and select solution frameworks
+    5. MVP Generation: Build from pre-defined scaffolding templates
+    6. Deployment: Automated deployment with monitoring
+    7. Feedback Loop: Collect metrics, prioritize iteration or archive
+    
+    End-to-end cycle time target: <4 hours from data to deployed MVP
+  
+  core_workflow:
+    - stage: "Data Ingestion"
+      sla: "15 minutes"
+      capacity: "10+ TB, 20 concurrent sources"
+      
+    - stage: "Correlation Analysis"
+      sla: "10 minutes"
+      capacity: "10000+ correlation calculations"
+      
+    - stage: "Drift Forecasting"
+      sla: "5 minutes"
+      capacity: "100+ scenarios per opportunity"
+      
+    - stage: "Opportunity Assessment"
+      sla: "10 minutes"
+      capacity: "Multi-factor scoring, framework selection"
+      
+    - stage: "MVP Generation"
+      sla: "20 minutes"
+      capacity: "Template-based generation from library"
+      
+    - stage: "Deployment"
+      sla: "30 minutes"
+      capacity: "Containerized deployment with CI/CD"
+      
+    - stage: "Feedback Collection"
+      sla: "Real-time"
+      capacity: "Continuous monitoring across all MVPs"
+  
+  user_roles:
+    - role: "System Operator"
+      description: "Reviews decision points, monitors dashboard, sets thresholds"
+      access_level: "Full administrative access"
+      
+    - role: "End Users"
+      description: "Users of deployed MVPs (varies by opportunity)"
+      access_level: "MVP-specific functionality"
+

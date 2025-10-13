@@ -1,0 +1,500 @@
+# SYSTEM-CA-004: Opportunity Assessment & Solution Modeling
+# ==========================================================
+
+metadata:
+  system_id: SYSTEM-CA-004
+  system_name: Opportunity Assessment & Solution Modeling
+  parent_project: PROJECT-CAUSAL_AFFECT
+  created_date: 2025-10-13
+  status: planned
+  priority: critical
+  
+  purpose: |
+    Assesses correlations for business viability, selects solution frameworks,
+    identifies target audience, and projects ROI. Rule-based initially,
+    ML-enhanced in Phase 2 as data accumulates.
+  
+  business_value: |
+    - Filters correlations to focus on exploitable opportunities
+    - Selects optimal solution frameworks for each opportunity
+    - Defines target audience and market positioning
+    - Provides ROI projections for decision-making
+
+deployment:
+  platform: Railway
+  service_type: Backend API service (FastAPI)
+  scaling: 1 service (Phase 1) → 2-3 replicas (Phase 2)
+  estimated_cost: "$10/month (Phase 1) → $30/month (Phase 2)"
+  
+  railway_config:
+    builder: NIXPACKS
+    build_command: "pip install -r requirements.txt"
+    start_command: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    health_check: "/health"
+    restart_policy: ON_FAILURE
+
+system_requirements:
+  performance_phase_1:
+    assessment_time: "<10 minutes per opportunity"
+    framework_selection_time: "<5 minutes"
+    concurrent_assessments: "3-5 opportunities simultaneously"
+    roi_calculation_time: "<2 minutes"
+  
+  performance_phase_2:
+    assessment_time: "<5 minutes per opportunity"
+    concurrent_assessments: "10+ opportunities simultaneously"
+  
+  accuracy:
+    framework_selection_accuracy: ">85%"
+    audience_identification_precision: ">80%"
+    roi_projection_variance: "±20% of actual"
+  
+  decision_quality:
+    opportunity_scoring: "Multi-factor model with weighted criteria"
+    false_opportunity_rate: "<15%"
+    missed_opportunity_rate: "<10%"
+
+features:
+  - feature_id: FEATURE-CA-004-01
+    feature_name: Multi-Factor Opportunity Scoring
+    description: |
+      Scores opportunities using market size, competition, timing, resource
+      requirements, and alignment with capabilities
+    estimated_layers: 4-5
+    priority: critical
+    
+  - feature_id: FEATURE-CA-004-02
+    feature_name: Solution Framework Selection Engine
+    description: |
+      Matches opportunities to appropriate solution frameworks from library
+      (web apps, mobile apps, SaaS, marketplaces, etc.)
+    estimated_layers: 4-5
+    priority: critical
+    
+  - feature_id: FEATURE-CA-004-03
+    feature_name: Target Audience Identification
+    description: |
+      Determines target user personas, demographics, and market segments
+      based on correlation data and opportunity characteristics
+    estimated_layers: 4-5
+    priority: critical
+    
+  - feature_id: FEATURE-CA-004-04
+    feature_name: ROI Projection Calculator
+    description: |
+      Projects development costs, operational costs, revenue potential,
+      and time-to-profitability for each opportunity
+    estimated_layers: 4-5
+    priority: high
+    
+  - feature_id: FEATURE-CA-004-05
+    feature_name: Competitive Analysis Engine
+    description: |
+      Assesses existing solutions in market, identifies gaps, and
+      determines competitive positioning strategy
+    estimated_layers: 3-4
+    priority: medium
+
+acceptance_criteria:
+  - criterion_id: AC-SYS-004-01
+    criterion: "Opportunity assessment completes within 10 minutes"
+    verification: "Performance test with 20 sample opportunities"
+    priority: critical
+    
+  - criterion_id: AC-SYS-004-02
+    criterion: "Framework selection accuracy exceeds 85%"
+    verification: "Historical validation with 100+ past opportunities"
+    priority: critical
+    
+  - criterion_id: AC-SYS-004-03
+    criterion: "Target audience precision above 80%"
+    verification: "Post-deployment validation of actual vs predicted users"
+    priority: high
+    
+  - criterion_id: AC-SYS-004-04
+    criterion: "ROI projections within ±20% of actuals"
+    verification: "Compare projections to actual performance after 90 days"
+    priority: high
+    
+  - criterion_id: AC-SYS-004-05
+    criterion: "Multi-factor scoring identifies top opportunities with 90%+ confidence"
+    verification: "Score correlation with deployment success rate"
+    priority: high
+
+scoring_factors:
+  market_potential:
+    weight: 0.25
+    metrics:
+      - "Total addressable market (TAM)"
+      - "Serviceable addressable market (SAM)"
+      - "Market growth rate"
+      - "Market maturity stage"
+    
+  timing_window:
+    weight: 0.20
+    metrics:
+      - "Exploitation window duration"
+      - "Drift stability"
+      - "Urgency score"
+      - "Seasonal factors"
+    
+  resource_efficiency:
+    weight: 0.20
+    metrics:
+      - "Development time estimate"
+      - "Infrastructure cost"
+      - "Operational complexity"
+      - "Team skill alignment"
+    
+  competitive_advantage:
+    weight: 0.15
+    metrics:
+      - "Uniqueness of insight"
+      - "Barrier to entry"
+      - "Existing competition"
+      - "Differentiation potential"
+    
+  revenue_potential:
+    weight: 0.20
+    metrics:
+      - "Projected revenue (12 months)"
+      - "Customer lifetime value"
+      - "Time to first revenue"
+      - "Scalability of model"
+
+solution_frameworks:
+  web_applications:
+    - name: "SaaS Dashboard"
+      use_cases: ["Data visualization", "Analytics platforms"]
+      tech_stack: "React + FastAPI + PostgreSQL"
+      deployment_time: "20-30 minutes"
+      
+    - name: "Marketplace Platform"
+      use_cases: ["Two-sided markets", "Aggregators"]
+      tech_stack: "Next.js + Node.js + MongoDB"
+      deployment_time: "30-40 minutes"
+      
+    - name: "Content Platform"
+      use_cases: ["Blogs", "Media", "Communities"]
+      tech_stack: "WordPress/Ghost + CDN"
+      deployment_time: "15-20 minutes"
+  
+  mobile_applications:
+    - name: "Native Mobile App"
+      use_cases: ["Consumer mobile experiences"]
+      tech_stack: "React Native + Firebase"
+      deployment_time: "40-50 minutes"
+      
+    - name: "Progressive Web App"
+      use_cases: ["Lightweight mobile experiences"]
+      tech_stack: "PWA + Service Workers"
+      deployment_time: "25-35 minutes"
+  
+  automation_tools:
+    - name: "API Service"
+      use_cases: ["B2B integrations", "Data services"]
+      tech_stack: "FastAPI + Docker"
+      deployment_time: "15-20 minutes"
+      
+    - name: "Chrome Extension"
+      use_cases: ["Browser productivity tools"]
+      tech_stack: "JavaScript + Chrome APIs"
+      deployment_time: "10-15 minutes"
+
+target_audience_attributes:
+  demographics:
+    - "Age range"
+    - "Income level"
+    - "Education level"
+    - "Geographic location"
+    - "Occupation/industry"
+  
+  psychographics:
+    - "Pain points identified"
+    - "Goals and motivations"
+    - "Technology adoption level"
+    - "Spending behavior"
+    - "Online behavior patterns"
+  
+  firmographics_b2b:
+    - "Company size"
+    - "Industry vertical"
+    - "Annual revenue"
+    - "Decision-making process"
+    - "Budget authority"
+
+roi_calculation_model:
+  development_costs:
+    - "Framework scaffolding time (automated)"
+    - "Customization time (minimal)"
+    - "Infrastructure setup (one-time)"
+    - "Testing and QA (automated)"
+  
+  operational_costs:
+    - "Hosting and infrastructure (monthly)"
+    - "API costs (data sources)"
+    - "Monitoring and maintenance"
+    - "Support overhead (minimal initially)"
+  
+  revenue_projections:
+    - "User acquisition rate assumptions"
+    - "Conversion rate estimates"
+    - "Average revenue per user (ARPU)"
+    - "Growth rate projections"
+  
+  profitability_timeline:
+    - "Break-even point calculation"
+    - "12-month profit projection"
+    - "ROI percentage"
+    - "Payback period"
+
+technology_stack:
+  scoring_engine: "Python with scikit-learn for ML-based scoring"
+  framework_matching: "Rule-based engine + similarity algorithms"
+  audience_modeling: "Clustering algorithms (K-means, DBSCAN)"
+  roi_calculator: "Financial modeling with NumPy"
+  storage: "PostgreSQL for opportunity assessments"
+  caching: "Redis for framework templates"
+
+dependencies:
+  internal:
+    - "SYSTEM-CA-002: Correlation Analysis (provides correlations)"
+    - "SYSTEM-CA-003: Drift Forecasting (provides timing data)"
+  
+  external:
+    - "PostgreSQL for data storage"
+    - "Redis for caching"
+    - "External market data APIs (optional enhancement)"
+
+testing_requirements:
+  philosophy: |
+    ALL TESTS MUST VERIFY ACTUAL ASSESSMENT LOGIC AND SCORING ACCURACY.
+    No hardcoded perfect scores. Use real opportunity data. Verify decisions make business sense.
+    
+    1. Tests verify actual behavior, not just interfaces
+    2. Tests check side effects (scores stored, frameworks selected correctly)
+    3. Tests use mocks to VERIFY calls, not just STUB returns
+    4. Integration tests run with REAL opportunity data and REAL scoring
+    5. Manual verification confirms assessments are reasonable and actionable
+  
+  unit_tests:
+    minimum_count: 40
+    coverage_threshold: 0.85
+    
+    required_verifications:
+      scoring_algorithm_tests:
+        - "VERIFY: Multi-factor scoring formula mathematically correct"
+        - "VERIFY: Known opportunity produces expected score (test data)"
+        - "VERIFY: All factors weighted correctly (market size, novelty, ease, risk, forecast confidence)"
+        - "VERIFY: Factor weights sum to 1.0"
+        - "VERIFY: Score range 0-100 enforced"
+        - "VERIFY: Higher market size increases score (all else equal)"
+        - "VERIFY: Higher novelty increases score (all else equal)"
+        - "VERIFY: Higher ease increases score (all else equal)"
+        - "VERIFY: Higher risk decreases score (all else equal)"
+        - "VERIFY: Lower forecast confidence decreases score (all else equal)"
+        - "VERIFY: Edge cases handled (missing factors, zero values, extremes)"
+        - "VERIFY: Scoring deterministic (same input = same score)"
+        - "NO MOCKING: Use real calculation logic"
+        - "MATH CHECK: Manual calculation vs algorithm output"
+        
+      framework_selection_tests:
+        - "VERIFY: Selection algorithm chooses correct framework for opportunity type"
+        - "VERIFY: E-commerce opportunity → React + Next.js + Stripe"
+        - "VERIFY: SaaS opportunity → React + FastAPI + PostgreSQL + Stripe"
+        - "VERIFY: Content opportunity → WordPress or Ghost + Monetization"
+        - "VERIFY: API opportunity → FastAPI + PostgreSQL + API management"
+        - "VERIFY: Mobile opportunity → React Native + Firebase"
+        - "VERIFY: Data opportunity → Python + Jupyter + Visualization"
+        - "VERIFY: Unknown type → Defaults to most flexible stack"
+        - "VERIFY: Framework library comprehensive (20+ templates)"
+        - "VERIFY: Selection persisted with opportunity ID"
+        - "SIDE EFFECT: Check database for framework selection record"
+        
+      target_audience_tests:
+        - "VERIFY: Audience identification algorithm produces specific personas"
+        - "VERIFY: Demographics calculated correctly (age, income, location)"
+        - "VERIFY: Psychographics identified (interests, values, behaviors)"
+        - "VERIFY: Pain points extracted from opportunity data"
+        - "VERIFY: Audience size estimated (TAM, SAM, SOM)"
+        - "VERIFY: Multiple segments identified when appropriate"
+        - "VERIFY: Primary segment ranked by potential"
+        - "VERIFY: Audience data persisted with opportunity ID"
+        - "SIDE EFFECT: Check database for audience records"
+        - "MANUAL: Review personas, verify they make sense for opportunity"
+        
+      roi_projection_tests:
+        - "VERIFY: ROI calculation formula correct (revenue - cost) / cost"
+        - "VERIFY: Revenue projection includes multiple scenarios (low, medium, high)"
+        - "VERIFY: Cost projection includes all categories (dev, hosting, marketing, ops)"
+        - "VERIFY: Timeline projection realistic (MVP + growth phases)"
+        - "VERIFY: Confidence intervals calculated correctly (based on forecast accuracy)"
+        - "VERIFY: Break-even point calculated"
+        - "VERIFY: Payback period calculated"
+        - "VERIFY: ROI projections persisted with opportunity ID"
+        - "SIDE EFFECT: Check database for ROI records"
+        - "MATH CHECK: Manual ROI calculation vs algorithm"
+        - "EDGE CASE: Negative ROI, infinite ROI (div by zero), zero revenue"
+        
+      risk_assessment_tests:
+        - "VERIFY: Risk factors identified correctly (technical, market, financial, operational)"
+        - "VERIFY: Risk severity calculated (low, medium, high, critical)"
+        - "VERIFY: Risk probability estimated"
+        - "VERIFY: Risk score = severity × probability"
+        - "VERIFY: Mitigation strategies suggested"
+        - "VERIFY: Overall risk level calculated"
+        - "VERIFY: High-risk opportunities flagged"
+        - "VERIFY: Risk data persisted with opportunity ID"
+        - "SIDE EFFECT: Check database for risk records"
+  
+  integration_tests:
+    minimum_count: 20
+    coverage_threshold: 0.80
+    
+    required_scenarios:
+      end_to_end_assessment_pipeline:
+        description: "Complete assessment from forecast to actionable recommendation"
+        requirements:
+          - "INPUT: Real opportunity from drift forecasting system"
+          - "VERIFY: Opportunity data loaded (correlation, forecast, window)"
+          - "VERIFY: Multi-factor score calculated"
+          - "VERIFY: Framework selected from library"
+          - "VERIFY: Target audience identified"
+          - "VERIFY: ROI projected with confidence intervals"
+          - "VERIFY: Risk assessment completed"
+          - "VERIFY: All results stored in PostgreSQL (query to confirm)"
+          - "VERIFY: High-scoring opportunities prioritized for MVP generation"
+          - "NO MOCKING: All components real, verify end state"
+          - "MANUAL: Review assessment, verify it's actionable"
+        
+      historical_opportunity_validation:
+        description: "100+ historical opportunities for accuracy"
+        requirements:
+          - "INPUT: 100+ historical opportunities with known outcomes"
+          - "ASSESS: Score each opportunity using system"
+          - "VERIFY: High-scoring opportunities had better outcomes than low-scoring"
+          - "CALCULATE: Correlation between score and actual ROI"
+          - "VERIFY: Correlation > 0.5 (positive relationship)"
+          - "VERIFY: Framework selection appropriate for successful opportunities"
+          - "VERIFY: Audience identification aligned with actual customers"
+          - "VERIFY: ROI projections within 30% of actual (on average)"
+          - "REAL DATA: Use actual historical opportunities, not synthetic"
+          - "MANUAL: Review mismatches, identify improvement areas"
+        
+      framework_selection_validation:
+        description: "Framework selection produces appropriate stacks"
+        requirements:
+          - "TEST: E-commerce opportunity"
+          - "VERIFY: Selected framework includes payment processing (Stripe)"
+          - "VERIFY: Selected framework includes product catalog"
+          - "VERIFY: Selected framework includes cart/checkout"
+          - "TEST: SaaS opportunity"
+          - "VERIFY: Selected framework includes user authentication"
+          - "VERIFY: Selected framework includes database"
+          - "VERIFY: Selected framework includes API backend"
+          - "TEST: Unknown opportunity type"
+          - "VERIFY: Selected framework is flexible/general-purpose"
+          - "VERIFY: All selections include deployment configuration"
+          - "MANUAL: Review framework selections, verify appropriateness"
+        
+      roi_projection_accuracy:
+        description: "ROI projections tracked and validated over time"
+        requirements:
+          - "INPUT: Opportunities with actual deployed MVPs"
+          - "COMPARE: Projected ROI vs actual ROI"
+          - "CALCULATE: Projection error (MAE, RMSE, MAPE)"
+          - "VERIFY: Projections within 30% accuracy on average"
+          - "VERIFY: Confidence intervals calibrated correctly"
+          - "VERIFY: Overly optimistic projections identified and corrected"
+          - "VERIFY: Projection accuracy improves over time (learning)"
+          - "REAL DATA: Use actual MVP financial data"
+          - "MANUAL: Review large mismatches, understand why"
+  
+  validation_tests:
+    required: true
+    scenarios:
+      - "100+ historical opportunities for accuracy"
+      - "Framework selection validation"
+      - "ROI projection accuracy tracking"
+    
+    detailed_requirements:
+      historical_opportunity_accuracy:
+        - "LOAD: 100+ historical opportunities with known outcomes"
+        - "ASSESS: Score all opportunities using current algorithm"
+        - "COMPARE: Scores vs actual outcomes (success/failure, actual ROI)"
+        - "VERIFY: Positive correlation between score and success (r > 0.5)"
+        - "CALCULATE: Precision and recall at different score thresholds"
+        - "VERIFY: High-scoring opportunities (>80) have >70% success rate"
+        - "VERIFY: Low-scoring opportunities (<40) have <30% success rate"
+        - "IDENTIFY: Systematic biases or blind spots"
+        - "MANUAL: Review false positives and false negatives"
+      
+      framework_selection_accuracy:
+        - "LOAD: Historical opportunities with frameworks used"
+        - "PREDICT: Framework using selection algorithm"
+        - "COMPARE: Predicted vs actual framework"
+        - "VERIFY: Agreement rate >80%"
+        - "VERIFY: Mismatches still appropriate alternatives"
+        - "IDENTIFY: Missing framework templates"
+        - "MANUAL: Review mismatches, add templates as needed"
+      
+      roi_projection_tracking:
+        - "LOAD: Deployed MVPs with actual financial data"
+        - "COMPARE: Projected ROI vs actual ROI over time"
+        - "CALCULATE: Projection error at 30-day, 90-day, 180-day marks"
+        - "VERIFY: Error decreases with more data"
+        - "VERIFY: Projections within 30% accuracy on average"
+        - "VERIFY: Confidence intervals properly calibrated"
+        - "IDENTIFY: Systematic over/under-estimation patterns"
+        - "MANUAL: Adjust projection model based on findings"
+  
+  manual_verification:
+    required: true
+    description: "Human verification that assessments are reasonable and actionable"
+    
+    checklist:
+      - "START: Run full assessment cycle with real opportunity data"
+      - "OBSERVE: Watch logs for errors (should be clean)"
+      - "CHECK: Query database for assessment records"
+      - "VALIDATE: Spot-check scores make sense (not all 100s or 0s)"
+      - "REVIEW: Framework selections appropriate for opportunity types"
+      - "INSPECT: Target audience personas are specific and realistic"
+      - "VERIFY: ROI projections have reasonable assumptions"
+      - "CHECK: Risk assessments identify real concerns"
+      - "TEST: High-scoring opportunity should feel more promising than low-scoring"
+      - "COMPARE: Manual assessment vs system assessment (sanity check)"
+      - "DOCUMENT: Screenshot evidence of reasonable assessments"
+
+estimated_effort:
+  total_days: 7
+  team_size: 2 developers
+
+implementation_phases:
+  phase_1:
+    duration: 2 days
+    deliverable: "Multi-factor scoring algorithm"
+  
+  phase_2:
+    duration: 2 days
+    deliverable: "Framework selection engine with library"
+  
+  phase_3:
+    duration: 2 days
+    deliverable: "Target audience identification logic"
+  
+  phase_4:
+    duration: 1 day
+    deliverable: "ROI projection calculator"
+
+risks:
+  - risk: "Scoring accuracy may be lower initially without training data"
+    mitigation: "Start with rule-based, transition to ML as data accumulates"
+    severity: medium
+  
+  - risk: "Framework selection may not always match opportunity type"
+    mitigation: "Manual override capability, continuous learning"
+    severity: medium
+  
+  - risk: "ROI projections highly uncertain for novel opportunities"
+    mitigation: "Conservative estimates, wide confidence intervals"
+    severity: medium

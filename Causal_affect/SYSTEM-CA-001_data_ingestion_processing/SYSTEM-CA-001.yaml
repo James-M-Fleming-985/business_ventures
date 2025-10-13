@@ -1,0 +1,370 @@
+# SYSTEM-CA-001: Data Ingestion & Processing Engine
+# ===================================================
+
+metadata:
+  system_id: SYSTEM-CA-001
+  system_name: Data Ingestion & Processing Engine
+  parent_project: PROJECT-CAUSAL_AFFECT
+  created_date: 2025-10-13
+  status: planned
+  priority: critical
+  
+  purpose: |
+    High-performance data ingestion pipeline that pulls data from 8-12 concurrent
+    external APIs, validates, transforms, and stores data for correlation analysis.
+    Phase 1: 50-100 GB in 30-60 minutes. Scales to 10+ TB as revenue grows.
+  
+  business_value: |
+    - Enables access to diverse data sources (financial, web, ecommerce, developer)
+    - Handles API failures gracefully without data loss
+    - Provides clean, normalized data for analysis pipeline
+    - Scales easily as more data sources are added
+
+deployment:
+  platform: Railway
+  service_type: Backend worker service (Celery workers)
+  scaling: 2-4 workers (Phase 1) → 8-16 workers (Phase 2)
+  estimated_cost: "$40/month (Phase 1) → $150/month (Phase 2)"
+  
+  railway_config:
+    builder: NIXPACKS
+    build_command: "pip install -r requirements.txt"
+    start_command: "celery -A app.tasks worker --loglevel=info --concurrency=4"
+    health_check: "/health"
+    restart_policy: ON_FAILURE
+    environment_variables:
+      - DATABASE_URL (Railway PostgreSQL)
+      - REDIS_URL (Railway Redis)
+      - API_KEYS_* (configured per source)
+
+system_requirements:
+  performance_phase_1:
+    ingestion_target: "50-100 GB per cycle"
+    concurrent_connections: "8-12 simultaneous API connections"
+    cycle_time: "30-60 minutes maximum"
+    error_recovery_time: "Automatic retry within 30 seconds"
+    data_validation_rate: "100% of ingested records validated"
+  
+  performance_phase_2:
+    ingestion_target: "500 GB - 1 TB per cycle"
+    concurrent_connections: "15-20 simultaneous API connections"
+    cycle_time: "15-30 minutes maximum"
+  
+  scalability:
+    phase_1: "50-100 GB with 2-4 Celery workers on Railway"
+    phase_2: "500 GB - 1 TB with 8-16 workers + Dask optimization"
+    horizontal_scaling: "Railway automatic scaling"
+    api_rate_limit_handling: "Automatic throttling and queueing"
+  
+  reliability:
+    uptime_target: "99% (Phase 1) → 99.9% (Phase 2)"
+    data_loss_tolerance: "Zero data loss on failures"
+    retry_mechanism: "Exponential backoff with 5 max retries"
+    circuit_breaker: "Auto-disable failing sources, alert via Sentry"
+
+features:
+  - feature_id: FEATURE-CA-001-01
+    feature_name: Multi-Source API Connector
+    description: |
+      Manages connections to multiple external APIs simultaneously with
+      authentication, rate limiting, and error handling
+    estimated_layers: 4-5
+    priority: critical
+    
+  - feature_id: FEATURE-CA-001-02
+    feature_name: Data Validation & Transformation Pipeline
+    description: |
+      Validates incoming data quality, handles missing values, normalizes
+      formats, and transforms to standard schema
+    estimated_layers: 4-5
+    priority: critical
+    
+  - feature_id: FEATURE-CA-001-03
+    feature_name: Time-Series Data Storage
+    description: |
+      Efficiently stores time-series data in PostgreSQL (Railway) with proper
+      indexing. Migrate to TimescaleDB Cloud in Phase 2 if queries become slow.
+    estimated_layers: 4-5
+    priority: critical
+    technology: PostgreSQL (Railway) → TimescaleDB Cloud (optional Phase 2)
+    
+  - feature_id: FEATURE-CA-001-04
+    feature_name: Ingestion Monitoring & Health Dashboard
+    description: |
+      Real-time monitoring of ingestion pipeline health, API status,
+      throughput metrics via Railway dashboard + custom Grafana (Phase 2)
+    estimated_layers: 3-4
+    priority: high
+    technology: Railway metrics + Sentry error tracking
+
+acceptance_criteria:
+  - criterion_id: AC-SYS-001-01-P1
+    criterion: "System successfully connects to 8-12 concurrent APIs (Phase 1)"
+    phase: 1
+    verification: "Integration test with all configured API sources"
+    priority: critical
+    
+  - criterion_id: AC-SYS-001-02
+    criterion: "Data ingestion rate achieves 1 TB per 90 seconds"
+    verification: "Load test with simulated 10 TB dataset"
+    priority: critical
+    
+  - criterion_id: AC-SYS-001-03
+    criterion: "Complete ingestion cycle in <15 minutes for 10+ TB"
+    verification: "End-to-end timing test with production-like data"
+    priority: critical
+    
+  - criterion_id: AC-SYS-001-04
+    criterion: "Zero data loss during API failures and network issues"
+    verification: "Chaos engineering test with simulated failures"
+    priority: critical
+    
+  - criterion_id: AC-SYS-001-05
+    criterion: "100% of ingested data passes validation rules"
+    verification: "Data quality audit on processed datasets"
+    priority: high
+
+data_sources:
+  financial:
+    - "Alpha Vantage API - Stock market data"
+    - "Yahoo Finance API - Market indices"
+    - "IEX Cloud - Real-time trading data"
+  
+  weather:
+    - "OpenWeatherMap - Current and forecast"
+    - "NOAA API - Historical weather"
+    - "Weather.gov - Regional data"
+  
+  social_media:
+    - "Twitter API - Social sentiment"
+    - "Reddit API - Community discussions"
+    - "News API - News articles and headlines"
+  
+  economic:
+    - "FRED API - Federal Reserve economic data"
+    - "World Bank API - Global economic indicators"
+    - "IMF API - International monetary data"
+  
+  commodities:
+    - "Quandl - Commodity prices"
+    - "EIA API - Energy data"
+    - "USDA API - Agricultural data"
+  
+  demographics:
+    - "Census Bureau API - Population data"
+    - "UN Data API - Global demographics"
+  
+  environmental:
+    - "EPA API - Environmental metrics"
+    - "Climate.gov - Climate data"
+    - "Copernicus - Earth observation"
+
+technology_stack:
+  ingestion_framework: "Apache Kafka or RabbitMQ for message streaming"
+  api_client: "aiohttp for async HTTP requests"
+  data_validation: "Pydantic for schema validation"
+  storage: "TimescaleDB (PostgreSQL extension) for time-series"
+  caching: "Redis for hot data and rate limiting"
+  monitoring: "Prometheus metrics + Grafana dashboards"
+  orchestration: "Celery for distributed task execution"
+
+dependencies:
+  internal: []
+  external:
+    - "All configured external data source APIs"
+    - "TimescaleDB/PostgreSQL database"
+    - "Redis cache"
+    - "Message broker (Kafka/RabbitMQ)"
+
+testing_requirements:
+  philosophy: |
+    ALL TESTS MUST VERIFY ACTUAL BEHAVIOR AND SIDE EFFECTS.
+    No happy path shortcuts. No fake implementations. Real business problems only.
+    
+    1. Tests verify actual behavior, not just interfaces
+    2. Tests check side effects (files exist, data written, APIs called)
+    3. Tests use mocks to VERIFY calls, not just STUB returns
+    4. Integration tests run with REAL dependencies (real APIs, real databases)
+    5. Manual verification confirms system works end-to-end
+  
+  unit_tests:
+    minimum_count: 40
+    coverage_threshold: 0.90
+    
+    required_verifications:
+      api_connector_tests:
+        - "VERIFY: HTTP request actually made with correct headers and auth"
+        - "VERIFY: Retry logic executes with exponential backoff (check timestamps)"
+        - "VERIFY: Circuit breaker opens after N failures (state tracked)"
+        - "VERIFY: Rate limiting queue enforced (requests delayed, not dropped)"
+        - "VERIFY: Response parsing handles malformed JSON (logs error, continues)"
+        - "Mock USAGE: Mock HTTP client to VERIFY request parameters, not stub responses"
+        
+      data_validation_tests:
+        - "VERIFY: Invalid data rejected and logged with specific reason"
+        - "VERIFY: Missing required fields trigger validation errors"
+        - "VERIFY: Type mismatches caught (string vs int, etc.)"
+        - "VERIFY: Schema validation rules enforced (regex, ranges)"
+        - "VERIFY: Validation errors include field name, expected vs actual"
+        - "NO STUBBING: Use real validation rules, test actual edge cases"
+        
+      data_transformation_tests:
+        - "VERIFY: Transformation produces correct output format"
+        - "VERIFY: Date/time conversions handle timezones correctly"
+        - "VERIFY: Null/empty values handled per business rules"
+        - "VERIFY: Numeric conversions preserve precision"
+        - "VERIFY: Transformed data written to correct schema columns"
+        - "SIDE EFFECT CHECK: Verify output schema matches expected structure"
+        
+      storage_tests:
+        - "VERIFY: Data actually written to database (query to confirm)"
+        - "VERIFY: Transactions rolled back on error (check db state)"
+        - "VERIFY: Partitioning creates correct table partitions"
+        - "VERIFY: Indexes created and used (check query plan)"
+        - "VERIFY: Compression applied (check storage size)"
+        - "REAL DATABASE: Use test database, verify actual writes"
+  
+  integration_tests:
+    minimum_count: 20
+    coverage_threshold: 0.85
+    
+    required_scenarios:
+      end_to_end_ingestion:
+        description: "Complete data flow from API to database storage"
+        requirements:
+          - "USE REAL API: Test against actual API endpoint (or sandbox)"
+          - "VERIFY: Data fetched from API contains expected fields"
+          - "VERIFY: Data passes validation pipeline"
+          - "VERIFY: Data transformed correctly"
+          - "VERIFY: Data written to TimescaleDB (query to confirm rows exist)"
+          - "VERIFY: Monitoring metrics updated (Prometheus metrics scraped)"
+          - "NO MOCKING: All components run for real, verify end state"
+          - "MANUAL CHECK: Inspect database, confirm data quality"
+        
+      concurrent_api_ingestion:
+        description: "20 concurrent API sources running simultaneously"
+        requirements:
+          - "SPAWN: 20 concurrent workers, each calling different API"
+          - "VERIFY: All 20 APIs called (check logs, network traces)"
+          - "VERIFY: No race conditions (data not corrupted)"
+          - "VERIFY: Rate limits respected per API (timestamps checked)"
+          - "VERIFY: All data written without conflicts"
+          - "PERFORMANCE: Complete within SLA (15 minutes for 10TB simulated)"
+          - "SIDE EFFECTS: Check database for expected row counts from each source"
+        
+      failure_recovery:
+        description: "System recovers from API failures without data loss"
+        requirements:
+          - "CHAOS: Simulate API returning 500 errors"
+          - "VERIFY: Retry logic executes (check retry attempt count)"
+          - "VERIFY: Circuit breaker opens (state change logged)"
+          - "VERIFY: Failed requests queued for retry"
+          - "VERIFY: Data eventually ingested after API recovers"
+          - "VERIFY: Zero data loss (compare input vs output counts)"
+          - "NO HAPPY PATH: Test real failure scenarios from production"
+        
+      data_quality_pipeline:
+        description: "Invalid data filtered, valid data processed"
+        requirements:
+          - "INPUT: Mix of valid and invalid data from real API"
+          - "VERIFY: Invalid records rejected with specific errors"
+          - "VERIFY: Valid records processed successfully"
+          - "VERIFY: Validation error report generated (file exists)"
+          - "VERIFY: Error metrics incremented (Prometheus counter)"
+          - "VERIFY: Only valid data in database (query to confirm)"
+          - "REAL DATA: Use actual messy data from APIs, not sanitized test data"
+        
+      monitoring_and_alerting:
+        description: "Monitoring captures real metrics and triggers alerts"
+        requirements:
+          - "RUN: Full ingestion cycle with monitoring enabled"
+          - "VERIFY: Prometheus metrics exported (scrape endpoint)"
+          - "VERIFY: Metrics show correct counts (rows ingested, errors, latency)"
+          - "VERIFY: Alert triggers when error threshold exceeded"
+          - "VERIFY: Dashboard displays real-time data (check Grafana)"
+          - "MANUAL: Open monitoring dashboard, confirm data visible"
+  
+  performance_tests:
+    required: true
+    philosophy: "Measure actual performance under realistic load, not theoretical"
+    
+    scenarios:
+      large_scale_ingestion:
+        target: "10 TB ingestion under 15 minutes"
+        verification:
+          - "LOAD: Generate or use 10TB representative dataset"
+          - "MEASURE: Actual time from start to completion"
+          - "VERIFY: All data ingested (count input vs output rows)"
+          - "VERIFY: Throughput meets 1TB per 90 seconds"
+          - "MEASURE: Memory usage stays below limits"
+          - "MEASURE: Database write throughput (IOPS)"
+          - "FAIL IF: Any SLA violation (hard stop, not warning)"
+          
+      concurrent_connections:
+        target: "20 concurrent API connections without degradation"
+        verification:
+          - "SPAWN: 20 workers, each connecting to real API"
+          - "MEASURE: Latency per connection (should be consistent)"
+          - "VERIFY: No connection drops or timeouts"
+          - "VERIFY: All APIs complete successfully"
+          - "MEASURE: Resource usage (CPU, memory, network)"
+          - "COMPARE: Performance vs single connection baseline"
+          
+      failure_recovery_performance:
+        target: "Recovery within 30 seconds of API restoration"
+        verification:
+          - "BREAK: Simulate API failure mid-ingestion"
+          - "WAIT: Allow retry and circuit breaker logic to engage"
+          - "RESTORE: Bring API back online"
+          - "MEASURE: Time from restoration to successful ingestion"
+          - "VERIFY: No data lost during failure window"
+          - "VERIFY: Recovery completes within SLA"
+  
+  manual_verification:
+    required: true
+    description: "Human verification that system actually works"
+    
+    checklist:
+      - "START: Run full ingestion cycle with real APIs"
+      - "OBSERVE: Watch logs for errors (should be clean)"
+      - "CHECK: Query database for expected data"
+      - "VALIDATE: Spot-check data quality (random samples)"
+      - "INSPECT: Grafana dashboard shows correct metrics"
+      - "TEST: Simulate API failure, observe recovery"
+      - "CONFIRM: All 15-20 data sources showing data"
+      - "VERIFY: Performance meets SLA (use stopwatch)"
+      - "DOCUMENT: Screenshot evidence of working system"
+
+estimated_effort:
+  total_days: 10
+  team_size: 2 developers
+  
+implementation_phases:
+  phase_1:
+    duration: 3 days
+    deliverable: "API connectors with authentication"
+  
+  phase_2:
+    duration: 3 days
+    deliverable: "Data validation and transformation pipeline"
+  
+  phase_3:
+    duration: 2 days
+    deliverable: "TimescaleDB storage with partitioning"
+  
+  phase_4:
+    duration: 2 days
+    deliverable: "Monitoring dashboard and alerting"
+
+risks:
+  - risk: "API rate limits may constrain ingestion speed"
+    mitigation: "Implement request queueing, multiple API keys"
+    severity: high
+  
+  - risk: "Network latency with multiple concurrent connections"
+    mitigation: "Use async I/O, connection pooling"
+    severity: medium
+  
+  - risk: "Data quality varies significantly across sources"
+    mitigation: "Robust validation rules, configurable tolerance"
+    severity: medium

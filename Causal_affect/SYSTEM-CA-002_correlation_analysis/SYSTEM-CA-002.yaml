@@ -1,0 +1,415 @@
+# SYSTEM-CA-002: Correlation Analysis & Pattern Recognition
+# ==========================================================
+
+metadata:
+  system_id: SYSTEM-CA-002
+  system_name: Correlation Analysis & Pattern Recognition
+  parent_project: PROJECT-CAUSAL_AFFECT
+  created_date: 2025-10-13
+  status: planned
+  priority: critical
+  
+  purpose: |
+    Correlation calculation engine that identifies strong variable relationships.
+    Phase 1: 1000-2000 correlations in 20 minutes. Scales to 10000+ as needed.
+  
+  business_value: |
+    - Discovers novel variable relationships before competitors
+    - Filters statistically significant correlations (p<0.05)
+    - Prioritizes by exploitability potential
+    - Enables data-driven opportunity identification
+
+deployment:
+  platform: Railway
+  service_type: Backend worker service (Celery workers)
+  scaling: 2-4 workers (Phase 1) → 8-16 workers (Phase 2)
+  estimated_cost: "$40/month (Phase 1) → $150/month (Phase 2)"
+  
+  railway_config:
+    builder: NIXPACKS
+    build_command: "pip install -r requirements.txt"
+    start_command: "celery -A app.correlation worker --loglevel=info --concurrency=4"
+    health_check: "/health"
+    restart_policy: ON_FAILURE
+
+system_requirements:
+  performance_phase_1:
+    calculation_rate: "1000-2000 correlation pairs in 20 minutes"
+    parallel_processing: "4 workers with Pandas/NumPy/SciPy"
+    memory_efficiency: "Handle 50-100 GB datasets"
+    real_time_scoring: "Prioritization scoring <1 minute"
+  
+  performance_phase_2:
+    calculation_rate: "5000-10000 correlation pairs in 15 minutes"
+    parallel_processing: "8-16 workers with Dask for distributed computation"
+    memory_efficiency: "Handle 500 GB - 1 TB datasets"
+  
+  accuracy:
+    statistical_significance: "p-value < 0.05 threshold"
+    false_positive_rate: "<5%"
+    correlation_strength_range: "-1.0 to +1.0 (Pearson)"
+    minimum_data_points: "30+ observations per correlation"
+  
+  scalability:
+    phase_1: "1000-2000 correlations with Pandas (in-memory)"
+    phase_2: "5000-10000 correlations with Dask (distributed)"
+    time_window_flexibility: "Multiple time ranges (1d, 7d, 30d, 90d)"
+    incremental_updates: "Add new correlations without full recalculation"
+
+features:
+  - feature_id: FEATURE-CA-002-01
+    feature_name: Parallel Correlation Calculation Engine
+    description: |
+      High-performance engine. Phase 1: Pandas/NumPy for 1000-2000 correlations.
+      Phase 2: Add Dask for 5000-10000 distributed correlations.
+    estimated_layers: 5-6
+    priority: critical
+    technology: Pandas + NumPy + SciPy → Dask (Phase 2)
+    
+  - feature_id: FEATURE-CA-002-02
+    feature_name: Statistical Significance Testing
+    description: |
+      Validates correlation strength using p-values, confidence intervals,
+      and multiple testing corrections (Bonferroni, FDR)
+    estimated_layers: 4-5
+    priority: critical
+    
+  - feature_id: FEATURE-CA-002-03
+    feature_name: Correlation Scoring & Prioritization
+    description: |
+      Multi-factor scoring algorithm that ranks correlations by strength,
+      novelty, exploitability, and business potential
+    estimated_layers: 4-5
+    priority: critical
+    
+  - feature_id: FEATURE-CA-002-04
+    feature_name: Pattern Recognition & Clustering
+    description: |
+      Identifies clusters of related correlations and patterns across
+      multiple variables using unsupervised learning
+    estimated_layers: 4-5
+    priority: high
+    
+  - feature_id: FEATURE-CA-002-05
+    feature_name: Correlation Results Storage & Indexing
+    description: |
+      Efficient storage and retrieval of correlation results with indexing
+      for fast querying and historical tracking
+    estimated_layers: 3-4
+    priority: high
+
+acceptance_criteria:
+  - criterion_id: AC-SYS-002-01
+    criterion: "Calculate 10000+ correlation pairs within 10 minutes"
+    verification: "Performance benchmark with real dataset"
+    priority: critical
+    
+  - criterion_id: AC-SYS-002-02
+    criterion: "All correlations meet statistical significance (p<0.05)"
+    verification: "Statistical validation on test dataset"
+    priority: critical
+    
+  - criterion_id: AC-SYS-002-03
+    criterion: "False positive rate remains below 5%"
+    verification: "Validation against known correlations"
+    priority: critical
+    
+  - criterion_id: AC-SYS-002-04
+    criterion: "Prioritization algorithm ranks exploitable correlations highest"
+    verification: "Algorithm validation with historical success data"
+    priority: critical
+    
+  - criterion_id: AC-SYS-002-05
+    criterion: "System handles datasets exceeding 10 TB without failure"
+    verification: "Load test with large-scale data"
+    priority: high
+
+correlation_algorithms:
+  primary:
+    - "Pearson correlation coefficient (linear relationships)"
+    - "Spearman rank correlation (monotonic relationships)"
+    - "Kendall tau (ordinal relationships)"
+  
+  advanced:
+    - "Partial correlation (controlling for confounders)"
+    - "Time-lagged correlation (lead/lag relationships)"
+    - "Distance correlation (non-linear dependencies)"
+  
+  statistical_tests:
+    - "P-value calculation for significance"
+    - "Confidence intervals (95%, 99%)"
+    - "Multiple testing correction (Bonferroni, FDR)"
+    - "Bootstrap resampling for robustness"
+
+scoring_factors:
+  correlation_strength:
+    weight: 0.30
+    description: "Absolute value of correlation coefficient"
+  
+  statistical_significance:
+    weight: 0.25
+    description: "Based on p-value (lower = better)"
+  
+  novelty_score:
+    weight: 0.20
+    description: "Not previously identified or documented"
+  
+  exploitability_potential:
+    weight: 0.15
+    description: "Can be acted upon within time window"
+  
+  data_quality:
+    weight: 0.10
+    description: "Number of observations, missing data ratio"
+
+technology_stack:
+  computation: "Dask or Ray for distributed processing"
+  algorithms: "NumPy, SciPy, scikit-learn"
+  statistical_analysis: "statsmodels for advanced testing"
+  data_structures: "Pandas for tabular data manipulation"
+  storage: "PostgreSQL with GiST indexes"
+  caching: "Redis for frequently accessed correlations"
+
+dependencies:
+  internal:
+    - "SYSTEM-CA-001: Data Ingestion (provides input data)"
+  
+  external:
+    - "PostgreSQL database for results storage"
+    - "Redis for caching"
+    - "Dask/Ray cluster for distributed compute"
+
+testing_requirements:
+  philosophy: |
+    ALL TESTS MUST VERIFY ACTUAL CORRELATION CALCULATIONS AND STATISTICAL VALIDITY.
+    No synthetic perfect correlations. Use real messy data. Verify math is correct.
+    
+    1. Tests verify actual behavior, not just interfaces
+    2. Tests check side effects (results stored, metrics calculated correctly)
+    3. Tests use mocks to VERIFY calls, not just STUB returns
+    4. Integration tests run with REAL data and REAL calculations
+    5. Manual verification confirms correlations are meaningful and accurate
+  
+  unit_tests:
+    minimum_count: 50
+    coverage_threshold: 0.90
+    
+    required_verifications:
+      correlation_calculation_tests:
+        - "VERIFY: Pearson correlation formula implemented correctly"
+        - "VERIFY: Known dataset produces expected correlation coefficient"
+        - "VERIFY: Handles missing data per business rules (drop, interpolate, etc.)"
+        - "VERIFY: Correlation of identical series = 1.0"
+        - "VERIFY: Correlation of inverse series = -1.0"
+        - "VERIFY: Correlation of random series ≈ 0 (within tolerance)"
+        - "VERIFY: Division by zero handled (zero variance case)"
+        - "NO MOCKING: Use real numpy/scipy functions, verify against known values"
+        - "EDGE CASE: Empty data, single data point, all zeros, all same value"
+        
+      statistical_significance_tests:
+        - "VERIFY: P-value calculation mathematically correct"
+        - "VERIFY: Known correlation produces expected p-value"
+        - "VERIFY: Sample size affects significance calculation"
+        - "VERIFY: P-value < 0.05 correctly identifies significant correlations"
+        - "VERIFY: Confidence intervals calculated correctly (95%, 99%)"
+        - "VERIFY: Multiple testing correction applied (Bonferroni, FDR)"
+        - "VERIFY: False positive rate controlled"
+        - "MATH CHECK: Use statistical reference values, verify precision"
+        
+      scoring_algorithm_tests:
+        - "VERIFY: Scoring formula produces expected range (0-100)"
+        - "VERIFY: Strong correlation scores higher than weak"
+        - "VERIFY: Novel correlations prioritized over known"
+        - "VERIFY: All scoring factors weighted correctly (sum to 1.0)"
+        - "VERIFY: Edge cases handled (negative correlations, zero scores)"
+        - "VERIFY: Scoring deterministic (same input = same score)"
+        - "VERIFY: Score persisted to database with correlation ID"
+        - "SIDE EFFECT: Check database for score values"
+        
+      parallel_processing_tests:
+        - "VERIFY: Results identical to sequential processing"
+        - "VERIFY: No race conditions in shared data structures"
+        - "VERIFY: All correlation pairs calculated (count verification)"
+        - "VERIFY: Performance scales with worker count"
+        - "VERIFY: Memory usage stays within limits"
+        - "REAL PARALLELISM: Use actual Dask/Ray, not mocked"
+  
+  integration_tests:
+    minimum_count: 25
+    coverage_threshold: 0.85
+    
+    required_scenarios:
+      end_to_end_correlation_pipeline:
+        description: "Complete correlation analysis from data to stored results"
+        requirements:
+          - "INPUT: Real time-series data from data ingestion system"
+          - "VERIFY: Data loaded from TimescaleDB (actual query)"
+          - "VERIFY: 10000+ correlation pairs calculated"
+          - "VERIFY: Statistical significance computed for each pair"
+          - "VERIFY: Scores calculated and ranked"
+          - "VERIFY: Results stored in PostgreSQL (query to confirm)"
+          - "VERIFY: Completion time < 10 minutes (measured)"
+          - "NO MOCKING: All components real, verify end state"
+          - "MANUAL: Query database, spot-check correlation values"
+        
+      large_scale_calculation:
+        description: "10000+ correlations calculated correctly and efficiently"
+        requirements:
+          - "INPUT: Real dataset with 100+ variables over time"
+          - "CALCULATE: All pairwise correlations (N*(N-1)/2 pairs)"
+          - "VERIFY: Correlation matrix symmetric (corr(A,B) = corr(B,A))"
+          - "VERIFY: Diagonal elements = 1.0 (self-correlation)"
+          - "VERIFY: No NaN or Inf values in results"
+          - "VERIFY: All results have valid p-values"
+          - "VERIFY: Calculation completes within SLA (10 minutes)"
+          - "PERFORMANCE: Measure time, memory, CPU usage"
+          - "MATH VALIDATION: Sample correlations, verify manually"
+        
+      statistical_filtering:
+        description: "Only statistically significant correlations retained"
+        requirements:
+          - "INPUT: Mix of strong, weak, and random correlations"
+          - "CALCULATE: Correlations and p-values for all"
+          - "FILTER: Apply p < 0.05 threshold"
+          - "VERIFY: Strong correlations pass filter"
+          - "VERIFY: Random correlations fail filter (p > 0.05)"
+          - "VERIFY: Filtered results stored separately"
+          - "VERIFY: Metrics show filter rate (e.g., 80% filtered out)"
+          - "VALIDATION: Known significant correlation passes"
+          - "VALIDATION: Known random relationship fails"
+        
+      scoring_and_prioritization:
+        description: "Correlations scored and ranked correctly"
+        requirements:
+          - "INPUT: Diverse set of significant correlations"
+          - "SCORE: Apply multi-factor scoring algorithm"
+          - "VERIFY: Scores in expected range (0-100)"
+          - "VERIFY: Top-ranked correlations have highest scores"
+          - "VERIFY: Novelty factor affects ranking"
+          - "VERIFY: Exploitability factor affects ranking"
+          - "VERIFY: Rankings stored in correct order"
+          - "QUERY: Database for top 10, verify they're actually strongest"
+          - "MANUAL: Review top correlations, assess business sense"
+        
+      parallel_processing_validation:
+        description: "Distributed calculation produces correct results"
+        requirements:
+          - "SETUP: Configure Dask/Ray cluster (real cluster, not mocked)"
+          - "INPUT: Large dataset requiring parallel processing"
+          - "EXECUTE: Run parallel correlation calculation"
+          - "VERIFY: Results match sequential baseline (within tolerance)"
+          - "VERIFY: All workers contributed (check worker logs)"
+          - "VERIFY: No data corruption from race conditions"
+          - "MEASURE: Speedup factor (parallel vs sequential)"
+          - "VERIFY: Memory distributed across workers"
+          - "MONITOR: Cluster metrics during execution"
+  
+  performance_tests:
+    required: true
+    philosophy: "Measure actual calculation performance with realistic data complexity"
+    
+    scenarios:
+      calculation_speed:
+        target: "10000+ correlations in < 10 minutes"
+        verification:
+          - "INPUT: Real dataset with sufficient variables"
+          - "START: Record timestamp before calculation"
+          - "EXECUTE: Calculate all correlations"
+          - "END: Record timestamp after completion"
+          - "VERIFY: Duration < 10 minutes (hard requirement)"
+          - "VERIFY: All 10000+ correlations calculated"
+          - "VERIFY: No calculation errors or exceptions"
+          - "MEASURE: Correlations per second rate"
+          
+      memory_efficiency:
+        target: "Handle 10+ TB dataset without OOM"
+        verification:
+          - "INPUT: Large time-series dataset (10+ TB)"
+          - "MONITOR: Memory usage throughout processing"
+          - "VERIFY: Memory stays below system limits"
+          - "VERIFY: Chunked processing works correctly"
+          - "VERIFY: Results still accurate with chunking"
+          - "VERIFY: No memory leaks (stable over time)"
+          
+      parallel_scaling:
+        target: "Linear speedup with worker count"
+        verification:
+          - "BASELINE: Single-threaded calculation time"
+          - "TEST: 2, 4, 8 worker configurations"
+          - "MEASURE: Calculation time for each"
+          - "VERIFY: Speedup factor >= 0.8 * worker_count"
+          - "VERIFY: No performance degradation with more workers"
+  
+  mathematical_validation:
+    required: true
+    description: "Verify correlation calculations are mathematically correct"
+    
+    test_cases:
+      perfect_positive_correlation:
+        input: "Two identical time series"
+        expected: "Correlation = 1.0, p-value ≈ 0"
+        verification: "Calculate and assert exact match"
+        
+      perfect_negative_correlation:
+        input: "Two inverse time series (x and -x)"
+        expected: "Correlation = -1.0, p-value ≈ 0"
+        verification: "Calculate and assert exact match"
+        
+      zero_correlation:
+        input: "Two independent random series"
+        expected: "Correlation ≈ 0, p-value > 0.05"
+        verification: "Calculate, verify near zero within tolerance"
+        
+      known_correlation:
+        input: "Standard test datasets (e.g., Anscombe's quartet)"
+        expected: "Published correlation values"
+        verification: "Calculate and compare to published values"
+  
+  manual_verification:
+    required: true
+    description: "Human verification that correlations are meaningful and accurate"
+    
+    checklist:
+      - "SELECT: Random sample of top-ranked correlations"
+      - "PLOT: Scatter plots of selected variable pairs"
+      - "ASSESS: Visual confirmation of correlation strength"
+      - "VALIDATE: P-values make sense given visual inspection"
+      - "CHECK: Known correlations (e.g., temperature vs AC usage)"
+      - "VERIFY: Novel correlations seem plausible"
+      - "QUERY: Database for specific correlation, verify stored correctly"
+      - "COMPARE: Manual calculation vs system calculation for sample"
+      - "DOCUMENT: Evidence that correlations are real and meaningful"
+
+estimated_effort:
+  total_days: 10
+  team_size: 2 developers
+
+implementation_phases:
+  phase_1:
+    duration: 3 days
+    deliverable: "Core correlation calculation engine"
+  
+  phase_2:
+    duration: 3 days
+    deliverable: "Statistical significance testing"
+  
+  phase_3:
+    duration: 2 days
+    deliverable: "Scoring and prioritization algorithm"
+  
+  phase_4:
+    duration: 2 days
+    deliverable: "Results storage and retrieval optimization"
+
+risks:
+  - risk: "Computation time may exceed 10-minute target"
+    mitigation: "Use GPU acceleration, optimize algorithms"
+    severity: high
+  
+  - risk: "Multiple testing may increase false negatives"
+    mitigation: "Balance Bonferroni vs FDR, tune thresholds"
+    severity: medium
+  
+  - risk: "Memory constraints with large correlation matrices"
+    mitigation: "Chunked processing, sparse matrix storage"
+    severity: medium

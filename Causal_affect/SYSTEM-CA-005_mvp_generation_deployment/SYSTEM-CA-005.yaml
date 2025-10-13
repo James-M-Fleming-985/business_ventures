@@ -1,0 +1,637 @@
+# SYSTEM-CA-005: MVP Generation & Deployment Pipeline
+# ====================================================
+
+metadata:
+  system_id: SYSTEM-CA-005
+  system_name: MVP Generation & Deployment Pipeline
+  parent_project: PROJECT-CAUSAL_AFFECT
+  created_date: 2025-10-13
+  status: planned
+  priority: critical
+  
+  purpose: |
+    Automated MVP generation and deployment system using Railway. Builds from
+    pre-defined templates and deploys in 10-15 minutes (Railway is FAST!).
+    Achieves 95%+ deployment success rate.
+  
+  business_value: |
+    - Eliminates manual MVP development time
+    - Enables rapid testing of multiple opportunities
+    - Scales deployment to dozens of concurrent MVPs
+    - Reduces time-to-market from weeks to minutes
+
+deployment:
+  platform: Railway (Generator service + Generated MVPs)
+  service_type: Backend API service (FastAPI generator) + Multiple MVP services
+  scaling: 1 generator service, 10-20 MVP services (Phase 1) → 50-100 MVPs (Phase 2)
+  estimated_cost: "$10/month (generator) + $10/month per MVP"
+  
+  railway_config_generator:
+    builder: NIXPACKS
+    build_command: "pip install -r requirements.txt"
+    start_command: "uvicorn app.generator:app --host 0.0.0.0 --port $PORT"
+    health_check: "/health"
+    restart_policy: ON_FAILURE
+  
+  railway_config_mvp_template:
+    builder: NIXPACKS
+    build_command: "npm install && npm run build"
+    start_command: "npm start"
+    health_check: "/"
+    restart_policy: ON_FAILURE
+    auto_deploy: true
+
+system_requirements:
+  performance_phase_1:
+    generation_time: "<5 minutes from template to code"
+    deployment_time: "10-15 minutes from trigger to live (Railway automatic)"
+    concurrent_deployments: "3-5 simultaneous deployments"
+    smoke_test_duration: "<2 minutes post-deployment"
+  
+  performance_phase_2:
+    deployment_time: "<10 minutes from trigger to live"
+    concurrent_deployments: "10+ simultaneous deployments"
+  
+  reliability:
+    deployment_success_rate: ">95%"
+    zero_downtime_deployments: "100% using blue-green strategy"
+    rollback_capability: "Automatic rollback on failure <5 minutes"
+    infrastructure_uptime: "99.9% for deployed MVPs"
+  
+  scalability:
+    active_mvps_supported: "50+ concurrent MVPs"
+    deployment_queue_capacity: "20+ pending deployments"
+    infrastructure_auto_scaling: "Dynamic resource allocation"
+
+features:
+  - feature_id: FEATURE-CA-005-01
+    feature_name: Scaffolding Template Library
+    description: |
+      Comprehensive library of pre-built application scaffolds with
+      configurable parameters for rapid customization
+    estimated_layers: 4-5
+    priority: critical
+    
+  - feature_id: FEATURE-CA-005-02
+    feature_name: Dynamic Code Generation Engine
+    description: |
+      Generates application code from templates with opportunity-specific
+      customizations, configuration, and branding
+    estimated_layers: 5-6
+    priority: critical
+    
+  - feature_id: FEATURE-CA-005-03
+    feature_name: Automated CI/CD Pipeline
+    description: |
+      Continuous integration and deployment pipeline with testing,
+      building, and deployment automation
+    estimated_layers: 5-6
+    priority: critical
+    
+  - feature_id: FEATURE-CA-005-04
+    feature_name: Infrastructure Provisioning
+    description: |
+      Automated infrastructure setup (containers, databases, CDN,
+      monitoring) using Infrastructure-as-Code
+    estimated_layers: 4-5
+    priority: critical
+    
+  - feature_id: FEATURE-CA-005-05
+    feature_name: Deployment Orchestration & Monitoring
+    description: |
+      Orchestrates deployment process, monitors health, and triggers
+      rollback if issues detected
+    estimated_layers: 4-5
+    priority: high
+    
+  - feature_id: FEATURE-CA-005-06
+    feature_name: Post-Deployment Validation
+    description: |
+      Automated smoke tests and health checks to verify MVP is fully
+      functional after deployment
+    estimated_layers: 3-4
+    priority: high
+
+acceptance_criteria:
+  - criterion_id: AC-SYS-005-01
+    criterion: "MVP generated from scaffolding within 20 minutes"
+    verification: "Performance test across all template types"
+    priority: critical
+    
+  - criterion_id: AC-SYS-005-02
+    criterion: "Complete deployment cycle in <30 minutes"
+    verification: "End-to-end timing test from trigger to live"
+    priority: critical
+    
+  - criterion_id: AC-SYS-005-03
+    criterion: "Deployment success rate exceeds 95%"
+    verification: "Track success rate over 100+ deployments"
+    priority: critical
+    
+  - criterion_id: AC-SYS-005-04
+    criterion: "All deployments achieve zero-downtime"
+    verification: "Availability monitoring during deployments"
+    priority: critical
+    
+  - criterion_id: AC-SYS-005-05
+    criterion: "Automatic rollback completes within 5 minutes on failure"
+    verification: "Failure simulation and rollback timing"
+    priority: high
+    
+  - criterion_id: AC-SYS-005-06
+    criterion: "Support 5+ concurrent deployments without conflicts"
+    verification: "Load test with parallel deployment queue"
+    priority: high
+
+scaffolding_templates:
+  saas_dashboard:
+    name: "SaaS Analytics Dashboard"
+    tech_stack:
+      frontend: "React + TypeScript + TailwindCSS + Recharts"
+      backend: "FastAPI + PostgreSQL + Redis"
+      auth: "JWT-based authentication"
+    features:
+      - "User registration and login"
+      - "Dashboard with customizable widgets"
+      - "Data visualization charts"
+      - "API endpoints for data access"
+    deployment_target: "Docker containers on Kubernetes"
+    estimated_generation_time: "15-18 minutes"
+    
+  marketplace_platform:
+    name: "Two-Sided Marketplace"
+    tech_stack:
+      frontend: "Next.js + TypeScript + Stripe"
+      backend: "Node.js + MongoDB + Redis"
+      payments: "Stripe integration"
+    features:
+      - "Seller and buyer accounts"
+      - "Product listings and search"
+      - "Payment processing"
+      - "Rating and review system"
+    deployment_target: "Vercel + MongoDB Atlas"
+    estimated_generation_time: "20-25 minutes"
+    
+  content_platform:
+    name: "Content Publishing Platform"
+    tech_stack:
+      frontend: "Ghost CMS + Custom theme"
+      backend: "Ghost + MySQL"
+      cdn: "Cloudflare CDN"
+    features:
+      - "Blog post creation and editing"
+      - "SEO optimization"
+      - "Email newsletter integration"
+      - "Analytics tracking"
+    deployment_target: "Docker containers"
+    estimated_generation_time: "10-12 minutes"
+    
+  api_service:
+    name: "RESTful API Service"
+    tech_stack:
+      backend: "FastAPI + PostgreSQL"
+      documentation: "OpenAPI/Swagger"
+      rate_limiting: "Redis-based"
+    features:
+      - "API key authentication"
+      - "Rate limiting"
+      - "Auto-generated documentation"
+      - "Data endpoints"
+    deployment_target: "Docker containers on Cloud Run"
+    estimated_generation_time: "12-15 minutes"
+    
+  mobile_pwa:
+    name: "Progressive Web App"
+    tech_stack:
+      frontend: "React + PWA + Service Workers"
+      backend: "Firebase (Firestore + Auth)"
+      push: "Firebase Cloud Messaging"
+    features:
+      - "Offline functionality"
+      - "Push notifications"
+      - "App-like experience"
+      - "Fast loading"
+    deployment_target: "Firebase Hosting"
+    estimated_generation_time: "15-18 minutes"
+
+code_generation_process:
+  step_1_template_selection:
+    duration: "1 minute"
+    process: "Match opportunity to appropriate template"
+    
+  step_2_parameter_configuration:
+    duration: "2 minutes"
+    process: "Configure template with opportunity-specific parameters"
+    inputs:
+      - "Opportunity name and description"
+      - "Target audience data"
+      - "Branding (colors, logo, copy)"
+      - "Feature toggles"
+      - "Data source connections"
+    
+  step_3_code_generation:
+    duration: "5-10 minutes"
+    process: "Generate application code from template"
+    outputs:
+      - "Frontend code (React/Next.js/etc)"
+      - "Backend code (FastAPI/Node.js/etc)"
+      - "Database migrations"
+      - "Configuration files"
+      - "Docker files"
+      - "CI/CD configuration"
+    
+  step_4_customization:
+    duration: "3-5 minutes"
+    process: "Apply opportunity-specific customizations"
+    customizations:
+      - "Brand colors and styling"
+      - "Copy and content"
+      - "Data source integrations"
+      - "Analytics tracking codes"
+      - "Domain configuration"
+    
+  step_5_validation:
+    duration: "2-3 minutes"
+    process: "Validate generated code"
+    checks:
+      - "Syntax validation"
+      - "Linting checks"
+      - "Security scan"
+      - "Dependency verification"
+
+ci_cd_pipeline:
+  stages:
+    build:
+      duration: "3-5 minutes"
+      steps:
+        - "Install dependencies"
+        - "Run linters"
+        - "Compile TypeScript"
+        - "Build Docker images"
+    
+    test:
+      duration: "2-3 minutes"
+      steps:
+        - "Run unit tests"
+        - "Run integration tests"
+        - "Security scan"
+    
+    deploy:
+      duration: "5-8 minutes"
+      steps:
+        - "Push Docker images to registry"
+        - "Apply Kubernetes manifests"
+        - "Run database migrations"
+        - "Update DNS/routing"
+        - "Health check monitoring"
+    
+    validate:
+      duration: "3-5 minutes"
+      steps:
+        - "Smoke tests"
+        - "End-to-end tests"
+        - "Performance checks"
+        - "Availability verification"
+
+infrastructure_components:
+  compute:
+    primary: "Kubernetes cluster (GKE/EKS/AKS)"
+    scaling: "Horizontal Pod Autoscaler"
+    regions: "Multi-region for high availability"
+    
+  storage:
+    databases: "PostgreSQL (managed service)"
+    cache: "Redis clusters"
+    object_storage: "S3-compatible storage"
+    
+  networking:
+    load_balancer: "Ingress controller (Nginx)"
+    cdn: "Cloudflare"
+    dns: "Cloud DNS with automatic provisioning"
+    ssl: "Automated Let's Encrypt certificates"
+    
+  monitoring:
+    metrics: "Prometheus + Grafana"
+    logging: "ELK Stack or Cloud Logging"
+    tracing: "Jaeger"
+    uptime: "UptimeRobot or StatusCake"
+    
+  security:
+    secrets: "HashiCorp Vault or cloud native"
+    firewall: "Cloud firewalls + WAF"
+    scanning: "Trivy for container scanning"
+
+technology_stack:
+  generation: "Python + Jinja2 templates"
+  ci_cd: "GitHub Actions or GitLab CI"
+  iac: "Terraform for infrastructure provisioning"
+  containers: "Docker + Kubernetes"
+  orchestration: "Argo CD for GitOps"
+  monitoring: "Prometheus + Grafana"
+
+dependencies:
+  internal:
+    - "SYSTEM-CA-004: Opportunity Assessment (provides MVP specifications)"
+  
+  external:
+    - "Cloud provider (AWS/Azure/GCP)"
+    - "Container registry"
+    - "Kubernetes cluster"
+    - "CI/CD platform"
+    - "DNS provider"
+    - "CDN service"
+
+testing_requirements:
+  philosophy: |
+    ALL TESTS MUST VERIFY ACTUAL MVP GENERATION AND DEPLOYMENT FUNCTIONALITY.
+    No fake deployments or stubbed code generation. Use real infrastructure. Verify MVPs work.
+    
+    1. Tests verify actual behavior, not just interfaces
+    2. Tests check side effects (code generated, infrastructure provisioned, MVP accessible)
+    3. Tests use mocks to VERIFY calls, not just STUB returns
+    4. Integration tests run with REAL deployment pipelines and REAL infrastructure
+    5. Manual verification confirms MVPs are functional and accessible
+  
+  unit_tests:
+    minimum_count: 50
+    coverage_threshold: 0.90
+    
+    required_verifications:
+      scaffolding_engine_tests:
+        - "VERIFY: Template selection based on framework choice"
+        - "VERIFY: Template files copied correctly to output directory"
+        - "VERIFY: Variable substitution works ({{PROJECT_NAME}}, {{API_KEY}}, etc.)"
+        - "VERIFY: All required files present in scaffolded project"
+        - "VERIFY: Directory structure correct (src/, tests/, config/, etc.)"
+        - "VERIFY: Dependencies declared in package.json or requirements.txt"
+        - "VERIFY: Configuration files valid (tsconfig, webpack, docker-compose)"
+        - "VERIFY: README generated with project overview"
+        - "NO MOCKING: Use real file system, verify files exist"
+        - "EDGE CASE: Missing template, invalid variables, special characters in names"
+        
+      code_generation_tests:
+        - "VERIFY: Generated code syntactically valid (linting passes)"
+        - "VERIFY: Generated code includes required business logic"
+        - "VERIFY: API endpoints generated based on opportunity data"
+        - "VERIFY: Database schema matches data requirements"
+        - "VERIFY: Authentication/authorization implemented"
+        - "VERIFY: Payment processing integrated (if e-commerce)"
+        - "VERIFY: Frontend components generated"
+        - "VERIFY: Tests generated for core functionality"
+        - "VERIFY: Generated code follows best practices (linting, formatting)"
+        - "NO STUBBING: Generated code must compile/run, not just look right"
+        - "SYNTAX CHECK: Run linter on generated code"
+        - "COMPILE CHECK: Build generated project (npm build, docker build)"
+        
+      dependency_injection_tests:
+        - "VERIFY: Opportunity data injected into templates correctly"
+        - "VERIFY: API endpoints match opportunity requirements"
+        - "VERIFY: Database models match data structure"
+        - "VERIFY: Configuration includes correct API keys, URLs"
+        - "VERIFY: Environment variables set correctly"
+        - "VERIFY: Feature flags configured per opportunity"
+        - "SIDE EFFECT: Check generated files contain injected data"
+        
+      ci_cd_pipeline_tests:
+        - "VERIFY: Pipeline configuration generated (GitHub Actions, GitLab CI)"
+        - "VERIFY: Pipeline includes build, test, deploy stages"
+        - "VERIFY: Build stage compiles code successfully"
+        - "VERIFY: Test stage runs generated tests"
+        - "VERIFY: Deploy stage provisions infrastructure and deploys"
+        - "VERIFY: Pipeline secrets configured correctly"
+        - "VERIFY: Pipeline triggers on git push"
+        - "NO MOCKING: Use real CI/CD platform, verify pipeline runs"
+        - "INTEGRATION: Commit to test repo, watch pipeline execute"
+        
+      infrastructure_provisioning_tests:
+        - "VERIFY: Terraform configuration generated correctly"
+        - "VERIFY: Infrastructure includes compute (ECS, K8s), database, storage"
+        - "VERIFY: Network configuration correct (VPC, subnets, security groups)"
+        - "VERIFY: Load balancer configured for high availability"
+        - "VERIFY: Auto-scaling configured based on load"
+        - "VERIFY: Monitoring configured (CloudWatch, Prometheus)"
+        - "VERIFY: Terraform plan succeeds (no errors)"
+        - "VERIFY: Terraform apply provisions resources"
+        - "VERIFY: Resources have correct tags (project, environment)"
+        - "REAL INFRASTRUCTURE: Use test AWS/GCP account, provision real resources"
+        - "CLEANUP: Terraform destroy after test"
+        
+      deployment_orchestration_tests:
+        - "VERIFY: Docker images built successfully"
+        - "VERIFY: Images pushed to container registry"
+        - "VERIFY: Kubernetes manifests generated correctly"
+        - "VERIFY: Deployment applies successfully to cluster"
+        - "VERIFY: Pods start and pass health checks"
+        - "VERIFY: Service endpoint accessible"
+        - "VERIFY: Database migrations run successfully"
+        - "VERIFY: Environment variables injected correctly"
+        - "REAL DEPLOYMENT: Deploy to test cluster, verify accessibility"
+        - "HEALTH CHECK: Curl endpoint, verify 200 response"
+  
+  integration_tests:
+    minimum_count: 30
+    coverage_threshold: 0.85
+    
+    required_scenarios:
+      end_to_end_mvp_deployment:
+        description: "Complete MVP from opportunity to live URL"
+        requirements:
+          - "INPUT: Real opportunity from assessment system"
+          - "VERIFY: Scaffolding created with all required files"
+          - "VERIFY: Code generated includes business logic"
+          - "VERIFY: Project builds successfully (npm build, docker build)"
+          - "VERIFY: Generated tests pass"
+          - "VERIFY: CI/CD pipeline triggered"
+          - "VERIFY: Infrastructure provisioned (Terraform apply)"
+          - "VERIFY: Application deployed to infrastructure"
+          - "VERIFY: Health checks pass"
+          - "VERIFY: MVP accessible at generated URL"
+          - "VERIFY: Deployment time < 30 minutes (measured)"
+          - "NO MOCKING: Full pipeline, real infrastructure, verify accessibility"
+          - "MANUAL: Visit URL, verify MVP works (forms submit, data saves, etc.)"
+        
+      concurrent_deployments:
+        description: "Multiple MVPs deployed simultaneously"
+        requirements:
+          - "SPAWN: 3 parallel MVP deployment tasks"
+          - "VERIFY: All 3 complete successfully"
+          - "VERIFY: No resource conflicts or race conditions"
+          - "VERIFY: Each MVP has isolated infrastructure"
+          - "VERIFY: All 3 MVPs accessible at unique URLs"
+          - "MEASURE: Per-deployment time, total time"
+          - "VERIFY: Resource utilization reasonable (no exhaustion)"
+          - "REAL DEPLOYMENTS: All 3 deployed to real infrastructure"
+          - "CLEANUP: Destroy all 3 after test"
+        
+      rollback_on_failure:
+        description: "Deployment failure triggers automatic rollback"
+        requirements:
+          - "SETUP: Create opportunity with intentionally bad configuration"
+          - "TRIGGER: Start deployment"
+          - "VERIFY: Deployment fails (build error, health check failure)"
+          - "VERIFY: Rollback initiated automatically"
+          - "VERIFY: Previous version restored (if exists)"
+          - "VERIFY: No orphaned resources left behind"
+          - "VERIFY: Error logged with details"
+          - "VERIFY: Notification sent about failure"
+          - "REAL FAILURE: Use actual bad config, not mocked failure"
+          - "MANUAL: Verify cleanup is complete (no dangling resources)"
+        
+      zero_downtime_deployment:
+        description: "MVP update with no service interruption"
+        requirements:
+          - "SETUP: Deploy initial MVP version"
+          - "VERIFY: MVP v1 accessible and working"
+          - "TRIGGER: Deploy updated version"
+          - "MONITOR: Continuously ping MVP during deployment"
+          - "VERIFY: No 500 errors or downtime"
+          - "VERIFY: Traffic shifted from v1 to v2 gradually"
+          - "VERIFY: MVP v2 accessible and working"
+          - "VERIFY: Old version cleaned up after grace period"
+          - "REAL DEPLOYMENT: Actual blue-green or rolling update"
+          - "LOAD TEST: Generate traffic during deployment, verify no drops"
+        
+      infrastructure_cost_tracking:
+        description: "Deployment costs tracked and within budget"
+        requirements:
+          - "DEPLOY: MVP with known configuration"
+          - "MEASURE: Infrastructure costs (compute, database, storage, network)"
+          - "VERIFY: Costs tracked in database"
+          - "VERIFY: Cost alert triggered if exceeds budget"
+          - "COMPARE: Actual costs vs projected costs"
+          - "VERIFY: Cost optimization recommendations generated"
+          - "REAL COSTS: Use actual cloud billing data"
+          - "MANUAL: Review bill, verify charges match tracking"
+  
+  deployment_tests:
+    required: true
+    
+    scenarios:
+      successful_deployment_end_to_end:
+        description: "Happy path deployment from opportunity to live MVP"
+        requirements:
+          - "INPUT: Valid opportunity with complete assessment"
+          - "EXECUTE: Full deployment pipeline"
+          - "VERIFY: All stages complete successfully (scaffold, build, test, deploy)"
+          - "VERIFY: MVP accessible at generated URL"
+          - "VERIFY: Health checks pass"
+          - "VERIFY: Deployment time < 30 minutes"
+          - "VERIFY: All logs clean (no errors)"
+          - "REAL DEPLOYMENT: Full pipeline, verify accessibility"
+          - "MANUAL: Visit URL, test core functionality"
+        
+      rollback_on_failure:
+        description: "Failed deployment rolls back cleanly"
+        requirements:
+          - "INJECT: Failure at different stages (build, test, deploy, health check)"
+          - "VERIFY: Failure detected and logged"
+          - "VERIFY: Rollback initiated automatically"
+          - "VERIFY: Previous version restored (if applicable)"
+          - "VERIFY: No orphaned resources"
+          - "VERIFY: Error notification sent"
+          - "REAL FAILURES: Actual errors, not mocked"
+        
+      concurrent_deployments:
+        description: "Multiple MVPs deployed simultaneously without conflicts"
+        requirements:
+          - "SPAWN: 3+ parallel deployments"
+          - "VERIFY: All complete successfully"
+          - "VERIFY: No resource conflicts"
+          - "VERIFY: All MVPs accessible at unique URLs"
+          - "VERIFY: Performance acceptable (no significant slowdown)"
+          - "REAL PARALLELISM: Actual concurrent deployments"
+        
+      zero_downtime_verification:
+        description: "MVP updates without service interruption"
+        requirements:
+          - "DEPLOY: Initial version"
+          - "MONITOR: Continuous availability monitoring"
+          - "UPDATE: Deploy new version"
+          - "VERIFY: No downtime or errors during update"
+          - "VERIFY: Traffic shifted smoothly"
+          - "REAL DEPLOYMENT: Blue-green or rolling update strategy"
+  
+  performance_tests:
+    required: true
+    
+    scenarios:
+      deployment_speed:
+        target: "30-minute deployment time"
+        verification:
+          - "START: Trigger deployment with opportunity data"
+          - "MEASURE: Time from start to MVP accessible"
+          - "VERIFY: Completion within 30-minute SLA"
+          - "PROFILE: Identify slowest stages (scaffold, build, provision, deploy)"
+          - "OPTIMIZE: Target bottlenecks for improvement"
+        
+      build_performance:
+        target: "5-minute build time"
+        verification:
+          - "EXECUTE: Docker build for generated MVP"
+          - "MEASURE: Build time"
+          - "VERIFY: Build completes in < 5 minutes"
+          - "VERIFY: Image size reasonable (< 500MB for typical MVP)"
+          - "OPTIMIZE: Multi-stage builds, layer caching"
+        
+      infrastructure_provisioning_speed:
+        target: "10-minute infrastructure provisioning"
+        verification:
+          - "EXECUTE: Terraform apply for new MVP"
+          - "MEASURE: Time to provision all resources"
+          - "VERIFY: Provisioning completes in < 10 minutes"
+          - "VERIFY: All resources ready (compute, database, networking)"
+  
+  manual_verification:
+    required: true
+    description: "Human verification that MVPs are functional and accessible"
+    
+    checklist:
+      - "START: Run full deployment cycle with real opportunity"
+      - "OBSERVE: Watch CI/CD pipeline logs (should be clean)"
+      - "CHECK: Generated code in repository (files present, syntactically valid)"
+      - "VERIFY: Docker build succeeds locally"
+      - "VERIFY: Terraform plan shows expected resources"
+      - "WATCH: Deployment progress in Kubernetes/ECS dashboard"
+      - "CHECK: MVP URL accessible in browser"
+      - "TEST: Core functionality works (forms submit, data persists, APIs respond)"
+      - "INSPECT: Monitoring dashboard shows healthy metrics"
+      - "VERIFY: Database has expected tables and data"
+      - "TEST: Authentication works (if applicable)"
+      - "TEST: Payment processing works (if applicable)"
+      - "MEASURE: Deployment time with stopwatch"
+      - "CLEANUP: Terraform destroy, verify all resources deleted"
+      - "DOCUMENT: Screenshot evidence of working MVP"
+
+estimated_effort:
+  total_days: 10
+  team_size: 2-3 developers
+
+implementation_phases:
+  phase_1:
+    duration: 3 days
+    deliverable: "Scaffolding template library (3-5 templates)"
+  
+  phase_2:
+    duration: 3 days
+    deliverable: "Code generation engine"
+  
+  phase_3:
+    duration: 2 days
+    deliverable: "CI/CD pipeline automation"
+  
+  phase_4:
+    duration: 2 days
+    deliverable: "Infrastructure provisioning with Terraform"
+
+risks:
+  - risk: "Deployment complexity may exceed 30-minute target"
+    mitigation: "Optimize CI/CD pipeline, parallel processing"
+    severity: high
+  
+  - risk: "Infrastructure costs may be prohibitive for many MVPs"
+    mitigation: "Shared infrastructure, auto-scaling, cost monitoring"
+    severity: high
+  
+  - risk: "Generated code quality may be inconsistent"
+    mitigation: "Comprehensive templates, validation, automated testing"
+    severity: medium
