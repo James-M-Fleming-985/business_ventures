@@ -42,17 +42,23 @@ All three providers offer generous free tiers that are perfect for testing and e
 # Click: Create
 ```
 
-#### 2. Create Data Stream
+#### 2. Create Data Stream (Optional for Data API)
 ```bash
+# OPTION A: Use placeholder URL (recommended)
 # After property creation:
 # Click: "Add stream"
 # Choose: Web
-# Website URL: http://localhost:5173 (for development)
+# Website URL: https://example.com (GA4 requires valid format, we'll update to Railway URL later)
 # Stream name: "CA-006 Development"
 # Click: Create stream
 
 # Save these values:
-MEASUREMENT_ID="G-XXXXXXXXXX"  # Shows at top of stream details
+MEASUREMENT_ID="G-DMQ68JCNX5"  # Shows at top of stream details
+
+# OPTION B: Skip data stream for now
+# The Data API works at the PROPERTY level, not stream level
+# You can add a data stream later when you have a real Railway URL
+# Just use the Property ID from step 7 below
 ```
 
 #### 3. Enable Data API Access
@@ -92,11 +98,29 @@ MEASUREMENT_ID="G-XXXXXXXXXX"  # Shows at top of stream details
 
 #### 6. Grant Analytics Access
 ```bash
+# First, get your EXACT service account email:
+# Method 1: From Google Cloud Console
+#   Go to: IAM & Admin → Service Accounts
+#   Find: ca-006-analytics-client
+#   Copy the full email (looks like: ca-006-analytics-client@PROJECT-ID.iam.gserviceaccount.com)
+#
+# Method 2: From the JSON key file you downloaded
+#   Open: google-analytics-service-account.json
+#   Find: "client_email" field
+#   Copy the value (e.g., "ca-006-analytics-client@causal-affect-analytics.iam.gserviceaccount.com")
+
 # Back in GA4 Admin:
 # Property Access Management → Add users
-# Email: ca-006-analytics-client@PROJECT-ID.iam.gserviceaccount.com
+# Email: [PASTE YOUR EXACT SERVICE ACCOUNT EMAIL FROM ABOVE]
+#   Example: ca-006-analytics-client@causal-affect-analytics.iam.gserviceaccount.com
+#   (Replace PROJECT-ID with your actual project ID)
 # Role: Viewer
 # Click: Add
+
+# TROUBLESHOOTING: If you get a red error:
+# - Make sure you copied the FULL email including @...iam.gserviceaccount.com
+# - Check there are no extra spaces
+# - The email should match exactly what's in your JSON key file
 ```
 
 #### 7. Environment Variables
