@@ -46,14 +46,30 @@ code_generation:
   
   folder_structure:
     requirements:
-      base_path: "SYSTEM-CA-006_feedback_iteration/requirements"
-      description: "FEATURE and LAYER YAML files generated from this SYSTEM"
-      file_patterns:
-        - "FEATURE-CA-006-*.yaml"
-        - "LAYER-CA-006-*.yaml"
-      example_files:
-        - "FEATURE-CA-006-01_analytics_integration.yaml"
-        - "LAYER-CA-006-01-01_google_analytics_client.yaml"
+      description: "Hierarchical folder structure with FEATURE and LAYER folders"
+      structure: |
+        SYSTEM-CA-006_feedback_iteration/
+        ├── SYSTEM-CA-006.yaml (at root)
+        ├── FEATURE-CA-006-01_analytics_integration/
+        │   ├── FEATURE-CA-006-01_analytics_integration.yaml (FEATURE requirements at folder root)
+        │   ├── LAYER-CA-006-01-01_google_analytics_client/
+        │   │   └── LAYER-CA-006-01-01_google_analytics_client.yaml (LAYER requirements at folder root)
+        │   ├── LAYER-CA-006-01-02_mixpanel_client/
+        │   │   └── LAYER-CA-006-01-02_mixpanel_client.yaml
+        │   └── ... (additional layers)
+        ├── FEATURE-CA-006-02_engagement_tracking/
+        │   └── FEATURE-CA-006-02_engagement_tracking.yaml
+        └── ... (additional features)
+      
+      naming_convention:
+        feature_folder: "FEATURE-{SYSTEM_ID}-{NUMBER}_{feature_name}"
+        feature_file: "FEATURE-{SYSTEM_ID}-{NUMBER}_{feature_name}.yaml"
+        layer_folder: "LAYER-{SYSTEM_ID}-{FEATURE_NUM}-{LAYER_NUM}_{layer_name}"
+        layer_file: "LAYER-{SYSTEM_ID}-{FEATURE_NUM}-{LAYER_NUM}_{layer_name}.yaml"
+      
+      example_paths:
+        - "SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/FEATURE-CA-006-01_analytics_integration.yaml"
+        - "SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-01_google_analytics_client/LAYER-CA-006-01-01_google_analytics_client.yaml"
     
     source_backend:
       base_path: "src/feedback_iteration/backend"
