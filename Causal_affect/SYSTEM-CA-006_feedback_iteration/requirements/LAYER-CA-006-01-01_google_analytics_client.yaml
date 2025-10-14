@@ -1,0 +1,112 @@
+# LAYER-CA-006-01-01: Google Analytics Client
+# ============================================
+
+metadata:
+  layer_id: LAYER-CA-006-01-01
+  layer_name: Google Analytics Client
+  parent_feature: FEATURE-CA-006-01
+  parent_feature_name: Multi-Source Analytics Integration
+  parent_system: SYSTEM-CA-006
+  created_date: 2025-10-14
+  status: planned
+  priority: critical
+  complexity: medium
+
+traceability:
+  parent_feature_id: FEATURE-CA-006-01
+  parent_system_id: SYSTEM-CA-006
+  implements_acceptance_criteria:
+    - AC-FEAT-006-01-01  # Successfully authenticate with Google Analytics API
+    - AC-FEAT-006-01-04  # Collect metrics from all providers within 5 minutes
+  contributes_to_system_criteria:
+    - AC-SYS-006-01  # Metrics collected from all MVPs with <5 minute latency
+
+description: |
+  API client for Google Analytics 4 Data API. Handles authentication using
+  service account credentials, implements data fetching for key metrics,
+  and provides retry logic for transient failures.
+
+responsibilities:
+  - "Authenticate with Google Analytics using service account"
+  - "Fetch pageviews, users, sessions, and engagement metrics"
+  - "Handle API rate limiting with exponential backoff"
+  - "Transform GA4 data format to common schema"
+  - "Cache authentication tokens"
+
+interfaces:
+  inputs:
+    - "MVP property ID (Google Analytics property)"
+    - "Date range for metrics query"
+    - "Metrics list to fetch"
+    - "Dimensions for segmentation"
+  
+  outputs:
+    - "Normalized metrics in common schema"
+    - "Error messages if fetch fails"
+    - "Metadata (timestamp, property ID, query params)"
+
+acceptance_criteria:
+  - criterion_id: AC-LAY-006-01-01-01
+    criterion: "Successfully authenticate using service account JSON"
+    verification: "Authentication test with valid credentials"
+    test_type: "integration"
+    
+  - criterion_id: AC-LAY-006-01-01-02
+    criterion: "Fetch metrics within 10 seconds for single MVP"
+    verification: "API call timing test"
+    test_type: "performance"
+    
+  - criterion_id: AC-LAY-006-01-01-03
+    criterion: "Handle rate limit errors with exponential backoff"
+    verification: "Rate limit simulation test"
+    test_type: "unit"
+    
+  - criterion_id: AC-LAY-006-01-01-04
+    criterion: "Transform GA4 response to common schema correctly"
+    verification: "Data transformation test"
+    test_type: "unit"
+
+technical_specification:
+  language: "Python 3.11+"
+  dependencies:
+    - "google-analytics-data >= 0.17"
+    - "google-auth >= 2.23"
+    - "httpx >= 0.25"
+  
+  class_structure:
+    GoogleAnalyticsClient:
+      methods:
+        - "__init__(service_account_path: str)"
+        - "authenticate() -> None"
+        - "fetch_metrics(property_id: str, start_date: str, end_date: str, metrics: List[str]) -> Dict"
+        - "_transform_response(ga4_response: Any) -> Dict"
+        - "_handle_rate_limit(error: Exception) -> None"
+  
+  configuration:
+    - "GA4_SERVICE_ACCOUNT_PATH: Path to service account JSON"
+    - "GA4_API_TIMEOUT: 30 seconds"
+    - "GA4_MAX_RETRIES: 3"
+    - "GA4_RETRY_BACKOFF: exponential (1s, 2s, 4s)"
+
+testing_approach:
+  unit_tests:
+    - "test_authentication_success"
+    - "test_authentication_failure"
+    - "test_metrics_transformation"
+    - "test_rate_limit_handling"
+  
+  integration_tests:
+    - "test_real_ga4_api_call (requires test account)"
+    - "test_end_to_end_metrics_fetch"
+
+implementation_notes: |
+  - Use service account for server-to-server authentication
+  - Cache authentication tokens (1 hour expiry)
+  - Implement connection pooling for efficiency
+  - Log all API calls for debugging
+  - Support batch metric queries where possible
+
+estimated_effort:
+  development_hours: 8
+  testing_hours: 4
+  total_hours: 12

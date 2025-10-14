@@ -1,0 +1,239 @@
+# FEATURE-CA-006-04: Automated Prioritization Engine
+# ====================================================
+
+metadata:
+  feature_id: FEATURE-CA-006-04
+  feature_name: Automated Prioritization Engine
+  parent_system: SYSTEM-CA-006
+  parent_system_name: Feedback Collection & Iteration Orchestrator
+  created_date: 2025-10-14
+  status: planned
+  priority: critical
+  estimated_layers: 5
+
+traceability:
+  parent_system_id: SYSTEM-CA-006
+  parent_requirement: "Scores MVPs based on engagement, revenue, growth rate, and potential"
+  contributes_to_acceptance_criteria:
+    - AC-SYS-006-03  # Prioritization engine accurately identifies top performers (>85%)
+    - AC-SYS-006-05  # False archive rate below 5%
+  contributes_to_business_value:
+    - "Identifies successful MVPs for further investment"
+    - "Eliminates wasted resources on non-performers"
+    - "Provides data-driven iteration priorities"
+    - "Enables portfolio-level optimization"
+
+description: |
+  Intelligent scoring and prioritization system that evaluates all deployed MVPs
+  based on multi-dimensional performance metrics. Automatically identifies
+  high-performers for iteration and low-performers for archiving.
+  
+  Implements configurable scoring algorithm combining engagement metrics,
+  revenue performance, growth trends, and market potential signals. Provides
+  explainable scores with component breakdowns for decision transparency.
+  
+  Continuously recalculates priorities as new metrics arrive, adapting to
+  changing performance patterns. Triggers automated workflows for top and
+  bottom performers.
+
+business_value: |
+  - Objective, data-driven MVP prioritization
+  - Automatic identification of iteration candidates
+  - Reduced bias in decision making
+  - Scalable portfolio management (100+ MVPs)
+  - Optimized resource allocation
+
+acceptance_criteria:
+  - criterion_id: AC-FEAT-006-04-01
+    criterion: "Calculate priority score for each MVP combining 4+ dimensions"
+    verification: "Multi-dimensional scoring test"
+    priority: critical
+    test_type: "unit"
+    traces_to: AC-SYS-006-03
+    
+  - criterion_id: AC-FEAT-006-04-02
+    criterion: "Achieve >85% agreement with human expert prioritization"
+    verification: "Expert validation test with 50+ MVPs"
+    priority: critical
+    test_type: "validation"
+    traces_to: AC-SYS-006-03
+    
+  - criterion_id: AC-FEAT-006-04-03
+    criterion: "Identify top 10% performers with >90% precision"
+    verification: "Historical performance correlation test"
+    priority: critical
+    test_type: "validation"
+    traces_to: AC-SYS-006-03
+    
+  - criterion_id: AC-FEAT-006-04-04
+    criterion: "Identify bottom 10% with <5% false positive rate"
+    verification: "False archive rate measurement"
+    priority: critical
+    test_type: "validation"
+    traces_to: AC-SYS-006-05
+    
+  - criterion_id: AC-FEAT-006-04-05
+    criterion: "Recalculate scores every 5 minutes with new data"
+    verification: "Score update frequency test"
+    priority: high
+    test_type: "performance"
+    traces_to: AC-SYS-006-03
+    
+  - criterion_id: AC-FEAT-006-04-06
+    criterion: "Provide explainable scores with component breakdown"
+    verification: "Score explanation completeness test"
+    priority: high
+    test_type: "unit"
+    traces_to: AC-SYS-006-03
+    
+  - criterion_id: AC-FEAT-006-04-07
+    criterion: "Support configurable scoring weights and thresholds"
+    verification: "Configuration flexibility test"
+    priority: medium
+    test_type: "integration"
+    traces_to: AC-SYS-006-03
+
+technical_requirements:
+  performance:
+    calculation_frequency: "every 5 minutes"
+    calculation_time: "<2 minutes for 100 MVPs"
+    score_staleness: "<10 minutes maximum"
+    
+  scoring_algorithm:
+    dimensions:
+      engagement_score:
+        weight: 0.30
+        components:
+          - "DAU growth rate (30d)"
+          - "Session duration trend"
+          - "Bounce rate (inverse)"
+          - "Retention rate (7d, 30d)"
+        
+      revenue_score:
+        weight: 0.35
+        components:
+          - "Revenue growth rate (30d)"
+          - "LTV:CAC ratio"
+          - "Conversion rate"
+          - "Revenue per user"
+        
+      growth_score:
+        weight: 0.25
+        components:
+          - "User growth rate (7d, 30d)"
+          - "Revenue growth acceleration"
+          - "Viral coefficient"
+          - "Market expansion signals"
+        
+      potential_score:
+        weight: 0.10
+        components:
+          - "Market size estimate"
+          - "Competitive position"
+          - "Technical scalability"
+          - "Resource requirements"
+    
+    normalization:
+      method: "z-score normalization per dimension"
+      outlier_handling: "winsorization at 95th percentile"
+    
+    thresholds:
+      high_priority: ">75th percentile (top 25%)"
+      medium_priority: "25th-75th percentile"
+      low_priority: "<25th percentile (bottom 25%)"
+      archive_candidate: "<10th percentile + no growth for 30d"
+  
+  decision_rules:
+    iteration_priority:
+      - "Score >80 → immediate iteration candidate"
+      - "Score 60-80 + positive trend → watch list"
+      - "Score 40-60 + stable → maintenance mode"
+      - "Score 20-40 + negative trend → archive candidate"
+      - "Score <20 → archive recommendation"
+    
+    archive_triggers:
+      - "Score <10 for 14+ consecutive days"
+      - "Zero revenue for 30+ days AND low engagement"
+      - "Negative growth for 60+ days"
+      - "Manual override from system operator"
+
+layer_breakdown:
+  estimated_layers: 5
+  
+  layers:
+    - layer_id: LAYER-CA-006-04-01
+      layer_name: Scoring Algorithm Engine
+      description: "Multi-dimensional score calculation with configurable weights"
+      estimated_complexity: high
+      
+    - layer_id: LAYER-CA-006-04-02
+      layer_name: Ranking System
+      description: "MVP ranking with percentile calculations and trending"
+      estimated_complexity: medium
+      
+    - layer_id: LAYER-CA-006-04-03
+      layer_name: Threshold Manager
+      description: "Configurable threshold management and rule evaluation"
+      estimated_complexity: medium
+      
+    - layer_id: LAYER-CA-006-04-04
+      layer_name: Decision Engine
+      description: "Priority assignment and workflow trigger logic"
+      estimated_complexity: high
+      
+    - layer_id: LAYER-CA-006-04-05
+      layer_name: Explainability Module
+      description: "Score breakdown generation and explanation interface"
+      estimated_complexity: medium
+
+dependencies:
+  internal:
+    - "FEATURE-CA-006-02 (engagement metrics)"
+    - "FEATURE-CA-006-03 (revenue metrics)"
+    - "FEATURE-CA-006-05 (triggers archive workflows)"
+  
+  external:
+    - "PostgreSQL for historical metric storage"
+    - "Redis for real-time score caching"
+    - "scikit-learn for normalization algorithms"
+    - "Celery for scheduled recalculation"
+
+testing_requirements:
+  unit_tests:
+    - "Test score calculation for each dimension"
+    - "Test normalization algorithms"
+    - "Test threshold evaluation logic"
+    - "Test score explanation generation"
+    - "Test configurable weight handling"
+    
+  integration_tests:
+    - "Test end-to-end scoring pipeline"
+    - "Test score recalculation triggers"
+    - "Test workflow triggering for top/bottom performers"
+    
+  validation_tests:
+    - "Expert validation against 50+ historical MVPs"
+    - "False positive rate measurement for archive candidates"
+    - "Precision/recall for top performer identification"
+    - "Score stability analysis (avoid flip-flopping)"
+    
+  performance_tests:
+    - "Benchmark calculation time for 100 MVPs"
+    - "Test concurrent score requests"
+    - "Verify <2 minute calculation SLA"
+
+implementation_notes: |
+  1. Store all score components for explainability
+  2. Implement score history tracking for trend analysis
+  3. Use feature flags for algorithm experimentation
+  4. Add manual override capability for edge cases
+  5. Implement gradual weight adjustment based on outcomes
+  6. Cache intermediate calculations for performance
+  7. Log all scoring decisions for audit trail
+  8. Support A/B testing of scoring algorithms
+
+estimated_effort:
+  development_days: 3
+  testing_days: 1
+  validation_days: 1
+  total_days: 5

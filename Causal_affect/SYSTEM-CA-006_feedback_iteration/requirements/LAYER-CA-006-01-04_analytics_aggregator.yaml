@@ -1,0 +1,156 @@
+# LAYER-CA-006-01-04: Analytics Aggregator
+# ==========================================
+
+metadata:
+  layer_id: LAYER-CA-006-01-04
+  layer_name: Analytics Aggregator
+  parent_feature: FEATURE-CA-006-01
+  parent_feature_name: Multi-Source Analytics Integration
+  parent_system: SYSTEM-CA-006
+  created_date: 2025-10-14
+  status: planned
+  priority: critical
+  complexity: high
+
+traceability:
+  parent_feature_id: FEATURE-CA-006-01
+  parent_system_id: SYSTEM-CA-006
+  implements_acceptance_criteria:
+    - AC-FEAT-006-01-04  # Collect metrics from all providers within 5 minutes
+    - AC-FEAT-006-01-05  # Normalize metrics to common schema across providers
+    - AC-FEAT-006-01-07  # Fallback to alternative provider if primary fails
+  contributes_to_system_criteria:
+    - AC-SYS-006-01
+    - AC-SYS-006-02
+
+description: |
+  Unified interface that aggregates data from all analytics providers
+  (Google Analytics, Mixpanel, Amplitude). Orchestrates parallel data
+  collection, handles provider failures with fallback logic, and produces
+  normalized metrics in a common schema.
+  
+  Implements intelligent provider selection, data merging, and
+  deduplication across multiple sources.
+
+responsibilities:
+  - "Orchestrate parallel metrics collection from all providers"
+  - "Merge data from multiple sources into unified format"
+  - "Handle provider failures with automatic fallback"
+  - "Deduplicate metrics across providers"
+  - "Provide unified query interface for consumers"
+  - "Cache aggregated results for performance"
+
+interfaces:
+  inputs:
+    - "MVP ID to collect metrics for"
+    - "Date range for metrics"
+    - "List of metrics to collect"
+    - "Provider preferences/priorities"
+  outputs:
+    - "Unified metrics dataset in common schema"
+    - "Provider attribution (which provider sourced each metric)"
+    - "Collection metadata (latency, errors, fallbacks used)"
+
+acceptance_criteria:
+  - criterion_id: AC-LAY-006-01-04-01
+    criterion: "Collect from all 3 providers in parallel within 5 minutes"
+    verification: "End-to-end collection timing test"
+    test_type: "performance"
+  - criterion_id: AC-LAY-006-01-04-02
+    criterion: "Produce unified schema with all metrics normalized"
+    verification: "Schema validation test"
+    test_type: "unit"
+  - criterion_id: AC-LAY-006-01-04-03
+    criterion: "Fallback to secondary provider on primary failure"
+    verification: "Provider failure simulation test"
+    test_type: "integration"
+  - criterion_id: AC-LAY-006-01-04-04
+    criterion: "Deduplicate metrics found in multiple providers"
+    verification: "Deduplication logic test"
+    test_type: "unit"
+  - criterion_id: AC-LAY-006-01-04-05
+    criterion: "Handle partial failures (1-2 providers down)"
+    verification: "Partial failure resilience test"
+    test_type: "integration"
+
+technical_specification:
+  language: "Python 3.11+"
+  dependencies:
+    - "asyncio for parallel collection"
+    - "LAYER-CA-006-01-01 (GoogleAnalyticsClient)"
+    - "LAYER-CA-006-01-02 (MixpanelClient)"
+    - "LAYER-CA-006-01-03 (AmplitudeClient)"
+    - "LAYER-CA-006-01-05 (AnalyticsErrorHandler)"
+  
+  class_structure:
+    AnalyticsAggregator:
+      attributes:
+        - "ga_client: GoogleAnalyticsClient"
+        - "mixpanel_client: MixpanelClient"
+        - "amplitude_client: AmplitudeClient"
+        - "error_handler: AnalyticsErrorHandler"
+      methods:
+        - "__init__(provider_configs: Dict)"
+        - "async collect_metrics(mvp_id: str, date_range: Tuple[str, str]) -> UnifiedMetrics"
+        - "async _collect_from_provider(provider: str, mvp_id: str) -> Dict"
+        - "_merge_provider_data(provider_results: List[Dict]) -> UnifiedMetrics"
+        - "_deduplicate_metrics(metrics: List[Metric]) -> List[Metric]"
+        - "_select_best_value(metric_name: str, values: List[Any]) -> Any"
+  
+  common_schema:
+    UnifiedMetrics:
+      fields:
+        - "mvp_id: UUID"
+        - "timestamp: datetime"
+        - "pageviews: int"
+        - "unique_visitors: int"
+        - "sessions: int"
+        - "avg_session_duration: float (seconds)"
+        - "bounce_rate: float (0-1)"
+        - "conversion_rate: float (0-1)"
+        - "events: List[Event]"
+        - "metadata: Dict (provider_attribution, collection_time)"
+  
+  provider_priority:
+    default_order:
+      - "Primary: Google Analytics (most comprehensive)"
+      - "Secondary: Mixpanel (event-focused)"
+      - "Tertiary: Amplitude (behavioral)"
+    
+    fallback_strategy:
+      - "If GA fails: Use Mixpanel + Amplitude combined"
+      - "If Mixpanel fails: Use GA + Amplitude"
+      - "If Amplitude fails: Use GA + Mixpanel"
+      - "If 2+ fail: Return partial data with warnings"
+
+testing_approach:
+  unit_tests:
+    - "test_data_merging_logic"
+    - "test_deduplication_algorithm"
+    - "test_schema_normalization"
+    - "test_provider_priority_selection"
+  
+  integration_tests:
+    - "test_parallel_collection_from_all_providers"
+    - "test_fallback_on_provider_failure"
+    - "test_partial_failure_handling"
+    - "test_end_to_end_aggregation"
+  
+  performance_tests:
+    - "test_collection_latency_under_5_minutes"
+    - "test_concurrent_mvp_collection"
+
+implementation_notes: |
+  1. Use asyncio.gather() for parallel provider collection
+  2. Implement timeout for each provider (30 seconds)
+  3. Cache provider responses for 5 minutes
+  4. Log provider selection and fallback decisions
+  5. Implement circuit breaker for consistently failing providers
+  6. Use priority queue for provider selection
+  7. Store raw provider responses for debugging
+  8. Implement comprehensive error logging
+
+estimated_effort:
+  development_hours: 16
+  testing_hours: 8
+  total_hours: 24

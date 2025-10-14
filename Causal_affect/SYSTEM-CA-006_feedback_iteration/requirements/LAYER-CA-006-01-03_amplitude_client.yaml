@@ -1,0 +1,91 @@
+# LAYER-CA-006-01-03: Amplitude Client
+# ======================================
+
+metadata:
+  layer_id: LAYER-CA-006-01-03
+  layer_name: Amplitude Client
+  parent_feature: FEATURE-CA-006-01
+  parent_feature_name: Multi-Source Analytics Integration
+  parent_system: SYSTEM-CA-006
+  created_date: 2025-10-14
+  status: planned
+  priority: critical
+  complexity: medium
+
+traceability:
+  parent_feature_id: FEATURE-CA-006-01
+  parent_system_id: SYSTEM-CA-006
+  implements_acceptance_criteria:
+    - AC-FEAT-006-01-03  # Successfully authenticate with Amplitude API
+    - AC-FEAT-006-01-04  # Collect metrics from all providers within 5 minutes
+  contributes_to_system_criteria:
+    - AC-SYS-006-01
+
+description: |
+  API client for Amplitude Analytics API for behavioral analytics and
+  user journey tracking. Handles authentication, event queries, and
+  cohort analysis data retrieval.
+
+responsibilities:
+  - "Authenticate with Amplitude API key and secret"
+  - "Fetch user behavior analytics and event data"
+  - "Query cohort and retention metrics"
+  - "Retrieve funnel analysis data"
+  - "Transform Amplitude data to common schema"
+
+interfaces:
+  inputs:
+    - "Amplitude API key and secret key"
+    - "Date range for query"
+    - "Event types to fetch"
+    - "Cohort definitions"
+  outputs:
+    - "Normalized behavioral metrics"
+    - "Cohort retention data"
+    - "Funnel conversion metrics"
+
+acceptance_criteria:
+  - criterion_id: AC-LAY-006-01-03-01
+    criterion: "Authenticate with API key and secret"
+    verification: "Auth test with valid/invalid credentials"
+    test_type: "integration"
+  - criterion_id: AC-LAY-006-01-03-02
+    criterion: "Fetch analytics within 15 seconds"
+    verification: "API timing test"
+    test_type: "performance"
+  - criterion_id: AC-LAY-006-01-03-03
+    criterion: "Query cohort data successfully"
+    verification: "Cohort query test"
+    test_type: "integration"
+  - criterion_id: AC-LAY-006-01-03-04
+    criterion: "Transform to common schema"
+    verification: "Data normalization test"
+    test_type: "unit"
+
+technical_specification:
+  language: "Python 3.11+"
+  dependencies:
+    - "amplitude-analytics >= 1.1"
+    - "httpx >= 0.25"
+  class_structure:
+    AmplitudeClient:
+      methods:
+        - "__init__(api_key: str, secret_key: str)"
+        - "fetch_events(start_date: str, end_date: str) -> List[Dict]"
+        - "fetch_cohorts(cohort_id: str) -> Dict"
+        - "fetch_funnel_data(funnel_id: str) -> Dict"
+        - "_transform_response(amplitude_response: Any) -> Dict"
+
+testing_approach:
+  unit_tests:
+    - "test_authentication"
+    - "test_event_fetching"
+    - "test_cohort_queries"
+    - "test_data_transformation"
+  integration_tests:
+    - "test_real_amplitude_api"
+
+estimated_effort:
+  development_hours: 8
+  testing_hours: 4
+  total_hours: 12
