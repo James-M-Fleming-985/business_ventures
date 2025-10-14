@@ -2,14 +2,19 @@
 # =================================================
 
 metadata:
-  feature_id: FEATURE-CA-006-02
-  feature_name: Real-Time Engagement Tracking
+  requirement_id: FEATURE-CA-006-02
+  requirement_name: Real-Time Engagement Tracking
+  requirement_type: Feature
   parent_system: SYSTEM-CA-006
-  parent_system_name: Feedback Collection & Iteration Orchestrator
-  created_date: 2025-10-14
+  parent_project: business_ventures
+  
+  team_size: small
+  risk_level: medium
+  
+  estimated_effort_hours: 90
+  actual_effort_hours: 0
+  progress_percentage: 0
   status: planned
-  priority: critical
-  estimated_layers: 6
 
 traceability:
   parent_system_id: SYSTEM-CA-006
@@ -126,79 +131,125 @@ technical_requirements:
       - "Pages per session"
       - "Average time on page"
 
-layer_breakdown:
-  estimated_layers: 6
-  
-  layers:
-    - layer_id: LAYER-CA-006-02-01
-      layer_name: Event Collector
-      description: "High-performance event ingestion endpoint with validation"
-      estimated_complexity: high
-      
-    - layer_id: LAYER-CA-006-02-02
-      layer_name: Session Tracker
-      description: "Session management with timeout handling and user stitching"
-      estimated_complexity: high
-      
-    - layer_id: LAYER-CA-006-02-03
-      layer_name: Metrics Calculator
-      description: "Real-time metric computation and aggregation"
-      estimated_complexity: high
-      
-    - layer_id: LAYER-CA-006-02-04
-      layer_name: Real-Time Processor
-      description: "Stream processing pipeline with windowing and aggregation"
-      estimated_complexity: high
-      
-    - layer_id: LAYER-CA-006-02-05
-      layer_name: Engagement Storage Layer
-      description: "Efficient time-series storage for engagement data"
-      estimated_complexity: medium
-      
-    - layer_id: LAYER-CA-006-02-06
-      layer_name: Engagement Cache Layer
-      description: "Redis-based cache for real-time metric serving"
-      estimated_complexity: medium
-
-dependencies:
-  internal:
-    - "FEATURE-CA-006-01 (for analytics provider integration)"
-    - "FEATURE-CA-006-04 (provides metrics to prioritization engine)"
-  
-  external:
-    - "Redis for real-time caching"
-    - "PostgreSQL for persistent storage"
-    - "Celery for async task processing"
-    - "FastAPI for event ingestion endpoints"
-    - "Pydantic for event validation"
-
 testing_requirements:
   unit_tests:
-    - "Test event validation logic"
-    - "Test session timeout handling"
-    - "Test metric calculation algorithms"
-    - "Test cache invalidation logic"
-    
+    required: true
+    minimum_count: 40
+    coverage_threshold: 0.90
+    focus_areas:
+      - Event validation logic
+      - Session timeout handling
+      - Metric calculation algorithms
+      - Cache invalidation logic
+      - Data transformation
+  
   integration_tests:
-    - "Test end-to-end event flow from ingestion to storage"
-    - "Test real-time metric updates in cache"
-    - "Test dashboard data retrieval"
-    - "Test concurrent event ingestion"
-    
-  performance_tests:
-    - "Load test with 10,000 events/minute"
-    - "Measure processing latency under load"
-    - "Test cache performance with high read volume"
-    - "Verify metric accuracy at scale"
+    required: true
+    minimum_count: 20
+    coverage_threshold: 0.85
+    focus_areas:
+      - End-to-end event flow from ingestion to storage
+      - Real-time metric updates in cache
+      - Dashboard data retrieval
+      - Concurrent event ingestion
+  
+  e2e_tests:
+    required: true
+    minimum_count: 8
+    coverage_threshold: 0.80
+    focus_areas:
+      - Complete engagement tracking lifecycle
+      - Real-time metric accuracy
+      - Performance under load
 
-implementation_notes: |
-  1. Use Redis Streams for real-time event processing
-  2. Implement time-series optimized storage schema
-  3. Use connection pooling for database and Redis
-  4. Implement batch processing for efficiency
-  5. Use materialized views for complex aggregations
-  6. Implement circuit breakers for downstream dependencies
-  7. Add comprehensive monitoring and alerting
+quality_gates:
+  no_mocks_unless_specified: false
+  mock_policy:
+    redis_may_be_mocked: true
+    postgres_may_be_mocked: true
+  real_failing_tests_required: true
+  team_size_enforcement: true
+  full_requirements_verification: true
+
+layers:
+  - layer_id: LAYER-CA-006-02-01
+    name: "Event Collector"
+    description: "High-performance event ingestion endpoint with validation"
+    priority: 1
+    estimated_hours: 16
+    requirement_file: "LAYER-CA-006-02-01_event_collector.yaml"
+    
+  - layer_id: LAYER-CA-006-02-02
+    name: "Session Tracker"
+    description: "Session management with timeout handling and user stitching"
+    priority: 2
+    estimated_hours: 16
+    requirement_file: "LAYER-CA-006-02-02_session_tracker.yaml"
+    
+  - layer_id: LAYER-CA-006-02-03
+    name: "Metrics Calculator"
+    description: "Real-time metric computation and aggregation"
+    priority: 3
+    estimated_hours: 16
+    requirement_file: "LAYER-CA-006-02-03_metrics_calculator.yaml"
+    
+  - layer_id: LAYER-CA-006-02-04
+    name: "Real-Time Processor"
+    description: "Stream processing pipeline with windowing and aggregation"
+    priority: 4
+    estimated_hours: 18
+    requirement_file: "LAYER-CA-006-02-04_real_time_processor.yaml"
+    
+  - layer_id: LAYER-CA-006-02-05
+    name: "Engagement Storage Layer"
+    description: "Efficient time-series storage for engagement data"
+    priority: 5
+    estimated_hours: 12
+    requirement_file: "LAYER-CA-006-02-05_engagement_storage.yaml"
+    
+  - layer_id: LAYER-CA-006-02-06
+    name: "Engagement Cache Layer"
+    description: "Redis-based cache for real-time metric serving"
+    priority: 6
+    estimated_hours: 12
+    requirement_file: "LAYER-CA-006-02-06_engagement_cache.yaml"
+
+implementation_notes:
+  design_decisions:
+    - "Use Redis Streams for real-time event processing"
+    - "Implement time-series optimized storage schema"
+    - "Use connection pooling for database and Redis"
+    - "Implement batch processing for efficiency"
+    - "Use materialized views for complex aggregations"
+  
+  code_structure:
+    - "engagement/event_collector.py - EventCollector"
+    - "engagement/session_tracker.py - SessionTracker"
+    - "engagement/metrics_calculator.py - MetricsCalculator"
+    - "engagement/real_time_processor.py - RealTimeProcessor"
+    - "engagement/storage.py - EngagementStorage"
+    - "engagement/cache.py - EngagementCache"
+
+dependencies:
+  external_libraries:
+    - redis>=5.0.0
+    - psycopg2-binary>=2.9.0
+    - celery>=5.3.0
+    - fastapi>=0.104.0
+    - pydantic>=2.0.0
+    - sqlalchemy>=2.0.0
+  
+  configuration:
+    - Redis connection via environment variables
+    - PostgreSQL connection via environment variables
+    - Event schema validation rules
+
+success_criteria:
+  - "Can ingest 10,000 events/minute without data loss"
+  - "Real-time metrics update within 5 seconds"
+  - "Session tracking accuracy > 98%"
+  - "Cache hit rate > 90% for dashboard queries"
+  - "Processing latency < 100ms p95"
 
 estimated_effort:
   development_days: 3

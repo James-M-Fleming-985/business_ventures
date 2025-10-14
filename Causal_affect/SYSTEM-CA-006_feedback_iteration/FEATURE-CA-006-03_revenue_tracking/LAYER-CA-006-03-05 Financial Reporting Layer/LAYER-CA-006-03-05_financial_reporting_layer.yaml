@@ -1,0 +1,129 @@
+# LAYER-CA-006-03-05: Financial Reporting Layer
+# ===============================================
+
+metadata:
+  layer_id: LAYER-CA-006-03-05
+  layer_name: Financial Reporting Layer
+  parent_feature: FEATURE-CA-006-03
+  parent_feature_name: Revenue & Conversion Tracking
+  parent_system: SYSTEM-CA-006
+  created_date: 2025-10-14
+  status: planned
+  priority: medium
+  complexity: medium
+
+traceability:
+  parent_feature_id: FEATURE-CA-006-03
+  parent_system_id: SYSTEM-CA-006
+  implements_acceptance_criteria:
+    - AC-FEAT-006-03-07  # Provide revenue data with <5 minute latency
+  contributes_to_system_criteria:
+    - AC-SYS-006-03  # Prioritization engine uses revenue metrics
+
+description: |
+  Financial reporting service that formats revenue data for dashboard display,
+  generates revenue forecasts, and provides insights. Ensures <5 minute latency
+  from transaction to dashboard.
+
+responsibilities:
+  - "Format revenue metrics for dashboard display"
+  - "Generate revenue trend charts and visualizations"
+  - "Provide revenue forecasts based on historical trends"
+  - "Generate cohort analysis reports"
+  - "Highlight revenue insights (growth, decline, anomalies)"
+
+interfaces:
+  inputs:
+    - "Aggregated revenue from Revenue Aggregator"
+    - "Financial metrics from Financial Metrics Calculator"
+    - "Cohort data from Financial Metrics Calculator"
+  
+  outputs:
+    - "Formatted dashboard data (JSON)"
+    - "Revenue trend charts (time-series)"
+    - "Revenue forecasts (30-day, 90-day)"
+    - "Cohort analysis reports"
+    - "Revenue insights and alerts"
+
+acceptance_criteria:
+  - criterion_id: AC-LAY-006-03-05-01
+    criterion: "Provide dashboard data with <5 minute latency"
+    verification: "Data freshness test"
+    test_type: "performance"
+    
+  - criterion_id: AC-LAY-006-03-05-02
+    criterion: "Generate revenue forecasts with reasonable accuracy"
+    verification: "Forecast accuracy test (MAPE <20%)"
+    test_type: "validation"
+    
+  - criterion_id: AC-LAY-006-03-05-03
+    criterion: "Detect revenue anomalies (>20% deviation)"
+    verification: "Anomaly detection test"
+    test_type: "unit"
+    
+  - criterion_id: AC-LAY-006-03-05-04
+    criterion: "Format cohort analysis for dashboard visualization"
+    verification: "Cohort report formatting test"
+    test_type: "unit"
+
+technical_specification:
+  language: "Python 3.11+"
+  dependencies:
+    - "pandas >= 2.1"
+    - "numpy >= 1.26"
+    - "statsmodels >= 0.14 (for forecasting)"
+  
+  class_structure:
+    FinancialReportingLayer:
+      methods:
+        - "__init__(revenue_aggregator: RevenueAggregator, metrics_calculator: FinancialMetricsCalculator)"
+        - "get_dashboard_data(mvp_id: str) -> dict"
+        - "generate_revenue_chart(mvp_id: str, period: str, days: int) -> ChartData"
+        - "forecast_revenue(mvp_id: str, days: int) -> ForecastData"
+        - "generate_cohort_report(mvp_id: str) -> CohortReport"
+        - "detect_anomalies(mvp_id: str) -> List[Anomaly]"
+        - "generate_insights(mvp_id: str) -> List[Insight]"
+
+  data_models:
+    DashboardData:
+      fields:
+        - "current_mrr: Decimal"
+        - "total_revenue_30d: Decimal"
+        - "revenue_growth_rate: float"
+        - "ltv_cac_ratio: float"
+        - "payback_period_days: int"
+        - "top_revenue_sources: List[dict]"
+    
+    ForecastData:
+      fields:
+        - "forecast_dates: List[datetime]"
+        - "forecast_revenue: List[Decimal]"
+        - "confidence_interval_lower: List[Decimal]"
+        - "confidence_interval_upper: List[Decimal]"
+
+testing_requirements:
+  unit_tests:
+    - "Test dashboard data formatting"
+    - "Test revenue chart generation"
+    - "Test forecast algorithm"
+    - "Test anomaly detection logic"
+    - "Test insight generation"
+  
+  integration_tests:
+    - "Test end-to-end reporting pipeline"
+    - "Test data freshness (<5 minutes)"
+  
+  validation_tests:
+    - "Validate forecast accuracy (MAPE <20%)"
+
+implementation_notes: |
+  - Use ARIMA or exponential smoothing for revenue forecasts
+  - Detect anomalies using z-score (threshold: ±3 standard deviations)
+  - Cache dashboard data in Redis (TTL: 5 minutes)
+  - Generate insights based on:
+    * Revenue growth rate >20% (positive insight)
+    * Revenue decline >10% (alert insight)
+    * LTV:CAC ratio <1 (warning insight)
+    * Payback period >12 months (warning insight)
+  - Format cohort retention curves for heatmap visualization
+  - Use pandas for time-series manipulation

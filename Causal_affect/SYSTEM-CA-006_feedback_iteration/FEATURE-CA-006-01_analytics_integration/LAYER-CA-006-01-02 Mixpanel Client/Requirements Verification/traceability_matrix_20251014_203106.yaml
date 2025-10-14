@@ -1,0 +1,158 @@
+matrix_metadata:
+  timestamp: '20251014_203106'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-LAY-006-01-02-01
+  requirement: Authenticate using project credentials
+  description: Authenticate using project credentials
+  test_files: &id001
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-02
+    Mixpanel Client/tests/test_generated_20251014_203041.py
+  test_methods:
+  - test_ac-lay-006-01-02-01
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-01-02-02
+  requirement: Fetch events within 15 seconds
+  description: Fetch events within 15 seconds
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-01-02-02
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-01-02-03
+  requirement: Handle pagination for >1000 events
+  description: Handle pagination for >1000 events
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-01-02-03
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-01-02-04
+  requirement: Transform to common schema
+  description: Transform to common schema
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-01-02-04
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-02
+    Mixpanel Client/src/implementation.py
+  lines: 231
+  methods:
+  - name: __init__
+    lines: 22-38
+  - name: authenticate
+    lines: 39-69
+  - name: fetch_events
+    lines: 70-167
+  - name: _transform_event
+    lines: 168-190
+  - name: handle_pagination
+    lines: 191-209
+  - name: transform_to_common_schema
+    lines: 210-222
+  classes:
+  - name: MixpanelClient
+    type: class
+    lines: 10-222
+  - name: AuthenticationError
+    type: class
+    lines: 223-227
+  - name: FetchError
+    type: class
+    lines: 228-231
+  implements_requirements:
+  - AC-LAY-006-01-02-01
+  - AC-LAY-006-01-02-02
+  - AC-LAY-006-01-02-03
+  - AC-LAY-006-01-02-04
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-02
+    Mixpanel Client/tests/test_generated_20251014_203041.py
+  test_count: 0
+  implementation_files:
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-02
+    Mixpanel Client/src/implementation.py
+  methods_tested:
+  - __init__
+  - authenticate
+  - fetch_events
+  - _transform_event
+  - handle_pagination
+  - transform_to_common_schema
+  classes_tested:
+  - MixpanelClient
+  - AuthenticationError
+  - FetchError
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-02
+    Mixpanel Client/src/implementation.py:22-38
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-02
+    Mixpanel Client/tests/test_generated_20251014_203041.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-02
+    Mixpanel Client/src/implementation.py:39-69
+  method_name: authenticate
+  requirement: AC-001
+  test: test_authenticate
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-02
+    Mixpanel Client/tests/test_generated_20251014_203041.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-02
+    Mixpanel Client/src/implementation.py:70-167
+  method_name: fetch_events
+  requirement: AC-001
+  test: test_fetch_events
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-02
+    Mixpanel Client/tests/test_generated_20251014_203041.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-02
+    Mixpanel Client/src/implementation.py:168-190
+  method_name: _transform_event
+  requirement: AC-001
+  test: test__transform_event
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-02
+    Mixpanel Client/tests/test_generated_20251014_203041.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-02
+    Mixpanel Client/src/implementation.py:191-209
+  method_name: handle_pagination
+  requirement: AC-001
+  test: test_handle_pagination
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-02
+    Mixpanel Client/tests/test_generated_20251014_203041.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 4
+  requirements_traced: 4
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

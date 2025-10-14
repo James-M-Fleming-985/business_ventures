@@ -2,14 +2,19 @@
 # ======================================================
 
 metadata:
-  feature_id: FEATURE-CA-006-01
-  feature_name: Multi-Source Analytics Integration
+  requirement_id: FEATURE-CA-006-01
+  requirement_name: Multi-Source Analytics Integration
+  requirement_type: Feature
   parent_system: SYSTEM-CA-006
-  parent_system_name: Feedback Collection & Iteration Orchestrator
-  created_date: 2025-10-14
+  parent_project: business_ventures
+  
+  team_size: small
+  risk_level: medium
+  
+  estimated_effort_hours: 78  # 12+12+12+24+18 from layers
+  actual_effort_hours: 0
+  progress_percentage: 0
   status: planned
-  priority: critical
-  estimated_layers: 5
 
 traceability:
   parent_system_id: SYSTEM-CA-006
@@ -41,52 +46,52 @@ business_value: |
 acceptance_criteria:
   - criterion_id: AC-FEAT-006-01-01
     criterion: "Successfully authenticate with Google Analytics API"
-    verification: "API authentication test with valid credentials"
+    status: planned
     priority: critical
-    test_type: "integration"
-    traces_to: AC-SYS-006-01
+    verification_method: integration_tests
+    layers: [LAYER-CA-006-01-01]
     
   - criterion_id: AC-FEAT-006-01-02
     criterion: "Successfully authenticate with Mixpanel API"
-    verification: "API authentication test with valid credentials"
+    status: planned
     priority: critical
-    test_type: "integration"
-    traces_to: AC-SYS-006-01
+    verification_method: integration_tests
+    layers: [LAYER-CA-006-01-02]
     
   - criterion_id: AC-FEAT-006-01-03
     criterion: "Successfully authenticate with Amplitude API"
-    verification: "API authentication test with valid credentials"
+    status: planned
     priority: critical
-    test_type: "integration"
-    traces_to: AC-SYS-006-01
+    verification_method: integration_tests
+    layers: [LAYER-CA-006-01-03]
     
   - criterion_id: AC-FEAT-006-01-04
     criterion: "Collect metrics from all providers within 5 minutes"
-    verification: "End-to-end collection test with real providers"
+    status: planned
     priority: critical
-    test_type: "performance"
-    traces_to: AC-SYS-006-01
+    verification_method: e2e_tests
+    layers: [LAYER-CA-006-01-04]
     
   - criterion_id: AC-FEAT-006-01-05
     criterion: "Normalize metrics to common schema across providers"
-    verification: "Data transformation validation test"
+    status: planned
     priority: high
-    test_type: "unit"
-    traces_to: AC-SYS-006-02
+    verification_method: unit_tests
+    layers: [LAYER-CA-006-01-04]
     
   - criterion_id: AC-FEAT-006-01-06
     criterion: "Handle API rate limits gracefully with retry logic"
-    verification: "Rate limiting simulation test"
+    status: planned
     priority: high
-    test_type: "integration"
-    traces_to: AC-SYS-006-01
+    verification_method: integration_tests
+    layers: [LAYER-CA-006-01-05]
     
   - criterion_id: AC-FEAT-006-01-07
     criterion: "Fallback to alternative provider if primary fails"
-    verification: "Provider failure simulation test"
+    status: planned
     priority: medium
-    test_type: "integration"
-    traces_to: AC-SYS-006-01
+    verification_method: integration_tests
+    layers: [LAYER-CA-006-01-05]
 
 technical_requirements:
   performance:
@@ -138,44 +143,123 @@ layer_breakdown:
       description: "Centralized error handling, retry logic, and provider fallback"
       estimated_complexity: medium
 
-dependencies:
-  internal:
-    - "FEATURE-CA-006-02 (for event ingestion coordination)"
-  
-  external:
-    - "Google Analytics Data API v1"
-    - "Mixpanel Data Export API v2"
-    - "Amplitude Analytics API v2"
-    - "Pydantic for data validation"
-    - "httpx for async HTTP requests"
-    - "tenacity for retry logic"
-
 testing_requirements:
   unit_tests:
-    - "Test each analytics client independently with mocked responses"
-    - "Test data normalization for each provider format"
-    - "Test error handling for various failure scenarios"
-    - "Test retry logic with exponential backoff"
-    
+    required: true
+    minimum_count: 30
+    coverage_threshold: 0.90
+    focus_areas:
+      - Authentication with each provider
+      - Data transformation and normalization
+      - Error handling for various failure scenarios
+      - Retry logic with exponential backoff
+      - Circuit breaker pattern
+      - Data validation with Pydantic models
+  
   integration_tests:
-    - "Test authentication with real provider APIs (dev accounts)"
-    - "Test data collection from real providers"
-    - "Test provider fallback when primary fails"
-    - "Test concurrent collection from multiple providers"
-    
-  performance_tests:
-    - "Measure collection latency for 10 MVPs across all providers"
-    - "Test rate limit handling under load"
-    - "Verify <5 minute collection time for 50 MVPs"
+    required: true
+    minimum_count: 15
+    coverage_threshold: 0.85
+    focus_areas:
+      - Real API authentication with GA4/Mixpanel/Amplitude
+      - Data collection from real providers
+      - Provider fallback when primary fails
+      - Concurrent collection from multiple providers
+      - Rate limit handling under load
+  
+  e2e_tests:
+    required: true
+    minimum_count: 5
+    coverage_threshold: 0.80
+    focus_areas:
+      - Complete collection cycle for all MVPs
+      - Full provider fallback chain
+      - Performance under realistic load
 
-implementation_notes: |
-  1. Use async/await for concurrent provider requests
-  2. Implement circuit breaker pattern for failing providers
-  3. Cache authentication tokens to minimize auth requests
-  4. Use connection pooling for HTTP clients
-  5. Implement comprehensive logging for debugging
-  6. Store raw provider responses for audit trail
-  7. Use Pydantic models for type-safe data handling
+quality_gates:
+  no_mocks_unless_specified: true  # Use real analytics APIs
+  mock_policy:
+    analytics_api_calls_use_real_apis: true
+    test_data_generation_allowed: true  # Can generate test events
+  real_failing_tests_required: true
+  team_size_enforcement: true
+  full_requirements_verification: true
+
+layers:
+  - layer_id: LAYER-CA-006-01-01
+    name: "Google Analytics Client"
+    description: "API client for GA4 with authentication and data fetching"
+    priority: 1
+    estimated_hours: 12
+    requirement_file: "LAYER-CA-006-01-01_google_analytics_client.yaml"
+    
+  - layer_id: LAYER-CA-006-01-02
+    name: "Mixpanel Client"
+    description: "API client for Mixpanel with event and profile data collection"
+    priority: 2
+    estimated_hours: 12
+    requirement_file: "LAYER-CA-006-01-02_mixpanel_client.yaml"
+    
+  - layer_id: LAYER-CA-006-01-03
+    name: "Amplitude Client"
+    description: "API client for Amplitude with user behavior analytics"
+    priority: 3
+    estimated_hours: 12
+    requirement_file: "LAYER-CA-006-01-03_amplitude_client.yaml"
+    
+  - layer_id: LAYER-CA-006-01-04
+    name: "Analytics Aggregator"
+    description: "Unified interface aggregating data from all analytics providers"
+    priority: 4
+    estimated_hours: 24
+    requirement_file: "LAYER-CA-006-01-04_analytics_aggregator.yaml"
+    
+  - layer_id: LAYER-CA-006-01-05
+    name: "Analytics Error Handler"
+    description: "Centralized error handling, retry logic, and provider fallback"
+    priority: 5
+    estimated_hours: 18
+    requirement_file: "LAYER-CA-006-01-05_analytics_error_handler.yaml"
+
+implementation_notes:
+  design_decisions:
+    - "Use async/await for concurrent provider requests"
+    - "Implement circuit breaker pattern for failing providers"
+    - "Cache authentication tokens to minimize auth requests"
+    - "Use connection pooling for HTTP clients"
+    - "Use Strategy pattern for provider abstraction"
+  
+  code_structure:
+    - "analytics/clients/google_analytics_client.py - GoogleAnalyticsClient"
+    - "analytics/clients/mixpanel_client.py - MixpanelClient"
+    - "analytics/clients/amplitude_client.py - AmplitudeClient"
+    - "analytics/aggregator.py - AnalyticsAggregator"
+    - "analytics/error_handler.py - AnalyticsErrorHandler"
+    - "analytics/models.py - Pydantic models for common schema"
+
+dependencies:
+  external_libraries:
+    - google-analytics-data>=0.17.0
+    - google-auth>=2.23.0
+    - mixpanel>=4.10.0
+    - amplitude-analytics>=1.1.0
+    - httpx>=0.25.0
+    - tenacity>=8.2.0
+    - pydantic>=2.0.0
+    - python-dotenv>=1.0.0
+  
+  configuration:
+    - API credentials via environment variables
+    - Provider settings in config/analytics_config.yaml
+
+success_criteria:
+  - "Can authenticate with all 3 analytics providers using real credentials"
+  - "Can collect metrics from all providers within 5 minutes"
+  - "Normalizes data to common schema correctly"
+  - "Handles provider failures gracefully with fallback"
+  - "Retry logic works for transient failures"
+  - "Circuit breaker prevents cascading failures"
+
 
 estimated_effort:
   development_days: 2

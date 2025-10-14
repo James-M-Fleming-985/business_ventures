@@ -1,0 +1,193 @@
+matrix_metadata:
+  timestamp: '20251014_203441'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-LAY-006-01-05-01
+  requirement: Retry failed requests with exponential backoff (1s, 2s, 4s)
+  description: Retry failed requests with exponential backoff (1s, 2s, 4s)
+  test_files: &id001
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-05
+    Analytics Error Handler/tests/test_generated_20251014_203415.py
+  test_methods:
+  - test_ac-lay-006-01-05-01
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-01-05-02
+  requirement: Open circuit breaker after 5 consecutive failures
+  description: Open circuit breaker after 5 consecutive failures
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-01-05-02
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-01-05-03
+  requirement: Trigger provider fallback when circuit opens
+  description: Trigger provider fallback when circuit opens
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-01-05-03
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-01-05-04
+  requirement: Log all errors with provider, operation, and stack trace
+  description: Log all errors with provider, operation, and stack trace
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-01-05-04
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-01-05-05
+  requirement: Send alert on authentication failures
+  description: Send alert on authentication failures
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-01-05-05
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-05
+    Analytics Error Handler/src/implementation.py
+  lines: 222
+  methods:
+  - name: __init__
+    lines: 21-34
+  - name: record_success
+    lines: 35-39
+  - name: record_failure
+    lines: 40-48
+  - name: can_execute
+    lines: 49-64
+  - name: is_open
+    lines: 65-69
+  - name: __init__
+    lines: 76-89
+  - name: add_alert_callback
+    lines: 90-93
+  - name: _send_alert
+    lines: 94-109
+  - name: _log_error
+    lines: 110-127
+  - name: _is_authentication_error
+    lines: 128-140
+  - name: execute_with_retry
+    lines: 141-208
+  - name: get_circuit_state
+    lines: 209-212
+  - name: get_failure_count
+    lines: 213-216
+  - name: reset_circuit
+    lines: 217-227
+  classes:
+  - name: CircuitState
+    type: class
+    lines: 12-17
+  - name: CircuitBreaker
+    type: class
+    lines: 18-69
+  - name: AnalyticsErrorHandler
+    type: class
+    lines: 70-222
+  implements_requirements:
+  - AC-LAY-006-01-05-01
+  - AC-LAY-006-01-05-02
+  - AC-LAY-006-01-05-03
+  - AC-LAY-006-01-05-04
+  - AC-LAY-006-01-05-05
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-05
+    Analytics Error Handler/tests/test_generated_20251014_203415.py
+  test_count: 0
+  implementation_files:
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-05
+    Analytics Error Handler/src/implementation.py
+  methods_tested:
+  - __init__
+  - record_success
+  - record_failure
+  - can_execute
+  - is_open
+  - __init__
+  - add_alert_callback
+  - _send_alert
+  - _log_error
+  - _is_authentication_error
+  - execute_with_retry
+  - get_circuit_state
+  - get_failure_count
+  - reset_circuit
+  classes_tested:
+  - CircuitState
+  - CircuitBreaker
+  - AnalyticsErrorHandler
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-05
+    Analytics Error Handler/src/implementation.py:21-34
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-05
+    Analytics Error Handler/tests/test_generated_20251014_203415.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-05
+    Analytics Error Handler/src/implementation.py:35-39
+  method_name: record_success
+  requirement: AC-001
+  test: test_record_success
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-05
+    Analytics Error Handler/tests/test_generated_20251014_203415.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-05
+    Analytics Error Handler/src/implementation.py:40-48
+  method_name: record_failure
+  requirement: AC-001
+  test: test_record_failure
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-05
+    Analytics Error Handler/tests/test_generated_20251014_203415.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-05
+    Analytics Error Handler/src/implementation.py:49-64
+  method_name: can_execute
+  requirement: AC-001
+  test: test_can_execute
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-05
+    Analytics Error Handler/tests/test_generated_20251014_203415.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-05
+    Analytics Error Handler/src/implementation.py:65-69
+  method_name: is_open
+  requirement: AC-001
+  test: test_is_open
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-05
+    Analytics Error Handler/tests/test_generated_20251014_203415.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 5
+  requirements_traced: 5
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

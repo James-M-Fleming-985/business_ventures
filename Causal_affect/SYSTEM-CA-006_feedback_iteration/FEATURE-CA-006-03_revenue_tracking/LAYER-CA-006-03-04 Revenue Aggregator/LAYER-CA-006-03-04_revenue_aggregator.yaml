@@ -1,0 +1,116 @@
+# LAYER-CA-006-03-04: Revenue Aggregator
+# =======================================
+
+metadata:
+  layer_id: LAYER-CA-006-03-04
+  layer_name: Revenue Aggregator
+  parent_feature: FEATURE-CA-006-03
+  parent_feature_name: Revenue & Conversion Tracking
+  parent_system: SYSTEM-CA-006
+  created_date: 2025-10-14
+  status: planned
+  priority: high
+  complexity: medium
+
+traceability:
+  parent_feature_id: FEATURE-CA-006-03
+  parent_system_id: SYSTEM-CA-006
+  implements_acceptance_criteria:
+    - AC-FEAT-006-03-06  # Handle multiple currencies with accurate conversion
+    - AC-FEAT-006-03-07  # Provide revenue data with <5 minute latency
+  contributes_to_system_criteria:
+    - AC-SYS-006-01  # Metrics collected from all MVPs with <5 minute latency
+
+description: |
+  Time-series aggregation service for revenue data with multi-currency
+  normalization. Aggregates revenue by day/week/month and converts all
+  amounts to base currency (USD).
+
+responsibilities:
+  - "Aggregate revenue by time period (daily, weekly, monthly)"
+  - "Convert multi-currency transactions to USD"
+  - "Handle exchange rate fluctuations"
+  - "Cache aggregated revenue in Redis"
+  - "Provide time-series revenue data for trending"
+
+interfaces:
+  inputs:
+    - "Revenue events from Revenue Event Collector"
+    - "Exchange rate data from external API"
+  
+  outputs:
+    - "Aggregated revenue by time period (in USD)"
+    - "Revenue breakdowns by currency"
+    - "Time-series revenue data for charts"
+
+acceptance_criteria:
+  - criterion_id: AC-LAY-006-03-04-01
+    criterion: "Convert currencies with <1% accuracy variance"
+    verification: "Currency conversion accuracy test"
+    test_type: "unit"
+    
+  - criterion_id: AC-LAY-006-03-04-02
+    criterion: "Aggregate revenue by day/week/month correctly"
+    verification: "Time-series aggregation test"
+    test_type: "unit"
+    
+  - criterion_id: AC-LAY-006-03-04-03
+    criterion: "Cache exchange rates to minimize API calls"
+    verification: "Exchange rate caching test"
+    test_type: "integration"
+    
+  - criterion_id: AC-LAY-006-03-04-04
+    criterion: "Provide revenue data with <5 minute latency"
+    verification: "Revenue data latency test"
+    test_type: "performance"
+
+technical_specification:
+  language: "Python 3.11+"
+  dependencies:
+    - "httpx >= 0.25"
+    - "redis >= 5.0"
+    - "pandas >= 2.1"
+  
+  class_structure:
+    RevenueAggregator:
+      methods:
+        - "__init__(redis_client: Redis, exchange_api_key: str)"
+        - "aggregate_revenue(mvp_id: str, period: str, start_date: datetime, end_date: datetime) -> RevenueAggregate"
+        - "convert_currency(amount: Decimal, from_currency: str, to_currency: str) -> Decimal"
+        - "get_exchange_rate(from_currency: str, to_currency: str, date: datetime) -> Decimal"
+        - "cache_exchange_rate(from_currency: str, to_currency: str, rate: Decimal) -> None"
+        - "get_revenue_timeseries(mvp_id: str, period: str, days: int) -> List[RevenueAggregate]"
+
+  data_models:
+    RevenueAggregate:
+      fields:
+        - "mvp_id: str"
+        - "period: str (daily, weekly, monthly)"
+        - "date: datetime"
+        - "total_revenue_usd: Decimal"
+        - "transaction_count: int"
+        - "currency_breakdown: dict"
+
+testing_requirements:
+  unit_tests:
+    - "Test currency conversion accuracy"
+    - "Test time-series aggregation logic"
+    - "Test exchange rate caching"
+    - "Test revenue aggregation by period"
+  
+  integration_tests:
+    - "Test exchange rate API integration"
+    - "Test Redis caching of rates and revenue"
+  
+  performance_tests:
+    - "Test aggregation performance for 30-day range"
+
+implementation_notes: |
+  - Use exchangerate-api.com for currency conversion (free tier: 1500 requests/month)
+  - Cache exchange rates in Redis (TTL: 24 hours)
+  - Base currency: USD
+  - Use daily exchange rates (close of business)
+  - For real-time conversions, use cached rate from previous day
+  - Handle API rate limits with fallback to cached rates
+  - Store aggregated revenue in Redis (TTL: 5 minutes)
+  - Use pandas for efficient time-series aggregation

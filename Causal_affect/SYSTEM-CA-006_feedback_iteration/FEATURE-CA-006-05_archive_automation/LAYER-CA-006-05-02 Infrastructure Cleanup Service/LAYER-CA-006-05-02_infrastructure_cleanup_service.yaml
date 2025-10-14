@@ -1,0 +1,111 @@
+# LAYER-CA-006-05-02: Infrastructure Cleanup Service
+# ===================================================
+
+metadata:
+  layer_id: LAYER-CA-006-05-02
+  layer_name: Infrastructure Cleanup Service
+  parent_feature: FEATURE-CA-006-05
+  parent_feature_name: Archive & Cleanup Automation
+  parent_system: SYSTEM-CA-006
+  created_date: 2025-10-14
+  status: planned
+  priority: high
+  complexity: medium
+
+traceability:
+  parent_feature_id: FEATURE-CA-006-05
+  parent_system_id: SYSTEM-CA-006
+  implements_acceptance_criteria:
+    - AC-FEAT-006-05-03  # Gracefully shutdown Railway services
+    - AC-FEAT-006-05-04  # Clean up infrastructure resources
+  contributes_to_system_criteria:
+    - AC-SYS-006-04  # Automated archiving triggers after evaluation period
+
+description: |
+  Infrastructure cleanup service that safely shuts down Railway deployments,
+  removes domain routing, and cleans up all associated resources.
+
+responsibilities:
+  - "Gracefully shutdown Railway services (FastAPI, React, workers)"
+  - "Delete Railway deployments"
+  - "Remove domain routing and DNS entries"
+  - "Clean up database connections and pools"
+  - "Cancel scheduled jobs (Celery tasks)"
+  - "Verify complete resource deallocation"
+
+interfaces:
+  inputs:
+    - "MVP ID to archive"
+    - "Railway project/service identifiers"
+  
+  outputs:
+    - "Cleanup completion status"
+    - "List of cleaned resources"
+    - "Verification report (no orphaned resources)"
+
+acceptance_criteria:
+  - criterion_id: AC-LAY-006-05-02-01
+    criterion: "Shutdown Railway services without data loss"
+    verification: "Graceful shutdown test"
+    test_type: "integration"
+    
+  - criterion_id: AC-LAY-006-05-02-02
+    criterion: "Verify 100% resource deallocation (no orphans)"
+    verification: "Resource cleanup verification test"
+    test_type: "integration"
+    
+  - criterion_id: AC-LAY-006-05-02-03
+    criterion: "Complete cleanup in <5 minutes"
+    verification: "Cleanup timing test"
+    test_type: "performance"
+
+technical_specification:
+  language: "Python 3.11+"
+  dependencies:
+    - "httpx >= 0.25"
+    - "railway-python (if available, otherwise REST API)"
+  
+  class_structure:
+    InfrastructureCleanupService:
+      methods:
+        - "__init__(railway_api_key: str)"
+        - "cleanup_mvp(mvp_id: str) -> CleanupResult"
+        - "shutdown_services(project_id: str) -> List[str]"
+        - "delete_deployments(project_id: str) -> bool"
+        - "remove_domain_routing(domain: str) -> bool"
+        - "cleanup_database_connections(mvp_id: str) -> bool"
+        - "cancel_scheduled_jobs(mvp_id: str) -> int"
+        - "verify_cleanup(mvp_id: str) -> VerificationReport"
+
+  data_models:
+    CleanupResult:
+      fields:
+        - "mvp_id: str"
+        - "services_shutdown: List[str]"
+        - "deployments_deleted: List[str]"
+        - "domains_removed: List[str]"
+        - "jobs_cancelled: int"
+        - "cleanup_duration_seconds: int"
+        - "verification_passed: bool"
+
+testing_requirements:
+  unit_tests:
+    - "Test Railway API integration (mocked)"
+    - "Test service shutdown logic"
+    - "Test deployment deletion"
+    - "Test cleanup verification"
+  
+  integration_tests:
+    - "Test complete cleanup workflow (staging environment)"
+    - "Test cleanup verification with real Railway API"
+
+implementation_notes: |
+  - Use Railway REST API for service management
+  - Implement graceful shutdown:
+    1. Stop accepting new requests (health check fails)
+    2. Wait for active requests to complete (30s timeout)
+    3. Stop service
+  - Verify cleanup by listing all resources for MVP
+  - Store cleanup logs in PostgreSQL
+  - Implement dry-run mode (log actions without execution)
+  - Support rollback: re-deploy from backup

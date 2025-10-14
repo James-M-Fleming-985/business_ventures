@@ -1,0 +1,126 @@
+# LAYER-CA-006-02-03: Metrics Calculator
+# =======================================
+
+metadata:
+  layer_id: LAYER-CA-006-02-03
+  layer_name: Metrics Calculator
+  parent_feature: FEATURE-CA-006-02
+  parent_feature_name: Real-Time Engagement Tracking
+  parent_system: SYSTEM-CA-006
+  created_date: 2025-10-14
+  status: planned
+  priority: high
+  complexity: medium
+
+traceability:
+  parent_feature_id: FEATURE-CA-006-02
+  parent_system_id: SYSTEM-CA-006
+  implements_acceptance_criteria:
+    - AC-FEAT-006-02-05  # Calculate engagement metrics with <2% error
+    - AC-FEAT-006-02-06  # Compute metrics in real-time
+  contributes_to_system_criteria:
+    - AC-SYS-006-01  # Metrics collected from all MVPs
+
+description: |
+  Engagement metrics calculation engine that computes DAU, MAU, session metrics,
+  bounce rate, retention rates, and engagement scores from event and session data.
+
+responsibilities:
+  - "Calculate Daily Active Users (DAU) and Monthly Active Users (MAU)"
+  - "Compute session metrics (avg duration, events per session)"
+  - "Calculate bounce rate (single-event sessions)"
+  - "Compute retention rates (1-day, 7-day, 30-day)"
+  - "Generate engagement scores per user and MVP"
+  - "Track time-series metrics for trending"
+
+interfaces:
+  inputs:
+    - "Event stream from Event Collector"
+    - "Session data from Session Tracker"
+    - "Date range for metric calculation"
+  
+  outputs:
+    - "Calculated metrics (DAU, MAU, session metrics, bounce rate, retention)"
+    - "Engagement scores per user and MVP"
+    - "Time-series data for dashboard visualization"
+
+acceptance_criteria:
+  - criterion_id: AC-LAY-006-02-03-01
+    criterion: "Calculate DAU and MAU with <2% error margin"
+    verification: "Metric accuracy test against known dataset"
+    test_type: "validation"
+    
+  - criterion_id: AC-LAY-006-02-03-02
+    criterion: "Compute metrics in real-time (<5 seconds latency)"
+    verification: "Metric calculation timing test"
+    test_type: "performance"
+    
+  - criterion_id: AC-LAY-006-02-03-03
+    criterion: "Calculate retention rates for cohorts accurately"
+    verification: "Cohort retention test with sample data"
+    test_type: "unit"
+    
+  - criterion_id: AC-LAY-006-02-03-04
+    criterion: "Handle missing or incomplete session data gracefully"
+    verification: "Edge case test with incomplete data"
+    test_type: "integration"
+
+technical_specification:
+  language: "Python 3.11+"
+  dependencies:
+    - "pandas >= 2.1"
+    - "numpy >= 1.26"
+    - "redis >= 5.0"
+    - "sqlalchemy >= 2.0"
+  
+  class_structure:
+    MetricsCalculator:
+      methods:
+        - "__init__(redis_client: Redis, db_session: Session)"
+        - "calculate_dau(mvp_id: str, date: datetime) -> int"
+        - "calculate_mau(mvp_id: str, month: datetime) -> int"
+        - "calculate_session_metrics(mvp_id: str) -> SessionMetrics"
+        - "calculate_bounce_rate(mvp_id: str) -> float"
+        - "calculate_retention(mvp_id: str, cohort_date: datetime) -> RetentionMetrics"
+        - "calculate_engagement_score(user_id: str, mvp_id: str) -> float"
+
+  data_models:
+    SessionMetrics:
+      fields:
+        - "avg_session_duration: float"
+        - "avg_events_per_session: float"
+        - "total_sessions: int"
+    
+    RetentionMetrics:
+      fields:
+        - "cohort_date: datetime"
+        - "day_1_retention: float"
+        - "day_7_retention: float"
+        - "day_30_retention: float"
+        - "cohort_size: int"
+
+testing_requirements:
+  unit_tests:
+    - "Test DAU calculation with known event data"
+    - "Test MAU calculation across date ranges"
+    - "Test bounce rate calculation"
+    - "Test retention rate calculation for cohorts"
+    - "Test engagement score algorithm"
+  
+  integration_tests:
+    - "Test metric calculation from Redis and PostgreSQL"
+    - "Test time-series metric aggregation"
+    - "Test concurrent metric calculations"
+  
+  validation_tests:
+    - "Validate metric accuracy against manual calculations"
+    - "Test edge cases (zero events, single user, etc.)"
+
+implementation_notes: |
+  - Use pandas for efficient time-series calculations
+  - Cache DAU/MAU in Redis (1-hour TTL)
+  - Store historical metrics in PostgreSQL for trending
+  - Use SQL window functions for retention calculations
+  - Implement engagement score: (events × session_duration) / avg_engagement
+  - Handle timezone conversions for accurate date boundaries
+  - Support metric recalculation for historical dates

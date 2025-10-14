@@ -2,14 +2,19 @@
 # ====================================================
 
 metadata:
-  feature_id: FEATURE-CA-006-04
-  feature_name: Automated Prioritization Engine
+  requirement_id: FEATURE-CA-006-04
+  requirement_name: Automated Prioritization Engine
+  requirement_type: Feature
   parent_system: SYSTEM-CA-006
-  parent_system_name: Feedback Collection & Iteration Orchestrator
-  created_date: 2025-10-14
+  parent_project: business_ventures
+  
+  team_size: small
+  risk_level: high
+  
+  estimated_effort_hours: 78
+  actual_effort_hours: 0
+  progress_percentage: 0
   status: planned
-  priority: critical
-  estimated_layers: 5
 
 traceability:
   parent_system_id: SYSTEM-CA-006
@@ -157,83 +162,128 @@ technical_requirements:
       - "Negative growth for 60+ days"
       - "Manual override from system operator"
 
-layer_breakdown:
-  estimated_layers: 5
-  
-  layers:
-    - layer_id: LAYER-CA-006-04-01
-      layer_name: Scoring Algorithm Engine
-      description: "Multi-dimensional score calculation with configurable weights"
-      estimated_complexity: high
-      
-    - layer_id: LAYER-CA-006-04-02
-      layer_name: Ranking System
-      description: "MVP ranking with percentile calculations and trending"
-      estimated_complexity: medium
-      
-    - layer_id: LAYER-CA-006-04-03
-      layer_name: Threshold Manager
-      description: "Configurable threshold management and rule evaluation"
-      estimated_complexity: medium
-      
-    - layer_id: LAYER-CA-006-04-04
-      layer_name: Decision Engine
-      description: "Priority assignment and workflow trigger logic"
-      estimated_complexity: high
-      
-    - layer_id: LAYER-CA-006-04-05
-      layer_name: Explainability Module
-      description: "Score breakdown generation and explanation interface"
-      estimated_complexity: medium
-
-dependencies:
-  internal:
-    - "FEATURE-CA-006-02 (engagement metrics)"
-    - "FEATURE-CA-006-03 (revenue metrics)"
-    - "FEATURE-CA-006-05 (triggers archive workflows)"
-  
-  external:
-    - "PostgreSQL for historical metric storage"
-    - "Redis for real-time score caching"
-    - "scikit-learn for normalization algorithms"
-    - "Celery for scheduled recalculation"
-
 testing_requirements:
   unit_tests:
-    - "Test score calculation for each dimension"
-    - "Test normalization algorithms"
-    - "Test threshold evaluation logic"
-    - "Test score explanation generation"
-    - "Test configurable weight handling"
+    required: true
+    minimum_count: 40
+    coverage_threshold: 90
+    focus_areas:
+      - "Score calculation for each dimension (engagement, revenue, growth, potential)"
+      - "Normalization algorithms (z-score, winsorization)"
+      - "Threshold evaluation logic"
+      - "Score explanation generation"
+      - "Configurable weight handling"
+      - "Ranking algorithms"
     
   integration_tests:
-    - "Test end-to-end scoring pipeline"
-    - "Test score recalculation triggers"
-    - "Test workflow triggering for top/bottom performers"
-    
-  validation_tests:
-    - "Expert validation against 50+ historical MVPs"
-    - "False positive rate measurement for archive candidates"
-    - "Precision/recall for top performer identification"
-    - "Score stability analysis (avoid flip-flopping)"
-    
-  performance_tests:
-    - "Benchmark calculation time for 100 MVPs"
-    - "Test concurrent score requests"
-    - "Verify <2 minute calculation SLA"
+    required: true
+    minimum_count: 20
+    coverage_threshold: 85
+    focus_areas:
+      - "End-to-end scoring pipeline"
+      - "Score recalculation triggers"
+      - "Workflow triggering for top/bottom performers"
+      - "Multi-dimensional score aggregation"
+      - "Archive candidate identification"
+      - "Historical score tracking"
+      
+  e2e_tests:
+    required: true
+    minimum_count: 8
+    focus_areas:
+      - "Complete MVP prioritization workflow"
+      - "Expert validation against historical MVPs (50+ samples)"
+      - "False positive rate measurement (<5% for archive candidates)"
+      - "Precision/recall for top performer identification (>85%)"
+      - "Score stability analysis (anti-flip-flop)"
+      - "A/B testing of scoring algorithm variants"
+      - "Manual override workflow"
+      - "Real-time score updates on dashboard"
 
-implementation_notes: |
-  1. Store all score components for explainability
-  2. Implement score history tracking for trend analysis
-  3. Use feature flags for algorithm experimentation
-  4. Add manual override capability for edge cases
-  5. Implement gradual weight adjustment based on outcomes
-  6. Cache intermediate calculations for performance
-  7. Log all scoring decisions for audit trail
-  8. Support A/B testing of scoring algorithms
+quality_gates:
+  no_mocks_unless_specified: false
+  mock_policy: "Database and cache can be mocked. Scoring algorithms, normalization, and decision logic must use real implementations. Requires expert validation with >50 historical MVP samples."
+  real_failing_tests_required: true
+  tdd_cycle_enforcement: true
+  expert_validation_required: true
 
-estimated_effort:
-  development_days: 3
-  testing_days: 1
-  validation_days: 1
-  total_days: 5
+layers:
+  - layer_id: LAYER-CA-006-04-01
+    name: Scoring Algorithm Engine
+    description: "Multi-dimensional score calculation (engagement: 35%, revenue: 30%, growth: 25%, potential: 10%) with configurable weights. Implements z-score normalization and winsorization at 95th percentile."
+    priority: critical
+    estimated_hours: 20
+    requirement_file: FEATURE-CA-006-04_prioritization_engine.yaml
+    
+  - layer_id: LAYER-CA-006-04-02
+    name: Ranking System
+    description: "MVP ranking with percentile calculations and trend analysis. Identifies top 25% (high priority), middle 50% (medium), bottom 25% (low), and <10th percentile + no growth (archive candidates)."
+    priority: high
+    estimated_hours: 16
+    requirement_file: FEATURE-CA-006-04_prioritization_engine.yaml
+    
+  - layer_id: LAYER-CA-006-04-03
+    name: Threshold Manager
+    description: "Configurable threshold management and rule evaluation. Supports dynamic thresholds: >80 (iterate), 60-80 (watch), 40-60 (maintain), 20-40 (consider archive), <20 (archive)."
+    priority: medium
+    estimated_hours: 12
+    requirement_file: FEATURE-CA-006-04_prioritization_engine.yaml
+    
+  - layer_id: LAYER-CA-006-04-04
+    name: Decision Engine
+    description: "Priority assignment and workflow trigger logic. Archive triggers: score <10 for 14+ days, zero revenue 30+ days, negative growth 60+ days, manual override."
+    priority: critical
+    estimated_hours: 18
+    requirement_file: FEATURE-CA-006-04_prioritization_engine.yaml
+    
+  - layer_id: LAYER-CA-006-04-05
+    name: Explainability Module
+    description: "Score breakdown generation and explanation interface. Provides component-level scores, historical trends, percentile rankings, and decision rationale for transparency."
+    priority: high
+    estimated_hours: 12
+    requirement_file: FEATURE-CA-006-04_prioritization_engine.yaml
+
+implementation_notes:
+  design_decisions:
+    - "Store all score components for full explainability and debugging"
+    - "Implement score history tracking for 90-day trend analysis"
+    - "Use feature flags for safe algorithm experimentation (A/B testing)"
+    - "Add manual override capability for edge cases (escalation path)"
+    - "Implement gradual weight adjustment based on outcomes (reinforcement learning)"
+    - "Cache intermediate calculations for <2 minute calculation SLA"
+    - "Log all scoring decisions to PostgreSQL for audit trail"
+    - "Support multiple scoring algorithm variants with A/B testing framework"
+    
+  code_structure:
+    - "scoring_engine.py: Multi-dimensional score calculation, normalization"
+    - "ranking_system.py: Percentile calculations, trending, MVP ordering"
+    - "threshold_manager.py: Configurable thresholds, rule evaluation"
+    - "decision_engine.py: Priority assignment, workflow triggers, archive logic"
+    - "explainability.py: Score breakdown, explanations, dashboard formatting"
+
+dependencies:
+  external_libraries:
+    - "scikit-learn: Z-score normalization, outlier handling"
+    - "pandas: Historical score analysis, trend calculations"
+    - "redis: Real-time score caching (<2 min SLA)"
+    - "sqlalchemy: Score history persistence"
+    - "celery: Scheduled score recalculation (daily at 2 AM)"
+    - "pydantic: Score validation and schema enforcement"
+    
+  configuration:
+    - "Score dimension weights (engagement: 35%, revenue: 30%, growth: 25%, potential: 10%)"
+    - "Threshold configurations (high: >75th, archive: <10th percentile)"
+    - "Archive trigger rules (score <10 for 14+ days, etc.)"
+    - "Recalculation schedule (daily 2 AM, on-demand via API)"
+    - "PostgreSQL connection for score history"
+    - "Redis connection for real-time caching"
+
+success_criteria:
+  - "Prioritization engine identifies top performers with >85% accuracy (expert validation)"
+  - "False archive rate below 5% (no false positives archiving healthy MVPs)"
+  - "Score calculations complete in <2 minutes for 100 MVPs"
+  - "Score explainability: every decision traceable to component metrics"
+  - "Trend analysis: detect 30-day negative growth with >90% accuracy"
+  - "Manual override workflow: operator can escalate edge cases"
+  - "A/B testing: support multiple scoring algorithms with statistical comparison"
+  - "Audit trail: all scoring decisions logged with timestamps and components"

@@ -1,0 +1,103 @@
+# LAYER-CA-006-04-03: Threshold Manager
+# ======================================
+
+metadata:
+  layer_id: LAYER-CA-006-04-03
+  layer_name: Threshold Manager
+  parent_feature: FEATURE-CA-006-04
+  parent_feature_name: Automated Prioritization Engine
+  parent_system: SYSTEM-CA-006
+  created_date: 2025-10-14
+  status: planned
+  priority: medium
+  complexity: medium
+
+traceability:
+  parent_feature_id: FEATURE-CA-006-04
+  parent_system_id: SYSTEM-CA-006
+  implements_acceptance_criteria:
+    - AC-FEAT-006-04-07  # Support configurable scoring weights and thresholds
+  contributes_to_system_criteria:
+    - AC-SYS-006-03  # Prioritization engine accurately identifies top performers
+
+description: |
+  Configurable threshold management system for prioritization decisions.
+  Manages score thresholds for different priority levels and action triggers.
+
+responsibilities:
+  - "Store and manage configurable thresholds"
+  - "Evaluate MVPs against thresholds"
+  - "Support A/B testing of threshold configurations"
+  - "Track threshold effectiveness metrics"
+  - "Provide threshold recommendation based on outcomes"
+
+interfaces:
+  inputs:
+    - "Threshold configuration (score ranges, rules)"
+    - "MVP scores from Ranking System"
+  
+  outputs:
+    - "Priority assignment per threshold rules"
+    - "Threshold evaluation results"
+    - "Threshold effectiveness metrics"
+
+acceptance_criteria:
+  - criterion_id: AC-LAY-006-04-03-01
+    criterion: "Support configurable thresholds via configuration file"
+    verification: "Threshold configuration test"
+    test_type: "unit"
+    
+  - criterion_id: AC-LAY-006-04-03-02
+    criterion: "Evaluate MVPs against threshold rules correctly"
+    verification: "Threshold evaluation test"
+    test_type: "unit"
+    
+  - criterion_id: AC-LAY-006-04-03-03
+    criterion: "Support A/B testing of threshold configurations"
+    verification: "A/B testing framework test"
+    test_type: "integration"
+
+technical_specification:
+  language: "Python 3.11+"
+  dependencies:
+    - "pydantic >= 2.4"
+    - "yaml >= 6.0"
+  
+  class_structure:
+    ThresholdManager:
+      methods:
+        - "__init__(config_path: str)"
+        - "load_thresholds() -> ThresholdConfig"
+        - "evaluate_threshold(mvp_id: str, score: float) -> PriorityLevel"
+        - "update_threshold(threshold_name: str, new_value: float) -> None"
+        - "get_threshold_metrics() -> dict"
+        - "recommend_thresholds(historical_outcomes: List[dict]) -> ThresholdConfig"
+
+  data_models:
+    ThresholdConfig:
+      fields:
+        - "high_priority_threshold: float (default: 75)"
+        - "medium_priority_threshold: float (default: 25)"
+        - "archive_threshold: float (default: 10)"
+        - "iteration_candidate_threshold: float (default: 80)"
+        - "watch_list_threshold: float (default: 60)"
+
+testing_requirements:
+  unit_tests:
+    - "Test threshold loading from config"
+    - "Test threshold evaluation logic"
+    - "Test threshold updates"
+    - "Test threshold recommendation algorithm"
+
+implementation_notes: |
+  - Store thresholds in YAML configuration file
+  - Default thresholds:
+    * High priority: >75
+    * Medium priority: 25-75
+    * Low priority: <25
+    * Archive candidate: <10
+    * Iterate: >80
+    * Watch: 60-80
+  - Support per-MVP threshold overrides
+  - Track threshold effectiveness (precision, recall)
+  - Recommend threshold adjustments based on false positive/negative rates

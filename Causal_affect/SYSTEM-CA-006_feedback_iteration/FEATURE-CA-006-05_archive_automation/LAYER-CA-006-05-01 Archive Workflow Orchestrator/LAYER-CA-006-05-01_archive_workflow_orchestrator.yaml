@@ -1,0 +1,129 @@
+# LAYER-CA-006-05-01: Archive Workflow Orchestrator
+# ==================================================
+
+metadata:
+  layer_id: LAYER-CA-006-05-01
+  layer_name: Archive Workflow Orchestrator
+  parent_feature: FEATURE-CA-006-05
+  parent_feature_name: Archive & Cleanup Automation
+  parent_system: SYSTEM-CA-006
+  created_date: 2025-10-14
+  status: planned
+  priority: critical
+  complexity: high
+
+traceability:
+  parent_feature_id: FEATURE-CA-006-05
+  parent_system_id: SYSTEM-CA-006
+  implements_acceptance_criteria:
+    - AC-FEAT-006-05-01  # Execute 6-stage archive workflow
+    - AC-FEAT-006-05-06  # Support rollback within 7-day window
+  contributes_to_system_criteria:
+    - AC-SYS-006-04  # Automated archiving triggers after evaluation period
+    - AC-SYS-006-05  # False archive rate below 5%
+
+description: |
+  Multi-stage workflow orchestrator managing the complete MVP archive process.
+  Implements 6 stages with approval gates, checkpoints, and rollback capability.
+
+responsibilities:
+  - "Orchestrate 6-stage workflow: review → approval → notification → export → cleanup → finalization"
+  - "Manage approval gates (manual or auto-approve)"
+  - "Track workflow state and progress"
+  - "Implement rollback capability (7-day window)"
+  - "Handle workflow errors and retries"
+  - "Provide workflow status updates"
+
+interfaces:
+  inputs:
+    - "Archive trigger from FEATURE-04 Decision Engine"
+    - "Approval decisions (manual or auto)"
+  
+  outputs:
+    - "Workflow status updates"
+    - "Completion notifications"
+    - "Rollback restoration data"
+
+acceptance_criteria:
+  - criterion_id: AC-LAY-006-05-01-01
+    criterion: "Execute all 6 workflow stages successfully"
+    verification: "End-to-end workflow test"
+    test_type: "integration"
+    
+  - criterion_id: AC-LAY-006-05-01-02
+    criterion: "Support manual and auto-approve paths"
+    verification: "Approval logic test"
+    test_type: "unit"
+    
+  - criterion_id: AC-LAY-006-05-01-03
+    criterion: "Complete workflow in <10 minutes"
+    verification: "Workflow timing test"
+    test_type: "performance"
+    
+  - criterion_id: AC-LAY-006-05-01-04
+    criterion: "Support rollback within 7-day window"
+    verification: "Rollback test"
+    test_type: "integration"
+
+technical_specification:
+  language: "Python 3.11+"
+  dependencies:
+    - "celery >= 5.3"
+    - "redis >= 5.0"
+    - "sqlalchemy >= 2.0"
+  
+  class_structure:
+    ArchiveWorkflowOrchestrator:
+      methods:
+        - "__init__(redis_client: Redis, db_session: Session)"
+        - "start_workflow(mvp_id: str, trigger_reason: str) -> str"
+        - "execute_stage(workflow_id: str, stage: str) -> StageResult"
+        - "handle_approval(workflow_id: str, approved: bool, approver: str) -> None"
+        - "save_checkpoint(workflow_id: str, stage: str) -> None"
+        - "rollback_archive(mvp_id: str) -> RollbackResult"
+        - "get_workflow_status(workflow_id: str) -> WorkflowStatus"
+
+  data_models:
+    WorkflowStatus:
+      fields:
+        - "workflow_id: str"
+        - "mvp_id: str"
+        - "current_stage: str"
+        - "completed_stages: List[str]"
+        - "approval_status: str (pending, approved, rejected)"
+        - "started_at: datetime"
+        - "estimated_completion: datetime"
+
+  workflow_stages:
+    stage_1: "Archive Review (validate eligibility, gather data)"
+    stage_2: "Approval Gate (manual or auto-approve based on score)"
+    stage_3: "Pre-Archive Notification (email stakeholders)"
+    stage_4: "Data Export (backup all data to S3)"
+    stage_5: "Infrastructure Cleanup (shutdown Railway services)"
+    stage_6: "Finalization (mark archived, send completion notification)"
+
+testing_requirements:
+  unit_tests:
+    - "Test workflow stage transitions"
+    - "Test approval logic (manual/auto)"
+    - "Test checkpoint save/restore"
+    - "Test workflow error handling"
+  
+  integration_tests:
+    - "Test complete workflow end-to-end"
+    - "Test rollback from each stage"
+    - "Test concurrent workflow executions"
+  
+  performance_tests:
+    - "Measure total workflow time (<10 minutes)"
+
+implementation_notes: |
+  - Use Celery workflows (chain of tasks) for orchestration
+  - Store workflow state in Redis
+  - Persist completed workflows to PostgreSQL
+  - Auto-approve criteria: score <5 (very low confidence of success)
+  - Manual approval required: score 5-15 (edge cases)
+  - Implement idempotent stages (safe to retry)
+  - Save checkpoints after each stage
+  - Rollback window: 7 days from workflow completion
+  - Support dry-run mode for testing

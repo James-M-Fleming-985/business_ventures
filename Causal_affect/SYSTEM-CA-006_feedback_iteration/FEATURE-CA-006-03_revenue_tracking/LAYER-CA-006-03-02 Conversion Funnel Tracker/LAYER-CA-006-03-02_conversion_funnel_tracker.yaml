@@ -1,0 +1,132 @@
+# LAYER-CA-006-03-02: Conversion Funnel Tracker
+# ==============================================
+
+metadata:
+  layer_id: LAYER-CA-006-03-02
+  layer_name: Conversion Funnel Tracker
+  parent_feature: FEATURE-CA-006-03
+  parent_feature_name: Revenue & Conversion Tracking
+  parent_system: SYSTEM-CA-006
+  created_date: 2025-10-14
+  status: planned
+  priority: high
+  complexity: high
+
+traceability:
+  parent_feature_id: FEATURE-CA-006-03
+  parent_system_id: SYSTEM-CA-006
+  implements_acceptance_criteria:
+    - AC-FEAT-006-03-02  # Track multi-stage conversion funnel
+    - AC-FEAT-006-03-03  # Calculate conversion rates per funnel stage
+  contributes_to_system_criteria:
+    - AC-SYS-006-01  # Metrics collected from all MVPs
+
+description: |
+  Multi-stage funnel tracking system that maps user journey from impression
+  to purchase. Tracks conversion rates, drop-off rates, and time-to-convert
+  per funnel stage.
+
+responsibilities:
+  - "Track 7-stage funnel: impression → click → visit → signup → trial → purchase → repeat"
+  - "Calculate conversion rates between stages"
+  - "Calculate drop-off rates per stage"
+  - "Measure time-to-conversion metrics"
+  - "Segment conversions by traffic source"
+  - "Provide funnel visualization data"
+
+interfaces:
+  inputs:
+    - "User journey events (impression, click, visit, signup, etc.)"
+    - "Revenue events (purchase, subscription)"
+    - "Traffic source attribution data"
+  
+  outputs:
+    - "Conversion rates per stage"
+    - "Drop-off rates per stage"
+    - "Time-to-conversion metrics"
+    - "Funnel visualization data for dashboard"
+    - "Conversion attribution per traffic source"
+
+acceptance_criteria:
+  - criterion_id: AC-LAY-006-03-02-01
+    criterion: "Track user progression through all 7 funnel stages"
+    verification: "Funnel stage tracking test"
+    test_type: "integration"
+    
+  - criterion_id: AC-LAY-006-03-02-02
+    criterion: "Calculate stage-to-stage conversion rates accurately"
+    verification: "Conversion rate calculation test"
+    test_type: "unit"
+    
+  - criterion_id: AC-LAY-006-03-02-03
+    criterion: "Attribute conversions to traffic sources correctly"
+    verification: "Attribution test with known source"
+    test_type: "unit"
+    
+  - criterion_id: AC-LAY-006-03-02-04
+    criterion: "Handle partial funnel completion (drop-off tracking)"
+    verification: "Drop-off rate calculation test"
+    test_type: "unit"
+
+technical_specification:
+  language: "Python 3.11+"
+  dependencies:
+    - "redis >= 5.0"
+    - "sqlalchemy >= 2.0"
+    - "pandas >= 2.1"
+  
+  class_structure:
+    ConversionFunnelTracker:
+      methods:
+        - "__init__(redis_client: Redis, db_session: Session)"
+        - "track_funnel_event(user_id: str, mvp_id: str, stage: str, timestamp: datetime, source: str) -> None"
+        - "get_user_funnel(user_id: str, mvp_id: str) -> FunnelProgress"
+        - "calculate_conversion_rates(mvp_id: str, date_range: tuple) -> ConversionRates"
+        - "calculate_dropoff_rates(mvp_id: str, date_range: tuple) -> DropoffRates"
+        - "calculate_time_to_convert(mvp_id: str) -> dict"
+        - "get_funnel_by_source(mvp_id: str, source: str) -> ConversionRates"
+
+  data_models:
+    FunnelProgress:
+      fields:
+        - "user_id: str"
+        - "mvp_id: str"
+        - "current_stage: str"
+        - "completed_stages: List[str]"
+        - "stage_timestamps: dict"
+        - "traffic_source: str"
+    
+    ConversionRates:
+      fields:
+        - "impression_to_click: float"
+        - "click_to_visit: float"
+        - "visit_to_signup: float"
+        - "signup_to_trial: float"
+        - "trial_to_purchase: float"
+        - "purchase_to_repeat: float"
+        - "overall_conversion: float"
+
+testing_requirements:
+  unit_tests:
+    - "Test funnel event tracking"
+    - "Test conversion rate calculations"
+    - "Test drop-off rate calculations"
+    - "Test time-to-conversion calculations"
+    - "Test traffic source attribution"
+  
+  integration_tests:
+    - "Test end-to-end funnel tracking"
+    - "Test funnel persistence in database"
+    - "Test funnel queries by date range"
+  
+  validation_tests:
+    - "Validate conversion rate accuracy with known data"
+
+implementation_notes: |
+  - Store active funnels in Redis for fast lookup
+  - Persist completed funnels to PostgreSQL
+  - Use ordered set in Redis to track funnel stage progression
+  - Calculate conversion rates using SQL window functions
+  - Support custom funnel stages per MVP (configurable)
+  - Implement first-touch attribution for traffic source
+  - Cache conversion rates (TTL: 1 hour)

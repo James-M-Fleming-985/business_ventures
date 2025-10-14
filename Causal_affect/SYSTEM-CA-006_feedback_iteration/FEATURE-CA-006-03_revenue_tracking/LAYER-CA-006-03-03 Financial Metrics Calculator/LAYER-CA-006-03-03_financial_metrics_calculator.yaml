@@ -1,0 +1,139 @@
+# LAYER-CA-006-03-03: Financial Metrics Calculator
+# =================================================
+
+metadata:
+  layer_id: LAYER-CA-006-03-03
+  layer_name: Financial Metrics Calculator
+  parent_feature: FEATURE-CA-006-03
+  parent_feature_name: Revenue & Conversion Tracking
+  parent_system: SYSTEM-CA-006
+  created_date: 2025-10-14
+  status: planned
+  priority: critical
+  complexity: high
+
+traceability:
+  parent_feature_id: FEATURE-CA-006-03
+  parent_system_id: SYSTEM-CA-006
+  implements_acceptance_criteria:
+    - AC-FEAT-006-03-04  # Calculate Customer Acquisition Cost (CAC) per channel
+    - AC-FEAT-006-03-05  # Estimate Customer Lifetime Value (LTV) using cohort analysis
+  contributes_to_system_criteria:
+    - AC-SYS-006-03  # Prioritization engine uses revenue metrics
+
+description: |
+  Comprehensive financial metrics engine calculating revenue KPIs, CAC, LTV,
+  and cohort analysis. Supports multi-touch attribution and cohort-based
+  lifetime value estimation.
+
+responsibilities:
+  - "Calculate AOV, RPU, MRR, ARR"
+  - "Calculate CAC with multi-touch attribution (first-touch, last-touch, linear)"
+  - "Estimate LTV using cohort analysis (90-day minimum cohort age)"
+  - "Calculate LTV:CAC ratio"
+  - "Calculate payback period"
+  - "Generate cohort retention curves"
+
+interfaces:
+  inputs:
+    - "Revenue events from Revenue Event Collector"
+    - "Conversion funnel data from Conversion Funnel Tracker"
+    - "Marketing spend data per channel"
+  
+  outputs:
+    - "Revenue metrics (AOV, RPU, MRR, ARR)"
+    - "CAC per channel with attribution model"
+    - "LTV estimates per cohort"
+    - "LTV:CAC ratio"
+    - "Payback period in days"
+    - "Cohort retention curves"
+
+acceptance_criteria:
+  - criterion_id: AC-LAY-006-03-03-01
+    criterion: "Calculate CAC accurately with 3 attribution models"
+    verification: "CAC calculation test with known spend data"
+    test_type: "unit"
+    
+  - criterion_id: AC-LAY-006-03-03-02
+    criterion: "Estimate LTV using cohort analysis (90-day minimum)"
+    verification: "LTV calculation test with historical cohorts"
+    test_type: "validation"
+    
+  - criterion_id: AC-LAY-006-03-03-03
+    criterion: "Calculate MRR and ARR for subscription products"
+    verification: "Recurring revenue calculation test"
+    test_type: "unit"
+    
+  - criterion_id: AC-LAY-006-03-03-04
+    criterion: "Generate cohort retention curves accurately"
+    verification: "Cohort analysis test with sample data"
+    test_type: "unit"
+
+technical_specification:
+  language: "Python 3.11+"
+  dependencies:
+    - "pandas >= 2.1"
+    - "numpy >= 1.26"
+    - "sqlalchemy >= 2.0"
+  
+  class_structure:
+    FinancialMetricsCalculator:
+      methods:
+        - "__init__(db_session: Session)"
+        - "calculate_aov(mvp_id: str, date_range: tuple) -> Decimal"
+        - "calculate_rpu(mvp_id: str, date_range: tuple) -> Decimal"
+        - "calculate_mrr(mvp_id: str) -> Decimal"
+        - "calculate_arr(mvp_id: str) -> Decimal"
+        - "calculate_cac(mvp_id: str, channel: str, attribution_model: str) -> Decimal"
+        - "calculate_ltv(mvp_id: str, cohort_date: datetime) -> Decimal"
+        - "calculate_ltv_cac_ratio(mvp_id: str) -> float"
+        - "calculate_payback_period(mvp_id: str) -> int"
+        - "generate_cohort_retention_curve(mvp_id: str, cohort_date: datetime) -> dict"
+
+  data_models:
+    RevenueMetrics:
+      fields:
+        - "total_revenue: Decimal"
+        - "aov: Decimal"
+        - "rpu: Decimal"
+        - "mrr: Decimal"
+        - "arr: Decimal"
+    
+    CohortMetrics:
+      fields:
+        - "cohort_date: datetime"
+        - "cohort_size: int"
+        - "ltv: Decimal"
+        - "retention_curve: dict"
+
+testing_requirements:
+  unit_tests:
+    - "Test AOV calculation"
+    - "Test RPU calculation"
+    - "Test MRR/ARR calculation for subscriptions"
+    - "Test CAC with first-touch attribution"
+    - "Test CAC with last-touch attribution"
+    - "Test CAC with linear attribution"
+    - "Test LTV calculation"
+    - "Test LTV:CAC ratio"
+    - "Test payback period calculation"
+  
+  integration_tests:
+    - "Test financial metrics with real revenue data"
+    - "Test cohort analysis with historical data"
+  
+  validation_tests:
+    - "Validate LTV accuracy against actual customer lifetime"
+
+implementation_notes: |
+  - Use pandas for cohort analysis and aggregation
+  - Use Decimal type for all monetary calculations
+  - Calculate LTV as: (avg_revenue_per_user × avg_customer_lifespan)
+  - For subscriptions, use MRR × avg_customer_lifespan_months
+  - Implement 3 attribution models:
+    * First-touch: 100% credit to first channel
+    * Last-touch: 100% credit to last channel before conversion
+    * Linear: Equal credit to all channels in journey
+  - Cache financial metrics (TTL: 6 hours)
+  - Require minimum 90-day cohort age for LTV estimation
+  - Calculate payback period as: CAC ÷ (MRR per customer)

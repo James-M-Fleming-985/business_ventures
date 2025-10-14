@@ -1,0 +1,136 @@
+# LAYER-CA-006-05-03: Data Preservation Service
+# ==============================================
+
+metadata:
+  layer_id: LAYER-CA-006-05-03
+  layer_name: Data Preservation Service
+  parent_feature: FEATURE-CA-006-05
+  parent_feature_name: Archive & Cleanup Automation
+  parent_system: SYSTEM-CA-006
+  created_date: 2025-10-14
+  status: planned
+  priority: critical
+  complexity: medium
+
+traceability:
+  parent_feature_id: FEATURE-CA-006-05
+  parent_system_id: SYSTEM-CA-006
+  implements_acceptance_criteria:
+    - AC-FEAT-006-05-02  # Preserve all data with integrity verification
+    - AC-FEAT-006-05-05  # Generate restoration documentation
+  contributes_to_system_criteria:
+    - AC-SYS-006-04  # Automated archiving triggers after evaluation period
+
+description: |
+  Data preservation service that exports all MVP data to AWS S3, verifies
+  integrity, and generates restoration documentation. Ensures complete data
+  preservation for potential rollback or analysis.
+
+responsibilities:
+  - "Export all analytics, revenue, and user feedback data"
+  - "Export source code snapshot"
+  - "Encrypt and export configuration and secrets"
+  - "Export infrastructure-as-code definitions"
+  - "Verify data integrity with checksums"
+  - "Generate manifest with restoration instructions"
+
+interfaces:
+  inputs:
+    - "MVP ID to archive"
+    - "Database connections for data export"
+    - "Source code repository URL"
+  
+  outputs:
+    - "S3 archive location"
+    - "Data manifest with file inventory"
+    - "Integrity verification report"
+    - "Restoration instructions"
+
+acceptance_criteria:
+  - criterion_id: AC-LAY-006-05-03-01
+    criterion: "Export 100% of MVP data without loss"
+    verification: "Data completeness test"
+    test_type: "integration"
+    
+  - criterion_id: AC-LAY-006-05-03-02
+    criterion: "Verify data integrity with SHA-256 checksums"
+    verification: "Integrity verification test"
+    test_type: "unit"
+    
+  - criterion_id: AC-LAY-006-05-03-03
+    criterion: "Encrypt sensitive data (configs, secrets)"
+    verification: "Encryption test"
+    test_type: "unit"
+    
+  - criterion_id: AC-LAY-006-05-03-04
+    criterion: "Generate complete restoration documentation"
+    verification: "Documentation completeness test"
+    test_type: "unit"
+
+technical_specification:
+  language: "Python 3.11+"
+  dependencies:
+    - "boto3 >= 1.28 (AWS S3)"
+    - "cryptography >= 41.0"
+    - "sqlalchemy >= 2.0"
+    - "tarfile, zipfile (stdlib)"
+  
+  class_structure:
+    DataPreservationService:
+      methods:
+        - "__init__(s3_client: boto3.client, encryption_key: str)"
+        - "preserve_mvp_data(mvp_id: str) -> PreservationResult"
+        - "export_analytics_data(mvp_id: str) -> str"
+        - "export_revenue_data(mvp_id: str) -> str"
+        - "export_source_code(repo_url: str) -> str"
+        - "export_configurations(mvp_id: str, encrypt: bool) -> str"
+        - "verify_integrity(file_path: str) -> str (checksum)"
+        - "generate_manifest(mvp_id: str, exported_files: List[str]) -> Manifest"
+        - "upload_to_s3(archive_path: str, mvp_id: str) -> str"
+
+  data_models:
+    PreservationResult:
+      fields:
+        - "mvp_id: str"
+        - "s3_location: str"
+        - "archive_size_mb: float"
+        - "files_preserved: int"
+        - "integrity_verified: bool"
+        - "manifest_path: str"
+    
+    Manifest:
+      fields:
+        - "mvp_id: str"
+        - "mvp_name: str"
+        - "archive_date: datetime"
+        - "archive_reason: str"
+        - "final_metrics: dict"
+        - "data_inventory: List[dict]"
+        - "restoration_steps: List[str]"
+
+testing_requirements:
+  unit_tests:
+    - "Test data export functions"
+    - "Test encryption/decryption"
+    - "Test checksum calculation"
+    - "Test manifest generation"
+  
+  integration_tests:
+    - "Test S3 upload end-to-end"
+    - "Test complete preservation workflow"
+    - "Test data restoration from archive"
+
+implementation_notes: |
+  - S3 bucket structure: s3://ca-006-archives/{mvp_id}/{timestamp}/
+  - Archive format: tar.gz with encryption
+  - Data to preserve:
+    * analytics.db (SQLite export of PostgreSQL data)
+    * revenue.db (financial data)
+    * events.jsonl (raw event logs)
+    * source_code.zip (git clone)
+    * configs.enc (encrypted YAML/JSON)
+    * manifest.yaml (metadata and restoration guide)
+  - Use AES-256 encryption for sensitive data
+  - Calculate SHA-256 checksums for all files
+  - Generate restoration checklist in manifest
+  - Set S3 lifecycle policy: Standard → Glacier after 30 days

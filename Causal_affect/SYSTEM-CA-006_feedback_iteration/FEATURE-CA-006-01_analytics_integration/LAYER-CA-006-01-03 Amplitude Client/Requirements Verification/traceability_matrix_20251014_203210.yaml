@@ -1,0 +1,156 @@
+matrix_metadata:
+  timestamp: '20251014_203210'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-LAY-006-01-03-01
+  requirement: Authenticate with API key and secret
+  description: Authenticate with API key and secret
+  test_files: &id001
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-03
+    Amplitude Client/tests/test_generated_20251014_203144.py
+  test_methods:
+  - test_ac-lay-006-01-03-01
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-01-03-02
+  requirement: Fetch analytics within 15 seconds
+  description: Fetch analytics within 15 seconds
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-01-03-02
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-01-03-03
+  requirement: Query cohort data successfully
+  description: Query cohort data successfully
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-01-03-03
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-01-03-04
+  requirement: Transform to common schema
+  description: Transform to common schema
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-01-03-04
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-03
+    Amplitude Client/src/implementation.py
+  lines: 257
+  methods:
+  - name: __init__
+    lines: 14-31
+  - name: authenticate
+    lines: 32-55
+  - name: fetch_analytics
+    lines: 56-129
+  - name: query_cohort
+    lines: 130-178
+  - name: transform_to_common_schema
+    lines: 179-202
+  - name: _transform_analytics
+    lines: 203-226
+  - name: _transform_cohort
+    lines: 227-242
+  - name: create_amplitude_client
+    lines: 243-253
+  classes:
+  - name: AmplitudeClient
+    type: class
+    lines: 11-257
+  implements_requirements:
+  - AC-LAY-006-01-03-01
+  - AC-LAY-006-01-03-02
+  - AC-LAY-006-01-03-03
+  - AC-LAY-006-01-03-04
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-03
+    Amplitude Client/tests/test_generated_20251014_203144.py
+  test_count: 0
+  implementation_files:
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-03
+    Amplitude Client/src/implementation.py
+  methods_tested:
+  - __init__
+  - authenticate
+  - fetch_analytics
+  - query_cohort
+  - transform_to_common_schema
+  - _transform_analytics
+  - _transform_cohort
+  - create_amplitude_client
+  classes_tested:
+  - AmplitudeClient
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-03
+    Amplitude Client/src/implementation.py:14-31
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-03
+    Amplitude Client/tests/test_generated_20251014_203144.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-03
+    Amplitude Client/src/implementation.py:32-55
+  method_name: authenticate
+  requirement: AC-001
+  test: test_authenticate
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-03
+    Amplitude Client/tests/test_generated_20251014_203144.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-03
+    Amplitude Client/src/implementation.py:56-129
+  method_name: fetch_analytics
+  requirement: AC-001
+  test: test_fetch_analytics
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-03
+    Amplitude Client/tests/test_generated_20251014_203144.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-03
+    Amplitude Client/src/implementation.py:130-178
+  method_name: query_cohort
+  requirement: AC-001
+  test: test_query_cohort
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-03
+    Amplitude Client/tests/test_generated_20251014_203144.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-03
+    Amplitude Client/src/implementation.py:179-202
+  method_name: transform_to_common_schema
+  requirement: AC-001
+  test: test_transform_to_common_schema
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-03
+    Amplitude Client/tests/test_generated_20251014_203144.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 4
+  requirements_traced: 4
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

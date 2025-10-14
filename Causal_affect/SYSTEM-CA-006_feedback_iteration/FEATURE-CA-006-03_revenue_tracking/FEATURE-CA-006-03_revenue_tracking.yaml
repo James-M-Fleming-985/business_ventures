@@ -2,14 +2,19 @@
 # =================================================
 
 metadata:
-  feature_id: FEATURE-CA-006-03
-  feature_name: Revenue & Conversion Tracking
+  requirement_id: FEATURE-CA-006-03
+  requirement_name: Revenue & Conversion Tracking
+  requirement_type: Feature
   parent_system: SYSTEM-CA-006
-  parent_system_name: Feedback Collection & Iteration Orchestrator
-  created_date: 2025-10-14
+  parent_project: business_ventures
+  
+  team_size: small
+  risk_level: high
+  
+  estimated_effort_hours: 72
+  actual_effort_hours: 0
+  progress_percentage: 0
   status: planned
-  priority: critical
-  estimated_layers: 5
 
 traceability:
   parent_system_id: SYSTEM-CA-006
@@ -137,78 +142,121 @@ technical_requirements:
       - "Payback period"
       - "Cohort retention curves"
 
-layer_breakdown:
-  estimated_layers: 5
-  
-  layers:
-    - layer_id: LAYER-CA-006-03-01
-      layer_name: Revenue Event Collector
-      description: "Revenue event ingestion with payment processor integration"
-      estimated_complexity: medium
-      
-    - layer_id: LAYER-CA-006-03-02
-      layer_name: Conversion Funnel Tracker
-      description: "Multi-stage funnel tracking with attribution"
-      estimated_complexity: high
-      
-    - layer_id: LAYER-CA-006-03-03
-      layer_name: Financial Metrics Calculator
-      description: "Revenue, CAC, LTV, and cohort analysis calculations"
-      estimated_complexity: high
-      
-    - layer_id: LAYER-CA-006-03-04
-      layer_name: Revenue Aggregator
-      description: "Time-series aggregation and currency normalization"
-      estimated_complexity: medium
-      
-    - layer_id: LAYER-CA-006-03-05
-      layer_name: Financial Reporting Layer
-      description: "Revenue reports, forecasts, and insights generation"
-      estimated_complexity: medium
-
-dependencies:
-  internal:
-    - "FEATURE-CA-006-01 (for analytics data)"
-    - "FEATURE-CA-006-02 (for user engagement context)"
-    - "FEATURE-CA-006-04 (provides revenue metrics to prioritization)"
-  
-  external:
-    - "Stripe API (payment processing)"
-    - "Exchange rate API (currency conversion)"
-    - "PostgreSQL for financial data storage"
-    - "Redis for real-time revenue caching"
-    - "pandas for cohort analysis"
-
-testing_requirements:
+acceptance_criteria:
   unit_tests:
-    - "Test revenue calculation algorithms"
-    - "Test conversion funnel logic"
-    - "Test CAC calculation with different attribution models"
-    - "Test LTV estimation algorithms"
-    - "Test currency conversion logic"
+    required: true
+    minimum_count: 35
+    coverage_threshold: 90
+    focus_areas:
+      - "Revenue calculation algorithms"
+      - "Conversion funnel logic"
+      - "CAC calculation with different attribution models"
+      - "LTV estimation algorithms"
+      - "Currency conversion logic"
+      - "Cohort analysis algorithms"
     
   integration_tests:
-    - "Test revenue reconciliation with payment processor"
-    - "Test end-to-end conversion tracking"
-    - "Test multi-currency transactions"
-    - "Test cohort analysis with real data patterns"
+    required: true
+    minimum_count: 18
+    coverage_threshold: 85
+    focus_areas:
+      - "Revenue reconciliation with payment processor"
+      - "End-to-end conversion tracking"
+      - "Multi-currency transactions"
+      - "Cohort analysis with real data patterns"
+      - "Financial metrics aggregation"
+      - "Revenue event propagation timing"
+      
+  e2e_tests:
+    required: true
+    minimum_count: 6
+    focus_areas:
+      - "Complete purchase to revenue reporting flow"
+      - "Multi-stage conversion funnel tracking"
+      - "LTV calculation across cohorts"
+      - "Real-time revenue dashboard updates"
+      - "Multi-currency revenue reconciliation"
+      - "Financial reporting accuracy"
+
+quality_gates:
+  no_mocks_unless_specified: false
+  mock_policy: "Stripe API, exchange rate API, payment processors can be mocked. Revenue calculations, conversion logic, and financial algorithms must use real implementations."
+  real_failing_tests_required: true
+  tdd_cycle_enforcement: true
+
+layers:
+  - layer_id: LAYER-CA-006-03-01
+    name: Revenue Event Collector
+    description: "Revenue event ingestion with payment processor integration (Stripe, PayPal). Captures purchase, refund, subscription events with transaction details."
+    priority: critical
+    estimated_hours: 16
+    requirement_file: FEATURE-CA-006-03_revenue_tracking.yaml
     
-  performance_tests:
-    - "Test revenue event processing at scale (1000+ events/hour)"
-    - "Measure calculation latency for complex metrics"
-    - "Test concurrent revenue updates"
+  - layer_id: LAYER-CA-006-03-02
+    name: Conversion Funnel Tracker
+    description: "Multi-stage funnel tracking (impression → click → visit → signup → trial → purchase → repeat) with attribution. Tracks user journey and calculates conversion rates per stage."
+    priority: high
+    estimated_hours: 18
+    requirement_file: FEATURE-CA-006-03_revenue_tracking.yaml
+    
+  - layer_id: LAYER-CA-006-03-03
+    name: Financial Metrics Calculator
+    description: "Revenue, CAC, LTV, and cohort analysis calculations. Implements AOV, RPU, MRR, ARR, LTV:CAC ratio, payback period. Cohort retention curve generation."
+    priority: critical
+    estimated_hours: 20
+    requirement_file: FEATURE-CA-006-03_revenue_tracking.yaml
+    
+  - layer_id: LAYER-CA-006-03-04
+    name: Revenue Aggregator
+    description: "Time-series aggregation (daily, weekly, monthly) and multi-currency normalization. Uses exchange rate API for accurate conversion. Real-time revenue caching with Redis."
+    priority: high
+    estimated_hours: 10
+    requirement_file: FEATURE-CA-006-03_revenue_tracking.yaml
+    
+  - layer_id: LAYER-CA-006-03-05
+    name: Financial Reporting Layer
+    description: "Revenue reports, forecasts, and insights generation. Provides formatted financial data to dashboard with <5 minute latency. Generates cohort analysis reports."
+    priority: medium
+    estimated_hours: 8
+    requirement_file: FEATURE-CA-006-03_revenue_tracking.yaml
 
-implementation_notes: |
-  1. Implement idempotent revenue event processing (duplicate protection)
-  2. Use database transactions for financial data consistency
-  3. Implement audit logging for all revenue changes
-  4. Cache exchange rates with daily refresh
-  5. Use decimal precision for all financial calculations
-  6. Implement revenue reconciliation reports
-  7. Add fraud detection for anomalous revenue patterns
-  8. Support partial refunds and revenue adjustments
+implementation_notes:
+  design_decisions:
+    - "Use Stripe webhooks for real-time revenue event capture"
+    - "Implement multi-touch attribution for CAC calculation (first-touch, last-touch, linear)"
+    - "Cohort analysis based on signup date with weekly granularity"
+    - "Redis cache for <5 minute revenue latency requirement"
+    - "PostgreSQL for financial data persistence and audit trail"
+    - "Exchange rate API with daily rate caching to minimize API calls"
+    
+  code_structure:
+    - "revenue_collector.py: Stripe/PayPal webhook handlers, event validation"
+    - "conversion_tracker.py: Funnel stage tracking, user journey mapping"
+    - "financial_calculator.py: Revenue metrics, CAC, LTV, cohort algorithms"
+    - "revenue_aggregator.py: Time-series aggregation, currency conversion"
+    - "financial_reporter.py: Report generation, dashboard data formatting"
 
-estimated_effort:
-  development_days: 2
-  testing_days: 1
-  total_days: 3
+dependencies:
+  external_libraries:
+    - "stripe: Payment processing integration"
+    - "httpx: Exchange rate API calls"
+    - "pandas: Cohort analysis and time-series calculations"
+    - "redis: Real-time revenue caching"
+    - "sqlalchemy: Financial data persistence"
+    - "pydantic: Revenue event validation"
+    
+  configuration:
+    - "Stripe API key (production and test)"
+    - "Exchange rate API key (e.g., exchangerate-api.com)"
+    - "PostgreSQL connection for financial data"
+    - "Redis connection for revenue cache"
+    - "Currency conversion settings (base currency: USD)"
+
+success_criteria:
+  - "Revenue events captured within <5 minutes of transaction"
+  - "Conversion funnel tracking with <2% data loss"
+  - "Multi-currency revenue normalized with <1% accuracy variance"
+  - "CAC calculated with first-touch, last-touch, and linear attribution models"
+  - "LTV estimated using cohort analysis with 90-day minimum cohort age"
+  - "Financial reports generated with complete audit trail"
+  - "Revenue metrics available in real-time dashboard with Redis caching"

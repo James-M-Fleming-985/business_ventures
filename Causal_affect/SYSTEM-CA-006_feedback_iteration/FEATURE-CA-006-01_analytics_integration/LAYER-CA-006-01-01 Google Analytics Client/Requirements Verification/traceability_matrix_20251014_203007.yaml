@@ -1,0 +1,153 @@
+matrix_metadata:
+  timestamp: '20251014_203007'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-LAY-006-01-01-01
+  requirement: Successfully authenticate using service account JSON
+  description: Successfully authenticate using service account JSON
+  test_files: &id001
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-01
+    Google Analytics Client/tests/test_generated_20251014_202935.py
+  test_methods:
+  - test_ac-lay-006-01-01-01
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-01-01-02
+  requirement: Fetch metrics within 10 seconds for single MVP
+  description: Fetch metrics within 10 seconds for single MVP
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-01-01-02
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-01-01-03
+  requirement: Handle rate limit errors with exponential backoff
+  description: Handle rate limit errors with exponential backoff
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-01-01-03
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-01-01-04
+  requirement: Transform GA4 response to common schema correctly
+  description: Transform GA4 response to common schema correctly
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-01-01-04
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-01
+    Google Analytics Client/src/implementation.py
+  lines: 284
+  methods:
+  - name: __init__
+    lines: 32-46
+  - name: authenticate
+    lines: 47-83
+  - name: fetch_metrics
+    lines: 84-144
+  - name: _execute_with_retry
+    lines: 145-198
+  - name: _transform_response
+    lines: 199-258
+  - name: handle_rate_limit
+    lines: 259-272
+  - name: create_client
+    lines: 273-283
+  classes:
+  - name: GoogleAnalyticsClient
+    type: class
+    lines: 29-284
+  implements_requirements:
+  - AC-LAY-006-01-01-01
+  - AC-LAY-006-01-01-02
+  - AC-LAY-006-01-01-03
+  - AC-LAY-006-01-01-04
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-01
+    Google Analytics Client/tests/test_generated_20251014_202935.py
+  test_count: 0
+  implementation_files:
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-01
+    Google Analytics Client/src/implementation.py
+  methods_tested:
+  - __init__
+  - authenticate
+  - fetch_metrics
+  - _execute_with_retry
+  - _transform_response
+  - handle_rate_limit
+  - create_client
+  classes_tested:
+  - GoogleAnalyticsClient
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-01
+    Google Analytics Client/src/implementation.py:32-46
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-01
+    Google Analytics Client/tests/test_generated_20251014_202935.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-01
+    Google Analytics Client/src/implementation.py:47-83
+  method_name: authenticate
+  requirement: AC-001
+  test: test_authenticate
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-01
+    Google Analytics Client/tests/test_generated_20251014_202935.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-01
+    Google Analytics Client/src/implementation.py:84-144
+  method_name: fetch_metrics
+  requirement: AC-001
+  test: test_fetch_metrics
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-01
+    Google Analytics Client/tests/test_generated_20251014_202935.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-01
+    Google Analytics Client/src/implementation.py:145-198
+  method_name: _execute_with_retry
+  requirement: AC-001
+  test: test__execute_with_retry
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-01
+    Google Analytics Client/tests/test_generated_20251014_202935.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-01
+    Google Analytics Client/src/implementation.py:199-258
+  method_name: _transform_response
+  requirement: AC-001
+  test: test__transform_response
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-01
+    Google Analytics Client/tests/test_generated_20251014_202935.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 4
+  requirements_traced: 4
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

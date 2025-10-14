@@ -1,0 +1,122 @@
+# LAYER-CA-006-02-04: Real-Time Processor
+# ========================================
+
+metadata:
+  layer_id: LAYER-CA-006-02-04
+  layer_name: Real-Time Processor
+  parent_feature: FEATURE-CA-006-02
+  parent_feature_name: Real-Time Engagement Tracking
+  parent_system: SYSTEM-CA-006
+  created_date: 2025-10-14
+  status: planned
+  priority: critical
+  complexity: high
+
+traceability:
+  parent_feature_id: FEATURE-CA-006-02
+  parent_system_id: SYSTEM-CA-006
+  implements_acceptance_criteria:
+    - AC-FEAT-006-02-07  # Real-time dashboard updates <5 seconds
+    - AC-FEAT-006-02-08  # Process event stream continuously
+  contributes_to_system_criteria:
+    - AC-SYS-006-01  # Metrics collected from all MVPs with <5 minute latency
+
+description: |
+  Stream processor that consumes events from Redis queue, triggers session
+  tracking and metrics calculation, and updates real-time dashboard cache.
+  Ensures <5 second latency from event to dashboard update.
+
+responsibilities:
+  - "Consume events from Redis Streams continuously"
+  - "Trigger session tracking for each event"
+  - "Trigger metrics recalculation on session end"
+  - "Update real-time dashboard cache in Redis"
+  - "Handle backpressure and processing errors"
+  - "Maintain processing checkpoints for recovery"
+
+interfaces:
+  inputs:
+    - "Event stream from Redis (via Event Collector)"
+    - "Processing checkpoint state"
+  
+  outputs:
+    - "Updated session state in Redis"
+    - "Updated dashboard metrics in Redis"
+    - "Processing metrics (throughput, latency, error rate)"
+    - "Checkpoint state for recovery"
+
+acceptance_criteria:
+  - criterion_id: AC-LAY-006-02-04-01
+    criterion: "Process events with <5 second end-to-end latency"
+    verification: "Event-to-dashboard latency measurement test"
+    test_type: "performance"
+    
+  - criterion_id: AC-LAY-006-02-04-02
+    criterion: "Handle 10K events/min sustained throughput"
+    verification: "Load test with sustained event rate"
+    test_type: "performance"
+    
+  - criterion_id: AC-LAY-006-02-04-03
+    criterion: "Recover from failures without data loss"
+    verification: "Crash recovery test with checkpoints"
+    test_type: "integration"
+    
+  - criterion_id: AC-LAY-006-02-04-04
+    criterion: "Update dashboard cache within 2 seconds of metric change"
+    verification: "Cache update timing test"
+    test_type: "performance"
+
+technical_specification:
+  language: "Python 3.11+"
+  dependencies:
+    - "redis >= 5.0"
+    - "celery >= 5.3"
+    - "asyncio"
+  
+  class_structure:
+    RealTimeProcessor:
+      methods:
+        - "__init__(redis_client: Redis, session_tracker: SessionTracker, metrics_calculator: MetricsCalculator)"
+        - "start_processing() -> None"
+        - "consume_events() -> AsyncIterator[Event]"
+        - "process_event(event: Event) -> None"
+        - "update_dashboard_cache(mvp_id: str, metrics: dict) -> None"
+        - "save_checkpoint(event_id: str) -> None"
+        - "recover_from_checkpoint() -> str"
+        - "handle_error(event: Event, error: Exception) -> None"
+
+  data_models:
+    ProcessingMetrics:
+      fields:
+        - "events_processed: int"
+        - "avg_latency_ms: float"
+        - "error_count: int"
+        - "last_checkpoint: str"
+
+testing_requirements:
+  unit_tests:
+    - "Test event consumption from Redis Streams"
+    - "Test checkpoint save and recovery"
+    - "Test error handling and retry logic"
+    - "Test dashboard cache updates"
+  
+  integration_tests:
+    - "Test end-to-end event processing pipeline"
+    - "Test concurrent event processing"
+    - "Test backpressure handling"
+    - "Test recovery from simulated crash"
+  
+  performance_tests:
+    - "Measure event-to-dashboard latency (<5 seconds)"
+    - "Test sustained throughput (10K events/min)"
+    - "Test memory usage under load"
+
+implementation_notes: |
+  - Use Redis Streams consumer groups for at-least-once processing
+  - Implement asyncio for concurrent event processing
+  - Use Celery for background metric recalculation tasks
+  - Save checkpoints every 100 events processed
+  - Implement exponential backoff for transient errors
+  - Use Redis pipeline for batch cache updates
+  - Monitor processing lag and alert if >5 seconds
+  - Implement graceful shutdown with checkpoint save

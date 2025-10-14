@@ -1,0 +1,200 @@
+matrix_metadata:
+  timestamp: '20251014_203327'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-LAY-006-01-04-01
+  requirement: Collect from all 3 providers in parallel within 5 minutes
+  description: Collect from all 3 providers in parallel within 5 minutes
+  test_files: &id001
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-04
+    Analytics Aggregator/tests/test_generated_20251014_203256.py
+  test_methods:
+  - test_ac-lay-006-01-04-01
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-01-04-02
+  requirement: Produce unified schema with all metrics normalized
+  description: Produce unified schema with all metrics normalized
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-01-04-02
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-01-04-03
+  requirement: Fallback to secondary provider on primary failure
+  description: Fallback to secondary provider on primary failure
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-01-04-03
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-01-04-04
+  requirement: Deduplicate metrics found in multiple providers
+  description: Deduplicate metrics found in multiple providers
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-01-04-04
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-01-04-05
+  requirement: Handle partial failures (1-2 providers down)
+  description: Handle partial failures (1-2 providers down)
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-01-04-05
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-04
+    Analytics Aggregator/src/implementation.py
+  lines: 278
+  methods:
+  - name: get_hash
+    lines: 30-36
+  - name: __init__
+    lines: 58-61
+  - name: collect_metrics
+    lines: 62-66
+  - name: __init__
+    lines: 70-75
+  - name: add_provider
+    lines: 76-83
+  - name: _collect_from_provider
+    lines: 84-105
+  - name: _deduplicate_metrics
+    lines: 106-118
+  - name: _normalize_metrics
+    lines: 119-127
+  - name: collect_parallel
+    lines: 128-138
+  - name: __init__
+    lines: 266-271
+  - name: collect_metrics
+    lines: 272-282
+  classes:
+  - name: ProviderStatus
+    type: class
+    lines: 16-22
+  - name: Metric
+    type: class
+    lines: 23-36
+  - name: ProviderResult
+    type: class
+    lines: 37-45
+  - name: AggregatedResult
+    type: class
+    lines: 46-54
+  - name: AnalyticsProvider
+    type: class
+    lines: 55-66
+  - name: AnalyticsAggregator
+    type: class
+    lines: 67-262
+  - name: MockProvider
+    type: class
+    lines: 263-278
+  implements_requirements:
+  - AC-LAY-006-01-04-01
+  - AC-LAY-006-01-04-02
+  - AC-LAY-006-01-04-03
+  - AC-LAY-006-01-04-04
+  - AC-LAY-006-01-04-05
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-04
+    Analytics Aggregator/tests/test_generated_20251014_203256.py
+  test_count: 0
+  implementation_files:
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-04
+    Analytics Aggregator/src/implementation.py
+  methods_tested:
+  - get_hash
+  - __init__
+  - collect_metrics
+  - __init__
+  - add_provider
+  - _collect_from_provider
+  - _deduplicate_metrics
+  - _normalize_metrics
+  - collect_parallel
+  - __init__
+  - collect_metrics
+  classes_tested:
+  - ProviderStatus
+  - Metric
+  - ProviderResult
+  - AggregatedResult
+  - AnalyticsProvider
+  - AnalyticsAggregator
+  - MockProvider
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-04
+    Analytics Aggregator/src/implementation.py:30-36
+  method_name: get_hash
+  requirement: AC-001
+  test: test_get_hash
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-04
+    Analytics Aggregator/tests/test_generated_20251014_203256.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-04
+    Analytics Aggregator/src/implementation.py:58-61
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-04
+    Analytics Aggregator/tests/test_generated_20251014_203256.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-04
+    Analytics Aggregator/src/implementation.py:62-66
+  method_name: collect_metrics
+  requirement: AC-001
+  test: test_collect_metrics
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-04
+    Analytics Aggregator/tests/test_generated_20251014_203256.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-04
+    Analytics Aggregator/src/implementation.py:70-75
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-04
+    Analytics Aggregator/tests/test_generated_20251014_203256.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-04
+    Analytics Aggregator/src/implementation.py:76-83
+  method_name: add_provider
+  requirement: AC-001
+  test: test_add_provider
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-04
+    Analytics Aggregator/tests/test_generated_20251014_203256.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 5
+  requirements_traced: 5
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

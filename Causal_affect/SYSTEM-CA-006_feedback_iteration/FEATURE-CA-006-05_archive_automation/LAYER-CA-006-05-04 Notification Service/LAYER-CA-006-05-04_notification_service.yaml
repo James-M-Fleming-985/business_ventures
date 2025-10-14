@@ -1,0 +1,120 @@
+# LAYER-CA-006-05-04: Notification Service
+# =========================================
+
+metadata:
+  layer_id: LAYER-CA-006-05-04
+  layer_name: Notification Service
+  parent_feature: FEATURE-CA-006-05
+  parent_feature_name: Archive & Cleanup Automation
+  parent_system: SYSTEM-CA-006
+  created_date: 2025-10-14
+  status: planned
+  priority: medium
+  complexity: low
+
+traceability:
+  parent_feature_id: FEATURE-CA-006-05
+  parent_system_id: SYSTEM-CA-006
+  implements_acceptance_criteria:
+    - AC-FEAT-006-05-07  # Send notifications at key workflow stages
+  contributes_to_system_criteria:
+    - AC-SYS-006-04  # Automated archiving triggers after evaluation period
+
+description: |
+  Multi-channel notification service for archive events. Sends email and
+  Slack notifications at key workflow stages (review, approval, completion).
+
+responsibilities:
+  - "Send archive review notification (when triggered)"
+  - "Send approval request notification"
+  - "Send pre-archive warning notification"
+  - "Send archive completion notification"
+  - "Send rollback notification (if restored)"
+  - "Include rollback instructions in notifications"
+
+interfaces:
+  inputs:
+    - "Workflow events from Archive Workflow Orchestrator"
+    - "Notification templates"
+    - "Recipient configuration (email, Slack channel)"
+  
+  outputs:
+    - "Email notifications"
+    - "Slack messages"
+    - "Notification delivery status"
+
+acceptance_criteria:
+  - criterion_id: AC-LAY-006-05-04-01
+    criterion: "Send notifications within 2 minutes of workflow events"
+    verification: "Notification timing test"
+    test_type: "performance"
+    
+  - criterion_id: AC-LAY-006-05-04-02
+    criterion: "Include complete rollback instructions in notifications"
+    verification: "Notification content test"
+    test_type: "unit"
+    
+  - criterion_id: AC-LAY-006-05-04-03
+    criterion: "Support email and Slack channels"
+    verification: "Multi-channel delivery test"
+    test_type: "integration"
+
+technical_specification:
+  language: "Python 3.11+"
+  dependencies:
+    - "sendgrid >= 6.10"
+    - "slack-sdk >= 3.23"
+    - "jinja2 >= 3.1 (templates)"
+  
+  class_structure:
+    NotificationService:
+      methods:
+        - "__init__(sendgrid_key: str, slack_webhook: str)"
+        - "send_notification(event: WorkflowEvent, recipients: List[str]) -> NotificationResult"
+        - "send_email(subject: str, body: str, recipients: List[str]) -> bool"
+        - "send_slack(message: str, channel: str) -> bool"
+        - "render_template(template_name: str, context: dict) -> str"
+        - "get_rollback_instructions(mvp_id: str) -> str"
+
+  data_models:
+    NotificationResult:
+      fields:
+        - "event_type: str"
+        - "recipients: List[str]"
+        - "email_sent: bool"
+        - "slack_sent: bool"
+        - "sent_at: datetime"
+
+  notification_types:
+    archive_review: "Archive review initiated for {{mvp_name}} (score: {{score}})"
+    approval_request: "Approval required for {{mvp_name}} archive (deadline: 24h)"
+    pre_archive_warning: "{{mvp_name}} will be archived in 1 hour. Last chance to intervene."
+    archive_complete: "{{mvp_name}} successfully archived to {{s3_location}}"
+    rollback_complete: "{{mvp_name}} restored from archive"
+
+testing_requirements:
+  unit_tests:
+    - "Test template rendering"
+    - "Test rollback instruction generation"
+    - "Test notification formatting"
+  
+  integration_tests:
+    - "Test SendGrid email delivery (staging)"
+    - "Test Slack webhook delivery"
+
+implementation_notes: |
+  - Use Jinja2 templates for notification content
+  - Include in all notifications:
+    * MVP name and ID
+    * Archive reason (score, trend, decision rationale)
+    * Timeline (when triggered, when completing)
+    * Rollback instructions (command to execute)
+    * Support contact
+  - Rollback instructions template:
+    "To restore {{mvp_name}}, run:
+    python archive_rollback.py --mvp-id={{mvp_id}}
+    Rollback available until: {{rollback_deadline}}"
+  - Send to:
+    * Email: system operator, MVP stakeholders
+    * Slack: #mvp-operations channel
+  - Retry failed notifications (3 attempts with exponential backoff)

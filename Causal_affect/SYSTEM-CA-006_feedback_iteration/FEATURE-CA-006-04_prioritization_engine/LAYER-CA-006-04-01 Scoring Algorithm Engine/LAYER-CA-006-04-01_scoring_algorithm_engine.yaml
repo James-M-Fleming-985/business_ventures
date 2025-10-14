@@ -1,0 +1,128 @@
+# LAYER-CA-006-04-01: Scoring Algorithm Engine
+# =============================================
+
+metadata:
+  layer_id: LAYER-CA-006-04-01
+  layer_name: Scoring Algorithm Engine
+  parent_feature: FEATURE-CA-006-04
+  parent_feature_name: Automated Prioritization Engine
+  parent_system: SYSTEM-CA-006
+  created_date: 2025-10-14
+  status: planned
+  priority: critical
+  complexity: high
+
+traceability:
+  parent_feature_id: FEATURE-CA-006-04
+  parent_system_id: SYSTEM-CA-006
+  implements_acceptance_criteria:
+    - AC-FEAT-006-04-01  # Calculate priority score combining 4+ dimensions
+    - AC-FEAT-006-04-06  # Provide explainable scores with component breakdown
+  contributes_to_system_criteria:
+    - AC-SYS-006-03  # Prioritization engine accurately identifies top performers (>85%)
+
+description: |
+  Multi-dimensional scoring algorithm that calculates MVP priority scores
+  based on engagement (35%), revenue (30%), growth (25%), and potential (10%).
+  Implements z-score normalization and winsorization for outlier handling.
+
+responsibilities:
+  - "Calculate engagement score (DAU growth, session duration, bounce rate, retention)"
+  - "Calculate revenue score (revenue growth, LTV:CAC ratio, conversion rate, RPU)"
+  - "Calculate growth score (user growth, revenue acceleration, viral coefficient)"
+  - "Calculate potential score (market size, competitive position, scalability)"
+  - "Normalize scores using z-score normalization"
+  - "Apply winsorization at 95th percentile for outlier handling"
+  - "Combine scores using configurable weights"
+
+interfaces:
+  inputs:
+    - "Engagement metrics from FEATURE-02"
+    - "Revenue metrics from FEATURE-03"
+    - "Growth trends (calculated from time-series data)"
+    - "Potential signals (market data, technical metrics)"
+  
+  outputs:
+    - "Overall priority score (0-100)"
+    - "Component scores (engagement, revenue, growth, potential)"
+    - "Normalized component values"
+    - "Score explanation data"
+
+acceptance_criteria:
+  - criterion_id: AC-LAY-006-04-01-01
+    criterion: "Calculate 4-dimensional score with configurable weights"
+    verification: "Multi-dimensional scoring test"
+    test_type: "unit"
+    
+  - criterion_id: AC-LAY-006-04-01-02
+    criterion: "Normalize scores using z-score normalization"
+    verification: "Z-score normalization test"
+    test_type: "unit"
+    
+  - criterion_id: AC-LAY-006-04-01-03
+    criterion: "Apply winsorization at 95th percentile"
+    verification: "Outlier handling test"
+    test_type: "unit"
+    
+  - criterion_id: AC-LAY-006-04-01-04
+    criterion: "Provide component breakdown for explainability"
+    verification: "Score explanation test"
+    test_type: "unit"
+
+technical_specification:
+  language: "Python 3.11+"
+  dependencies:
+    - "scikit-learn >= 1.3"
+    - "pandas >= 2.1"
+    - "numpy >= 1.26"
+  
+  class_structure:
+    ScoringAlgorithmEngine:
+      methods:
+        - "__init__(weights: dict)"
+        - "calculate_score(mvp_id: str, metrics: dict) -> ScoringResult"
+        - "calculate_engagement_score(metrics: dict) -> float"
+        - "calculate_revenue_score(metrics: dict) -> float"
+        - "calculate_growth_score(metrics: dict) -> float"
+        - "calculate_potential_score(metrics: dict) -> float"
+        - "normalize_scores(scores: dict) -> dict"
+        - "winsorize(value: float, percentile: float) -> float"
+        - "combine_scores(component_scores: dict) -> float"
+
+  data_models:
+    ScoringResult:
+      fields:
+        - "mvp_id: str"
+        - "overall_score: float"
+        - "engagement_score: float"
+        - "revenue_score: float"
+        - "growth_score: float"
+        - "potential_score: float"
+        - "normalized_components: dict"
+        - "timestamp: datetime"
+
+testing_requirements:
+  unit_tests:
+    - "Test engagement score calculation"
+    - "Test revenue score calculation"
+    - "Test growth score calculation"
+    - "Test potential score calculation"
+    - "Test z-score normalization"
+    - "Test winsorization logic"
+    - "Test score combination with weights"
+  
+  integration_tests:
+    - "Test score calculation with real metrics"
+    - "Test score consistency across runs"
+  
+  validation_tests:
+    - "Validate against expert human prioritization (>85% agreement)"
+
+implementation_notes: |
+  - Default weights: engagement 35%, revenue 30%, growth 25%, potential 10%
+  - Z-score normalization: (value - mean) / std_dev
+  - Winsorization: cap values at 95th percentile to reduce outlier impact
+  - Scale final score to 0-100 range
+  - Store component scores for explainability
+  - Support custom weights via configuration
+  - Handle missing metrics gracefully (use defaults)

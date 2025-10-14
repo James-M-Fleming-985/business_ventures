@@ -1,0 +1,122 @@
+# LAYER-CA-006-02-01: Event Collector
+# ====================================
+
+metadata:
+  layer_id: LAYER-CA-006-02-01
+  layer_name: Event Collector
+  parent_feature: FEATURE-CA-006-02
+  parent_feature_name: Real-Time Engagement Tracking
+  parent_system: SYSTEM-CA-006
+  created_date: 2025-10-14
+  status: planned
+  priority: critical
+  complexity: medium
+
+traceability:
+  parent_feature_id: FEATURE-CA-006-02
+  parent_system_id: SYSTEM-CA-006
+  implements_acceptance_criteria:
+    - AC-FEAT-006-02-01  # Capture 10K events/min with <100ms latency
+    - AC-FEAT-006-02-02  # Track all event types
+  contributes_to_system_criteria:
+    - AC-SYS-006-01  # Metrics collected from all MVPs
+
+description: |
+  High-throughput event ingestion service that captures user engagement events
+  from deployed MVPs. Validates incoming events, enforces rate limits, and
+  queues events for processing.
+
+responsibilities:
+  - "Accept POST requests with engagement events (page_view, click, form_submit, etc.)"
+  - "Validate event schema and required fields"
+  - "Enforce rate limiting (10K events/min per MVP)"
+  - "Queue events to message broker (Redis Streams)"
+  - "Return acknowledgment with event ID"
+
+interfaces:
+  inputs:
+    - "HTTP POST /events with JSON payload"
+    - "Event fields: mvp_id, user_id, event_type, timestamp, properties"
+  
+  outputs:
+    - "Event ID and acknowledgment"
+    - "Queued event to Redis Streams"
+    - "Error response if validation fails"
+
+acceptance_criteria:
+  - criterion_id: AC-LAY-006-02-01-01
+    criterion: "Accept 10K events/min without dropping events"
+    verification: "Load test with 10K concurrent requests"
+    test_type: "performance"
+    
+  - criterion_id: AC-LAY-006-02-01-02
+    criterion: "Validate event schema and reject malformed events"
+    verification: "Schema validation test with invalid payloads"
+    test_type: "unit"
+    
+  - criterion_id: AC-LAY-006-02-01-03
+    criterion: "Queue events to Redis with <100ms latency"
+    verification: "Event latency measurement test"
+    test_type: "integration"
+    
+  - criterion_id: AC-LAY-006-02-01-04
+    criterion: "Return event ID immediately after queuing"
+    verification: "Response timing test"
+    test_type: "unit"
+
+technical_specification:
+  language: "Python 3.11+"
+  dependencies:
+    - "fastapi >= 0.104"
+    - "redis >= 5.0"
+    - "pydantic >= 2.4"
+    - "uvicorn >= 0.24"
+  
+  class_structure:
+    EventCollector:
+      methods:
+        - "__init__(redis_client: Redis)"
+        - "collect_event(event: EventPayload) -> EventResponse"
+        - "validate_event(event: dict) -> bool"
+        - "queue_event(event: EventPayload) -> str"
+        - "handle_rate_limit(mvp_id: str) -> bool"
+
+  data_models:
+    EventPayload:
+      fields:
+        - "mvp_id: str"
+        - "user_id: str"
+        - "event_type: str"
+        - "timestamp: datetime"
+        - "properties: dict"
+    
+    EventResponse:
+      fields:
+        - "event_id: str"
+        - "status: str"
+        - "timestamp: datetime"
+
+testing_requirements:
+  unit_tests:
+    - "Test event validation with valid/invalid schemas"
+    - "Test rate limiting logic"
+    - "Test event ID generation"
+    - "Test error handling for malformed events"
+  
+  integration_tests:
+    - "Test Redis queuing end-to-end"
+    - "Test FastAPI endpoint with real requests"
+    - "Test concurrent event submissions"
+  
+  performance_tests:
+    - "Load test: 10K events/min sustained"
+    - "Latency test: <100ms per event"
+
+implementation_notes: |
+  - Use FastAPI for HTTP endpoint
+  - Use Redis Streams for event queue (persistent, ordered)
+  - Implement sliding window rate limiter (10K events/min per MVP)
+  - Use Pydantic for event schema validation
+  - Generate event IDs with UUID4
+  - Add structured logging for debugging
+  - Implement health check endpoint

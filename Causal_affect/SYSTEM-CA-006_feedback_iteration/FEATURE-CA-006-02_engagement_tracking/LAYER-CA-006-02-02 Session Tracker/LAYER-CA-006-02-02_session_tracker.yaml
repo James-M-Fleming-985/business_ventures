@@ -1,0 +1,125 @@
+# LAYER-CA-006-02-02: Session Tracker
+# ====================================
+
+metadata:
+  layer_id: LAYER-CA-006-02-02
+  layer_name: Session Tracker
+  parent_feature: FEATURE-CA-006-02
+  parent_feature_name: Real-Time Engagement Tracking
+  parent_system: SYSTEM-CA-006
+  created_date: 2025-10-14
+  status: planned
+  priority: critical
+  complexity: high
+
+traceability:
+  parent_feature_id: FEATURE-CA-006-02
+  parent_system_id: SYSTEM-CA-006
+  implements_acceptance_criteria:
+    - AC-FEAT-006-02-03  # Track sessions with >98% accuracy
+    - AC-FEAT-006-02-04  # Session timeout at 30 minutes
+  contributes_to_system_criteria:
+    - AC-SYS-006-01  # Metrics collected from all MVPs
+
+description: |
+  User session management system that groups events into sessions, tracks
+  session duration, and detects session boundaries. Uses 30-minute inactivity
+  timeout to end sessions.
+
+responsibilities:
+  - "Group events into user sessions"
+  - "Track session start, end, and duration"
+  - "Detect session timeout (30 min inactivity)"
+  - "Calculate session metrics (events per session, duration, etc.)"
+  - "Maintain active session state in Redis"
+
+interfaces:
+  inputs:
+    - "Event stream from Event Collector"
+    - "User ID and timestamp per event"
+  
+  outputs:
+    - "Session ID for each event"
+    - "Session metrics (duration, event count, engagement score)"
+    - "Session end events when timeout occurs"
+
+acceptance_criteria:
+  - criterion_id: AC-LAY-006-02-02-01
+    criterion: "Assign events to correct sessions with >98% accuracy"
+    verification: "Session boundary detection test"
+    test_type: "integration"
+    
+  - criterion_id: AC-LAY-006-02-02-02
+    criterion: "End session after 30 minutes of inactivity"
+    verification: "Session timeout test"
+    test_type: "unit"
+    
+  - criterion_id: AC-LAY-006-02-02-03
+    criterion: "Handle concurrent sessions per user"
+    verification: "Multi-device session test"
+    test_type: "integration"
+    
+  - criterion_id: AC-LAY-006-02-02-04
+    criterion: "Track session metrics in real-time"
+    verification: "Session metrics update test"
+    test_type: "unit"
+
+technical_specification:
+  language: "Python 3.11+"
+  dependencies:
+    - "redis >= 5.0"
+    - "datetime"
+    - "uuid"
+  
+  class_structure:
+    SessionTracker:
+      methods:
+        - "__init__(redis_client: Redis)"
+        - "process_event(event: Event) -> Session"
+        - "get_or_create_session(user_id: str, mvp_id: str) -> Session"
+        - "update_session(session_id: str, event: Event) -> None"
+        - "end_session(session_id: str) -> SessionMetrics"
+        - "check_timeout(session_id: str) -> bool"
+
+  data_models:
+    Session:
+      fields:
+        - "session_id: str"
+        - "user_id: str"
+        - "mvp_id: str"
+        - "start_time: datetime"
+        - "last_activity: datetime"
+        - "event_count: int"
+        - "is_active: bool"
+    
+    SessionMetrics:
+      fields:
+        - "session_id: str"
+        - "duration_seconds: int"
+        - "event_count: int"
+        - "engagement_score: float"
+        - "ended_at: datetime"
+
+testing_requirements:
+  unit_tests:
+    - "Test session creation for new user"
+    - "Test session update with new event"
+    - "Test session timeout after 30 minutes"
+    - "Test session metrics calculation"
+  
+  integration_tests:
+    - "Test session tracking with event stream"
+    - "Test concurrent sessions for same user"
+    - "Test session persistence in Redis"
+  
+  performance_tests:
+    - "Test session lookup speed (<10ms)"
+    - "Test concurrent session updates"
+
+implementation_notes: |
+  - Store active sessions in Redis with TTL of 30 minutes
+  - Use session ID format: {mvp_id}:{user_id}:{timestamp}
+  - Update last_activity timestamp on each event
+  - Implement background job to check for timed-out sessions
+  - Calculate engagement score based on event count and duration
+  - Support multi-device sessions (different session IDs)

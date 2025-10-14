@@ -1,0 +1,125 @@
+# LAYER-CA-006-02-06: Engagement Cache Layer
+# ===========================================
+
+metadata:
+  layer_id: LAYER-CA-006-02-06
+  layer_name: Engagement Cache Layer
+  parent_feature: FEATURE-CA-006-02
+  parent_feature_name: Real-Time Engagement Tracking
+  parent_system: SYSTEM-CA-006
+  created_date: 2025-10-14
+  status: planned
+  priority: high
+  complexity: low
+
+traceability:
+  parent_feature_id: FEATURE-CA-006-02
+  parent_system_id: SYSTEM-CA-006
+  implements_acceptance_criteria:
+    - AC-FEAT-006-02-07  # Real-time dashboard updates <5 seconds
+    - AC-FEAT-006-02-11  # Cache current metrics for fast access
+  contributes_to_system_criteria:
+    - AC-SYS-006-01  # Metrics collected from all MVPs with <5 minute latency
+
+description: |
+  Redis-based caching layer for real-time engagement metrics. Provides
+  sub-second access to current metrics for dashboard display without
+  hitting the database.
+
+responsibilities:
+  - "Cache current DAU, MAU, and session metrics in Redis"
+  - "Cache active session state for quick lookup"
+  - "Cache event stream for real-time processing"
+  - "Implement TTL policies for cache invalidation"
+  - "Provide fallback to database on cache miss"
+  - "Support cache warming on system startup"
+
+interfaces:
+  inputs:
+    - "Calculated metrics from Metrics Calculator"
+    - "Active sessions from Session Tracker"
+    - "Events from Event Collector"
+  
+  outputs:
+    - "Cached metrics with <100ms access time"
+    - "Active session state"
+    - "Real-time event queue"
+
+acceptance_criteria:
+  - criterion_id: AC-LAY-006-02-06-01
+    criterion: "Serve cached metrics with <100ms latency"
+    verification: "Cache read performance test"
+    test_type: "performance"
+    
+  - criterion_id: AC-LAY-006-02-06-02
+    criterion: "Maintain cache freshness with <5 second lag"
+    verification: "Cache update timing test"
+    test_type: "performance"
+    
+  - criterion_id: AC-LAY-006-02-06-03
+    criterion: "Handle cache miss with database fallback"
+    verification: "Cache miss fallback test"
+    test_type: "integration"
+    
+  - criterion_id: AC-LAY-006-02-06-04
+    criterion: "Implement appropriate TTL policies per metric type"
+    verification: "Cache expiration test"
+    test_type: "unit"
+
+technical_specification:
+  language: "Python 3.11+"
+  dependencies:
+    - "redis >= 5.0"
+    - "redis-py >= 5.0"
+  
+  class_structure:
+    EngagementCache:
+      methods:
+        - "__init__(redis_client: Redis, storage: EngagementStorage)"
+        - "cache_metric(mvp_id: str, metric_name: str, value: Any, ttl: int) -> None"
+        - "get_metric(mvp_id: str, metric_name: str) -> Optional[Any]"
+        - "cache_session(session: Session) -> None"
+        - "get_session(session_id: str) -> Optional[Session]"
+        - "invalidate_cache(mvp_id: str, metric_name: str) -> None"
+        - "warm_cache(mvp_id: str) -> None"
+
+  cache_keys:
+    metrics:
+      - "engagement:{mvp_id}:dau:{date} (TTL: 1 hour)"
+      - "engagement:{mvp_id}:mau:{month} (TTL: 6 hours)"
+      - "engagement:{mvp_id}:session_metrics (TTL: 5 minutes)"
+      - "engagement:{mvp_id}:bounce_rate (TTL: 5 minutes)"
+      - "engagement:{mvp_id}:retention:{cohort_date} (TTL: 1 day)"
+    
+    sessions:
+      - "session:{session_id} (TTL: 30 minutes)"
+      - "active_sessions:{mvp_id} (TTL: 5 minutes)"
+    
+    events:
+      - "event_stream:{mvp_id} (Redis Stream, no expiry)"
+
+testing_requirements:
+  unit_tests:
+    - "Test metric caching and retrieval"
+    - "Test cache TTL expiration"
+    - "Test cache invalidation"
+    - "Test session caching"
+  
+  integration_tests:
+    - "Test cache miss fallback to database"
+    - "Test cache warming on startup"
+    - "Test cache update from Real-Time Processor"
+  
+  performance_tests:
+    - "Measure cache read latency (<100ms)"
+    - "Test concurrent cache access"
+
+implementation_notes: |
+  - Use Redis hash for metric storage (efficient for multiple fields)
+  - Use Redis Streams for event queue (durable, ordered)
+  - Implement cache-aside pattern with database fallback
+  - Use Redis pipeline for batch cache updates
+  - Set conservative TTLs to balance freshness and load
+  - Implement cache warming job on system startup
+  - Monitor cache hit rate (target: >95%)
+  - Use Redis Sentinel or Cluster for high availability

@@ -1,0 +1,124 @@
+# LAYER-CA-006-03-01: Revenue Event Collector
+# ============================================
+
+metadata:
+  layer_id: LAYER-CA-006-03-01
+  layer_name: Revenue Event Collector
+  parent_feature: FEATURE-CA-006-03
+  parent_feature_name: Revenue & Conversion Tracking
+  parent_system: SYSTEM-CA-006
+  created_date: 2025-10-14
+  status: planned
+  priority: critical
+  complexity: medium
+
+traceability:
+  parent_feature_id: FEATURE-CA-006-03
+  parent_system_id: SYSTEM-CA-006
+  implements_acceptance_criteria:
+    - AC-FEAT-006-03-01  # Capture purchase, refund, subscription events
+    - AC-FEAT-006-03-07  # Provide revenue data with <5 minute latency
+  contributes_to_system_criteria:
+    - AC-SYS-006-01  # Metrics collected from all MVPs
+
+description: |
+  Revenue event ingestion service integrating with payment processors (Stripe, PayPal).
+  Captures purchase, refund, and subscription events with complete transaction details.
+
+responsibilities:
+  - "Receive Stripe webhooks for payment events"
+  - "Receive PayPal IPN/webhooks for transactions"
+  - "Validate webhook signatures for security"
+  - "Extract transaction details (amount, currency, items, customer)"
+  - "Queue revenue events for processing"
+  - "Handle duplicate events (idempotency)"
+
+interfaces:
+  inputs:
+    - "Stripe webhooks: checkout.session.completed, invoice.paid, etc."
+    - "PayPal webhooks: PAYMENT.SALE.COMPLETED, PAYMENT.SALE.REFUNDED"
+    - "Webhook signature for validation"
+  
+  outputs:
+    - "Normalized revenue events"
+    - "Queued events to Redis for processing"
+    - "Webhook acknowledgment responses"
+
+acceptance_criteria:
+  - criterion_id: AC-LAY-006-03-01-01
+    criterion: "Validate Stripe webhook signatures correctly"
+    verification: "Webhook signature validation test"
+    test_type: "integration"
+    
+  - criterion_id: AC-LAY-006-03-01-02
+    criterion: "Extract transaction details accurately from webhooks"
+    verification: "Data extraction test with sample webhooks"
+    test_type: "unit"
+    
+  - criterion_id: AC-LAY-006-03-01-03
+    criterion: "Handle duplicate events with idempotency keys"
+    verification: "Duplicate event test"
+    test_type: "unit"
+    
+  - criterion_id: AC-LAY-006-03-01-04
+    criterion: "Queue events with <1 second latency"
+    verification: "Event queuing performance test"
+    test_type: "performance"
+
+technical_specification:
+  language: "Python 3.11+"
+  dependencies:
+    - "stripe >= 7.0"
+    - "fastapi >= 0.104"
+    - "redis >= 5.0"
+    - "pydantic >= 2.4"
+  
+  class_structure:
+    RevenueEventCollector:
+      methods:
+        - "__init__(stripe_key: str, redis_client: Redis)"
+        - "handle_stripe_webhook(payload: bytes, signature: str) -> WebhookResponse"
+        - "handle_paypal_webhook(payload: dict, headers: dict) -> WebhookResponse"
+        - "validate_stripe_signature(payload: bytes, signature: str) -> bool"
+        - "extract_transaction_data(event: dict) -> RevenueEvent"
+        - "queue_revenue_event(event: RevenueEvent) -> str"
+        - "check_idempotency(event_id: str) -> bool"
+
+  data_models:
+    RevenueEvent:
+      fields:
+        - "event_id: str"
+        - "mvp_id: str"
+        - "customer_id: str"
+        - "event_type: str (purchase, refund, subscription_start, subscription_renewal, subscription_cancel)"
+        - "amount: Decimal"
+        - "currency: str"
+        - "items: List[dict]"
+        - "timestamp: datetime"
+        - "payment_processor: str (stripe, paypal)"
+        - "transaction_id: str"
+
+testing_requirements:
+  unit_tests:
+    - "Test Stripe webhook signature validation"
+    - "Test PayPal webhook validation"
+    - "Test transaction data extraction"
+    - "Test idempotency key checking"
+    - "Test event normalization across processors"
+  
+  integration_tests:
+    - "Test Stripe webhook end-to-end flow"
+    - "Test PayPal webhook end-to-end flow"
+    - "Test Redis event queuing"
+  
+  performance_tests:
+    - "Test webhook processing latency (<1 second)"
+
+implementation_notes: |
+  - Use Stripe SDK for webhook signature validation
+  - Store processed event IDs in Redis (TTL: 24 hours) for idempotency
+  - Use Decimal type for amounts (avoid floating point errors)
+  - Map Stripe/PayPal event types to common RevenueEvent schema
+  - Return 200 OK immediately after queuing (don't block webhook)
+  - Log all webhook payloads for debugging (exclude sensitive data)
+  - Implement retry logic for transient Redis failures

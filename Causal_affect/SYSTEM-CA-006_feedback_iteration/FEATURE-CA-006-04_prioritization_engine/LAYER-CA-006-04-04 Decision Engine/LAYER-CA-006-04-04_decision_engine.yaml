@@ -1,0 +1,130 @@
+# LAYER-CA-006-04-04: Decision Engine
+# ====================================
+
+metadata:
+  layer_id: LAYER-CA-006-04-04
+  layer_name: Decision Engine
+  parent_feature: FEATURE-CA-006-04
+  parent_feature_name: Automated Prioritization Engine
+  parent_system: SYSTEM-CA-006
+  created_date: 2025-10-14
+  status: planned
+  priority: critical
+  complexity: high
+
+traceability:
+  parent_feature_id: FEATURE-CA-006-04
+  parent_system_id: SYSTEM-CA-006
+  implements_acceptance_criteria:
+    - AC-FEAT-006-04-02  # Achieve >85% agreement with human expert prioritization
+    - AC-FEAT-006-04-04  # Identify bottom 10% with <5% false positive rate
+  contributes_to_system_criteria:
+    - AC-SYS-006-03  # Prioritization engine accurately identifies top performers (>85%)
+    - AC-SYS-006-04  # Automated archiving triggers after evaluation period
+    - AC-SYS-006-05  # False archive rate below 5%
+
+description: |
+  Decision-making engine that translates priority scores into actionable
+  workflows. Triggers iteration, monitoring, or archiving based on score,
+  trend, and business rules.
+
+responsibilities:
+  - "Assign priority actions (iterate, watch, maintain, archive)"
+  - "Evaluate archive trigger rules"
+  - "Support manual override for edge cases"
+  - "Track decision outcomes for learning"
+  - "Trigger workflows in FEATURE-05 (archive automation)"
+
+interfaces:
+  inputs:
+    - "MVP rankings from Ranking System"
+    - "Score trends from Ranking System"
+    - "Threshold rules from Threshold Manager"
+  
+  outputs:
+    - "Priority action per MVP (iterate, watch, maintain, archive)"
+    - "Archive trigger events for FEATURE-05"
+    - "Decision logs with rationale"
+    - "Manual override records"
+
+acceptance_criteria:
+  - criterion_id: AC-LAY-006-04-04-01
+    criterion: "Assign correct actions based on score and trend"
+    verification: "Decision logic test"
+    test_type: "unit"
+    
+  - criterion_id: AC-LAY-006-04-04-02
+    criterion: "Trigger archive workflow with <5% false positives"
+    verification: "Archive trigger precision test"
+    test_type: "validation"
+    
+  - criterion_id: AC-LAY-006-04-04-03
+    criterion: "Support manual override with audit trail"
+    verification: "Manual override test"
+    test_type: "integration"
+    
+  - criterion_id: AC-LAY-006-04-04-04
+    criterion: "Log all decisions with complete rationale"
+    verification: "Decision logging test"
+    test_type: "unit"
+
+technical_specification:
+  language: "Python 3.11+"
+  dependencies:
+    - "sqlalchemy >= 2.0"
+    - "celery >= 5.3"
+  
+  class_structure:
+    DecisionEngine:
+      methods:
+        - "__init__(threshold_manager: ThresholdManager)"
+        - "make_decision(mvp_id: str, score: float, trend: str) -> Decision"
+        - "evaluate_archive_triggers(mvp_id: str, historical_data: dict) -> bool"
+        - "apply_manual_override(mvp_id: str, action: str, reason: str) -> None"
+        - "trigger_workflow(mvp_id: str, action: str) -> str"
+        - "log_decision(decision: Decision) -> None"
+
+  data_models:
+    Decision:
+      fields:
+        - "mvp_id: str"
+        - "score: float"
+        - "trend: str"
+        - "action: str (iterate, watch, maintain, archive)"
+        - "rationale: str"
+        - "triggered_workflows: List[str]"
+        - "timestamp: datetime"
+        - "is_manual_override: bool"
+
+  decision_rules:
+    iterate: "Score >80"
+    watch: "Score 60-80 + positive trend"
+    maintain: "Score 40-60 + stable"
+    archive: "Score <20 OR (score <10 for 14+ days) OR (zero revenue 30+ days + low engagement) OR (negative growth 60+ days)"
+
+testing_requirements:
+  unit_tests:
+    - "Test decision logic for each action type"
+    - "Test archive trigger evaluation"
+    - "Test manual override application"
+    - "Test decision logging"
+  
+  integration_tests:
+    - "Test workflow triggering to FEATURE-05"
+    - "Test complete decision pipeline"
+  
+  validation_tests:
+    - "Validate decisions against expert human prioritization (>85% agreement)"
+    - "Validate archive triggers have <5% false positive rate"
+
+implementation_notes: |
+  - Archive triggers (any one triggers archive):
+    * Score <10 for 14+ consecutive days
+    * Zero revenue for 30+ days AND low engagement (<10th percentile)
+    * Negative growth for 60+ days
+    * Manual override from operator
+  - Store all decisions in PostgreSQL for audit trail
+  - Trigger Celery tasks for archive workflows
+  - Support manual override with mandatory reason field
+  - Implement decision review process (flag controversial decisions)
+  - Track decision outcomes for reinforcement learning

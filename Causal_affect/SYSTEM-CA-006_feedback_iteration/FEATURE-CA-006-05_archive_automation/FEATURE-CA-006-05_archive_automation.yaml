@@ -2,14 +2,19 @@
 # ================================================
 
 metadata:
-  feature_id: FEATURE-CA-006-05
-  feature_name: Archive & Cleanup Automation
+  requirement_id: FEATURE-CA-006-05
+  requirement_name: Archive & Cleanup Automation
+  requirement_type: Feature
   parent_system: SYSTEM-CA-006
-  parent_system_name: Feedback Collection & Iteration Orchestrator
-  created_date: 2025-10-14
+  parent_project: business_ventures
+  
+  team_size: small
+  risk_level: high
+  
+  estimated_effort_hours: 60
+  actual_effort_hours: 0
+  progress_percentage: 0
   status: planned
-  priority: high
-  estimated_layers: 4
 
 traceability:
   parent_system_id: SYSTEM-CA-006
@@ -157,80 +162,121 @@ technical_requirements:
       - "Mark MVP as active"
     rollback_sla: "<30 minutes to full restoration"
 
-layer_breakdown:
-  estimated_layers: 4
-  
-  layers:
-    - layer_id: LAYER-CA-006-05-01
-      layer_name: Archive Workflow Orchestrator
-      description: "Multi-stage workflow management with approval gates"
-      estimated_complexity: high
-      
-    - layer_id: LAYER-CA-006-05-02
-      layer_name: Infrastructure Cleanup Service
-      description: "Railway service shutdown and resource cleanup"
-      estimated_complexity: medium
-      
-    - layer_id: LAYER-CA-006-05-03
-      layer_name: Data Preservation Service
-      description: "Data export, archival, and integrity verification"
-      estimated_complexity: medium
-      
-    - layer_id: LAYER-CA-006-05-04
-      layer_name: Notification Service
-      description: "Multi-channel notifications for archive events"
-      estimated_complexity: low
-
-dependencies:
-  internal:
-    - "FEATURE-CA-006-04 (receives archive triggers)"
-    - "SYSTEM-CA-005 (MVP Generation for infrastructure knowledge)"
-  
-  external:
-    - "Railway API for service management"
-    - "AWS S3 for archive storage"
-    - "Email service for notifications"
-    - "PostgreSQL for archive metadata"
-    - "Celery for workflow orchestration"
-
 testing_requirements:
   unit_tests:
-    - "Test workflow stage transitions"
-    - "Test approval logic (manual and auto)"
-    - "Test data export completeness"
-    - "Test infrastructure cleanup logic"
+    required: true
+    minimum_count: 30
+    coverage_threshold: 90
+    focus_areas:
+      - "Workflow stage transitions"
+      - "Approval logic (manual and auto-approve)"
+      - "Data export completeness validation"
+      - "Infrastructure cleanup logic"
+      - "Rollback restoration logic"
+      - "Notification generation"
     
   integration_tests:
-    - "Test end-to-end archive workflow"
-    - "Test data preservation and verification"
-    - "Test Railway service shutdown"
-    - "Test rollback from archive"
-    - "Test notification delivery"
-    
-  safety_tests:
-    - "Test false positive prevention (recent growth ignored)"
-    - "Test data loss prevention (verify before delete)"
-    - "Test rollback data integrity"
-    - "Test concurrent archive operations"
-    
-  performance_tests:
-    - "Measure archive workflow completion time"
-    - "Test data export speed for large datasets"
-    - "Verify <10 minute total workflow time"
+    required: true
+    minimum_count: 15
+    coverage_threshold: 85
+    focus_areas:
+      - "End-to-end archive workflow (6 stages)"
+      - "Data preservation and integrity verification"
+      - "Railway service shutdown and cleanup"
+      - "Rollback from archive (7-day window)"
+      - "Notification delivery (email, Slack)"
+      - "Concurrent archive operations (safety)"
+      
+  e2e_tests:
+    required: true
+    minimum_count: 5
+    focus_areas:
+      - "Complete archive workflow with manual approval"
+      - "Auto-approve workflow for low-risk archives"
+      - "False positive prevention test (recent growth ignored)"
+      - "Data loss prevention (verify before delete)"
+      - "Rollback workflow from archive to active (<30 min SLA)"
 
-implementation_notes: |
-  1. Implement idempotent workflow steps (safe to retry)
-  2. Use database transactions for state changes
-  3. Add comprehensive logging at each workflow stage
-  4. Implement exponential backoff for retries
-  5. Support dry-run mode for testing
-  6. Create detailed restoration documentation
-  7. Implement archive analytics for false positive tracking
-  8. Add safety checks before irreversible operations
-  9. Support bulk archive operations for efficiency
-  10. Implement archive cost tracking and reporting
+quality_gates:
+  no_mocks_unless_specified: false
+  mock_policy: "Railway API, AWS S3, email/Slack can be mocked. Workflow orchestration, data integrity checks, and rollback logic must use real implementations. CRITICAL: Dry-run mode required for testing to prevent accidental deletion."
+  real_failing_tests_required: true
+  tdd_cycle_enforcement: true
+  safety_critical: true
 
-estimated_effort:
-  development_days: 2
-  testing_days: 1
-  total_days: 3
+layers:
+  - layer_id: LAYER-CA-006-05-01
+    name: Archive Workflow Orchestrator
+    description: "Multi-stage workflow management (6 stages: review, approval, notification, export, cleanup, finalization) with approval gates (manual or auto-approve). Supports rollback within 7-day window."
+    priority: critical
+    estimated_hours: 20
+    requirement_file: FEATURE-CA-006-05_archive_automation.yaml
+    
+  - layer_id: LAYER-CA-006-05-02
+    name: Infrastructure Cleanup Service
+    description: "Railway service shutdown and resource cleanup. Gracefully stops services, deletes deployments, removes domain routing, cleans database connections, cancels scheduled jobs."
+    priority: high
+    estimated_hours: 16
+    requirement_file: FEATURE-CA-006-05_archive_automation.yaml
+    
+  - layer_id: LAYER-CA-006-05-03
+    name: Data Preservation Service
+    description: "Data export to AWS S3, archival with encryption, integrity verification. Preserves analytics, revenue data, user feedback, source code, configs (encrypted). Generates manifest with restoration instructions."
+    priority: critical
+    estimated_hours: 18
+    requirement_file: FEATURE-CA-006-05_archive_automation.yaml
+    
+  - layer_id: LAYER-CA-006-05-04
+    name: Notification Service
+    description: "Multi-channel notifications for archive events (email, Slack). Sends archive review, approval request, completion confirmation. Includes rollback instructions in notifications."
+    priority: medium
+    estimated_hours: 6
+    requirement_file: FEATURE-CA-006-05_archive_automation.yaml
+
+implementation_notes:
+  design_decisions:
+    - "Implement idempotent workflow steps (safe to retry, no side effects)"
+    - "Use database transactions for state changes (atomic operations)"
+    - "Comprehensive logging at each workflow stage for audit trail"
+    - "Exponential backoff for retries (1s, 2s, 4s, 8s, 16s)"
+    - "Support dry-run mode for testing (simulates without deletion)"
+    - "Create detailed restoration documentation in manifest"
+    - "Implement archive analytics for false positive tracking (monitor <5% false rate)"
+    - "Add safety checks before irreversible operations (require confirmation)"
+    - "Support bulk archive operations for efficiency (batch low-performers)"
+    - "Implement archive cost tracking and reporting (AWS S3 storage costs)"
+    
+  code_structure:
+    - "workflow_orchestrator.py: Multi-stage workflow, state machine, approval gates"
+    - "infrastructure_cleanup.py: Railway API integration, service shutdown"
+    - "data_preservation.py: S3 export, encryption, integrity verification"
+    - "notification_service.py: Email/Slack notifications, message formatting"
+
+dependencies:
+  external_libraries:
+    - "celery: Workflow orchestration and async task execution"
+    - "railway-python: Railway API for service management"
+    - "boto3: AWS S3 for archive storage"
+    - "sendgrid: Email notifications"
+    - "slack-sdk: Slack notifications"
+    - "sqlalchemy: Archive metadata persistence"
+    - "pydantic: Workflow validation and state management"
+    
+  configuration:
+    - "Railway API key for infrastructure cleanup"
+    - "AWS S3 bucket for archive storage (with encryption)"
+    - "SendGrid API key for email notifications"
+    - "Slack webhook URL for team notifications"
+    - "PostgreSQL connection for archive metadata"
+    - "Approval settings: auto-approve threshold (score <5), manual threshold (score 5-15)"
+    - "Rollback window: 7 days"
+
+success_criteria:
+  - "Archive workflow completes in <10 minutes (6 stages)"
+  - "Data preservation: 100% completeness, verified integrity checks"
+  - "Rollback capability: <30 minutes from archive to active (7-day window)"
+  - "False archive rate: <5% (no healthy MVPs archived)"
+  - "Infrastructure cleanup: 100% resource deallocation (no orphaned services)"
+  - "Notifications: delivered within 2 minutes of stage transitions"
+  - "Dry-run mode: simulates archive without deletion (safety testing)"
+  - "Archive analytics: tracks false positive rate, avg workflow time, rollback frequency"
