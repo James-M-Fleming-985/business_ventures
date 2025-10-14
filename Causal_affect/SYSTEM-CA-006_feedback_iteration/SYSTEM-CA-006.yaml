@@ -29,16 +29,168 @@ deployment:
   railway_config_backend:
     builder: NIXPACKS
     build_command: "pip install -r requirements.txt"
-    start_command: "uvicorn app.feedback:app --host 0.0.0.0 --port $PORT"
+    start_command: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
     health_check: "/health"
     restart_policy: ON_FAILURE
   
   railway_config_frontend:
     builder: NIXPACKS
     build_command: "npm install && npm run build"
-    start_command: "npm start"
+    start_command: "npm run preview -- --host 0.0.0.0 --port $PORT"
     health_check: "/"
     restart_policy: ON_FAILURE
+
+code_generation:
+  repository_root: "/workspaces/business_ventures/Causal_affect"
+  system_folder: "SYSTEM-CA-006_feedback_iteration"
+  
+  folder_structure:
+    requirements:
+      base_path: "SYSTEM-CA-006_feedback_iteration/requirements"
+      description: "FEATURE and LAYER YAML files generated from this SYSTEM"
+      file_patterns:
+        - "FEATURE-CA-006-*.yaml"
+        - "LAYER-CA-006-*.yaml"
+      example_files:
+        - "FEATURE-CA-006-01_analytics_integration.yaml"
+        - "LAYER-CA-006-01-01_google_analytics_client.yaml"
+    
+    source_backend:
+      base_path: "src/feedback_iteration/backend"
+      description: "FastAPI backend implementation"
+      entry_point: "app/main.py"
+      structure:
+        app:
+          - "__init__.py"
+          - "main.py          # FastAPI app instance, lifespan, routers"
+          - "config.py        # Pydantic Settings for environment configuration"
+          - "api/             # API route handlers"
+          - "services/        # Business logic (analytics clients, prioritization)"
+          - "models/          # Pydantic models for request/response/database"
+          - "db/              # Database connections, migrations, repositories"
+        root_files:
+          - "requirements.txt # Python dependencies"
+          - "Dockerfile.dev   # Development container"
+          - ".env.example     # Environment variable template"
+      
+    source_frontend:
+      base_path: "src/feedback_iteration/frontend"
+      description: "React + Vite + TypeScript frontend"
+      entry_point: "src/main.tsx"
+      structure:
+        src:
+          - "main.tsx         # React entry point"
+          - "App.tsx          # Root component with routing"
+          - "config.ts        # Frontend configuration"
+          - "components/      # React components (Dashboard, Metrics, Charts)"
+          - "services/        # API client, WebSocket for real-time updates"
+          - "stores/          # Zustand state management"
+          - "types/           # TypeScript type definitions"
+        root_files:
+          - "package.json     # NPM dependencies"
+          - "vite.config.ts   # Vite build configuration"
+          - "tsconfig.json    # TypeScript configuration"
+          - "Dockerfile.dev   # Development container"
+          - ".env.example     # Environment variable template"
+    
+    configuration:
+      base_path: "src/feedback_iteration"
+      description: "Deployment and development configuration"
+      files:
+        - "railway.json           # Railway deployment configuration"
+        - "docker-compose.dev.yml # Local development environment"
+        - "README.md              # How to run CA-006 locally and deploy"
+        - ".gitignore             # Git ignore patterns"
+    
+    tests:
+      base_path: "tests/feedback_iteration"
+      description: "Test files mirroring source structure"
+      structure:
+        backend:
+          - "test_analytics.py        # Analytics integration tests"
+          - "test_metrics.py          # Metrics collection tests"
+          - "test_prioritization.py   # Prioritization engine tests"
+          - "test_integration.py      # End-to-end integration tests"
+        frontend:
+          - "Dashboard.test.tsx       # Dashboard component tests"
+          - "MetricsCard.test.tsx     # Metrics card tests"
+          - "api.test.ts              # API client tests"
+    
+    documentation:
+      base_path: "SYSTEM-CA-006_feedback_iteration/docs"
+      description: "System-specific documentation"
+      files:
+        - "architecture.md     # System architecture and design decisions"
+        - "api-design.md       # API endpoint specifications"
+        - "deployment-guide.md # Railway deployment instructions"
+        - "analytics-setup.md  # Analytics provider configuration"
+  
+  file_naming_conventions:
+    python_modules: "lowercase_with_underscores.py"
+    python_classes: "PascalCase"
+    python_functions: "snake_case"
+    typescript_files: "PascalCase.tsx or camelCase.ts"
+    react_components: "PascalCase.tsx"
+    test_files: "test_*.py or *.test.tsx"
+    yaml_files: "FEATURE-CA-006-XX.yaml or LAYER-CA-006-XX-YY.yaml"
+  
+  technology_stack:
+    backend:
+      language: "Python 3.11+"
+      framework: "FastAPI 0.104+"
+      validation: "Pydantic 2.0+"
+      database_orm: "SQLAlchemy 2.0+"
+      migrations: "Alembic"
+      testing: "pytest, pytest-asyncio"
+      linting: "ruff, black, mypy"
+    
+    frontend:
+      language: "TypeScript 5.0+"
+      framework: "React 18+"
+      build_tool: "Vite 5+"
+      styling: "TailwindCSS 3+"
+      state_management: "Zustand"
+      charts: "Recharts"
+      testing: "Vitest, React Testing Library"
+      linting: "ESLint, Prettier"
+    
+    infrastructure:
+      deployment: "Railway"
+      database: "PostgreSQL 15+ (Railway)"
+      cache: "Redis (Railway)"
+      analytics: "Google Analytics, Mixpanel, Amplitude"
+  
+  configuration_management:
+    approach: "Environment-based configuration via Pydantic Settings"
+    no_main_py: true
+    explanation: |
+      DO NOT create a main.py at repository root. Each service has its own entry point:
+      - Backend: uvicorn app.main:app (defined in railway.json)
+      - Frontend: npm run dev or npm run preview (defined in package.json)
+      
+      Configuration is loaded from environment variables using Pydantic Settings:
+      - Development: .env files with docker-compose.dev.yml
+      - Production: Railway environment variables
+      
+      This prevents version confusion and ensures dev/prod parity.
+    
+    environment_files:
+      backend_env_example: |
+        # Backend .env.example
+        ENVIRONMENT=development
+        LOG_LEVEL=debug
+        DATABASE_URL=postgresql://user:pass@postgres:5432/ca006
+        REDIS_URL=redis://redis:6379
+        GOOGLE_ANALYTICS_ID=UA-XXXXXXXXX-X
+        MIXPANEL_TOKEN=your_mixpanel_token
+        AMPLITUDE_API_KEY=your_amplitude_key
+        CORS_ORIGINS=["http://localhost:5173"]
+      
+      frontend_env_example: |
+        # Frontend .env.example
+        VITE_API_URL=http://localhost:8000
+        VITE_WS_URL=ws://localhost:8000/ws
+        VITE_ENVIRONMENT=development
 
 system_requirements:
   performance_phase_1:
