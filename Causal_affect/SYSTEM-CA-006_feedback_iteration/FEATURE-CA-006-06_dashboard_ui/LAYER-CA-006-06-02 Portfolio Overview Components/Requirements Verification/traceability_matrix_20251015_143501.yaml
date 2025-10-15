@@ -1,0 +1,323 @@
+matrix_metadata:
+  timestamp: '20251015_143501'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-LAY-006-06-02-01
+  requirement: PortfolioView renders all 5 stat cards with correct values
+  description: PortfolioView renders all 5 stat cards with correct values
+  test_files: &id001
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-02
+    Portfolio Overview Components/tests/test_generated_20251015_143425.py
+  test_methods:
+  - test_ac-lay-006-06-02-01
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-06-02-02
+  requirement: StatCard displays trend arrow correctly (up=green, down=red)
+  description: StatCard displays trend arrow correctly (up=green, down=red)
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-06-02-02
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-06-02-03
+  requirement: TopPerformersTable displays top 25 MVPs sorted by score
+  description: TopPerformersTable displays top 25 MVPs sorted by score
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-06-02-03
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-06-02-04
+  requirement: TopPerformersTable navigation works on row click
+  description: TopPerformersTable navigation works on row click
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-06-02-04
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-06-02-05
+  requirement: ArchiveCandidatesTable shows only MVPs with score <10
+  description: ArchiveCandidatesTable shows only MVPs with score <10
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-06-02-05
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-06-02-06
+  requirement: Archive approve/reject actions call API correctly
+  description: Archive approve/reject actions call API correctly
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-06-02-06
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-06-02-07
+  requirement: Portfolio trends charts render 30 data points
+  description: Portfolio trends charts render 30 data points
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-06-02-07
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-06-02-08
+  requirement: Loading skeletons display while data is fetching
+  description: Loading skeletons display while data is fetching
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-06-02-08
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-06-02-09
+  requirement: Responsive grid adapts to desktop/tablet/mobile
+  description: Responsive grid adapts to desktop/tablet/mobile
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-06-02-09
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-02
+    Portfolio Overview Components/src/implementation.py
+  lines: 438
+  methods:
+  - name: __init__
+    lines: 11-25
+  - name: get_trend_color
+    lines: 26-38
+  - name: render
+    lines: 39-49
+  - name: __init__
+    lines: 53-63
+  - name: get_top_performers
+    lines: 64-76
+  - name: handle_row_click
+    lines: 77-86
+  - name: render
+    lines: 87-94
+  - name: __init__
+    lines: 98-108
+  - name: get_archive_candidates
+    lines: 109-117
+  - name: approve_archive
+    lines: 118-131
+  - name: reject_archive
+    lines: 132-145
+  - name: render
+    lines: 146-153
+  - name: __init__
+    lines: 157-165
+  - name: get_chart_data
+    lines: 166-179
+  - name: render
+    lines: 180-188
+  - name: __init__
+    lines: 192-200
+  - name: show
+    lines: 201-204
+  - name: hide
+    lines: 205-208
+  - name: render
+    lines: 209-213
+  - name: __init__
+    lines: 217-226
+  - name: set_breakpoint
+    lines: 227-236
+  - name: get_columns
+    lines: 237-250
+  - name: render
+    lines: 251-259
+  - name: __init__
+    lines: 263-284
+  - name: _initialize_components
+    lines: 285-291
+  - name: _create_stat_cards
+    lines: 292-328
+  - name: _create_top_performers_table
+    lines: 329-336
+  - name: _create_archive_candidates_table
+    lines: 337-344
+  - name: _create_trends_chart
+    lines: 345-349
+  - name: _handle_mvp_navigation
+    lines: 350-358
+  - name: set_loading
+    lines: 359-371
+  - name: set_breakpoint
+    lines: 372-380
+  - name: get_stat_cards
+    lines: 381-389
+  - name: render
+    lines: 390-411
+  - name: approve_archive
+    lines: 415-426
+  - name: reject_archive
+    lines: 427-437
+  classes:
+  - name: StatCard
+    type: class
+    lines: 8-49
+  - name: TopPerformersTable
+    type: class
+    lines: 50-94
+  - name: ArchiveCandidatesTable
+    type: class
+    lines: 95-153
+  - name: PortfolioTrendsChart
+    type: class
+    lines: 154-188
+  - name: LoadingSkeleton
+    type: class
+    lines: 189-213
+  - name: ResponsiveGrid
+    type: class
+    lines: 214-259
+  - name: PortfolioView
+    type: class
+    lines: 260-411
+  - name: APIClient
+    type: class
+    lines: 412-438
+  implements_requirements:
+  - AC-LAY-006-06-02-01
+  - AC-LAY-006-06-02-02
+  - AC-LAY-006-06-02-03
+  - AC-LAY-006-06-02-04
+  - AC-LAY-006-06-02-05
+  - AC-LAY-006-06-02-06
+  - AC-LAY-006-06-02-07
+  - AC-LAY-006-06-02-08
+  - AC-LAY-006-06-02-09
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-02
+    Portfolio Overview Components/tests/test_generated_20251015_143425.py
+  test_count: 0
+  implementation_files:
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-02
+    Portfolio Overview Components/src/implementation.py
+  methods_tested:
+  - __init__
+  - get_trend_color
+  - render
+  - __init__
+  - get_top_performers
+  - handle_row_click
+  - render
+  - __init__
+  - get_archive_candidates
+  - approve_archive
+  - reject_archive
+  - render
+  - __init__
+  - get_chart_data
+  - render
+  - __init__
+  - show
+  - hide
+  - render
+  - __init__
+  - set_breakpoint
+  - get_columns
+  - render
+  - __init__
+  - _initialize_components
+  - _create_stat_cards
+  - _create_top_performers_table
+  - _create_archive_candidates_table
+  - _create_trends_chart
+  - _handle_mvp_navigation
+  - set_loading
+  - set_breakpoint
+  - get_stat_cards
+  - render
+  - approve_archive
+  - reject_archive
+  classes_tested:
+  - StatCard
+  - TopPerformersTable
+  - ArchiveCandidatesTable
+  - PortfolioTrendsChart
+  - LoadingSkeleton
+  - ResponsiveGrid
+  - PortfolioView
+  - APIClient
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-02
+    Portfolio Overview Components/src/implementation.py:11-25
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-02
+    Portfolio Overview Components/tests/test_generated_20251015_143425.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-02
+    Portfolio Overview Components/src/implementation.py:26-38
+  method_name: get_trend_color
+  requirement: AC-001
+  test: test_get_trend_color
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-02
+    Portfolio Overview Components/tests/test_generated_20251015_143425.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-02
+    Portfolio Overview Components/src/implementation.py:39-49
+  method_name: render
+  requirement: AC-001
+  test: test_render
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-02
+    Portfolio Overview Components/tests/test_generated_20251015_143425.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-02
+    Portfolio Overview Components/src/implementation.py:53-63
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-02
+    Portfolio Overview Components/tests/test_generated_20251015_143425.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-02
+    Portfolio Overview Components/src/implementation.py:64-76
+  method_name: get_top_performers
+  requirement: AC-001
+  test: test_get_top_performers
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-02
+    Portfolio Overview Components/tests/test_generated_20251015_143425.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 9
+  requirements_traced: 9
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

@@ -1,0 +1,175 @@
+matrix_metadata:
+  timestamp: '20251015_114115'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-LAY-006-03-03-01
+  requirement: Calculate CAC accurately with 3 attribution models
+  description: Calculate CAC accurately with 3 attribution models
+  test_files: &id001
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-03
+    Financial Metrics Calculator/tests/test_generated_20251015_114031.py
+  test_methods:
+  - test_ac-lay-006-03-03-01
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-03-03-02
+  requirement: Estimate LTV using cohort analysis (90-day minimum)
+  description: Estimate LTV using cohort analysis (90-day minimum)
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-03-03-02
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-03-03-03
+  requirement: Calculate MRR and ARR for subscription products
+  description: Calculate MRR and ARR for subscription products
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-03-03-03
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-03-03-04
+  requirement: Generate cohort retention curves accurately
+  description: Generate cohort retention curves accurately
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-03-03-04
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-03
+    Financial Metrics Calculator/src/implementation.py
+  lines: 394
+  methods:
+  - name: __init__
+    lines: 18-21
+  - name: calculate_cac
+    lines: 22-68
+  - name: _apply_attribution_model
+    lines: 69-85
+  - name: _first_touch_attribution
+    lines: 86-94
+  - name: _last_touch_attribution
+    lines: 95-103
+  - name: _linear_attribution
+    lines: 104-130
+  - name: estimate_ltv
+    lines: 131-203
+  - name: calculate_mrr
+    lines: 204-271
+  - name: calculate_monthly_value
+    lines: 236-271
+  - name: calculate_arr
+    lines: 272-304
+  - name: generate_cohort_retention_curve
+    lines: 305-354
+  - name: calculate_cohort_metrics
+    lines: 355-384
+  - name: calculate_cac
+    lines: 385-395
+  classes:
+  - name: AttributionModel
+    type: class
+    lines: 9-14
+  - name: FinancialMetricsCalculator
+    type: class
+    lines: 15-394
+  implements_requirements:
+  - AC-LAY-006-03-03-01
+  - AC-LAY-006-03-03-02
+  - AC-LAY-006-03-03-03
+  - AC-LAY-006-03-03-04
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-03
+    Financial Metrics Calculator/tests/test_generated_20251015_114031.py
+  test_count: 0
+  implementation_files:
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-03
+    Financial Metrics Calculator/src/implementation.py
+  methods_tested:
+  - __init__
+  - calculate_cac
+  - _apply_attribution_model
+  - _first_touch_attribution
+  - _last_touch_attribution
+  - _linear_attribution
+  - estimate_ltv
+  - calculate_mrr
+  - calculate_monthly_value
+  - calculate_arr
+  - generate_cohort_retention_curve
+  - calculate_cohort_metrics
+  - calculate_cac
+  classes_tested:
+  - AttributionModel
+  - FinancialMetricsCalculator
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-03
+    Financial Metrics Calculator/src/implementation.py:18-21
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-03
+    Financial Metrics Calculator/tests/test_generated_20251015_114031.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-03
+    Financial Metrics Calculator/src/implementation.py:22-68
+  method_name: calculate_cac
+  requirement: AC-001
+  test: test_calculate_cac
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-03
+    Financial Metrics Calculator/tests/test_generated_20251015_114031.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-03
+    Financial Metrics Calculator/src/implementation.py:69-85
+  method_name: _apply_attribution_model
+  requirement: AC-001
+  test: test__apply_attribution_model
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-03
+    Financial Metrics Calculator/tests/test_generated_20251015_114031.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-03
+    Financial Metrics Calculator/src/implementation.py:86-94
+  method_name: _first_touch_attribution
+  requirement: AC-001
+  test: test__first_touch_attribution
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-03
+    Financial Metrics Calculator/tests/test_generated_20251015_114031.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-03
+    Financial Metrics Calculator/src/implementation.py:95-103
+  method_name: _last_touch_attribution
+  requirement: AC-001
+  test: test__last_touch_attribution
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-03
+    Financial Metrics Calculator/tests/test_generated_20251015_114031.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 4
+  requirements_traced: 4
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

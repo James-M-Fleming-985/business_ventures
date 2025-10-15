@@ -1,0 +1,159 @@
+matrix_metadata:
+  timestamp: '20251015_120101'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-LAY-006-05-03-01
+  requirement: Export 100% of MVP data without loss
+  description: Export 100% of MVP data without loss
+  test_files: &id001
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-03
+    Data Preservation Service/tests/test_generated_20251015_120015.py
+  test_methods:
+  - test_ac-lay-006-05-03-01
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-05-03-02
+  requirement: Verify data integrity with SHA-256 checksums
+  description: Verify data integrity with SHA-256 checksums
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-05-03-02
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-05-03-03
+  requirement: Encrypt sensitive data (configs, secrets)
+  description: Encrypt sensitive data (configs, secrets)
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-05-03-03
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-05-03-04
+  requirement: Generate complete restoration documentation
+  description: Generate complete restoration documentation
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-05-03-04
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-03
+    Data Preservation Service/src/implementation.py
+  lines: 465
+  methods:
+  - name: __init__
+    lines: 17-33
+  - name: calculate_checksum
+    lines: 34-45
+  - name: calculate_file_checksum
+    lines: 46-61
+  - name: encrypt_data
+    lines: 62-73
+  - name: decrypt_data
+    lines: 74-85
+  - name: export_data
+    lines: 86-96
+  - name: verify_integrity
+    lines: 189-199
+  - name: restore_data
+    lines: 314-404
+  - name: _generate_restoration_docs
+    lines: 405-415
+  classes:
+  - name: DataPreservationService
+    type: class
+    lines: 14-465
+  implements_requirements:
+  - AC-LAY-006-05-03-01
+  - AC-LAY-006-05-03-02
+  - AC-LAY-006-05-03-03
+  - AC-LAY-006-05-03-04
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-03
+    Data Preservation Service/tests/test_generated_20251015_120015.py
+  test_count: 0
+  implementation_files:
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-03
+    Data Preservation Service/src/implementation.py
+  methods_tested:
+  - __init__
+  - calculate_checksum
+  - calculate_file_checksum
+  - encrypt_data
+  - decrypt_data
+  - export_data
+  - verify_integrity
+  - restore_data
+  - _generate_restoration_docs
+  classes_tested:
+  - DataPreservationService
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-03
+    Data Preservation Service/src/implementation.py:17-33
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-03
+    Data Preservation Service/tests/test_generated_20251015_120015.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-03
+    Data Preservation Service/src/implementation.py:34-45
+  method_name: calculate_checksum
+  requirement: AC-001
+  test: test_calculate_checksum
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-03
+    Data Preservation Service/tests/test_generated_20251015_120015.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-03
+    Data Preservation Service/src/implementation.py:46-61
+  method_name: calculate_file_checksum
+  requirement: AC-001
+  test: test_calculate_file_checksum
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-03
+    Data Preservation Service/tests/test_generated_20251015_120015.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-03
+    Data Preservation Service/src/implementation.py:62-73
+  method_name: encrypt_data
+  requirement: AC-001
+  test: test_encrypt_data
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-03
+    Data Preservation Service/tests/test_generated_20251015_120015.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-03
+    Data Preservation Service/src/implementation.py:74-85
+  method_name: decrypt_data
+  requirement: AC-001
+  test: test_decrypt_data
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-03
+    Data Preservation Service/tests/test_generated_20251015_120015.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 4
+  requirements_traced: 4
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

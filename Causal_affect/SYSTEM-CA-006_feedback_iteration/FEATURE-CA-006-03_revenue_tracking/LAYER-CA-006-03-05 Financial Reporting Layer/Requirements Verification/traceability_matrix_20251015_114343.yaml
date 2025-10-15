@@ -1,0 +1,179 @@
+matrix_metadata:
+  timestamp: '20251015_114343'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-LAY-006-03-05-01
+  requirement: Provide dashboard data with <5 minute latency
+  description: Provide dashboard data with <5 minute latency
+  test_files: &id001
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-05
+    Financial Reporting Layer/tests/test_generated_20251015_114306.py
+  test_methods:
+  - test_ac-lay-006-03-05-01
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-03-05-02
+  requirement: Generate revenue forecasts with reasonable accuracy
+  description: Generate revenue forecasts with reasonable accuracy
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-03-05-02
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-03-05-03
+  requirement: Detect revenue anomalies (>20% deviation)
+  description: Detect revenue anomalies (>20% deviation)
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-03-05-03
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-03-05-04
+  requirement: Format cohort analysis for dashboard visualization
+  description: Format cohort analysis for dashboard visualization
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-03-05-04
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-05
+    Financial Reporting Layer/src/implementation.py
+  lines: 353
+  methods:
+  - name: to_dict
+    lines: 25-31
+  - name: to_dict
+    lines: 39-45
+  - name: to_dict
+    lines: 53-60
+  - name: to_dict
+    lines: 69-74
+  - name: __init__
+    lines: 76-79
+  - name: get_dashboard_data
+    lines: 80-133
+  - name: generate_revenue_forecast
+    lines: 134-222
+  - name: detect_revenue_anomalies
+    lines: 223-292
+  - name: format_cohort_analysis
+    lines: 293-303
+  classes:
+  - name: AnomalyType
+    type: class
+    lines: 10-16
+  - name: DashboardData
+    type: class
+    lines: 17-31
+  - name: RevenueForecast
+    type: class
+    lines: 32-45
+  - name: RevenueAnomaly
+    type: class
+    lines: 46-60
+  - name: CohortAnalysis
+    type: class
+    lines: 61-74
+  - name: FinancialReportingLayer
+    type: class
+    lines: 75-353
+  implements_requirements:
+  - AC-LAY-006-03-05-01
+  - AC-LAY-006-03-05-02
+  - AC-LAY-006-03-05-03
+  - AC-LAY-006-03-05-04
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-05
+    Financial Reporting Layer/tests/test_generated_20251015_114306.py
+  test_count: 0
+  implementation_files:
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-05
+    Financial Reporting Layer/src/implementation.py
+  methods_tested:
+  - to_dict
+  - to_dict
+  - to_dict
+  - to_dict
+  - __init__
+  - get_dashboard_data
+  - generate_revenue_forecast
+  - detect_revenue_anomalies
+  - format_cohort_analysis
+  classes_tested:
+  - AnomalyType
+  - DashboardData
+  - RevenueForecast
+  - RevenueAnomaly
+  - CohortAnalysis
+  - FinancialReportingLayer
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-05
+    Financial Reporting Layer/src/implementation.py:25-31
+  method_name: to_dict
+  requirement: AC-001
+  test: test_to_dict
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-05
+    Financial Reporting Layer/tests/test_generated_20251015_114306.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-05
+    Financial Reporting Layer/src/implementation.py:39-45
+  method_name: to_dict
+  requirement: AC-001
+  test: test_to_dict
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-05
+    Financial Reporting Layer/tests/test_generated_20251015_114306.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-05
+    Financial Reporting Layer/src/implementation.py:53-60
+  method_name: to_dict
+  requirement: AC-001
+  test: test_to_dict
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-05
+    Financial Reporting Layer/tests/test_generated_20251015_114306.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-05
+    Financial Reporting Layer/src/implementation.py:69-74
+  method_name: to_dict
+  requirement: AC-001
+  test: test_to_dict
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-05
+    Financial Reporting Layer/tests/test_generated_20251015_114306.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-05
+    Financial Reporting Layer/src/implementation.py:76-79
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-05
+    Financial Reporting Layer/tests/test_generated_20251015_114306.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 4
+  requirements_traced: 4
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

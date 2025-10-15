@@ -1,0 +1,182 @@
+matrix_metadata:
+  timestamp: '20251015_143338'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-LAY-006-06-01-01
+  requirement: React app renders without errors on all routes
+  description: React app renders without errors on all routes
+  test_files: &id001
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-01
+    Dashboard Container & Routing/tests/test_generated_20251015_143255.py
+  test_methods:
+  - test_ac-lay-006-06-01-01
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-06-01-02
+  requirement: Routing navigates correctly between portfolio and MVP detail
+  description: Routing navigates correctly between portfolio and MVP detail
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-06-01-02
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-06-01-03
+  requirement: Responsive layout adapts to desktop (>1024px), tablet (768-1024px),
+    mobile (<768px)
+  description: Responsive layout adapts to desktop (>1024px), tablet (768-1024px),
+    mobile (<768px)
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-06-01-03
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-06-01-04
+  requirement: Header displays logo, user menu, and notifications
+  description: Header displays logo, user menu, and notifications
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-06-01-04
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-06-01-05
+  requirement: Mobile navigation drawer opens/closes on toggle
+  description: Mobile navigation drawer opens/closes on toggle
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-06-01-05
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-06-01-06
+  requirement: Zustand stores initialize with default values
+  description: Zustand stores initialize with default values
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-06-01-06
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-06-01-07
+  requirement: Error boundary catches and displays errors gracefully
+  description: Error boundary catches and displays errors gracefully
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-06-01-07
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-01
+    Dashboard Container & Routing/src/implementation.py
+  lines: 513
+  methods:
+  - name: create_react_app_structure
+    lines: 9-106
+  - name: setup_react_project
+    lines: 467-487
+  - name: install_dependencies
+    lines: 488-497
+  - name: build_project
+    lines: 498-507
+  - name: run_tests
+    lines: 508-518
+  classes:
+  - name: ErrorBoundary
+    type: class
+    lines: 107-513
+  implements_requirements:
+  - AC-LAY-006-06-01-01
+  - AC-LAY-006-06-01-02
+  - AC-LAY-006-06-01-03
+  - AC-LAY-006-06-01-04
+  - AC-LAY-006-06-01-05
+  - AC-LAY-006-06-01-06
+  - AC-LAY-006-06-01-07
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-01
+    Dashboard Container & Routing/tests/test_generated_20251015_143255.py
+  test_count: 0
+  implementation_files:
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-01
+    Dashboard Container & Routing/src/implementation.py
+  methods_tested:
+  - create_react_app_structure
+  - setup_react_project
+  - install_dependencies
+  - build_project
+  - run_tests
+  classes_tested:
+  - ErrorBoundary
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-01
+    Dashboard Container & Routing/src/implementation.py:9-106
+  method_name: create_react_app_structure
+  requirement: AC-001
+  test: test_create_react_app_structure
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-01
+    Dashboard Container & Routing/tests/test_generated_20251015_143255.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-01
+    Dashboard Container & Routing/src/implementation.py:467-487
+  method_name: setup_react_project
+  requirement: AC-001
+  test: test_setup_react_project
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-01
+    Dashboard Container & Routing/tests/test_generated_20251015_143255.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-01
+    Dashboard Container & Routing/src/implementation.py:488-497
+  method_name: install_dependencies
+  requirement: AC-001
+  test: test_install_dependencies
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-01
+    Dashboard Container & Routing/tests/test_generated_20251015_143255.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-01
+    Dashboard Container & Routing/src/implementation.py:498-507
+  method_name: build_project
+  requirement: AC-001
+  test: test_build_project
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-01
+    Dashboard Container & Routing/tests/test_generated_20251015_143255.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-01
+    Dashboard Container & Routing/src/implementation.py:508-518
+  method_name: run_tests
+  requirement: AC-001
+  test: test_run_tests
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-01
+    Dashboard Container & Routing/tests/test_generated_20251015_143255.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 7
+  requirements_traced: 7
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

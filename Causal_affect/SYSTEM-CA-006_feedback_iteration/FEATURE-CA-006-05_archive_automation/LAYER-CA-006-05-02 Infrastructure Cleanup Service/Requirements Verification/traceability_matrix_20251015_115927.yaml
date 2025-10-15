@@ -1,0 +1,159 @@
+matrix_metadata:
+  timestamp: '20251015_115927'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-LAY-006-05-02-01
+  requirement: Shutdown Railway services without data loss
+  description: Shutdown Railway services without data loss
+  test_files: &id001
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-02
+    Infrastructure Cleanup Service/tests/test_generated_20251015_115850.py
+  test_methods:
+  - test_ac-lay-006-05-02-01
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-05-02-02
+  requirement: Verify 100% resource deallocation (no orphans)
+  description: Verify 100% resource deallocation (no orphans)
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-05-02-02
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-05-02-03
+  requirement: Complete cleanup in <5 minutes
+  description: Complete cleanup in <5 minutes
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-05-02-03
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-02
+    Infrastructure Cleanup Service/src/implementation.py
+  lines: 383
+  methods:
+  - name: deallocation_percentage
+    lines: 50-56
+  - name: __init__
+    lines: 60-100
+  - name: add_service
+    lines: 101-105
+  - name: __init__
+    lines: 109-119
+  - name: _sort_by_dependencies
+    lines: 266-276
+  - name: visit
+    lines: 272-282
+  classes:
+  - name: ResourceType
+    type: class
+    lines: 13-20
+  - name: CleanupStatus
+    type: class
+    lines: 21-28
+  - name: Resource
+    type: class
+    lines: 29-39
+  - name: CleanupResult
+    type: class
+    lines: 40-56
+  - name: RailwayClient
+    type: class
+    lines: 57-105
+  - name: InfrastructureCleanupService
+    type: class
+    lines: 106-383
+  implements_requirements:
+  - AC-LAY-006-05-02-01
+  - AC-LAY-006-05-02-02
+  - AC-LAY-006-05-02-03
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-02
+    Infrastructure Cleanup Service/tests/test_generated_20251015_115850.py
+  test_count: 0
+  implementation_files:
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-02
+    Infrastructure Cleanup Service/src/implementation.py
+  methods_tested:
+  - deallocation_percentage
+  - __init__
+  - add_service
+  - __init__
+  - _sort_by_dependencies
+  - visit
+  classes_tested:
+  - ResourceType
+  - CleanupStatus
+  - Resource
+  - CleanupResult
+  - RailwayClient
+  - InfrastructureCleanupService
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-02
+    Infrastructure Cleanup Service/src/implementation.py:50-56
+  method_name: deallocation_percentage
+  requirement: AC-001
+  test: test_deallocation_percentage
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-02
+    Infrastructure Cleanup Service/tests/test_generated_20251015_115850.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-02
+    Infrastructure Cleanup Service/src/implementation.py:60-100
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-02
+    Infrastructure Cleanup Service/tests/test_generated_20251015_115850.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-02
+    Infrastructure Cleanup Service/src/implementation.py:101-105
+  method_name: add_service
+  requirement: AC-001
+  test: test_add_service
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-02
+    Infrastructure Cleanup Service/tests/test_generated_20251015_115850.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-02
+    Infrastructure Cleanup Service/src/implementation.py:109-119
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-02
+    Infrastructure Cleanup Service/tests/test_generated_20251015_115850.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-02
+    Infrastructure Cleanup Service/src/implementation.py:266-276
+  method_name: _sort_by_dependencies
+  requirement: AC-001
+  test: test__sort_by_dependencies
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-02
+    Infrastructure Cleanup Service/tests/test_generated_20251015_115850.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 3
+  requirements_traced: 3
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

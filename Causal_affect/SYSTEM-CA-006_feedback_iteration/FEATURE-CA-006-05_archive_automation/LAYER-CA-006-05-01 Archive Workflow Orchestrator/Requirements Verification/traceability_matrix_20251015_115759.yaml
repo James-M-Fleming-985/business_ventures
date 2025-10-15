@@ -1,0 +1,173 @@
+matrix_metadata:
+  timestamp: '20251015_115759'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-LAY-006-05-01-01
+  requirement: Execute all 6 workflow stages successfully
+  description: Execute all 6 workflow stages successfully
+  test_files: &id001
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-01
+    Archive Workflow Orchestrator/tests/test_generated_20251015_115723.py
+  test_methods:
+  - test_ac-lay-006-05-01-01
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-05-01-02
+  requirement: Support manual and auto-approve paths
+  description: Support manual and auto-approve paths
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-05-01-02
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-05-01-03
+  requirement: Complete workflow in <10 minutes
+  description: Complete workflow in <10 minutes
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-05-01-03
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-05-01-04
+  requirement: Support rollback within 7-day window
+  description: Support rollback within 7-day window
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-05-01-04
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-01
+    Archive Workflow Orchestrator/src/implementation.py
+  lines: 331
+  methods:
+  - name: duration
+    lines: 57-62
+  - name: is_within_rollback_window
+    lines: 63-69
+  - name: __init__
+    lines: 76-81
+  - name: set_approval_callback
+    lines: 82-92
+  - name: get_execution
+    lines: 285-288
+  - name: get_execution_status
+    lines: 289-293
+  - name: list_executions
+    lines: 294-304
+  classes:
+  - name: WorkflowStage
+    type: class
+    lines: 13-21
+  - name: WorkflowStatus
+    type: class
+    lines: 22-29
+  - name: ApprovalMode
+    type: class
+    lines: 30-35
+  - name: StageResult
+    type: class
+    lines: 36-45
+  - name: WorkflowExecution
+    type: class
+    lines: 46-69
+  - name: ArchiveWorkflowOrchestrator
+    type: class
+    lines: 70-331
+  implements_requirements:
+  - AC-LAY-006-05-01-01
+  - AC-LAY-006-05-01-02
+  - AC-LAY-006-05-01-03
+  - AC-LAY-006-05-01-04
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-01
+    Archive Workflow Orchestrator/tests/test_generated_20251015_115723.py
+  test_count: 0
+  implementation_files:
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-01
+    Archive Workflow Orchestrator/src/implementation.py
+  methods_tested:
+  - duration
+  - is_within_rollback_window
+  - __init__
+  - set_approval_callback
+  - get_execution
+  - get_execution_status
+  - list_executions
+  classes_tested:
+  - WorkflowStage
+  - WorkflowStatus
+  - ApprovalMode
+  - StageResult
+  - WorkflowExecution
+  - ArchiveWorkflowOrchestrator
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-01
+    Archive Workflow Orchestrator/src/implementation.py:57-62
+  method_name: duration
+  requirement: AC-001
+  test: test_duration
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-01
+    Archive Workflow Orchestrator/tests/test_generated_20251015_115723.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-01
+    Archive Workflow Orchestrator/src/implementation.py:63-69
+  method_name: is_within_rollback_window
+  requirement: AC-001
+  test: test_is_within_rollback_window
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-01
+    Archive Workflow Orchestrator/tests/test_generated_20251015_115723.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-01
+    Archive Workflow Orchestrator/src/implementation.py:76-81
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-01
+    Archive Workflow Orchestrator/tests/test_generated_20251015_115723.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-01
+    Archive Workflow Orchestrator/src/implementation.py:82-92
+  method_name: set_approval_callback
+  requirement: AC-001
+  test: test_set_approval_callback
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-01
+    Archive Workflow Orchestrator/tests/test_generated_20251015_115723.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-01
+    Archive Workflow Orchestrator/src/implementation.py:285-288
+  method_name: get_execution
+  requirement: AC-001
+  test: test_get_execution
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-01
+    Archive Workflow Orchestrator/tests/test_generated_20251015_115723.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 4
+  requirements_traced: 4
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

@@ -1,0 +1,175 @@
+matrix_metadata:
+  timestamp: '20251015_115106'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-LAY-006-04-02-01
+  requirement: Rank MVPs correctly by priority score
+  description: Rank MVPs correctly by priority score
+  test_files: &id001
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-04_prioritization_engine/LAYER-CA-006-04-02
+    Ranking System/tests/test_generated_20251015_115037.py
+  test_methods:
+  - test_ac-lay-006-04-02-01
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-04-02-02
+  requirement: Calculate percentiles accurately
+  description: Calculate percentiles accurately
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-04-02-02
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-04-02-03
+  requirement: Identify archive candidates with <5% false positive rate
+  description: Identify archive candidates with <5% false positive rate
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-04-02-03
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-04-02-04
+  requirement: Track score trends over 30-day window
+  description: Track score trends over 30-day window
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-04-02-04
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-04_prioritization_engine/LAYER-CA-006-04-02
+    Ranking System/src/implementation.py
+  lines: 237
+  methods:
+  - name: __post_init__
+    lines: 16-19
+  - name: update_score
+    lines: 20-26
+  - name: get_score_trend
+    lines: 27-35
+  - name: __init__
+    lines: 39-42
+  - name: add_mvp
+    lines: 43-50
+  - name: remove_mvp
+    lines: 51-55
+  - name: rank_mvps
+    lines: 56-67
+  - name: calculate_percentile
+    lines: 68-94
+  - name: get_percentile_for_score
+    lines: 95-118
+  - name: identify_archive_candidates
+    lines: 119-146
+  - name: track_score_trends
+    lines: 147-217
+  - name: get_all_trends
+    lines: 218-233
+  - name: create_ranking_system
+    lines: 234-244
+  classes:
+  - name: MVP
+    type: class
+    lines: 9-35
+  - name: RankingSystem
+    type: class
+    lines: 36-237
+  implements_requirements:
+  - AC-LAY-006-04-02-01
+  - AC-LAY-006-04-02-02
+  - AC-LAY-006-04-02-03
+  - AC-LAY-006-04-02-04
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-04_prioritization_engine/LAYER-CA-006-04-02
+    Ranking System/tests/test_generated_20251015_115037.py
+  test_count: 0
+  implementation_files:
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-04_prioritization_engine/LAYER-CA-006-04-02
+    Ranking System/src/implementation.py
+  methods_tested:
+  - __post_init__
+  - update_score
+  - get_score_trend
+  - __init__
+  - add_mvp
+  - remove_mvp
+  - rank_mvps
+  - calculate_percentile
+  - get_percentile_for_score
+  - identify_archive_candidates
+  - track_score_trends
+  - get_all_trends
+  - create_ranking_system
+  classes_tested:
+  - MVP
+  - RankingSystem
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-04_prioritization_engine/LAYER-CA-006-04-02
+    Ranking System/src/implementation.py:16-19
+  method_name: __post_init__
+  requirement: AC-001
+  test: test___post_init__
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-04_prioritization_engine/LAYER-CA-006-04-02
+    Ranking System/tests/test_generated_20251015_115037.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-04_prioritization_engine/LAYER-CA-006-04-02
+    Ranking System/src/implementation.py:20-26
+  method_name: update_score
+  requirement: AC-001
+  test: test_update_score
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-04_prioritization_engine/LAYER-CA-006-04-02
+    Ranking System/tests/test_generated_20251015_115037.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-04_prioritization_engine/LAYER-CA-006-04-02
+    Ranking System/src/implementation.py:27-35
+  method_name: get_score_trend
+  requirement: AC-001
+  test: test_get_score_trend
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-04_prioritization_engine/LAYER-CA-006-04-02
+    Ranking System/tests/test_generated_20251015_115037.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-04_prioritization_engine/LAYER-CA-006-04-02
+    Ranking System/src/implementation.py:39-42
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-04_prioritization_engine/LAYER-CA-006-04-02
+    Ranking System/tests/test_generated_20251015_115037.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-04_prioritization_engine/LAYER-CA-006-04-02
+    Ranking System/src/implementation.py:43-50
+  method_name: add_mvp
+  requirement: AC-001
+  test: test_add_mvp
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-04_prioritization_engine/LAYER-CA-006-04-02
+    Ranking System/tests/test_generated_20251015_115037.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 4
+  requirements_traced: 4
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

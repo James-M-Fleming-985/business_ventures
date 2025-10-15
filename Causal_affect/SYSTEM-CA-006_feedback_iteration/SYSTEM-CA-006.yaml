@@ -267,12 +267,43 @@ features:
     priority: high
     
   - feature_id: FEATURE-CA-006-06
-    feature_name: Portfolio Analytics Dashboard
+    feature_name: Dashboard User Interface
     description: |
-      Comprehensive dashboard showing portfolio-level metrics, trends,
-      and individual MVP performance
-    estimated_layers: 4-5
-    priority: high
+      Modern React-based dashboard interface providing real-time visibility into all deployed MVPs.
+      Displays portfolio-level metrics, individual MVP analytics, prioritization scores, and
+      archive candidates with interactive charts and tables. Built with React 18, TypeScript,
+      TailwindCSS, and Recharts for production-grade user experience with <30 second data refresh.
+    estimated_layers: 5
+    priority: critical
+    technologies:
+      - "React 18 + TypeScript 5"
+      - "Vite 5 (build tool)"
+      - "TailwindCSS 3 (styling)"
+      - "Zustand (state management)"
+      - "Recharts (charts)"
+      - "TanStack Table (data tables)"
+      - "WebSocket API (real-time updates)"
+    
+  - feature_id: FEATURE-CA-006-07
+    feature_name: Admin Configuration UI
+    status: placeholder
+    description: |
+      PLACEHOLDER: Administrative interface for configuring system settings including analytics
+      providers (Google Analytics, Mixpanel), prioritization rules (scoring weights, thresholds),
+      and archive policies (retention, approval workflows). This is a FUTURE ENHANCEMENT to be
+      implemented after FEATURE-06 (Dashboard UI) is deployed and validated with users.
+    estimated_layers: 4
+    priority: low
+    implementation_priority: "After FEATURE-06 deployment"
+    technologies:
+      - "React 18 + TypeScript 5 (same as FEATURE-06)"
+      - "React Hook Form + Zod (form handling)"
+      - "TanStack Table (config lists)"
+    notes:
+      - "Requires backend configuration management API (CRUD operations)"
+      - "Requires role-based access control (admin role)"
+      - "Requires audit logging for configuration changes"
+      - "Admin routes already defined in FEATURE-06 LAYER-01 (/settings, /settings/analytics, etc.)"
 
 acceptance_criteria:
   - criterion_id: AC-SYS-006-01
@@ -304,6 +335,30 @@ acceptance_criteria:
     criterion: "Portfolio dashboard provides actionable insights"
     verification: "User feedback from system operator"
     priority: medium
+    
+  - criterion_id: AC-SYS-006-07
+    criterion: "Dashboard UI displays all portfolio metrics with <30 second refresh"
+    verification: "UI real-time update test with WebSocket connection"
+    priority: critical
+    features: [FEATURE-CA-006-06]
+    
+  - criterion_id: AC-SYS-006-08
+    criterion: "Dashboard responsive design works on desktop (>1024px), tablet (768-1024px), mobile (<768px)"
+    verification: "Visual regression testing at all breakpoints"
+    priority: high
+    features: [FEATURE-CA-006-06]
+    
+  - criterion_id: AC-SYS-006-09
+    criterion: "Dashboard initial load completes in <3 seconds"
+    verification: "Lighthouse performance test"
+    priority: high
+    features: [FEATURE-CA-006-06]
+    
+  - criterion_id: AC-SYS-006-10
+    criterion: "All UI components accessible (WCAG AA compliance)"
+    verification: "Lighthouse accessibility audit"
+    priority: medium
+    features: [FEATURE-CA-006-06]
 
 engagement_metrics:
   traffic_metrics:

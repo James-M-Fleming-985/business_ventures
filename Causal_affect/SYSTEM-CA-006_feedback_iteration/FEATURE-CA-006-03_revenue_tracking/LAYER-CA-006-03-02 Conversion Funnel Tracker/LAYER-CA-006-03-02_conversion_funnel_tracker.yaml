@@ -16,10 +16,10 @@ traceability:
   parent_feature_id: FEATURE-CA-006-03
   parent_system_id: SYSTEM-CA-006
   implements_acceptance_criteria:
-    - AC-FEAT-006-03-02  # Track multi-stage conversion funnel
-    - AC-FEAT-006-03-03  # Calculate conversion rates per funnel stage
+    - AC-FEAT-006-03-02 # Track multi-stage conversion funnel
+    - AC-FEAT-006-03-03 # Calculate conversion rates per funnel stage
   contributes_to_system_criteria:
-    - AC-SYS-006-01  # Metrics collected from all MVPs
+    - AC-SYS-006-01 # Metrics collected from all MVPs
 
 description: |
   Multi-stage funnel tracking system that maps user journey from impression
@@ -39,7 +39,7 @@ interfaces:
     - "User journey events (impression, click, visit, signup, etc.)"
     - "Revenue events (purchase, subscription)"
     - "Traffic source attribution data"
-  
+
   outputs:
     - "Conversion rates per stage"
     - "Drop-off rates per stage"
@@ -52,17 +52,17 @@ acceptance_criteria:
     criterion: "Track user progression through all 7 funnel stages"
     verification: "Funnel stage tracking test"
     test_type: "integration"
-    
+
   - criterion_id: AC-LAY-006-03-02-02
     criterion: "Calculate stage-to-stage conversion rates accurately"
     verification: "Conversion rate calculation test"
     test_type: "unit"
-    
+
   - criterion_id: AC-LAY-006-03-02-03
     criterion: "Attribute conversions to traffic sources correctly"
     verification: "Attribution test with known source"
     test_type: "unit"
-    
+
   - criterion_id: AC-LAY-006-03-02-04
     criterion: "Handle partial funnel completion (drop-off tracking)"
     verification: "Drop-off rate calculation test"
@@ -74,7 +74,7 @@ technical_specification:
     - "redis >= 5.0"
     - "sqlalchemy >= 2.0"
     - "pandas >= 2.1"
-  
+
   class_structure:
     ConversionFunnelTracker:
       methods:
@@ -95,7 +95,7 @@ technical_specification:
         - "completed_stages: List[str]"
         - "stage_timestamps: dict"
         - "traffic_source: str"
-    
+
     ConversionRates:
       fields:
         - "impression_to_click: float"
@@ -113,12 +113,12 @@ testing_requirements:
     - "Test drop-off rate calculations"
     - "Test time-to-conversion calculations"
     - "Test traffic source attribution"
-  
+
   integration_tests:
     - "Test end-to-end funnel tracking"
     - "Test funnel persistence in database"
     - "Test funnel queries by date range"
-  
+
   validation_tests:
     - "Validate conversion rate accuracy with known data"
 

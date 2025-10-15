@@ -1,0 +1,179 @@
+matrix_metadata:
+  timestamp: '20251015_113831'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-LAY-006-03-01-01
+  requirement: Validate Stripe webhook signatures correctly
+  description: Validate Stripe webhook signatures correctly
+  test_files: &id001
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-01
+    Revenue Event Collector/tests/test_generated_20251015_113804.py
+  test_methods:
+  - test_ac-lay-006-03-01-01
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-03-01-02
+  requirement: Extract transaction details accurately from webhooks
+  description: Extract transaction details accurately from webhooks
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-03-01-02
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-03-01-03
+  requirement: Handle duplicate events with idempotency keys
+  description: Handle duplicate events with idempotency keys
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-03-01-03
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-03-01-04
+  requirement: Queue events with <1 second latency
+  description: Queue events with <1 second latency
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-03-01-04
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-01
+    Revenue Event Collector/src/implementation.py
+  lines: 275
+  methods:
+  - name: __init__
+    lines: 28-33
+  - name: add
+    lines: 34-45
+  - name: get_all
+    lines: 46-50
+  - name: clear
+    lines: 51-55
+  - name: size
+    lines: 56-61
+  - name: __init__
+    lines: 65-75
+  - name: validate_webhook_signature
+    lines: 76-125
+  - name: extract_transaction_details
+    lines: 126-173
+  - name: process_webhook
+    lines: 174-248
+  - name: get_queued_events
+    lines: 249-252
+  - name: get_average_latency
+    lines: 253-258
+  - name: clear_queue
+    lines: 259-263
+  - name: create_collector
+    lines: 264-274
+  classes:
+  - name: RevenueEvent
+    type: class
+    lines: 14-24
+  - name: EventQueue
+    type: class
+    lines: 25-61
+  - name: RevenueEventCollector
+    type: class
+    lines: 62-275
+  implements_requirements:
+  - AC-LAY-006-03-01-01
+  - AC-LAY-006-03-01-02
+  - AC-LAY-006-03-01-03
+  - AC-LAY-006-03-01-04
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-01
+    Revenue Event Collector/tests/test_generated_20251015_113804.py
+  test_count: 0
+  implementation_files:
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-01
+    Revenue Event Collector/src/implementation.py
+  methods_tested:
+  - __init__
+  - add
+  - get_all
+  - clear
+  - size
+  - __init__
+  - validate_webhook_signature
+  - extract_transaction_details
+  - process_webhook
+  - get_queued_events
+  - get_average_latency
+  - clear_queue
+  - create_collector
+  classes_tested:
+  - RevenueEvent
+  - EventQueue
+  - RevenueEventCollector
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-01
+    Revenue Event Collector/src/implementation.py:28-33
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-01
+    Revenue Event Collector/tests/test_generated_20251015_113804.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-01
+    Revenue Event Collector/src/implementation.py:34-45
+  method_name: add
+  requirement: AC-001
+  test: test_add
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-01
+    Revenue Event Collector/tests/test_generated_20251015_113804.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-01
+    Revenue Event Collector/src/implementation.py:46-50
+  method_name: get_all
+  requirement: AC-001
+  test: test_get_all
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-01
+    Revenue Event Collector/tests/test_generated_20251015_113804.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-01
+    Revenue Event Collector/src/implementation.py:51-55
+  method_name: clear
+  requirement: AC-001
+  test: test_clear
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-01
+    Revenue Event Collector/tests/test_generated_20251015_113804.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-01
+    Revenue Event Collector/src/implementation.py:56-61
+  method_name: size
+  requirement: AC-001
+  test: test_size
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-01
+    Revenue Event Collector/tests/test_generated_20251015_113804.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 4
+  requirements_traced: 4
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

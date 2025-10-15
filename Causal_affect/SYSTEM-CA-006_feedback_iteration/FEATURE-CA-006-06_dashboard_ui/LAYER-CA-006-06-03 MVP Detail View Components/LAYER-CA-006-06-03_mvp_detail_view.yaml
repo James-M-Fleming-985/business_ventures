@@ -1,0 +1,325 @@
+# LAYER-CA-006-06-03: MVP Detail View Components
+# ===============================================
+
+metadata:
+  layer_id: LAYER-CA-006-06-03
+  layer_name: MVP Detail View Components
+  parent_feature: FEATURE-CA-006-06
+  parent_feature_name: Dashboard User Interface
+  parent_system: SYSTEM-CA-006
+  created_date: 2025-10-15
+  status: planned
+  priority: critical
+  complexity: high
+
+traceability:
+  parent_feature_id: FEATURE-CA-006-06
+  parent_system_id: SYSTEM-CA-006
+  implements_acceptance_criteria:
+    - AC-FEAT-006-06-04  # MVP detail view displays engagement, revenue, and priority metrics
+    - AC-FEAT-006-06-05  # Score breakdown shows 4 dimension weights and percentile rankings
+    - AC-FEAT-006-06-06  # Conversion funnel visualizes 7-stage funnel with drop-off rates
+  contributes_to_system_criteria:
+    - AC-SYS-006-02  # Dashboard displays real-time data with <30 second refresh
+    - AC-SYS-006-03  # Priority scores visible for all MVPs with explainability
+
+description: |
+  Individual MVP detail view providing comprehensive analytics for a single MVP.
+  Displays priority score breakdown, engagement metrics, revenue metrics, conversion funnel,
+  traffic sources, and live event feed with 30-day trend charts.
+  
+  Implements data-dense, multi-panel layout following UI_VISUALIZATION.md wireframe design.
+
+responsibilities:
+  - "Display MVP name, ID, and overall priority score with visual indicator"
+  - "Render score breakdown showing 4 dimensions: engagement (30%), revenue (35%), growth (25%), potential (10%)"
+  - "Show key metrics grid: DAU, sessions, avg session time, bounce rate, retention"
+  - "Display revenue metrics: daily revenue, conversion rate, AOV, LTV:CAC, MRR"
+  - "Visualize 7-stage conversion funnel with drop-off analysis"
+  - "Show traffic sources table with ROI metrics"
+  - "Display live event feed with real-time updates"
+  - "Render 30-day engagement and revenue trend charts"
+
+components:
+  MVPDetailView:
+    type: "Page component"
+    file: "src/views/MVPDetailView.tsx"
+    responsibilities:
+      - "Fetch MVP detail data on mount using mvpId from route params"
+      - "Subscribe to real-time updates for this MVP"
+      - "Render all detail components in multi-panel layout"
+      - "Handle loading and error states"
+      - "Navigate back to portfolio on breadcrumb click"
+    props: "None (reads from route params)"
+    
+  ScoreBreakdownCard:
+    type: "Display component"
+    file: "src/components/mvp/ScoreBreakdownCard.tsx"
+    responsibilities:
+      - "Display overall priority score (0-100) with progress bar"
+      - "Show 4 dimension scores with individual progress bars"
+      - "Render performance label: Excellent (>80), Good (60-80), Fair (40-60), Poor (<40)"
+      - "Display percentile ranking for each dimension"
+    props:
+      - "score: number"
+      - "breakdown: ScoreBreakdown"
+      - "loading: boolean"
+    
+  KeyMetricsGrid:
+    type: "Container component"
+    file: "src/components/mvp/KeyMetricsGrid.tsx"
+    responsibilities:
+      - "Display 5 engagement metrics in grid: DAU, Sessions, Avg Session, Bounce Rate, Retention"
+      - "Display 5 revenue metrics in grid: Revenue/Day, Conv Rate, AOV, LTV:CAC, MRR"
+      - "Show 7-day trend indicators for each metric"
+      - "Use color coding: green for positive, red for negative"
+    props:
+      - "engagementMetrics: EngagementMetrics"
+      - "revenueMetrics: RevenueMetrics"
+      - "loading: boolean"
+    
+  ConversionFunnelChart:
+    type: "Chart component"
+    file: "src/components/mvp/ConversionFunnelChart.tsx"
+    responsibilities:
+      - "Visualize 7-stage funnel: Impression → Click → Visit → Signup → Trial → Purchase → Repeat"
+      - "Display conversion rate between each stage"
+      - "Show drop-off analysis with warnings for high drop-offs"
+      - "Render funnel as horizontal bars with percentages"
+    props:
+      - "funnel: ConversionFunnel"
+      - "loading: boolean"
+    
+  TrafficSourcesTable:
+    type: "Data table component"
+    file: "src/components/mvp/TrafficSourcesTable.tsx"
+    responsibilities:
+      - "Display traffic sources: Google Ads, Facebook, Organic, Reddit, Direct"
+      - "Show users, conversion rate, revenue, CAC, ROI for each source"
+      - "Render ROI bar chart inline with table"
+      - "Sort by any column"
+    props:
+      - "sources: Array<TrafficSource>"
+      - "loading: boolean"
+    
+  LiveEventFeed:
+    type: "Real-time component"
+    file: "src/components/mvp/LiveEventFeed.tsx"
+    responsibilities:
+      - "Display last 5-10 events in real-time"
+      - "Show event type, timestamp, location, device"
+      - "Update via WebSocket with <5 second latency"
+      - "Auto-scroll to show new events"
+    props:
+      - "mvpId: string"
+      - "events: Array<Event>"
+    
+  EngagementTrendChart:
+    type: "Chart component"
+    file: "src/components/mvp/EngagementTrendChart.tsx"
+    responsibilities:
+      - "Display 30-day DAU trend line chart"
+      - "Show sessions and revenue as additional lines"
+      - "Render legend with color coding"
+      - "Display data points on hover"
+    props:
+      - "trend: EngagementTrend"
+      - "loading: boolean"
+
+data_models:
+  ScoreBreakdown:
+    fields:
+      - "overallScore: number"
+      - "engagementScore: number (weight: 30%)"
+      - "engagementPercentile: number"
+      - "revenueScore: number (weight: 35%)"
+      - "revenuePercentile: number"
+      - "growthScore: number (weight: 25%)"
+      - "growthPercentile: number"
+      - "potentialScore: number (weight: 10%)"
+      - "potentialPercentile: number"
+  
+  EngagementMetrics:
+    fields:
+      - "dau: number"
+      - "dauChange: number"
+      - "sessions: number"
+      - "sessionsChange: number"
+      - "avgSessionTime: string (e.g., '12m 34s')"
+      - "avgSessionTimeChange: number"
+      - "bounceRate: number (percentage)"
+      - "bounceRateChange: number"
+      - "retention7d: number (percentage)"
+      - "retention7dChange: number"
+  
+  RevenueMetrics:
+    fields:
+      - "revenuePerDay: number"
+      - "revenuePerDayChange: number"
+      - "conversionRate: number (percentage)"
+      - "conversionRateChange: number"
+      - "aov: number (average order value)"
+      - "aovChange: number"
+      - "ltvCacRatio: number"
+      - "ltvCacRatioChange: number"
+      - "mrr: number (monthly recurring revenue)"
+      - "mrrChange: number"
+  
+  ConversionFunnel:
+    fields:
+      - "stages: Array<{name: string, count: number, rate: number, dropOff: number}>"
+      - "totalImpressions: number"
+      - "totalPurchases: number"
+      - "overallConversionRate: number"
+  
+  TrafficSource:
+    fields:
+      - "source: string"
+      - "users: number"
+      - "conversionRate: number"
+      - "revenue: number"
+      - "cac: number (customer acquisition cost)"
+      - "roi: number (return on investment)"
+  
+  Event:
+    fields:
+      - "id: string"
+      - "type: string (signup, purchase, session_start, etc.)"
+      - "timestamp: string (ISO date)"
+      - "location: string"
+      - "device: string"
+      - "metadata: object"
+
+acceptance_criteria:
+  - criterion_id: AC-LAY-006-06-03-01
+    criterion: "MVPDetailView fetches data using mvpId from route params"
+    verification: "Integration test with route params"
+    test_type: "integration"
+    
+  - criterion_id: AC-LAY-006-06-03-02
+    criterion: "ScoreBreakdownCard displays overall score with 4 dimension breakdowns"
+    verification: "Component test with score data"
+    test_type: "component"
+    
+  - criterion_id: AC-LAY-006-06-03-03
+    criterion: "KeyMetricsGrid renders 10 metrics (5 engagement + 5 revenue)"
+    verification: "Component test counting metric cards"
+    test_type: "component"
+    
+  - criterion_id: AC-LAY-006-06-03-04
+    criterion: "ConversionFunnelChart visualizes 7 stages correctly"
+    verification: "Component test with 7-stage funnel data"
+    test_type: "component"
+    
+  - criterion_id: AC-LAY-006-06-03-05
+    criterion: "TrafficSourcesTable displays all sources with ROI bars"
+    verification: "Component test with traffic data"
+    test_type: "component"
+    
+  - criterion_id: AC-LAY-006-06-03-06
+    criterion: "LiveEventFeed updates in real-time via WebSocket"
+    verification: "Integration test with mocked WebSocket"
+    test_type: "integration"
+    
+  - criterion_id: AC-LAY-006-06-03-07
+    criterion: "EngagementTrendChart displays 30 data points"
+    verification: "Component test with 30-day data"
+    test_type: "component"
+    
+  - criterion_id: AC-LAY-006-06-03-08
+    criterion: "Back to portfolio navigation works from breadcrumb"
+    verification: "Interaction test with navigation"
+    test_type: "integration"
+
+technical_specification:
+  language: "TypeScript 5.0+"
+  framework: "React 18"
+  dependencies:
+    - "react >= 18.2"
+    - "react-router-dom >= 6.20"
+    - "recharts >= 2.10"
+    - "@tanstack/react-table >= 8.10"
+    - "lucide-react >= 0.290"
+    - "date-fns >= 2.30"
+  
+  file_structure:
+    components:
+      mvp:
+        - "ScoreBreakdownCard.tsx - Priority score breakdown"
+        - "KeyMetricsGrid.tsx - Engagement and revenue metrics"
+        - "ConversionFunnelChart.tsx - 7-stage funnel visualization"
+        - "TrafficSourcesTable.tsx - Traffic source breakdown"
+        - "LiveEventFeed.tsx - Real-time event stream"
+        - "EngagementTrendChart.tsx - 30-day engagement trend"
+    views:
+      - "MVPDetailView.tsx - Main MVP detail page"
+    types:
+      - "mvp.types.ts - TypeScript interfaces"
+
+api_integration:
+  endpoints:
+    - endpoint: "GET /api/v1/mvps/{mvpId}"
+      response: "MVPDetail"
+      description: "Fetch complete MVP details"
+      
+    - endpoint: "GET /api/v1/mvps/{mvpId}/score-breakdown"
+      response: "ScoreBreakdown"
+      description: "Fetch priority score breakdown"
+      
+    - endpoint: "GET /api/v1/mvps/{mvpId}/metrics"
+      response: "{engagement: EngagementMetrics, revenue: RevenueMetrics}"
+      description: "Fetch engagement and revenue metrics"
+      
+    - endpoint: "GET /api/v1/mvps/{mvpId}/conversion-funnel"
+      response: "ConversionFunnel"
+      description: "Fetch conversion funnel data"
+      
+    - endpoint: "GET /api/v1/mvps/{mvpId}/traffic-sources"
+      response: "Array<TrafficSource>"
+      description: "Fetch traffic source breakdown"
+      
+    - endpoint: "WS /ws/mvp/{mvpId}/events"
+      response: "Stream<Event>"
+      description: "Real-time event stream for MVP"
+
+testing_approach:
+  component_tests:
+    tests:
+      - "test_mvp_detail_view_renders_all_sections"
+      - "test_score_breakdown_displays_4_dimensions"
+      - "test_key_metrics_grid_renders_10_cards"
+      - "test_conversion_funnel_7_stages"
+      - "test_traffic_sources_table_sorting"
+      - "test_live_event_feed_displays_events"
+      - "test_engagement_trend_chart_30_days"
+      - "test_loading_states_all_components"
+  
+  integration_tests:
+    tests:
+      - "test_mvp_detail_data_fetch"
+      - "test_websocket_event_updates"
+      - "test_navigation_back_to_portfolio"
+      - "test_api_error_handling"
+  
+  e2e_tests:
+    tests:
+      - "test_mvp_detail_page_load"
+      - "test_real_time_event_feed"
+      - "test_responsive_layout_mobile"
+
+verification_checklist:
+  - "✓ MVPDetailView renders all components"
+  - "✓ ScoreBreakdownCard shows 4 dimensions"
+  - "✓ KeyMetricsGrid displays 10 metrics"
+  - "✓ ConversionFunnelChart visualizes 7 stages"
+  - "✓ TrafficSourcesTable shows all sources"
+  - "✓ LiveEventFeed updates in real-time"
+  - "✓ EngagementTrendChart shows 30 days"
+  - "✓ Navigation back to portfolio works"
+
+notes: |
+  - Integrates with LAYER-06-04 for chart components
+  - Integrates with LAYER-06-05 for API and WebSocket
+  - Most data-dense view in the application
+  - Real-time updates via WebSocket critical for live event feed
+  - Follows UI_VISUALIZATION.md MVP detail wireframe

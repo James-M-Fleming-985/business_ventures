@@ -1,0 +1,315 @@
+# LAYER-CA-006-06-04: Chart Visualization Library
+# ================================================
+
+metadata:
+  layer_id: LAYER-CA-006-06-04
+  layer_name: Chart Visualization Library
+  parent_feature: FEATURE-CA-006-06
+  parent_feature_name: Dashboard User Interface
+  parent_system: SYSTEM-CA-006
+  created_date: 2025-10-15
+  status: planned
+  priority: high
+  complexity: medium
+
+traceability:
+  parent_feature_id: FEATURE-CA-006-06
+  parent_system_id: SYSTEM-CA-006
+  implements_acceptance_criteria:
+    - AC-FEAT-006-06-07  # Time-series charts display 30-day trends for DAU and revenue
+    - AC-FEAT-006-06-06  # Conversion funnel visualizes 7-stage funnel with drop-off rates
+  contributes_to_system_criteria:
+    - AC-SYS-006-02  # Dashboard displays real-time data with <30 second refresh
+
+description: |
+  Reusable chart component library built on top of Recharts.
+  Provides consistent, performant, and accessible chart components for time-series data,
+  metric cards, progress bars, trend indicators, and funnel visualizations.
+  
+  Abstracts Recharts complexity and enforces design system consistency across all charts.
+
+responsibilities:
+  - "Provide TimeSeriesChart component for line/area charts"
+  - "Provide BarChart component for comparison charts"
+  - "Provide FunnelChart component for conversion funnels"
+  - "Provide ProgressBar component for score visualizations"
+  - "Provide TrendIndicator component for metric changes"
+  - "Ensure all charts responsive and accessible"
+  - "Apply consistent color scheme from design system"
+
+components:
+  TimeSeriesChart:
+    type: "Chart component"
+    file: "src/components/charts/TimeSeriesChart.tsx"
+    responsibilities:
+      - "Render line or area chart for time-series data"
+      - "Support multiple data series with legend"
+      - "Display tooltip on hover with formatted values"
+      - "Auto-scale Y-axis based on data range"
+      - "Responsive: adapt to container width"
+    props:
+      - "data: Array<{date: string, [key: string]: number}>"
+      - "series: Array<{key: string, name: string, color: string}>"
+      - "height: number (default: 300)"
+      - "type: 'line' | 'area'"
+      - "loading: boolean"
+    
+  BarChart:
+    type: "Chart component"
+    file: "src/components/charts/BarChart.tsx"
+    responsibilities:
+      - "Render vertical or horizontal bar chart"
+      - "Support grouped or stacked bars"
+      - "Display data labels on bars"
+      - "Responsive width"
+    props:
+      - "data: Array<{category: string, value: number}>"
+      - "orientation: 'vertical' | 'horizontal'"
+      - "color: string"
+      - "height: number"
+      - "loading: boolean"
+    
+  FunnelChart:
+    type: "Chart component"
+    file: "src/components/charts/FunnelChart.tsx"
+    responsibilities:
+      - "Render horizontal funnel with stage widths proportional to values"
+      - "Display conversion rates between stages"
+      - "Highlight high drop-off stages with warning color"
+      - "Show absolute numbers and percentages"
+    props:
+      - "stages: Array<{name: string, count: number, rate: number, dropOff: number}>"
+      - "loading: boolean"
+    
+  ProgressBar:
+    type: "Display component"
+    file: "src/components/charts/ProgressBar.tsx"
+    responsibilities:
+      - "Render horizontal progress bar"
+      - "Support color coding: green (>75), blue (50-75), yellow (25-50), red (<25)"
+      - "Display percentage label"
+      - "Animate fill on mount"
+    props:
+      - "value: number (0-100)"
+      - "label: string"
+      - "colorScheme: 'auto' | 'primary' | 'success' | 'warning' | 'danger'"
+      - "height: number (default: 20)"
+    
+  TrendIndicator:
+    type: "Display component"
+    file: "src/components/charts/TrendIndicator.tsx"
+    responsibilities:
+      - "Display up/down arrow based on change value"
+      - "Color code: green for positive, red for negative"
+      - "Show percentage with + or - prefix"
+      - "Support size variants: sm, md, lg"
+    props:
+      - "change: number (percentage)"
+      - "size: 'sm' | 'md' | 'lg'"
+      - "showZero: boolean (default: true)"
+    
+  MetricCard:
+    type: "Display component"
+    file: "src/components/charts/MetricCard.tsx"
+    responsibilities:
+      - "Display single metric with value, label, and trend"
+      - "Support icon display"
+      - "Show loading skeleton"
+      - "Click handler for drill-down"
+    props:
+      - "label: string"
+      - "value: string | number"
+      - "change: number"
+      - "changeLabel: string"
+      - "icon: ReactNode"
+      - "onClick: () => void"
+      - "loading: boolean"
+
+shared_utilities:
+  formatters:
+    file: "src/utils/formatters.ts"
+    functions:
+      - "formatNumber(value: number): string - Format with commas (1,234)"
+      - "formatCurrency(value: number): string - Format as currency ($1,234.56)"
+      - "formatPercentage(value: number): string - Format as percentage (12.3%)"
+      - "formatDuration(seconds: number): string - Format as duration (12m 34s)"
+      - "formatDate(date: string): string - Format ISO date (Oct 15, 2025)"
+      - "formatShortDate(date: string): string - Format short (10/15)"
+  
+  color_schemes:
+    file: "src/utils/colors.ts"
+    exports:
+      - "CHART_COLORS: Array of colors for multi-series charts"
+      - "getScoreColor(score: number): string - Green (>75), Yellow (50-75), Red (<50)"
+      - "getTrendColor(change: number): string - Green (>0), Red (<0), Gray (0)"
+
+acceptance_criteria:
+  - criterion_id: AC-LAY-006-06-04-01
+    criterion: "TimeSeriesChart renders line chart with multiple series"
+    verification: "Component test with 2+ data series"
+    test_type: "component"
+    
+  - criterion_id: AC-LAY-006-06-04-02
+    criterion: "BarChart displays bars correctly with data labels"
+    verification: "Component test with bar data"
+    test_type: "component"
+    
+  - criterion_id: AC-LAY-006-06-04-03
+    criterion: "FunnelChart visualizes funnel with correct proportions"
+    verification: "Component test with 7-stage funnel"
+    test_type: "component"
+    
+  - criterion_id: AC-LAY-006-06-04-04
+    criterion: "ProgressBar animates smoothly from 0 to target value"
+    verification: "Visual test with animation"
+    test_type: "component"
+    
+  - criterion_id: AC-LAY-006-06-04-05
+    criterion: "TrendIndicator shows correct arrow and color"
+    verification: "Component test with positive/negative/zero values"
+    test_type: "component"
+    
+  - criterion_id: AC-LAY-006-06-04-06
+    criterion: "All charts responsive at desktop/tablet/mobile"
+    verification: "Visual regression test at breakpoints"
+    test_type: "e2e"
+    
+  - criterion_id: AC-LAY-006-06-04-07
+    criterion: "Chart tooltips display formatted values correctly"
+    verification: "Interaction test with hover"
+    test_type: "component"
+
+technical_specification:
+  language: "TypeScript 5.0+"
+  framework: "React 18"
+  dependencies:
+    - "react >= 18.2"
+    - "recharts >= 2.10"
+    - "lucide-react >= 0.290"
+    - "clsx >= 2.0"
+    - "framer-motion >= 10.16"
+  
+  file_structure:
+    components:
+      charts:
+        - "TimeSeriesChart.tsx - Line/area time-series charts"
+        - "BarChart.tsx - Vertical/horizontal bar charts"
+        - "FunnelChart.tsx - Conversion funnel visualization"
+        - "ProgressBar.tsx - Progress bar with color coding"
+        - "TrendIndicator.tsx - Trend arrow with percentage"
+        - "MetricCard.tsx - Metric display card"
+    utils:
+      - "formatters.ts - Number, currency, date formatters"
+      - "colors.ts - Color scheme utilities"
+    types:
+      - "chart.types.ts - TypeScript interfaces"
+
+testing_approach:
+  component_tests:
+    framework: "Vitest + React Testing Library"
+    tests:
+      - "test_time_series_chart_renders"
+      - "test_time_series_multiple_series"
+      - "test_bar_chart_vertical_orientation"
+      - "test_bar_chart_horizontal_orientation"
+      - "test_funnel_chart_7_stages"
+      - "test_progress_bar_color_coding"
+      - "test_trend_indicator_positive"
+      - "test_trend_indicator_negative"
+      - "test_trend_indicator_zero"
+      - "test_metric_card_displays_value"
+      - "test_formatters_currency"
+      - "test_formatters_percentage"
+      - "test_formatters_duration"
+  
+  visual_regression_tests:
+    framework: "Playwright + Percy"
+    tests:
+      - "test_all_chart_types_snapshot"
+      - "test_responsive_charts_mobile"
+      - "test_responsive_charts_tablet"
+
+code_structure:
+  time_series_chart_tsx: |
+    import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+    
+    interface TimeSeriesChartProps {
+      data: Array<{date: string, [key: string]: any}>
+      series: Array<{key: string, name: string, color: string}>
+      height?: number
+      type?: 'line' | 'area'
+      loading?: boolean
+    }
+    
+    export default function TimeSeriesChart({ data, series, height = 300, type = 'line', loading }: TimeSeriesChartProps) {
+      if (loading) return <div className="animate-pulse bg-gray-200 h-[${height}px] rounded" />
+      
+      return (
+        <ResponsiveContainer width="100%" height={height}>
+          <LineChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="date" />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            {series.map(s => (
+              <Line key={s.key} type="monotone" dataKey={s.key} name={s.name} stroke={s.color} strokeWidth={2} />
+            ))}
+          </LineChart>
+        </ResponsiveContainer>
+      )
+    }
+  
+  trend_indicator_tsx: |
+    import { ArrowUp, ArrowDown, Minus } from 'lucide-react'
+    import clsx from 'clsx'
+    
+    interface TrendIndicatorProps {
+      change: number
+      size?: 'sm' | 'md' | 'lg'
+      showZero?: boolean
+    }
+    
+    export default function TrendIndicator({ change, size = 'md', showZero = true }: TrendIndicatorProps) {
+      const Icon = change > 0 ? ArrowUp : change < 0 ? ArrowDown : Minus
+      const color = change > 0 ? 'text-success' : change < 0 ? 'text-danger' : 'text-neutral'
+      const sizeClass = size === 'sm' ? 'w-3 h-3' : size === 'lg' ? 'w-6 h-6' : 'w-4 h-4'
+      
+      if (change === 0 && !showZero) return null
+      
+      return (
+        <div className={clsx('flex items-center', color)}>
+          <Icon className={sizeClass} />
+          <span className="ml-1 font-medium">{Math.abs(change).toFixed(1)}%</span>
+        </div>
+      )
+    }
+
+quality_gates:
+  - gate: "All chart components render without errors"
+    enforced: true
+  
+  - gate: "Charts responsive at all breakpoints"
+    enforced: true
+  
+  - gate: "Tooltips display formatted values"
+    enforced: true
+  
+  - gate: "Color scheme consistent with design system"
+    enforced: true
+
+verification_checklist:
+  - "✓ TimeSeriesChart renders line charts"
+  - "✓ BarChart displays vertical and horizontal bars"
+  - "✓ FunnelChart visualizes conversion funnels"
+  - "✓ ProgressBar shows color-coded progress"
+  - "✓ TrendIndicator displays correct arrows"
+  - "✓ MetricCard shows value and trend"
+  - "✓ Formatters work correctly"
+  - "✓ Charts responsive at all sizes"
+
+notes: |
+  - Shared component library used by LAYER-06-02 and LAYER-06-03
+  - All charts built on Recharts for consistency
+  - Design system colors enforced via utility functions
+  - Accessibility: all charts have ARIA labels

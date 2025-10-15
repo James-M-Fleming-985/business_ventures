@@ -1,0 +1,356 @@
+# LAYER-CA-006-06-05: API Integration & Real-time Updates
+# =========================================================
+
+metadata:
+  layer_id: LAYER-CA-006-06-05
+  layer_name: API Integration & Real-time Updates
+  parent_feature: FEATURE-CA-006-06
+  parent_feature_name: Dashboard User Interface
+  parent_system: SYSTEM-CA-006
+  created_date: 2025-10-15
+  status: planned
+  priority: critical
+  complexity: high
+
+traceability:
+  parent_feature_id: FEATURE-CA-006-06
+  parent_system_id: SYSTEM-CA-006
+  implements_acceptance_criteria:
+    - AC-FEAT-006-06-08  # Real-time updates refresh dashboard data every <30 seconds
+    - AC-FEAT-006-06-09  # WebSocket connection maintains live event feed with <5 second latency
+    - AC-FEAT-006-06-10  # API integration handles errors gracefully with user notifications
+  contributes_to_system_criteria:
+    - AC-SYS-006-02  # Dashboard displays real-time data with <30 second refresh
+
+description: |
+  API client and WebSocket connection manager for frontend-backend communication.
+  Provides type-safe API calls, real-time updates via WebSocket, automatic retry logic,
+  error handling, and state synchronization using Zustand stores.
+  
+  Acts as the data layer for all dashboard components, abstracting network complexity
+  and providing clean hooks for data fetching.
+
+responsibilities:
+  - "Provide API client for all backend endpoints"
+  - "Manage WebSocket connections for real-time updates"
+  - "Implement automatic reconnection with exponential backoff"
+  - "Handle API errors and display user-friendly notifications"
+  - "Provide React hooks for data fetching: usePortfolioData, useMVPDetail"
+  - "Implement request caching and deduplication"
+  - "Synchronize API data with Zustand stores"
+
+components:
+  ApiClient:
+    type: "Service class"
+    file: "src/services/apiClient.ts"
+    responsibilities:
+      - "Initialize Axios instance with base URL and auth headers"
+      - "Implement all API methods: getPortfolioOverview(), getTopPerformers(), etc."
+      - "Handle request/response interceptors for auth and error logging"
+      - "Retry failed requests with exponential backoff"
+      - "Type-safe responses using TypeScript generics"
+    methods:
+      - "getPortfolioOverview(): Promise<PortfolioStats>"
+      - "getTopPerformers(limit: number): Promise<Array<MVPSummary>>"
+      - "getArchiveCandidates(): Promise<Array<ArchiveCandidate>>"
+      - "getPortfolioTrends(days: number): Promise<PortfolioTrends>"
+      - "getMVPDetail(id: string): Promise<MVPDetail>"
+      - "getMVPScoreBreakdown(id: string): Promise<ScoreBreakdown>"
+      - "getMVPMetrics(id: string): Promise<{engagement, revenue}>"
+      - "getMVPConversionFunnel(id: string): Promise<ConversionFunnel>"
+      - "approveArchive(id: string): Promise<void>"
+      - "rejectArchive(id: string): Promise<void>"
+    
+  WebSocketManager:
+    type: "Service class"
+    file: "src/services/websocketManager.ts"
+    responsibilities:
+      - "Establish WebSocket connection to backend"
+      - "Subscribe to portfolio-level updates"
+      - "Subscribe to MVP-specific event streams"
+      - "Handle connection errors and automatic reconnection"
+      - "Emit events to React components via custom hooks"
+    methods:
+      - "connect(url: string): void"
+      - "disconnect(): void"
+      - "subscribe(channel: string, callback: Function): void"
+      - "unsubscribe(channel: string): void"
+      - "reconnect(): void (with exponential backoff)"
+    
+  usePortfolioData:
+    type: "React hook"
+    file: "src/hooks/usePortfolioData.ts"
+    responsibilities:
+      - "Fetch portfolio stats, top performers, archive candidates, trends on mount"
+      - "Subscribe to real-time updates via WebSocket"
+      - "Return loading, error, and data states"
+      - "Refresh data every 30 seconds"
+    returns:
+      - "stats: PortfolioStats | null"
+      - "topPerformers: Array<MVPSummary>"
+      - "archiveCandidates: Array<ArchiveCandidate>"
+      - "trends: PortfolioTrends | null"
+      - "loading: boolean"
+      - "error: Error | null"
+      - "refresh: () => void"
+    
+  useMVPDetail:
+    type: "React hook"
+    file: "src/hooks/useMVPDetail.ts"
+    responsibilities:
+      - "Fetch MVP detail data using mvpId parameter"
+      - "Subscribe to real-time event stream for this MVP"
+      - "Return loading, error, and data states"
+      - "Auto-refresh metrics every 30 seconds"
+    parameters:
+      - "mvpId: string"
+    returns:
+      - "detail: MVPDetail | null"
+      - "scoreBreakdown: ScoreBreakdown | null"
+      - "metrics: {engagement, revenue} | null"
+      - "funnel: ConversionFunnel | null"
+      - "events: Array<Event>"
+      - "loading: boolean"
+      - "error: Error | null"
+      - "refresh: () => void"
+    
+  useWebSocket:
+    type: "React hook"
+    file: "src/hooks/useWebSocket.ts"
+    responsibilities:
+      - "Manage WebSocket connection lifecycle"
+      - "Subscribe to specific channels"
+      - "Handle reconnection on connection loss"
+      - "Return connection status and message handler"
+    parameters:
+      - "channel: string"
+      - "onMessage: (data: any) => void"
+    returns:
+      - "connected: boolean"
+      - "error: Error | null"
+      - "send: (message: any) => void"
+
+stores:
+  dataStore:
+    file: "src/stores/dataStore.ts"
+    state:
+      - "portfolioStats: PortfolioStats | null"
+      - "topPerformers: Array<MVPSummary>"
+      - "archiveCandidates: Array<ArchiveCandidate>"
+      - "portfolioTrends: PortfolioTrends | null"
+      - "mvpDetails: Map<string, MVPDetail>"
+      - "lastUpdate: string (ISO timestamp)"
+    actions:
+      - "setPortfolioStats(stats: PortfolioStats)"
+      - "setTopPerformers(mvps: Array<MVPSummary>)"
+      - "setArchiveCandidates(candidates: Array<ArchiveCandidate>)"
+      - "setPortfolioTrends(trends: PortfolioTrends)"
+      - "setMVPDetail(id: string, detail: MVPDetail)"
+      - "updateLastUpdate()"
+
+error_handling:
+  strategies:
+    - strategy: "API errors display toast notification with retry button"
+      implementation: "ErrorBoundary + toast library (react-hot-toast)"
+      
+    - strategy: "WebSocket disconnection shows banner: 'Live updates paused. Reconnecting...'"
+      implementation: "Connection status banner component"
+      
+    - strategy: "Failed requests retry 3 times with exponential backoff (1s, 2s, 4s)"
+      implementation: "Axios retry interceptor"
+      
+    - strategy: "Stale data shown with warning indicator if >5 minutes old"
+      implementation: "Data freshness check in components"
+
+acceptance_criteria:
+  - criterion_id: AC-LAY-006-06-05-01
+    criterion: "API client successfully calls all backend endpoints"
+    verification: "Integration test with mocked API"
+    test_type: "integration"
+    
+  - criterion_id: AC-LAY-006-06-05-02
+    criterion: "WebSocket connection establishes and receives messages"
+    verification: "Integration test with mocked WebSocket"
+    test_type: "integration"
+    
+  - criterion_id: AC-LAY-006-06-05-03
+    criterion: "Automatic reconnection works after connection loss"
+    verification: "Test with simulated disconnect"
+    test_type: "integration"
+    
+  - criterion_id: AC-LAY-006-06-05-04
+    criterion: "usePortfolioData hook fetches and returns data"
+    verification: "Hook test with mocked API"
+    test_type: "unit"
+    
+  - criterion_id: AC-LAY-006-06-05-05
+    criterion: "useMVPDetail hook fetches MVP-specific data"
+    verification: "Hook test with mocked API"
+    test_type: "unit"
+    
+  - criterion_id: AC-LAY-006-06-05-06
+    criterion: "API errors trigger toast notifications"
+    verification: "Error simulation test"
+    test_type: "integration"
+    
+  - criterion_id: AC-LAY-006-06-05-07
+    criterion: "Failed requests retry 3 times before failing"
+    verification: "Retry logic test"
+    test_type: "unit"
+    
+  - criterion_id: AC-LAY-006-06-05-08
+    criterion: "Data refreshes every 30 seconds automatically"
+    verification: "Timer test with mocked intervals"
+    test_type: "integration"
+
+technical_specification:
+  language: "TypeScript 5.0+"
+  framework: "React 18"
+  dependencies:
+    - "react >= 18.2"
+    - "axios >= 1.6"
+    - "zustand >= 4.4"
+    - "react-hot-toast >= 2.4"
+  
+  file_structure:
+    services:
+      - "apiClient.ts - Axios-based API client"
+      - "websocketManager.ts - WebSocket connection manager"
+    hooks:
+      - "usePortfolioData.ts - Portfolio data fetching hook"
+      - "useMVPDetail.ts - MVP detail data fetching hook"
+      - "useWebSocket.ts - WebSocket connection hook"
+    stores:
+      - "dataStore.ts - Zustand data cache store"
+    types:
+      - "api.types.ts - API request/response types"
+
+configuration:
+  environment_variables:
+    - "VITE_API_URL: Backend API base URL (e.g., http://localhost:8000)"
+    - "VITE_WS_URL: WebSocket URL (e.g., ws://localhost:8000/ws)"
+    - "VITE_API_TIMEOUT: Request timeout in ms (default: 30000)"
+    - "VITE_WS_RECONNECT_INTERVAL: Reconnection interval in ms (default: 5000)"
+    - "VITE_DATA_REFRESH_INTERVAL: Auto-refresh interval in ms (default: 30000)"
+
+testing_approach:
+  unit_tests:
+    framework: "Vitest"
+    tests:
+      - "test_api_client_get_portfolio_overview"
+      - "test_api_client_get_top_performers"
+      - "test_api_client_get_mvp_detail"
+      - "test_api_client_retry_logic"
+      - "test_websocket_manager_connect"
+      - "test_websocket_manager_reconnect"
+      - "test_use_portfolio_data_hook"
+      - "test_use_mvp_detail_hook"
+      - "test_data_store_actions"
+  
+  integration_tests:
+    framework: "Vitest + MSW (Mock Service Worker)"
+    tests:
+      - "test_api_calls_with_mocked_backend"
+      - "test_websocket_with_mocked_server"
+      - "test_error_handling_and_retries"
+      - "test_real_time_updates_flow"
+      - "test_data_refresh_interval"
+
+code_structure:
+  api_client_ts: |
+    import axios, { AxiosInstance } from 'axios'
+    import { PortfolioStats, MVPSummary, MVPDetail } from '../types/api.types'
+    
+    class ApiClient {
+      private client: AxiosInstance
+      
+      constructor(baseURL: string) {
+        this.client = axios.create({
+          baseURL,
+          timeout: 30000,
+        })
+        
+        this.client.interceptors.response.use(
+          response => response,
+          error => this.handleError(error)
+        )
+      }
+      
+      async getPortfolioOverview(): Promise<PortfolioStats> {
+        const { data } = await this.client.get('/api/v1/portfolio/overview')
+        return data
+      }
+      
+      async getMVPDetail(id: string): Promise<MVPDetail> {
+        const { data } = await this.client.get(`/api/v1/mvps/${id}`)
+        return data
+      }
+      
+      private async handleError(error: any) {
+        // Retry logic and error handling
+        throw error
+      }
+    }
+    
+    export default new ApiClient(import.meta.env.VITE_API_URL)
+  
+  use_portfolio_data_ts: |
+    import { useEffect, useState } from 'react'
+    import { useDataStore } from '../stores/dataStore'
+    import apiClient from '../services/apiClient'
+    
+    export function usePortfolioData() {
+      const [loading, setLoading] = useState(true)
+      const [error, setError] = useState<Error | null>(null)
+      const { portfolioStats, setPortfolioStats } = useDataStore()
+      
+      useEffect(() => {
+        async function fetchData() {
+          try {
+            setLoading(true)
+            const stats = await apiClient.getPortfolioOverview()
+            setPortfolioStats(stats)
+          } catch (err) {
+            setError(err as Error)
+          } finally {
+            setLoading(false)
+          }
+        }
+        
+        fetchData()
+        const interval = setInterval(fetchData, 30000) // Refresh every 30s
+        return () => clearInterval(interval)
+      }, [])
+      
+      return { stats: portfolioStats, loading, error }
+    }
+
+quality_gates:
+  - gate: "All API endpoints have typed responses"
+    enforced: true
+  
+  - gate: "WebSocket reconnection works correctly"
+    enforced: true
+  
+  - gate: "API errors handled gracefully"
+    enforced: true
+  
+  - gate: "Data refreshes every 30 seconds"
+    enforced: true
+
+verification_checklist:
+  - "✓ API client calls all backend endpoints"
+  - "✓ WebSocket connection established"
+  - "✓ Automatic reconnection on disconnect"
+  - "✓ usePortfolioData hook returns data"
+  - "✓ useMVPDetail hook returns MVP data"
+  - "✓ API errors trigger notifications"
+  - "✓ Retry logic works (3 attempts)"
+  - "✓ Data refreshes every 30 seconds"
+
+notes: |
+  - Critical foundation layer for all data-driven components
+  - WebSocket support enables real-time dashboard updates
+  - Error handling ensures graceful degradation
+  - Zustand stores provide client-side data cache
+  - MSW (Mock Service Worker) for testing without backend

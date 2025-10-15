@@ -16,10 +16,10 @@ traceability:
   parent_feature_id: FEATURE-CA-006-03
   parent_system_id: SYSTEM-CA-006
   implements_acceptance_criteria:
-    - AC-FEAT-006-03-01  # Capture purchase, refund, subscription events
-    - AC-FEAT-006-03-07  # Provide revenue data with <5 minute latency
+    - AC-FEAT-006-03-01 # Capture purchase, refund, subscription events
+    - AC-FEAT-006-03-07 # Provide revenue data with <5 minute latency
   contributes_to_system_criteria:
-    - AC-SYS-006-01  # Metrics collected from all MVPs
+    - AC-SYS-006-01 # Metrics collected from all MVPs
 
 description: |
   Revenue event ingestion service integrating with payment processors (Stripe, PayPal).
@@ -38,7 +38,7 @@ interfaces:
     - "Stripe webhooks: checkout.session.completed, invoice.paid, etc."
     - "PayPal webhooks: PAYMENT.SALE.COMPLETED, PAYMENT.SALE.REFUNDED"
     - "Webhook signature for validation"
-  
+
   outputs:
     - "Normalized revenue events"
     - "Queued events to Redis for processing"
@@ -49,17 +49,17 @@ acceptance_criteria:
     criterion: "Validate Stripe webhook signatures correctly"
     verification: "Webhook signature validation test"
     test_type: "integration"
-    
+
   - criterion_id: AC-LAY-006-03-01-02
     criterion: "Extract transaction details accurately from webhooks"
     verification: "Data extraction test with sample webhooks"
     test_type: "unit"
-    
+
   - criterion_id: AC-LAY-006-03-01-03
     criterion: "Handle duplicate events with idempotency keys"
     verification: "Duplicate event test"
     test_type: "unit"
-    
+
   - criterion_id: AC-LAY-006-03-01-04
     criterion: "Queue events with <1 second latency"
     verification: "Event queuing performance test"
@@ -72,7 +72,7 @@ technical_specification:
     - "fastapi >= 0.104"
     - "redis >= 5.0"
     - "pydantic >= 2.4"
-  
+
   class_structure:
     RevenueEventCollector:
       methods:
@@ -105,12 +105,12 @@ testing_requirements:
     - "Test transaction data extraction"
     - "Test idempotency key checking"
     - "Test event normalization across processors"
-  
+
   integration_tests:
     - "Test Stripe webhook end-to-end flow"
     - "Test PayPal webhook end-to-end flow"
     - "Test Redis event queuing"
-  
+
   performance_tests:
     - "Test webhook processing latency (<1 second)"
 

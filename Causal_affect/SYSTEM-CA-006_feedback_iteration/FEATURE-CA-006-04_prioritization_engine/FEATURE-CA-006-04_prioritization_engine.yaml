@@ -7,10 +7,10 @@ metadata:
   requirement_type: Feature
   parent_system: SYSTEM-CA-006
   parent_project: business_ventures
-  
+
   team_size: small
   risk_level: high
-  
+
   estimated_effort_hours: 78
   actual_effort_hours: 0
   progress_percentage: 0
@@ -20,8 +20,8 @@ traceability:
   parent_system_id: SYSTEM-CA-006
   parent_requirement: "Scores MVPs based on engagement, revenue, growth rate, and potential"
   contributes_to_acceptance_criteria:
-    - AC-SYS-006-03  # Prioritization engine accurately identifies top performers (>85%)
-    - AC-SYS-006-05  # False archive rate below 5%
+    - AC-SYS-006-03 # Prioritization engine accurately identifies top performers (>85%)
+    - AC-SYS-006-05 # False archive rate below 5%
   contributes_to_business_value:
     - "Identifies successful MVPs for further investment"
     - "Eliminates wasted resources on non-performers"
@@ -32,11 +32,11 @@ description: |
   Intelligent scoring and prioritization system that evaluates all deployed MVPs
   based on multi-dimensional performance metrics. Automatically identifies
   high-performers for iteration and low-performers for archiving.
-  
+
   Implements configurable scoring algorithm combining engagement metrics,
   revenue performance, growth trends, and market potential signals. Provides
   explainable scores with component breakdowns for decision transparency.
-  
+
   Continuously recalculates priorities as new metrics arrive, adapting to
   changing performance patterns. Triggers automated workflows for top and
   bottom performers.
@@ -55,42 +55,42 @@ acceptance_criteria:
     priority: critical
     test_type: "unit"
     traces_to: AC-SYS-006-03
-    
+
   - criterion_id: AC-FEAT-006-04-02
     criterion: "Achieve >85% agreement with human expert prioritization"
     verification: "Expert validation test with 50+ MVPs"
     priority: critical
     test_type: "validation"
     traces_to: AC-SYS-006-03
-    
+
   - criterion_id: AC-FEAT-006-04-03
     criterion: "Identify top 10% performers with >90% precision"
     verification: "Historical performance correlation test"
     priority: critical
     test_type: "validation"
     traces_to: AC-SYS-006-03
-    
+
   - criterion_id: AC-FEAT-006-04-04
     criterion: "Identify bottom 10% with <5% false positive rate"
     verification: "False archive rate measurement"
     priority: critical
     test_type: "validation"
     traces_to: AC-SYS-006-05
-    
+
   - criterion_id: AC-FEAT-006-04-05
     criterion: "Recalculate scores every 5 minutes with new data"
     verification: "Score update frequency test"
     priority: high
     test_type: "performance"
     traces_to: AC-SYS-006-03
-    
+
   - criterion_id: AC-FEAT-006-04-06
     criterion: "Provide explainable scores with component breakdown"
     verification: "Score explanation completeness test"
     priority: high
     test_type: "unit"
     traces_to: AC-SYS-006-03
-    
+
   - criterion_id: AC-FEAT-006-04-07
     criterion: "Support configurable scoring weights and thresholds"
     verification: "Configuration flexibility test"
@@ -103,7 +103,7 @@ technical_requirements:
     calculation_frequency: "every 5 minutes"
     calculation_time: "<2 minutes for 100 MVPs"
     score_staleness: "<10 minutes maximum"
-    
+
   scoring_algorithm:
     dimensions:
       engagement_score:
@@ -113,7 +113,7 @@ technical_requirements:
           - "Session duration trend"
           - "Bounce rate (inverse)"
           - "Retention rate (7d, 30d)"
-        
+
       revenue_score:
         weight: 0.35
         components:
@@ -121,7 +121,7 @@ technical_requirements:
           - "LTV:CAC ratio"
           - "Conversion rate"
           - "Revenue per user"
-        
+
       growth_score:
         weight: 0.25
         components:
@@ -129,7 +129,7 @@ technical_requirements:
           - "Revenue growth acceleration"
           - "Viral coefficient"
           - "Market expansion signals"
-        
+
       potential_score:
         weight: 0.10
         components:
@@ -137,17 +137,17 @@ technical_requirements:
           - "Competitive position"
           - "Technical scalability"
           - "Resource requirements"
-    
+
     normalization:
       method: "z-score normalization per dimension"
       outlier_handling: "winsorization at 95th percentile"
-    
+
     thresholds:
       high_priority: ">75th percentile (top 25%)"
       medium_priority: "25th-75th percentile"
       low_priority: "<25th percentile (bottom 25%)"
       archive_candidate: "<10th percentile + no growth for 30d"
-  
+
   decision_rules:
     iteration_priority:
       - "Score >80 → immediate iteration candidate"
@@ -155,7 +155,7 @@ technical_requirements:
       - "Score 40-60 + stable → maintenance mode"
       - "Score 20-40 + negative trend → archive candidate"
       - "Score <20 → archive recommendation"
-    
+
     archive_triggers:
       - "Score <10 for 14+ consecutive days"
       - "Zero revenue for 30+ days AND low engagement"
@@ -174,7 +174,7 @@ testing_requirements:
       - "Score explanation generation"
       - "Configurable weight handling"
       - "Ranking algorithms"
-    
+
   integration_tests:
     required: true
     minimum_count: 20
@@ -186,7 +186,7 @@ testing_requirements:
       - "Multi-dimensional score aggregation"
       - "Archive candidate identification"
       - "Historical score tracking"
-      
+
   e2e_tests:
     required: true
     minimum_count: 8
@@ -213,35 +213,35 @@ layers:
     description: "Multi-dimensional score calculation (engagement: 35%, revenue: 30%, growth: 25%, potential: 10%) with configurable weights. Implements z-score normalization and winsorization at 95th percentile."
     priority: critical
     estimated_hours: 20
-    requirement_file: FEATURE-CA-006-04_prioritization_engine.yaml
-    
+    requirement_file: "LAYER-CA-006-04-01_scoring_algorithm_engine.yaml"
+
   - layer_id: LAYER-CA-006-04-02
     name: Ranking System
     description: "MVP ranking with percentile calculations and trend analysis. Identifies top 25% (high priority), middle 50% (medium), bottom 25% (low), and <10th percentile + no growth (archive candidates)."
     priority: high
     estimated_hours: 16
-    requirement_file: FEATURE-CA-006-04_prioritization_engine.yaml
-    
+    requirement_file: "LAYER-CA-006-04-02_ranking_system.yaml"
+
   - layer_id: LAYER-CA-006-04-03
     name: Threshold Manager
     description: "Configurable threshold management and rule evaluation. Supports dynamic thresholds: >80 (iterate), 60-80 (watch), 40-60 (maintain), 20-40 (consider archive), <20 (archive)."
     priority: medium
     estimated_hours: 12
-    requirement_file: FEATURE-CA-006-04_prioritization_engine.yaml
-    
+    requirement_file: "LAYER-CA-006-04-03_threshold_manager.yaml"
+
   - layer_id: LAYER-CA-006-04-04
     name: Decision Engine
     description: "Priority assignment and workflow trigger logic. Archive triggers: score <10 for 14+ days, zero revenue 30+ days, negative growth 60+ days, manual override."
     priority: critical
     estimated_hours: 18
-    requirement_file: FEATURE-CA-006-04_prioritization_engine.yaml
-    
+    requirement_file: "LAYER-CA-006-04-04_decision_engine.yaml"
+
   - layer_id: LAYER-CA-006-04-05
     name: Explainability Module
     description: "Score breakdown generation and explanation interface. Provides component-level scores, historical trends, percentile rankings, and decision rationale for transparency."
     priority: high
     estimated_hours: 12
-    requirement_file: FEATURE-CA-006-04_prioritization_engine.yaml
+    requirement_file: "LAYER-CA-006-04-05_explainability_module.yaml"
 
 implementation_notes:
   design_decisions:
@@ -253,7 +253,7 @@ implementation_notes:
     - "Cache intermediate calculations for <2 minute calculation SLA"
     - "Log all scoring decisions to PostgreSQL for audit trail"
     - "Support multiple scoring algorithm variants with A/B testing framework"
-    
+
   code_structure:
     - "scoring_engine.py: Multi-dimensional score calculation, normalization"
     - "ranking_system.py: Percentile calculations, trending, MVP ordering"
@@ -269,7 +269,7 @@ dependencies:
     - "sqlalchemy: Score history persistence"
     - "celery: Scheduled score recalculation (daily at 2 AM)"
     - "pydantic: Score validation and schema enforcement"
-    
+
   configuration:
     - "Score dimension weights (engagement: 35%, revenue: 30%, growth: 25%, potential: 10%)"
     - "Threshold configurations (high: >75th, archive: <10th percentile)"

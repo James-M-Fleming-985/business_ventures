@@ -1,0 +1,129 @@
+matrix_metadata:
+  timestamp: '20251015_112502'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-LAY-006-02-01-01
+  requirement: Accept 10K events/min without dropping events
+  description: Accept 10K events/min without dropping events
+  test_files: &id001
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-02_engagement_tracking/LAYER-CA-006-02-01
+    Event Collector/tests/test_generated_20251015_112433.py
+  test_methods:
+  - test_ac-lay-006-02-01-01
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-02-01-02
+  requirement: Validate event schema and reject malformed events
+  description: Validate event schema and reject malformed events
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-02-01-02
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-02-01-03
+  requirement: Queue events to Redis with <100ms latency
+  description: Queue events to Redis with <100ms latency
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-02-01-03
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-02-01-04
+  requirement: Return event ID immediately after queuing
+  description: Return event ID immediately after queuing
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-02-01-04
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-02_engagement_tracking/LAYER-CA-006-02-01
+    Event Collector/src/implementation.py
+  lines: 239
+  methods:
+  - name: __init__
+    lines: 28-65
+  - name: validate_event
+    lines: 66-104
+  - name: generate_event_id
+    lines: 105-115
+  classes:
+  - name: EventValidationResult
+    type: class
+    lines: 13-17
+  - name: EventCollector
+    type: class
+    lines: 18-239
+  implements_requirements:
+  - AC-LAY-006-02-01-01
+  - AC-LAY-006-02-01-02
+  - AC-LAY-006-02-01-03
+  - AC-LAY-006-02-01-04
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-02_engagement_tracking/LAYER-CA-006-02-01
+    Event Collector/tests/test_generated_20251015_112433.py
+  test_count: 0
+  implementation_files:
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-02_engagement_tracking/LAYER-CA-006-02-01
+    Event Collector/src/implementation.py
+  methods_tested:
+  - __init__
+  - validate_event
+  - generate_event_id
+  classes_tested:
+  - EventValidationResult
+  - EventCollector
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-02_engagement_tracking/LAYER-CA-006-02-01
+    Event Collector/src/implementation.py:28-65
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-02_engagement_tracking/LAYER-CA-006-02-01
+    Event Collector/tests/test_generated_20251015_112433.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-02_engagement_tracking/LAYER-CA-006-02-01
+    Event Collector/src/implementation.py:66-104
+  method_name: validate_event
+  requirement: AC-001
+  test: test_validate_event
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-02_engagement_tracking/LAYER-CA-006-02-01
+    Event Collector/tests/test_generated_20251015_112433.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-02_engagement_tracking/LAYER-CA-006-02-01
+    Event Collector/src/implementation.py:105-115
+  method_name: generate_event_id
+  requirement: AC-001
+  test: test_generate_event_id
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-02_engagement_tracking/LAYER-CA-006-02-01
+    Event Collector/tests/test_generated_20251015_112433.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 4
+  requirements_traced: 4
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

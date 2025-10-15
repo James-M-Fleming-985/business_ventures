@@ -1,0 +1,191 @@
+matrix_metadata:
+  timestamp: '20251015_120216'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-LAY-006-05-04-01
+  requirement: Send notifications within 2 minutes of workflow events
+  description: Send notifications within 2 minutes of workflow events
+  test_files: &id001
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-04
+    Notification Service/tests/test_generated_20251015_120132.py
+  test_methods:
+  - test_ac-lay-006-05-04-01
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-05-04-02
+  requirement: Include complete rollback instructions in notifications
+  description: Include complete rollback instructions in notifications
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-05-04-02
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-05-04-03
+  requirement: Support email and Slack channels
+  description: Support email and Slack channels
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-05-04-03
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-04
+    Notification Service/src/implementation.py
+  lines: 417
+  methods:
+  - name: to_dict
+    lines: 40-50
+  - name: to_text
+    lines: 51-82
+  - name: __init__
+    lines: 107-134
+  - name: _send_smtp
+    lines: 135-143
+  - name: __init__
+    lines: 147-197
+  - name: __init__
+    lines: 206-222
+  - name: start
+    lines: 223-252
+  - name: _create_notification
+    lines: 253-267
+  - name: _generate_subject
+    lines: 268-280
+  - name: _generate_message
+    lines: 281-344
+  - name: get_notification_status
+    lines: 345-361
+  - name: is_sent_within_time_limit
+    lines: 362-379
+  - name: has_rollback_instructions
+    lines: 380-383
+  - name: validate_rollback_instructions
+    lines: 384-394
+  classes:
+  - name: NotificationChannel
+    type: class
+    lines: 15-20
+  - name: WorkflowEventType
+    type: class
+    lines: 21-30
+  - name: RollbackInstructions
+    type: class
+    lines: 31-82
+  - name: WorkflowEvent
+    type: class
+    lines: 83-92
+  - name: Notification
+    type: class
+    lines: 93-103
+  - name: EmailSender
+    type: class
+    lines: 104-143
+  - name: SlackSender
+    type: class
+    lines: 144-197
+  - name: NotificationService
+    type: class
+    lines: 198-417
+  implements_requirements:
+  - AC-LAY-006-05-04-01
+  - AC-LAY-006-05-04-02
+  - AC-LAY-006-05-04-03
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-04
+    Notification Service/tests/test_generated_20251015_120132.py
+  test_count: 0
+  implementation_files:
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-04
+    Notification Service/src/implementation.py
+  methods_tested:
+  - to_dict
+  - to_text
+  - __init__
+  - _send_smtp
+  - __init__
+  - __init__
+  - start
+  - _create_notification
+  - _generate_subject
+  - _generate_message
+  - get_notification_status
+  - is_sent_within_time_limit
+  - has_rollback_instructions
+  - validate_rollback_instructions
+  classes_tested:
+  - NotificationChannel
+  - WorkflowEventType
+  - RollbackInstructions
+  - WorkflowEvent
+  - Notification
+  - EmailSender
+  - SlackSender
+  - NotificationService
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-04
+    Notification Service/src/implementation.py:40-50
+  method_name: to_dict
+  requirement: AC-001
+  test: test_to_dict
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-04
+    Notification Service/tests/test_generated_20251015_120132.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-04
+    Notification Service/src/implementation.py:51-82
+  method_name: to_text
+  requirement: AC-001
+  test: test_to_text
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-04
+    Notification Service/tests/test_generated_20251015_120132.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-04
+    Notification Service/src/implementation.py:107-134
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-04
+    Notification Service/tests/test_generated_20251015_120132.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-04
+    Notification Service/src/implementation.py:135-143
+  method_name: _send_smtp
+  requirement: AC-001
+  test: test__send_smtp
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-04
+    Notification Service/tests/test_generated_20251015_120132.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-04
+    Notification Service/src/implementation.py:147-197
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-05_archive_automation/LAYER-CA-006-05-04
+    Notification Service/tests/test_generated_20251015_120132.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 3
+  requirements_traced: 3
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

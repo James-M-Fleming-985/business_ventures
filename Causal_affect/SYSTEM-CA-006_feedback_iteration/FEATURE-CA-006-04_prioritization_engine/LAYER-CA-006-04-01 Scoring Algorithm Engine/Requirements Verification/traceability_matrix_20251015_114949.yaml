@@ -1,0 +1,163 @@
+matrix_metadata:
+  timestamp: '20251015_114949'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-LAY-006-04-01-01
+  requirement: Calculate 4-dimensional score with configurable weights
+  description: Calculate 4-dimensional score with configurable weights
+  test_files: &id001
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-04_prioritization_engine/LAYER-CA-006-04-01
+    Scoring Algorithm Engine/tests/test_generated_20251015_114925.py
+  test_methods:
+  - test_ac-lay-006-04-01-01
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-04-01-02
+  requirement: Normalize scores using z-score normalization
+  description: Normalize scores using z-score normalization
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-04-01-02
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-04-01-03
+  requirement: Apply winsorization at 95th percentile
+  description: Apply winsorization at 95th percentile
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-04-01-03
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-04-01-04
+  requirement: Provide component breakdown for explainability
+  description: Provide component breakdown for explainability
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-04-01-04
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-04_prioritization_engine/LAYER-CA-006-04-01
+    Scoring Algorithm Engine/src/implementation.py
+  lines: 209
+  methods:
+  - name: __init__
+    lines: 23-49
+  - name: _validate_weights
+    lines: 50-61
+  - name: fit
+    lines: 62-107
+  - name: _winsorize
+    lines: 108-115
+  - name: _normalize
+    lines: 116-123
+  - name: calculate_score
+    lines: 124-173
+  - name: calculate_scores
+    lines: 174-188
+  - name: get_dimension_stats
+    lines: 189-193
+  - name: create_scoring_engine
+    lines: 194-204
+  classes:
+  - name: ScoreBreakdown
+    type: class
+    lines: 8-16
+  - name: ScoringAlgorithmEngine
+    type: class
+    lines: 17-209
+  implements_requirements:
+  - AC-LAY-006-04-01-01
+  - AC-LAY-006-04-01-02
+  - AC-LAY-006-04-01-03
+  - AC-LAY-006-04-01-04
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-04_prioritization_engine/LAYER-CA-006-04-01
+    Scoring Algorithm Engine/tests/test_generated_20251015_114925.py
+  test_count: 0
+  implementation_files:
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-04_prioritization_engine/LAYER-CA-006-04-01
+    Scoring Algorithm Engine/src/implementation.py
+  methods_tested:
+  - __init__
+  - _validate_weights
+  - fit
+  - _winsorize
+  - _normalize
+  - calculate_score
+  - calculate_scores
+  - get_dimension_stats
+  - create_scoring_engine
+  classes_tested:
+  - ScoreBreakdown
+  - ScoringAlgorithmEngine
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-04_prioritization_engine/LAYER-CA-006-04-01
+    Scoring Algorithm Engine/src/implementation.py:23-49
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-04_prioritization_engine/LAYER-CA-006-04-01
+    Scoring Algorithm Engine/tests/test_generated_20251015_114925.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-04_prioritization_engine/LAYER-CA-006-04-01
+    Scoring Algorithm Engine/src/implementation.py:50-61
+  method_name: _validate_weights
+  requirement: AC-001
+  test: test__validate_weights
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-04_prioritization_engine/LAYER-CA-006-04-01
+    Scoring Algorithm Engine/tests/test_generated_20251015_114925.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-04_prioritization_engine/LAYER-CA-006-04-01
+    Scoring Algorithm Engine/src/implementation.py:62-107
+  method_name: fit
+  requirement: AC-001
+  test: test_fit
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-04_prioritization_engine/LAYER-CA-006-04-01
+    Scoring Algorithm Engine/tests/test_generated_20251015_114925.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-04_prioritization_engine/LAYER-CA-006-04-01
+    Scoring Algorithm Engine/src/implementation.py:108-115
+  method_name: _winsorize
+  requirement: AC-001
+  test: test__winsorize
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-04_prioritization_engine/LAYER-CA-006-04-01
+    Scoring Algorithm Engine/tests/test_generated_20251015_114925.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-04_prioritization_engine/LAYER-CA-006-04-01
+    Scoring Algorithm Engine/src/implementation.py:116-123
+  method_name: _normalize
+  requirement: AC-001
+  test: test__normalize
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-04_prioritization_engine/LAYER-CA-006-04-01
+    Scoring Algorithm Engine/tests/test_generated_20251015_114925.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 4
+  requirements_traced: 4
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

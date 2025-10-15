@@ -1,0 +1,195 @@
+matrix_metadata:
+  timestamp: '20251015_114228'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-LAY-006-03-04-01
+  requirement: Convert currencies with <1% accuracy variance
+  description: Convert currencies with <1% accuracy variance
+  test_files: &id001
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-04
+    Revenue Aggregator/tests/test_generated_20251015_114156.py
+  test_methods:
+  - test_ac-lay-006-03-04-01
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-03-04-02
+  requirement: Aggregate revenue by day/week/month correctly
+  description: Aggregate revenue by day/week/month correctly
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-03-04-02
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-03-04-03
+  requirement: Cache exchange rates to minimize API calls
+  description: Cache exchange rates to minimize API calls
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-03-04-03
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-03-04-04
+  requirement: Provide revenue data with <5 minute latency
+  description: Provide revenue data with <5 minute latency
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-03-04-04
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-04
+    Revenue Aggregator/src/implementation.py
+  lines: 283
+  methods:
+  - name: __init__
+    lines: 47-50
+  - name: get
+    lines: 51-60
+  - name: set
+    lines: 61-71
+  - name: __init__
+    lines: 73-77
+  - name: set_fixed_rate
+    lines: 78-114
+  - name: _get_fallback_rate
+    lines: 115-135
+  - name: __init__
+    lines: 137-141
+  - name: add_record
+    lines: 142-145
+  - name: add_records
+    lines: 146-149
+  - name: set_fixed_rate
+    lines: 150-197
+  - name: _filter_records
+    lines: 198-213
+  - name: _group_by_period
+    lines: 214-227
+  - name: _get_period_key
+    lines: 228-238
+  classes:
+  - name: Period
+    type: class
+    lines: 12-18
+  - name: RevenueRecord
+    type: class
+    lines: 19-26
+  - name: ExchangeRate
+    type: class
+    lines: 27-35
+  - name: AggregatedRevenue
+    type: class
+    lines: 36-45
+  - name: ExchangeRateCache
+    type: class
+    lines: 46-71
+  - name: CurrencyConverter
+    type: class
+    lines: 72-135
+  - name: RevenueAggregator
+    type: class
+    lines: 136-283
+  implements_requirements:
+  - AC-LAY-006-03-04-01
+  - AC-LAY-006-03-04-02
+  - AC-LAY-006-03-04-03
+  - AC-LAY-006-03-04-04
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-04
+    Revenue Aggregator/tests/test_generated_20251015_114156.py
+  test_count: 0
+  implementation_files:
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-04
+    Revenue Aggregator/src/implementation.py
+  methods_tested:
+  - __init__
+  - get
+  - set
+  - __init__
+  - set_fixed_rate
+  - _get_fallback_rate
+  - __init__
+  - add_record
+  - add_records
+  - set_fixed_rate
+  - _filter_records
+  - _group_by_period
+  - _get_period_key
+  classes_tested:
+  - Period
+  - RevenueRecord
+  - ExchangeRate
+  - AggregatedRevenue
+  - ExchangeRateCache
+  - CurrencyConverter
+  - RevenueAggregator
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-04
+    Revenue Aggregator/src/implementation.py:47-50
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-04
+    Revenue Aggregator/tests/test_generated_20251015_114156.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-04
+    Revenue Aggregator/src/implementation.py:51-60
+  method_name: get
+  requirement: AC-001
+  test: test_get
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-04
+    Revenue Aggregator/tests/test_generated_20251015_114156.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-04
+    Revenue Aggregator/src/implementation.py:61-71
+  method_name: set
+  requirement: AC-001
+  test: test_set
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-04
+    Revenue Aggregator/tests/test_generated_20251015_114156.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-04
+    Revenue Aggregator/src/implementation.py:73-77
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-04
+    Revenue Aggregator/tests/test_generated_20251015_114156.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-04
+    Revenue Aggregator/src/implementation.py:78-114
+  method_name: set_fixed_rate
+  requirement: AC-001
+  test: test_set_fixed_rate
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-03_revenue_tracking/LAYER-CA-006-03-04
+    Revenue Aggregator/tests/test_generated_20251015_114156.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 4
+  requirements_traced: 4
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

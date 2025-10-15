@@ -1,0 +1,264 @@
+matrix_metadata:
+  timestamp: '20251015_143914'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-LAY-006-06-05-01
+  requirement: API client successfully calls all backend endpoints
+  description: API client successfully calls all backend endpoints
+  test_files: &id001
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-05
+    API Integration & Real-time Updates/tests/test_generated_20251015_143842.py
+  test_methods:
+  - test_ac-lay-006-06-05-01
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-06-05-02
+  requirement: WebSocket connection establishes and receives messages
+  description: WebSocket connection establishes and receives messages
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-06-05-02
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-06-05-03
+  requirement: Automatic reconnection works after connection loss
+  description: Automatic reconnection works after connection loss
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-06-05-03
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-06-05-04
+  requirement: usePortfolioData hook fetches and returns data
+  description: usePortfolioData hook fetches and returns data
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-06-05-04
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-06-05-05
+  requirement: useMVPDetail hook fetches MVP-specific data
+  description: useMVPDetail hook fetches MVP-specific data
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-06-05-05
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-06-05-06
+  requirement: API errors trigger toast notifications
+  description: API errors trigger toast notifications
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-06-05-06
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-06-05-07
+  requirement: Failed requests retry 3 times before failing
+  description: Failed requests retry 3 times before failing
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-06-05-07
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-06-05-08
+  requirement: Data refreshes every 30 seconds automatically
+  description: Data refreshes every 30 seconds automatically
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-06-05-08
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-05
+    API Integration & Real-time Updates/src/implementation.py
+  lines: 315
+  methods:
+  - name: show
+    lines: 39-47
+  - name: get_notifications
+    lines: 48-52
+  - name: clear
+    lines: 53-57
+  - name: __init__
+    lines: 61-66
+  - name: _set_mock_response
+    lines: 67-70
+  - name: _get_call_count
+    lines: 71-155
+  - name: __init__
+    lines: 159-168
+  - name: on_message
+    lines: 169-172
+  - name: _set_mock_messages
+    lines: 173-176
+  - name: get_received_messages
+    lines: 177-209
+  - name: start_reconnect_loop
+    lines: 210-214
+  - name: _handle_message
+    lines: 215-220
+  - name: simulate_disconnect
+    lines: 221-224
+  - name: is_connected
+    lines: 225-229
+  - name: __init__
+    lines: 233-265
+  - name: start_auto_refresh
+    lines: 266-270
+  - name: stop_auto_refresh
+    lines: 271-277
+  - name: __init__
+    lines: 281-303
+  - name: use_portfolio_data
+    lines: 304-311
+  - name: use_mvp_detail
+    lines: 312-322
+  classes:
+  - name: ConnectionState
+    type: class
+    lines: 10-17
+  - name: APIResponse
+    type: class
+    lines: 18-25
+  - name: WebSocketMessage
+    type: class
+    lines: 26-32
+  - name: ToastNotification
+    type: class
+    lines: 33-57
+  - name: APIClient
+    type: class
+    lines: 58-155
+  - name: WebSocketClient
+    type: class
+    lines: 156-229
+  - name: PortfolioDataHook
+    type: class
+    lines: 230-277
+  - name: MVPDetailHook
+    type: class
+    lines: 278-315
+  implements_requirements:
+  - AC-LAY-006-06-05-01
+  - AC-LAY-006-06-05-02
+  - AC-LAY-006-06-05-03
+  - AC-LAY-006-06-05-04
+  - AC-LAY-006-06-05-05
+  - AC-LAY-006-06-05-06
+  - AC-LAY-006-06-05-07
+  - AC-LAY-006-06-05-08
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-05
+    API Integration & Real-time Updates/tests/test_generated_20251015_143842.py
+  test_count: 0
+  implementation_files:
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-05
+    API Integration & Real-time Updates/src/implementation.py
+  methods_tested:
+  - show
+  - get_notifications
+  - clear
+  - __init__
+  - _set_mock_response
+  - _get_call_count
+  - __init__
+  - on_message
+  - _set_mock_messages
+  - get_received_messages
+  - start_reconnect_loop
+  - _handle_message
+  - simulate_disconnect
+  - is_connected
+  - __init__
+  - start_auto_refresh
+  - stop_auto_refresh
+  - __init__
+  - use_portfolio_data
+  - use_mvp_detail
+  classes_tested:
+  - ConnectionState
+  - APIResponse
+  - WebSocketMessage
+  - ToastNotification
+  - APIClient
+  - WebSocketClient
+  - PortfolioDataHook
+  - MVPDetailHook
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-05
+    API Integration & Real-time Updates/src/implementation.py:39-47
+  method_name: show
+  requirement: AC-001
+  test: test_show
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-05
+    API Integration & Real-time Updates/tests/test_generated_20251015_143842.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-05
+    API Integration & Real-time Updates/src/implementation.py:48-52
+  method_name: get_notifications
+  requirement: AC-001
+  test: test_get_notifications
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-05
+    API Integration & Real-time Updates/tests/test_generated_20251015_143842.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-05
+    API Integration & Real-time Updates/src/implementation.py:53-57
+  method_name: clear
+  requirement: AC-001
+  test: test_clear
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-05
+    API Integration & Real-time Updates/tests/test_generated_20251015_143842.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-05
+    API Integration & Real-time Updates/src/implementation.py:61-66
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-05
+    API Integration & Real-time Updates/tests/test_generated_20251015_143842.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-05
+    API Integration & Real-time Updates/src/implementation.py:67-70
+  method_name: _set_mock_response
+  requirement: AC-001
+  test: test__set_mock_response
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-05
+    API Integration & Real-time Updates/tests/test_generated_20251015_143842.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 8
+  requirements_traced: 8
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

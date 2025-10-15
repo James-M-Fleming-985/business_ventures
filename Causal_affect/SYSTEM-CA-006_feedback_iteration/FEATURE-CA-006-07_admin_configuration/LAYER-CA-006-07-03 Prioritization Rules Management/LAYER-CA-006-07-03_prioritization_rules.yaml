@@ -1,0 +1,54 @@
+# ============================================================================
+# LAYER-CA-006-07-03: Prioritization Rules Management (PLACEHOLDER)
+# ============================================================================
+# Status: PLACEHOLDER - To be detailed when FEATURE-07 is prioritized
+# ============================================================================
+
+layer:
+  id: "LAYER-CA-006-07-03"
+  name: "Prioritization Rules Management"
+  feature_id: "FEATURE-CA-006-07"
+  status: "placeholder"
+  priority: "low"
+  estimated_effort: "16-20 hours"
+
+  description: |
+    PLACEHOLDER: UI for configuring scoring weights, thresholds, and business
+    rules for MVP prioritization (engagement, revenue, growth, potential weights).
+    
+    To be detailed when FEATURE-07 is prioritized for development.
+
+  # Planned components (to be detailed)
+  planned_components:
+    - "PrioritizationSettings.tsx - Main prioritization config panel"
+    - "WeightsEditor.tsx - Sliders for scoring dimension weights"
+    - "ThresholdsForm.tsx - Input fields for priority thresholds"
+    - "RulesPreview.tsx - Live preview of rule changes on sample MVP"
+
+  # Wireframe reference
+  wireframe_reference:
+    file: "UI_VISUALIZATION.md"
+    section: "Analytics Integration Panel (lines 100-149)"
+    description: "Shows prioritization settings section with weight sliders"
+
+  # Placeholder acceptance criteria
+  acceptance_criteria:
+    - id: "AC-LAY-07-03-01"
+      description: "TODO: Admins can adjust scoring weights (engagement, revenue, growth, potential)"
+      status: "placeholder"
+    - id: "AC-LAY-07-03-02"
+      description: "TODO: Weights always sum to 100% with validation"
+      status: "placeholder"
+    - id: "AC-LAY-07-03-03"
+      description: "TODO: Admins can set priority thresholds (high >75, medium 50-75, low <50)"
+      status: "placeholder"
+
+  # Backend API requirements (to be added to FEATURE-02)
+  backend_api_requirements:
+    - "GET /api/config/prioritization - Get current prioritization rules"
+    - "PUT /api/config/prioritization - Update prioritization rules"
+    - "POST /api/config/prioritization/preview - Preview rule changes on sample data"
+
+# ============================================================================
+# TODO: Complete this file when FEATURE-07 is prioritized
+# ============================================================================

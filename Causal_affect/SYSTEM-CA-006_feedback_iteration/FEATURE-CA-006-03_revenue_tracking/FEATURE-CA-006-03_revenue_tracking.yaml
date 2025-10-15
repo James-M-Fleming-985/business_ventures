@@ -190,35 +190,35 @@ layers:
     description: "Revenue event ingestion with payment processor integration (Stripe, PayPal). Captures purchase, refund, subscription events with transaction details."
     priority: critical
     estimated_hours: 16
-    requirement_file: FEATURE-CA-006-03_revenue_tracking.yaml
+    requirement_file: "LAYER-CA-006-03-01_revenue_event_collector.yaml"
     
   - layer_id: LAYER-CA-006-03-02
     name: Conversion Funnel Tracker
     description: "Multi-stage funnel tracking (impression → click → visit → signup → trial → purchase → repeat) with attribution. Tracks user journey and calculates conversion rates per stage."
     priority: high
     estimated_hours: 18
-    requirement_file: FEATURE-CA-006-03_revenue_tracking.yaml
+    requirement_file: "LAYER-CA-006-03-02_conversion_funnel_tracker.yaml"
     
   - layer_id: LAYER-CA-006-03-03
     name: Financial Metrics Calculator
     description: "Revenue, CAC, LTV, and cohort analysis calculations. Implements AOV, RPU, MRR, ARR, LTV:CAC ratio, payback period. Cohort retention curve generation."
     priority: critical
     estimated_hours: 20
-    requirement_file: FEATURE-CA-006-03_revenue_tracking.yaml
+    requirement_file: "LAYER-CA-006-03-03_financial_metrics_calculator.yaml"
     
   - layer_id: LAYER-CA-006-03-04
     name: Revenue Aggregator
     description: "Time-series aggregation (daily, weekly, monthly) and multi-currency normalization. Uses exchange rate API for accurate conversion. Real-time revenue caching with Redis."
     priority: high
     estimated_hours: 10
-    requirement_file: FEATURE-CA-006-03_revenue_tracking.yaml
+    requirement_file: "LAYER-CA-006-03-04_revenue_aggregator.yaml"
     
   - layer_id: LAYER-CA-006-03-05
     name: Financial Reporting Layer
     description: "Revenue reports, forecasts, and insights generation. Provides formatted financial data to dashboard with <5 minute latency. Generates cohort analysis reports."
     priority: medium
     estimated_hours: 8
-    requirement_file: FEATURE-CA-006-03_revenue_tracking.yaml
+    requirement_file: "LAYER-CA-006-03-05_financial_reporting_layer.yaml"
 
 implementation_notes:
   design_decisions:

@@ -16,10 +16,10 @@ traceability:
   parent_feature_id: FEATURE-CA-006-02
   parent_system_id: SYSTEM-CA-006
   implements_acceptance_criteria:
-    - AC-FEAT-006-02-01  # Capture 10K events/min with <100ms latency
-    - AC-FEAT-006-02-02  # Track all event types
+    - AC-FEAT-006-02-01 # Capture 10K events/min with <100ms latency
+    - AC-FEAT-006-02-02 # Track all event types
   contributes_to_system_criteria:
-    - AC-SYS-006-01  # Metrics collected from all MVPs
+    - AC-SYS-006-01 # Metrics collected from all MVPs
 
 description: |
   High-throughput event ingestion service that captures user engagement events
@@ -37,7 +37,7 @@ interfaces:
   inputs:
     - "HTTP POST /events with JSON payload"
     - "Event fields: mvp_id, user_id, event_type, timestamp, properties"
-  
+
   outputs:
     - "Event ID and acknowledgment"
     - "Queued event to Redis Streams"
@@ -48,17 +48,17 @@ acceptance_criteria:
     criterion: "Accept 10K events/min without dropping events"
     verification: "Load test with 10K concurrent requests"
     test_type: "performance"
-    
+
   - criterion_id: AC-LAY-006-02-01-02
     criterion: "Validate event schema and reject malformed events"
     verification: "Schema validation test with invalid payloads"
     test_type: "unit"
-    
+
   - criterion_id: AC-LAY-006-02-01-03
     criterion: "Queue events to Redis with <100ms latency"
     verification: "Event latency measurement test"
     test_type: "integration"
-    
+
   - criterion_id: AC-LAY-006-02-01-04
     criterion: "Return event ID immediately after queuing"
     verification: "Response timing test"
@@ -71,7 +71,7 @@ technical_specification:
     - "redis >= 5.0"
     - "pydantic >= 2.4"
     - "uvicorn >= 0.24"
-  
+
   class_structure:
     EventCollector:
       methods:
@@ -89,7 +89,7 @@ technical_specification:
         - "event_type: str"
         - "timestamp: datetime"
         - "properties: dict"
-    
+
     EventResponse:
       fields:
         - "event_id: str"
@@ -102,12 +102,12 @@ testing_requirements:
     - "Test rate limiting logic"
     - "Test event ID generation"
     - "Test error handling for malformed events"
-  
+
   integration_tests:
     - "Test Redis queuing end-to-end"
     - "Test FastAPI endpoint with real requests"
     - "Test concurrent event submissions"
-  
+
   performance_tests:
     - "Load test: 10K events/min sustained"
     - "Latency test: <100ms per event"

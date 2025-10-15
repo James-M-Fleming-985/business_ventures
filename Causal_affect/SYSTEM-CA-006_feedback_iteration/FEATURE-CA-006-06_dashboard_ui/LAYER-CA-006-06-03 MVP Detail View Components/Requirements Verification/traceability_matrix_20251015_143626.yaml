@@ -1,0 +1,330 @@
+matrix_metadata:
+  timestamp: '20251015_143626'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-LAY-006-06-03-01
+  requirement: MVPDetailView fetches data using mvpId from route params
+  description: MVPDetailView fetches data using mvpId from route params
+  test_files: &id001
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-03
+    MVP Detail View Components/tests/test_generated_20251015_143541.py
+  test_methods:
+  - test_ac-lay-006-06-03-01
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-06-03-02
+  requirement: ScoreBreakdownCard displays overall score with 4 dimension breakdowns
+  description: ScoreBreakdownCard displays overall score with 4 dimension breakdowns
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-06-03-02
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-06-03-03
+  requirement: KeyMetricsGrid renders 10 metrics (5 engagement + 5 revenue)
+  description: KeyMetricsGrid renders 10 metrics (5 engagement + 5 revenue)
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-06-03-03
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-06-03-04
+  requirement: ConversionFunnelChart visualizes 7 stages correctly
+  description: ConversionFunnelChart visualizes 7 stages correctly
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-06-03-04
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-06-03-05
+  requirement: TrafficSourcesTable displays all sources with ROI bars
+  description: TrafficSourcesTable displays all sources with ROI bars
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-06-03-05
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-06-03-06
+  requirement: LiveEventFeed updates in real-time via WebSocket
+  description: LiveEventFeed updates in real-time via WebSocket
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-06-03-06
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-06-03-07
+  requirement: EngagementTrendChart displays 30 data points
+  description: EngagementTrendChart displays 30 data points
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-06-03-07
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-06-03-08
+  requirement: Back to portfolio navigation works from breadcrumb
+  description: Back to portfolio navigation works from breadcrumb
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-06-03-08
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-03
+    MVP Detail View Components/src/implementation.py
+  lines: 457
+  methods:
+  - name: __init__
+    lines: 107-124
+  - name: on_event
+    lines: 125-137
+  - name: __init__
+    lines: 139-143
+  - name: render
+    lines: 144-158
+  - name: __init__
+    lines: 160-163
+  - name: render
+    lines: 164-187
+  - name: __init__
+    lines: 189-192
+  - name: render
+    lines: 193-206
+  - name: __init__
+    lines: 208-211
+  - name: render
+    lines: 212-228
+  - name: __init__
+    lines: 230-253
+  - name: on_event
+    lines: 254-261
+  - name: get_events
+    lines: 262-265
+  - name: render
+    lines: 266-282
+  - name: __init__
+    lines: 284-287
+  - name: render
+    lines: 288-302
+  - name: __init__
+    lines: 304-306
+  - name: render
+    lines: 307-312
+  - name: navigate_to
+    lines: 313-319
+  - name: __init__
+    lines: 321-420
+  - name: _initialize_components
+    lines: 421-453
+  - name: navigate_back_to_portfolio
+    lines: 454-464
+  classes:
+  - name: WebSocketStatus
+    type: class
+    lines: 10-16
+  - name: DimensionScore
+    type: class
+    lines: 17-23
+  - name: ScoreBreakdown
+    type: class
+    lines: 24-29
+  - name: Metric
+    type: class
+    lines: 30-37
+  - name: EngagementMetrics
+    type: class
+    lines: 38-42
+  - name: RevenueMetrics
+    type: class
+    lines: 43-47
+  - name: FunnelStage
+    type: class
+    lines: 48-54
+  - name: ConversionFunnel
+    type: class
+    lines: 55-59
+  - name: TrafficSource
+    type: class
+    lines: 60-68
+  - name: TrafficSources
+    type: class
+    lines: 69-73
+  - name: LiveEvent
+    type: class
+    lines: 74-82
+  - name: DataPoint
+    type: class
+    lines: 83-89
+  - name: EngagementTrend
+    type: class
+    lines: 90-94
+  - name: MVPData
+    type: class
+    lines: 95-105
+  - name: WebSocketClient
+    type: class
+    lines: 106-137
+  - name: ScoreBreakdownCard
+    type: class
+    lines: 138-158
+  - name: KeyMetricsGrid
+    type: class
+    lines: 159-187
+  - name: ConversionFunnelChart
+    type: class
+    lines: 188-206
+  - name: TrafficSourcesTable
+    type: class
+    lines: 207-228
+  - name: LiveEventFeed
+    type: class
+    lines: 229-282
+  - name: EngagementTrendChart
+    type: class
+    lines: 283-302
+  - name: Breadcrumb
+    type: class
+    lines: 303-319
+  - name: MVPDetailView
+    type: class
+    lines: 320-457
+  implements_requirements:
+  - AC-LAY-006-06-03-01
+  - AC-LAY-006-06-03-02
+  - AC-LAY-006-06-03-03
+  - AC-LAY-006-06-03-04
+  - AC-LAY-006-06-03-05
+  - AC-LAY-006-06-03-06
+  - AC-LAY-006-06-03-07
+  - AC-LAY-006-06-03-08
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-03
+    MVP Detail View Components/tests/test_generated_20251015_143541.py
+  test_count: 0
+  implementation_files:
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-03
+    MVP Detail View Components/src/implementation.py
+  methods_tested:
+  - __init__
+  - on_event
+  - __init__
+  - render
+  - __init__
+  - render
+  - __init__
+  - render
+  - __init__
+  - render
+  - __init__
+  - on_event
+  - get_events
+  - render
+  - __init__
+  - render
+  - __init__
+  - render
+  - navigate_to
+  - __init__
+  - _initialize_components
+  - navigate_back_to_portfolio
+  classes_tested:
+  - WebSocketStatus
+  - DimensionScore
+  - ScoreBreakdown
+  - Metric
+  - EngagementMetrics
+  - RevenueMetrics
+  - FunnelStage
+  - ConversionFunnel
+  - TrafficSource
+  - TrafficSources
+  - LiveEvent
+  - DataPoint
+  - EngagementTrend
+  - MVPData
+  - WebSocketClient
+  - ScoreBreakdownCard
+  - KeyMetricsGrid
+  - ConversionFunnelChart
+  - TrafficSourcesTable
+  - LiveEventFeed
+  - EngagementTrendChart
+  - Breadcrumb
+  - MVPDetailView
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-03
+    MVP Detail View Components/src/implementation.py:107-124
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-03
+    MVP Detail View Components/tests/test_generated_20251015_143541.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-03
+    MVP Detail View Components/src/implementation.py:125-137
+  method_name: on_event
+  requirement: AC-001
+  test: test_on_event
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-03
+    MVP Detail View Components/tests/test_generated_20251015_143541.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-03
+    MVP Detail View Components/src/implementation.py:139-143
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-03
+    MVP Detail View Components/tests/test_generated_20251015_143541.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-03
+    MVP Detail View Components/src/implementation.py:144-158
+  method_name: render
+  requirement: AC-001
+  test: test_render
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-03
+    MVP Detail View Components/tests/test_generated_20251015_143541.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-03
+    MVP Detail View Components/src/implementation.py:160-163
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-03
+    MVP Detail View Components/tests/test_generated_20251015_143541.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 8
+  requirements_traced: 8
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

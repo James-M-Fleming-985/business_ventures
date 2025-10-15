@@ -1,0 +1,414 @@
+# FEATURE-CA-006-06: Dashboard User Interface
+# ============================================
+
+metadata:
+  requirement_id: FEATURE-CA-006-06
+  requirement_name: Dashboard User Interface
+  requirement_type: Feature
+  parent_system: SYSTEM-CA-006
+  parent_project: business_ventures
+  
+  team_size: small
+  risk_level: medium
+  
+  estimated_effort_hours: 96  # 18+20+22+18+18 from layers
+  actual_effort_hours: 0
+  progress_percentage: 0
+  status: planned
+
+traceability:
+  parent_system_id: SYSTEM-CA-006
+  parent_requirement: "Real-time dashboard displaying metrics from all MVPs"
+  contributes_to_acceptance_criteria:
+    - AC-SYS-006-02  # Dashboard displays real-time data with <30 second refresh
+    - AC-SYS-006-03  # Priority scores visible for all MVPs with explainability
+    - AC-SYS-006-04  # Archive recommendations presented with approval workflow
+  contributes_to_business_value:
+    - "Provides visual interface for monitoring all MVPs"
+    - "Enables data-driven decision making with clear visualizations"
+    - "Reduces time to identify high-performers and archive candidates"
+    - "Improves user experience with real-time updates and responsive design"
+
+description: |
+  Modern React-based dashboard interface providing real-time visibility into all deployed MVPs.
+  Displays portfolio-level metrics, individual MVP analytics, prioritization scores, and
+  archive candidates with interactive charts and tables.
+  
+  Built with React 18, TypeScript, TailwindCSS, and Recharts for production-grade user experience.
+  Implements responsive design for desktop, tablet, and mobile devices with <30 second data refresh
+  via WebSocket connections.
+  
+  Integrates with all backend APIs from FEATURES 01-05 to provide comprehensive visualization
+  of analytics data, engagement metrics, revenue tracking, prioritization scores, and archive workflow.
+
+business_value: |
+  - Provides instant visibility into portfolio performance
+  - Enables rapid identification of high-performing MVPs for investment
+  - Streamlines archive decision-making with clear visualizations
+  - Improves user productivity with intuitive, responsive interface
+  - Reduces cognitive load with well-organized information architecture
+  - Supports data-driven iteration priorities with comprehensive analytics
+
+acceptance_criteria:
+  - criterion_id: AC-FEAT-006-06-01
+    criterion: "Portfolio overview displays 5 key metrics with 7-day trends"
+    status: planned
+    priority: critical
+    verification_method: ui_tests
+    layers: [LAYER-CA-006-06-02]
+    
+  - criterion_id: AC-FEAT-006-06-02
+    criterion: "Top performers table shows top 25 MVPs sorted by priority score"
+    status: planned
+    priority: critical
+    verification_method: ui_tests
+    layers: [LAYER-CA-006-06-02]
+    
+  - criterion_id: AC-FEAT-006-06-03
+    criterion: "Archive candidates table lists MVPs with score <10 and zero growth"
+    status: planned
+    priority: critical
+    verification_method: ui_tests
+    layers: [LAYER-CA-006-06-02]
+    
+  - criterion_id: AC-FEAT-006-06-04
+    criterion: "MVP detail view displays engagement, revenue, and priority metrics"
+    status: planned
+    priority: critical
+    verification_method: ui_tests
+    layers: [LAYER-CA-006-06-03]
+    
+  - criterion_id: AC-FEAT-006-06-05
+    criterion: "Score breakdown shows 4 dimension weights and percentile rankings"
+    status: planned
+    priority: high
+    verification_method: ui_tests
+    layers: [LAYER-CA-006-06-03]
+    
+  - criterion_id: AC-FEAT-006-06-06
+    criterion: "Conversion funnel visualizes 7-stage funnel with drop-off rates"
+    status: planned
+    priority: high
+    verification_method: ui_tests
+    layers: [LAYER-CA-006-06-03, LAYER-CA-006-06-04]
+    
+  - criterion_id: AC-FEAT-006-06-07
+    criterion: "Time-series charts display 30-day trends for DAU and revenue"
+    status: planned
+    priority: high
+    verification_method: ui_tests
+    layers: [LAYER-CA-006-06-04]
+    
+  - criterion_id: AC-FEAT-006-06-08
+    criterion: "Real-time updates refresh dashboard data every <30 seconds"
+    status: planned
+    priority: critical
+    verification_method: integration_tests
+    layers: [LAYER-CA-006-06-05]
+    
+  - criterion_id: AC-FEAT-006-06-09
+    criterion: "WebSocket connection maintains live event feed with <5 second latency"
+    status: planned
+    priority: high
+    verification_method: performance_tests
+    layers: [LAYER-CA-006-06-05]
+    
+  - criterion_id: AC-FEAT-006-06-10
+    criterion: "API integration handles errors gracefully with user notifications"
+    status: planned
+    priority: high
+    verification_method: unit_tests
+    layers: [LAYER-CA-006-06-05]
+    
+  - criterion_id: AC-FEAT-006-06-11
+    criterion: "Responsive design adapts to desktop (>1024px), tablet (768-1024px), mobile (<768px)"
+    status: planned
+    priority: high
+    verification_method: ui_tests
+    layers: [LAYER-CA-006-06-01]
+    
+  - criterion_id: AC-FEAT-006-06-12
+    criterion: "Navigation routes work correctly: / (portfolio), /mvp/:id (detail)"
+    status: planned
+    priority: critical
+    verification_method: integration_tests
+    layers: [LAYER-CA-006-06-01]
+
+dependencies:
+  backend_apis:
+    - feature: FEATURE-CA-006-01
+      description: "Analytics integration provides data from GA, Mixpanel, Amplitude"
+      endpoints:
+        - "GET /api/v1/analytics/providers"
+        - "POST /api/v1/analytics/sync"
+    
+    - feature: FEATURE-CA-006-02
+      description: "Engagement tracking provides DAU, sessions, retention metrics"
+      endpoints:
+        - "GET /api/v1/portfolio/overview"
+        - "GET /api/v1/mvps"
+        - "GET /api/v1/mvps/{mvp_id}/metrics"
+        - "WS /ws/live-feed"
+    
+    - feature: FEATURE-CA-006-03
+      description: "Revenue tracking provides financial metrics and conversion funnels"
+      endpoints:
+        - "GET /api/v1/mvps/{mvp_id}/conversion-funnel"
+        - "GET /api/v1/mvps/{mvp_id}/revenue-metrics"
+        - "GET /api/v1/portfolio/metrics"
+    
+    - feature: FEATURE-CA-006-04
+      description: "Prioritization engine provides priority scores and rankings"
+      endpoints:
+        - "GET /api/v1/mvps/top-performers"
+        - "GET /api/v1/mvps/{mvp_id}/score-breakdown"
+        - "GET /api/v1/prioritization/settings"
+    
+    - feature: FEATURE-CA-006-05
+      description: "Archive automation provides archive candidates and workflow"
+      endpoints:
+        - "GET /api/v1/mvps/archive-candidates"
+        - "GET /api/v1/archive/queue"
+        - "POST /api/v1/archive/{mvp_id}/approve"
+
+layers:
+  - layer_id: LAYER-CA-006-06-01
+    name: Dashboard Container & Routing
+    description: "Root application component with routing, layout, navigation, and state management setup"
+    estimated_effort_hours: 18
+    priority: critical
+    requirement_file: "LAYER-CA-006-06-01_dashboard_container.yaml"
+    
+  - layer_id: LAYER-CA-006-06-02
+    name: Portfolio Overview Components
+    description: "Portfolio-level metrics cards, top performers table, archive candidates table"
+    estimated_effort_hours: 20
+    priority: critical
+    requirement_file: "LAYER-CA-006-06-02_portfolio_overview.yaml"
+    
+  - layer_id: LAYER-CA-006-06-03
+    name: MVP Detail View Components
+    description: "Individual MVP analytics, score breakdown, funnel, traffic sources, event feed"
+    estimated_effort_hours: 22
+    priority: critical
+    requirement_file: "LAYER-CA-006-06-03_mvp_detail_view.yaml"
+    
+  - layer_id: LAYER-CA-006-06-04
+    name: Chart Visualization Library
+    description: "Recharts wrappers for time-series, bar charts, funnels, and metric cards"
+    estimated_effort_hours: 18
+    priority: high
+    requirement_file: "LAYER-CA-006-06-04_chart_visualization.yaml"
+    
+  - layer_id: LAYER-CA-006-06-05
+    name: API Integration & Real-time Updates
+    description: "FastAPI client, WebSocket connections, state synchronization, error handling"
+    estimated_effort_hours: 18
+    priority: critical
+    requirement_file: "LAYER-CA-006-06-05_api_integration.yaml"
+
+technical_specification:
+  technology_stack:
+    framework: "React 18 + TypeScript 5"
+    build_tool: "Vite 5"
+    styling: "TailwindCSS 3"
+    state_management: "Zustand"
+    charts: "Recharts"
+    tables: "TanStack Table v8"
+    icons: "Lucide React"
+    animations: "Framer Motion"
+    http_client: "Axios"
+    forms: "React Hook Form + Zod"
+    realtime: "WebSocket API"
+  
+  design_system:
+    colors:
+      primary: "#3B82F6"  # Blue for actions
+      success: "#10B981"  # Green for positive metrics
+      warning: "#F59E0B"  # Yellow for attention
+      danger: "#EF4444"   # Red for archive/critical
+      info: "#8B5CF6"     # Purple for information
+      neutral: "#6B7280"  # Gray for text/borders
+    
+    typography:
+      headings: "Inter Bold"
+      body: "Inter Regular"
+      monospace: "JetBrains Mono"
+    
+    spacing:
+      base_unit: "8px"
+      container_max_width: "1400px"
+    
+    breakpoints:
+      desktop: ">1024px"
+      tablet: "768-1024px"
+      mobile: "<768px"
+  
+  performance_requirements:
+    initial_load: "<3 seconds"
+    data_refresh: "<30 seconds via WebSocket"
+    chart_render: "<500ms"
+    page_transitions: "<200ms"
+    bundle_size: "<500KB gzipped"
+  
+  accessibility:
+    wcag_level: "AA"
+    keyboard_navigation: "Full support"
+    screen_reader: "ARIA labels on all interactive elements"
+    color_contrast: "Minimum 4.5:1"
+
+testing_approach:
+  component_tests:
+    framework: "Vitest + React Testing Library"
+    coverage_target: ">80%"
+    tests:
+      - "Render all components without errors"
+      - "Props passed correctly to child components"
+      - "User interactions trigger expected state changes"
+      - "Conditional rendering based on data/state"
+  
+  integration_tests:
+    framework: "Vitest + MSW (Mock Service Worker)"
+    tests:
+      - "API calls made with correct parameters"
+      - "Loading states displayed during data fetch"
+      - "Error states displayed on API failures"
+      - "WebSocket connection established and maintained"
+      - "Real-time updates reflected in UI"
+  
+  e2e_tests:
+    framework: "Playwright"
+    tests:
+      - "Navigate from portfolio to MVP detail view"
+      - "Sort and filter tables correctly"
+      - "Charts display with correct data"
+      - "Real-time updates appear within 30 seconds"
+      - "Responsive design works across breakpoints"
+  
+  visual_regression_tests:
+    framework: "Playwright + Percy"
+    tests:
+      - "Portfolio overview snapshot"
+      - "MVP detail view snapshot"
+      - "Charts and visualizations snapshot"
+      - "Mobile responsive snapshot"
+
+quality_gates:
+  - gate: "All component tests pass with >80% coverage"
+    enforced: true
+  
+  - gate: "All integration tests pass"
+    enforced: true
+  
+  - gate: "Lighthouse performance score >90"
+    enforced: true
+  
+  - gate: "Lighthouse accessibility score >90"
+    enforced: true
+  
+  - gate: "Bundle size <500KB gzipped"
+    enforced: true
+  
+  - gate: "Zero TypeScript errors"
+    enforced: true
+  
+  - gate: "Zero ESLint errors"
+    enforced: true
+
+deployment:
+  environment: "Railway"
+  build_command: "npm run build"
+  start_command: "npm run preview -- --host 0.0.0.0 --port $PORT"
+  environment_variables:
+    - "VITE_API_URL: Backend API URL"
+    - "VITE_WS_URL: WebSocket URL"
+    - "VITE_ENV: production/staging/development"
+
+integration_plan:
+  integration_type: "Feature Integration"
+  integration_file: "src/integration.ts"
+  
+  exports:
+    - "DashboardApp: Main React application component"
+    - "apiClient: API client for backend communication"
+    - "usePortfolioData: Hook for portfolio data"
+    - "useMVPDetail: Hook for MVP detail data"
+    - "useWebSocket: Hook for real-time updates"
+  
+  imports:
+    from_feature_01:
+      - "AnalyticsProviderStatus from analytics API"
+    from_feature_02:
+      - "PortfolioMetrics from engagement API"
+      - "MVPEngagementMetrics from engagement API"
+    from_feature_03:
+      - "RevenueMetrics from revenue API"
+      - "ConversionFunnel from revenue API"
+    from_feature_04:
+      - "PriorityScore from prioritization API"
+      - "ScoreBreakdown from prioritization API"
+    from_feature_05:
+      - "ArchiveCandidates from archive API"
+      - "ArchiveQueue from archive API"
+
+verification_plan:
+  component_verification:
+    - "Each component renders without errors"
+    - "Props are type-safe with TypeScript"
+    - "User interactions work as expected"
+    - "Loading and error states handled"
+  
+  integration_verification:
+    - "API client correctly calls all backend endpoints"
+    - "WebSocket connection established and maintained"
+    - "Real-time updates reflected in UI within 30 seconds"
+    - "Error handling displays user-friendly messages"
+  
+  visual_verification:
+    - "Design matches UI_VISUALIZATION.md wireframes"
+    - "Colors, typography, spacing match design system"
+    - "Responsive design works on all breakpoints"
+    - "Animations smooth and performant"
+  
+  performance_verification:
+    - "Initial load <3 seconds"
+    - "Chart render <500ms"
+    - "Bundle size <500KB gzipped"
+    - "Lighthouse performance score >90"
+  
+  accessibility_verification:
+    - "WCAG AA compliance"
+    - "Keyboard navigation works throughout app"
+    - "Screen reader announces all elements correctly"
+    - "Color contrast meets 4.5:1 minimum"
+
+risks:
+  - risk: "Large bundle size due to chart libraries"
+    mitigation: "Use tree-shaking, lazy loading, and code splitting"
+    likelihood: medium
+    
+  - risk: "WebSocket connection drops in production"
+    mitigation: "Implement automatic reconnection with exponential backoff"
+    likelihood: medium
+    
+  - risk: "Real-time updates cause UI jank"
+    mitigation: "Use React transitions, debounce updates, optimize re-renders"
+    likelihood: low
+    
+  - risk: "Responsive design breaks on edge cases"
+    mitigation: "Comprehensive testing on real devices, use CSS Grid/Flexbox"
+    likelihood: low
+    
+  - risk: "API errors not handled gracefully"
+    mitigation: "Comprehensive error boundary, user-friendly error messages"
+    likelihood: medium
+
+notes: |
+  - This feature provides the visual interface for FEATURES 01-05
+  - All backend APIs must be running for full functionality
+  - WebSocket connection requires backend WebSocket support
+  - Design follows UI_VISUALIZATION.md wireframes exactly
+  - Uses same test philosophy as backend features (TDD, high coverage)
+  - Folder structure mirrors backend: FEATURE → LAYER → src/
+  - Layer YAMLs provide detailed component specifications
+  - Integration file exports hooks and components for other features

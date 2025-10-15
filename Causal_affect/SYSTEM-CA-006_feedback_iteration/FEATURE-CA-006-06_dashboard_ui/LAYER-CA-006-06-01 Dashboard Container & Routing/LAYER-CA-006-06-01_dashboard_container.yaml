@@ -1,0 +1,357 @@
+# LAYER-CA-006-06-01: Dashboard Container & Routing
+# ==================================================
+
+metadata:
+  layer_id: LAYER-CA-006-06-01
+  layer_name: Dashboard Container & Routing
+  parent_feature: FEATURE-CA-006-06
+  parent_feature_name: Dashboard User Interface
+  parent_system: SYSTEM-CA-006
+  created_date: 2025-10-15
+  status: planned
+  priority: critical
+  complexity: medium
+
+traceability:
+  parent_feature_id: FEATURE-CA-006-06
+  parent_system_id: SYSTEM-CA-006
+  implements_acceptance_criteria:
+    - AC-FEAT-006-06-11  # Responsive design adapts to desktop, tablet, mobile
+    - AC-FEAT-006-06-12  # Navigation routes work correctly
+  contributes_to_system_criteria:
+    - AC-SYS-006-02  # Dashboard displays real-time data with <30 second refresh
+
+description: |
+  Root React application component that provides the foundational structure for the dashboard.
+  Implements client-side routing with React Router, responsive layout with TailwindCSS,
+  global state management with Zustand, and theme/configuration setup.
+  
+  Acts as the entry point for the entire frontend application, orchestrating navigation
+  between portfolio overview and individual MVP detail views.
+
+responsibilities:
+  - "Initialize React application with Vite entry point"
+  - "Configure React Router with routes: / (portfolio), /mvp/:id (detail)"
+  - "Implement responsive layout container with header, navigation, and content area"
+  - "Set up Zustand stores for global state (user preferences, theme, data cache)"
+  - "Provide error boundary for graceful error handling"
+  - "Configure TailwindCSS theme with design system colors and typography"
+
+interfaces:
+  inputs:
+    - "URL path for routing (/, /mvp/:id)"
+    - "User preferences from localStorage"
+    - "Environment configuration (API URL, WebSocket URL)"
+  
+  outputs:
+    - "Rendered React application with routing"
+    - "Layout structure for child components"
+    - "Global state accessible via Zustand hooks"
+
+components:
+  App:
+    type: "Root component"
+    file: "src/App.tsx"
+    responsibilities:
+      - "Set up React Router with BrowserRouter"
+      - "Define routes: / → PortfolioView, /mvp/:id → MVPDetailView"
+      - "Render DashboardLayout wrapper"
+      - "Implement ErrorBoundary"
+    props: "None"
+    
+  DashboardLayout:
+    type: "Layout component"
+    file: "src/components/DashboardLayout.tsx"
+    responsibilities:
+      - "Render header with logo, user menu, notifications"
+      - "Provide navigation breadcrumbs"
+      - "Render content area with responsive container"
+      - "Handle mobile navigation drawer"
+    props:
+      - "children: ReactNode"
+    
+  Header:
+    type: "Navigation component"
+    file: "src/components/Header.tsx"
+    responsibilities:
+      - "Display 'Causal Affect - Feedback Dashboard' title"
+      - "Render user avatar and dropdown menu"
+      - "Show notification bell with unread count"
+      - "Toggle mobile menu on small screens"
+    props:
+      - "onMobileMenuToggle: () => void"
+    
+  Navigation:
+    type: "Navigation component"
+    file: "src/components/Navigation.tsx"
+    responsibilities:
+      - "Render navigation links: Dashboard, Archive Queue, Settings"
+      - "Highlight active route"
+      - "Collapse to drawer on mobile"
+    props:
+      - "isOpen: boolean"
+      - "onClose: () => void"
+
+state_management:
+  stores:
+    userPreferencesStore:
+      file: "src/stores/userPreferencesStore.ts"
+      state:
+        - "theme: 'light' | 'dark'"
+        - "refreshInterval: number (default 30 seconds)"
+        - "chartType: 'line' | 'bar'"
+      actions:
+        - "setTheme(theme: string)"
+        - "setRefreshInterval(interval: number)"
+        - "setChartType(type: string)"
+    
+    navigationStore:
+      file: "src/stores/navigationStore.ts"
+      state:
+        - "currentMVPId: string | null"
+        - "breadcrumbs: Array<{label: string, path: string}>"
+      actions:
+        - "setCurrentMVP(id: string)"
+        - "updateBreadcrumbs(crumbs: Array)"
+
+routing:
+  routes:
+    - path: "/"
+      component: "PortfolioView"
+      description: "Portfolio overview with metrics, top performers, archive candidates"
+      
+    - path: "/mvp/:id"
+      component: "MVPDetailView"
+      description: "Individual MVP analytics with charts, funnel, traffic sources"
+      
+    - path: "/archive"
+      component: "ArchiveQueueView"
+      description: "Archive queue with approval workflow"
+      
+    - path: "/settings"
+      component: "SettingsView"
+      description: "Dashboard settings and analytics provider configuration"
+      
+    - path: "*"
+      component: "NotFoundView"
+      description: "404 page for unknown routes"
+
+acceptance_criteria:
+  - criterion_id: AC-LAY-006-06-01-01
+    criterion: "React app renders without errors on all routes"
+    verification: "Render test for each route"
+    test_type: "component"
+    
+  - criterion_id: AC-LAY-006-06-01-02
+    criterion: "Routing navigates correctly between portfolio and MVP detail"
+    verification: "Navigation test with React Router"
+    test_type: "integration"
+    
+  - criterion_id: AC-LAY-006-06-01-03
+    criterion: "Responsive layout adapts to desktop (>1024px), tablet (768-1024px), mobile (<768px)"
+    verification: "Visual regression test at each breakpoint"
+    test_type: "e2e"
+    
+  - criterion_id: AC-LAY-006-06-01-04
+    criterion: "Header displays logo, user menu, and notifications"
+    verification: "Component render test"
+    test_type: "component"
+    
+  - criterion_id: AC-LAY-006-06-01-05
+    criterion: "Mobile navigation drawer opens/closes on toggle"
+    verification: "Interaction test with drawer"
+    test_type: "component"
+    
+  - criterion_id: AC-LAY-006-06-01-06
+    criterion: "Zustand stores initialize with default values"
+    verification: "Store initialization test"
+    test_type: "unit"
+    
+  - criterion_id: AC-LAY-006-06-01-07
+    criterion: "Error boundary catches and displays errors gracefully"
+    verification: "Error boundary test with simulated error"
+    test_type: "component"
+
+technical_specification:
+  language: "TypeScript 5.0+"
+  framework: "React 18"
+  dependencies:
+    - "react >= 18.2"
+    - "react-dom >= 18.2"
+    - "react-router-dom >= 6.20"
+    - "zustand >= 4.4"
+    - "tailwindcss >= 3.3"
+    - "lucide-react >= 0.290"
+  
+  dev_dependencies:
+    - "vite >= 5.0"
+    - "vitest >= 1.0"
+    - "@testing-library/react >= 14.0"
+    - "@testing-library/user-event >= 14.0"
+    - "typescript >= 5.0"
+  
+  file_structure:
+    src:
+      main: "main.tsx - Vite entry point, ReactDOM.render"
+      app: "App.tsx - Root component with routing"
+      config: "config.ts - Environment configuration"
+      components:
+        - "DashboardLayout.tsx - Main layout wrapper"
+        - "Header.tsx - Top navigation bar"
+        - "Navigation.tsx - Navigation links/drawer"
+        - "ErrorBoundary.tsx - Error boundary component"
+      stores:
+        - "userPreferencesStore.ts - User preferences Zustand store"
+        - "navigationStore.ts - Navigation state Zustand store"
+      views:
+        - "PortfolioView.tsx - Portfolio overview (placeholder)"
+        - "MVPDetailView.tsx - MVP detail (placeholder)"
+        - "NotFoundView.tsx - 404 page"
+      styles:
+        - "index.css - Global styles, TailwindCSS imports"
+    
+    root:
+      - "index.html - HTML entry point"
+      - "vite.config.ts - Vite configuration"
+      - "tailwind.config.js - TailwindCSS configuration"
+      - "tsconfig.json - TypeScript configuration"
+      - "package.json - Dependencies"
+  
+  tailwind_configuration:
+    theme:
+      extend:
+        colors:
+          primary: "#3B82F6"
+          success: "#10B981"
+          warning: "#F59E0B"
+          danger: "#EF4444"
+          info: "#8B5CF6"
+          neutral: "#6B7280"
+        fontFamily:
+          sans: ["Inter", "sans-serif"]
+          mono: ["JetBrains Mono", "monospace"]
+        spacing:
+          container: "1400px"
+
+testing_approach:
+  component_tests:
+    framework: "Vitest + React Testing Library"
+    tests:
+      - "test_app_renders_successfully"
+      - "test_routing_to_portfolio_view"
+      - "test_routing_to_mvp_detail_view"
+      - "test_routing_to_404_on_unknown_path"
+      - "test_dashboard_layout_renders_header"
+      - "test_dashboard_layout_renders_children"
+      - "test_header_displays_logo_and_user_menu"
+      - "test_navigation_renders_links"
+      - "test_mobile_navigation_toggle"
+      - "test_error_boundary_catches_errors"
+  
+  integration_tests:
+    framework: "Vitest + React Testing Library"
+    tests:
+      - "test_navigation_between_views"
+      - "test_breadcrumbs_update_on_navigation"
+      - "test_user_preferences_persist_in_store"
+      - "test_theme_toggle_updates_store"
+  
+  e2e_tests:
+    framework: "Playwright"
+    tests:
+      - "test_responsive_layout_desktop"
+      - "test_responsive_layout_tablet"
+      - "test_responsive_layout_mobile"
+      - "test_mobile_drawer_interaction"
+
+code_structure:
+  main_tsx: |
+    import React from 'react'
+    import ReactDOM from 'react-dom/client'
+    import App from './App'
+    import './styles/index.css'
+    
+    ReactDOM.createRoot(document.getElementById('root')!).render(
+      <React.StrictMode>
+        <App />
+      </React.StrictMode>
+    )
+  
+  app_tsx: |
+    import { BrowserRouter, Routes, Route } from 'react-router-dom'
+    import DashboardLayout from './components/DashboardLayout'
+    import PortfolioView from './views/PortfolioView'
+    import MVPDetailView from './views/MVPDetailView'
+    import NotFoundView from './views/NotFoundView'
+    import ErrorBoundary from './components/ErrorBoundary'
+    
+    function App() {
+      return (
+        <ErrorBoundary>
+          <BrowserRouter>
+            <DashboardLayout>
+              <Routes>
+                <Route path="/" element={<PortfolioView />} />
+                <Route path="/mvp/:id" element={<MVPDetailView />} />
+                <Route path="*" element={<NotFoundView />} />
+              </Routes>
+            </DashboardLayout>
+          </BrowserRouter>
+        </ErrorBoundary>
+      )
+    }
+    
+    export default App
+  
+  dashboard_layout_tsx: |
+    import { ReactNode } from 'react'
+    import Header from './Header'
+    import Navigation from './Navigation'
+    
+    interface DashboardLayoutProps {
+      children: ReactNode
+    }
+    
+    export default function DashboardLayout({ children }: DashboardLayoutProps) {
+      return (
+        <div className="min-h-screen bg-gray-50">
+          <Header />
+          <Navigation />
+          <main className="container mx-auto px-4 py-6 max-w-7xl">
+            {children}
+          </main>
+        </div>
+      )
+    }
+
+quality_gates:
+  - gate: "All component tests pass"
+    enforced: true
+  
+  - gate: "TypeScript compiles without errors"
+    enforced: true
+  
+  - gate: "Responsive layout works at all breakpoints"
+    enforced: true
+  
+  - gate: "Routing works without errors"
+    enforced: true
+
+verification_checklist:
+  - "✓ React app renders at /"
+  - "✓ Navigation to /mvp/:id works"
+  - "✓ 404 page displays for unknown routes"
+  - "✓ Header displays with logo and user menu"
+  - "✓ Mobile drawer opens/closes"
+  - "✓ Zustand stores initialized"
+  - "✓ Error boundary catches errors"
+  - "✓ Responsive layout at desktop/tablet/mobile"
+  - "✓ TailwindCSS theme applied correctly"
+
+notes: |
+  - This layer provides the foundation for all other UI layers
+  - View components (PortfolioView, MVPDetailView) are placeholders in this layer
+  - Actual view implementations come from LAYER-06-02 and LAYER-06-03
+  - Uses same test-driven approach as backend layers
+  - Component tests run before implementation
+  - Integration with LAYER-06-05 for API/WebSocket connections

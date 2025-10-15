@@ -1,0 +1,384 @@
+# LAYER-CA-006-06-02: Portfolio Overview Components
+# ==================================================
+
+metadata:
+  layer_id: LAYER-CA-006-06-02
+  layer_name: Portfolio Overview Components
+  parent_feature: FEATURE-CA-006-06
+  parent_feature_name: Dashboard User Interface
+  parent_system: SYSTEM-CA-006
+  created_date: 2025-10-15
+  status: planned
+  priority: critical
+  complexity: high
+
+traceability:
+  parent_feature_id: FEATURE-CA-006-06
+  parent_system_id: SYSTEM-CA-006
+  implements_acceptance_criteria:
+    - AC-FEAT-006-06-01  # Portfolio overview displays 5 key metrics with 7-day trends
+    - AC-FEAT-006-06-02  # Top performers table shows top 25 MVPs sorted by priority score
+    - AC-FEAT-006-06-03  # Archive candidates table lists MVPs with score <10 and zero growth
+  contributes_to_system_criteria:
+    - AC-SYS-006-02  # Dashboard displays real-time data with <30 second refresh
+    - AC-SYS-006-03  # Priority scores visible for all MVPs
+
+description: |
+  Portfolio-level dashboard view displaying aggregate metrics across all MVPs.
+  Provides high-level visibility with 5 key stat cards, a sortable table of top-performing
+  MVPs, a list of archive candidates, and 30-day trend charts for DAU and revenue.
+  
+  Implements data-dense, information-rich interface following UI_VISUALIZATION.md wireframes
+  with responsive grid layout and real-time updates.
+
+responsibilities:
+  - "Display 5 portfolio summary cards: Total MVPs, Active MVPs, High Priority, Archive Queue, Total Revenue"
+  - "Render top performers table with sorting, filtering, and pagination"
+  - "Show archive candidates with action buttons (approve/reject)"
+  - "Display 30-day portfolio trend charts for DAU and Revenue"
+  - "Refresh data every 30 seconds via WebSocket or polling"
+  - "Navigate to MVP detail view on row click"
+
+components:
+  PortfolioView:
+    type: "Page component"
+    file: "src/views/PortfolioView.tsx"
+    responsibilities:
+      - "Fetch portfolio data from API on mount"
+      - "Subscribe to real-time updates"
+      - "Render all portfolio components in grid layout"
+      - "Handle loading and error states"
+    props: "None"
+    
+  PortfolioStatsGrid:
+    type: "Container component"
+    file: "src/components/portfolio/PortfolioStatsGrid.tsx"
+    responsibilities:
+      - "Render 5 stat cards in responsive grid"
+      - "Display 7-day trend indicators for each stat"
+      - "Show loading skeleton during data fetch"
+    props:
+      - "stats: PortfolioStats"
+      - "loading: boolean"
+    
+  StatCard:
+    type: "Display component"
+    file: "src/components/shared/StatCard.tsx"
+    responsibilities:
+      - "Display metric title, value, and 7-day change"
+      - "Render trend arrow (up/down) with color coding"
+      - "Show loading skeleton when data unavailable"
+    props:
+      - "title: string"
+      - "value: string | number"
+      - "change: number (percentage)"
+      - "changeLabel: string (e.g., '7d')"
+      - "icon: ReactNode"
+      - "loading: boolean"
+    
+  TopPerformersTable:
+    type: "Data table component"
+    file: "src/components/portfolio/TopPerformersTable.tsx"
+    responsibilities:
+      - "Display top 25 MVPs by priority score"
+      - "Support column sorting (rank, name, score, DAU, revenue, growth)"
+      - "Render trend indicators for each metric"
+      - "Navigate to MVP detail view on row click"
+      - "Show loading skeleton during data fetch"
+    props:
+      - "mvps: Array<MVPSummary>"
+      - "loading: boolean"
+      - "onRowClick: (mvpId: string) => void"
+    
+  ArchiveCandidatesTable:
+    type: "Data table component"
+    file: "src/components/portfolio/ArchiveCandidatesTable.tsx"
+    responsibilities:
+      - "Display MVPs with score <10 and zero growth for 30+ days"
+      - "Show last activity timestamp"
+      - "Render approve/reject action buttons"
+      - "Confirm archive action before sending to API"
+    props:
+      - "candidates: Array<ArchiveCandidate>"
+      - "loading: boolean"
+      - "onApprove: (mvpId: string) => void"
+      - "onReject: (mvpId: string) => void"
+    
+  PortfolioTrendsCharts:
+    type: "Chart container component"
+    file: "src/components/portfolio/PortfolioTrendsCharts.tsx"
+    responsibilities:
+      - "Render DAU trend chart (30 days)"
+      - "Render revenue trend chart (30 days)"
+      - "Display both charts side-by-side on desktop, stacked on mobile"
+      - "Show loading skeleton during data fetch"
+    props:
+      - "trends: PortfolioTrends"
+      - "loading: boolean"
+
+data_models:
+  PortfolioStats:
+    fields:
+      - "totalMVPs: number"
+      - "totalMVPsChange: number (percentage)"
+      - "activeMVPs: number"
+      - "activeMVPsChange: number"
+      - "highPriorityMVPs: number (score >75)"
+      - "highPriorityMVPsChange: number"
+      - "archiveQueue: number"
+      - "archiveQueueChange: number"
+      - "totalRevenue: number"
+      - "totalRevenueChange: number"
+  
+  MVPSummary:
+    fields:
+      - "id: string"
+      - "rank: number"
+      - "name: string"
+      - "priorityScore: number"
+      - "dau: number"
+      - "dauChange: number"
+      - "revenue: number"
+      - "revenueChange: number"
+      - "growthRate: number"
+      - "trendIndicator: 'up' | 'down' | 'neutral'"
+  
+  ArchiveCandidate:
+    fields:
+      - "id: string"
+      - "name: string"
+      - "priorityScore: number"
+      - "dau: number"
+      - "revenue: number"
+      - "lastActivity: string (ISO date)"
+      - "daysSinceActivity: number"
+  
+  PortfolioTrends:
+    fields:
+      - "dauTrend: Array<{date: string, value: number}>"
+      - "revenueTrend: Array<{date: string, value: number}>"
+
+acceptance_criteria:
+  - criterion_id: AC-LAY-006-06-02-01
+    criterion: "PortfolioView renders all 5 stat cards with correct values"
+    verification: "Component test with mock data"
+    test_type: "component"
+    
+  - criterion_id: AC-LAY-006-06-02-02
+    criterion: "StatCard displays trend arrow correctly (up=green, down=red)"
+    verification: "Component test with different trend values"
+    test_type: "component"
+    
+  - criterion_id: AC-LAY-006-06-02-03
+    criterion: "TopPerformersTable displays top 25 MVPs sorted by score"
+    verification: "Component test with 25+ MVP records"
+    test_type: "component"
+    
+  - criterion_id: AC-LAY-006-06-02-04
+    criterion: "TopPerformersTable navigation works on row click"
+    verification: "Interaction test with row click"
+    test_type: "integration"
+    
+  - criterion_id: AC-LAY-006-06-02-05
+    criterion: "ArchiveCandidatesTable shows only MVPs with score <10"
+    verification: "Component test with filtered data"
+    test_type: "component"
+    
+  - criterion_id: AC-LAY-006-06-02-06
+    criterion: "Archive approve/reject actions call API correctly"
+    verification: "Integration test with mocked API"
+    test_type: "integration"
+    
+  - criterion_id: AC-LAY-006-06-02-07
+    criterion: "Portfolio trends charts render 30 data points"
+    verification: "Component test with 30-day data"
+    test_type: "component"
+    
+  - criterion_id: AC-LAY-006-06-02-08
+    criterion: "Loading skeletons display while data is fetching"
+    verification: "Component test with loading state"
+    test_type: "component"
+    
+  - criterion_id: AC-LAY-006-06-02-09
+    criterion: "Responsive grid adapts to desktop/tablet/mobile"
+    verification: "Visual regression test at breakpoints"
+    test_type: "e2e"
+
+technical_specification:
+  language: "TypeScript 5.0+"
+  framework: "React 18"
+  dependencies:
+    - "react >= 18.2"
+    - "@tanstack/react-table >= 8.10"
+    - "recharts >= 2.10"
+    - "lucide-react >= 0.290"
+    - "clsx >= 2.0"
+    - "date-fns >= 2.30"
+  
+  file_structure:
+    components:
+      portfolio:
+        - "PortfolioStatsGrid.tsx - 5 stat cards in grid"
+        - "TopPerformersTable.tsx - Sortable MVP table"
+        - "ArchiveCandidatesTable.tsx - Archive candidates list"
+        - "PortfolioTrendsCharts.tsx - DAU and revenue charts"
+      shared:
+        - "StatCard.tsx - Reusable metric card"
+        - "TrendIndicator.tsx - Trend arrow component"
+        - "LoadingSkeleton.tsx - Loading state placeholder"
+    views:
+      - "PortfolioView.tsx - Main portfolio page"
+    types:
+      - "portfolio.types.ts - TypeScript interfaces"
+
+api_integration:
+  endpoints:
+    - endpoint: "GET /api/v1/portfolio/overview"
+      response: "PortfolioStats"
+      description: "Fetch portfolio summary metrics"
+      
+    - endpoint: "GET /api/v1/mvps/top-performers"
+      query_params:
+        - "limit: number (default 25)"
+        - "sortBy: string (default 'priorityScore')"
+      response: "Array<MVPSummary>"
+      description: "Fetch top performing MVPs"
+      
+    - endpoint: "GET /api/v1/mvps/archive-candidates"
+      response: "Array<ArchiveCandidate>"
+      description: "Fetch archive candidates (score <10, zero growth)"
+      
+    - endpoint: "GET /api/v1/portfolio/trends"
+      query_params:
+        - "days: number (default 30)"
+      response: "PortfolioTrends"
+      description: "Fetch 30-day DAU and revenue trends"
+      
+    - endpoint: "POST /api/v1/archive/{mvpId}/approve"
+      description: "Approve archive for MVP"
+      
+    - endpoint: "POST /api/v1/archive/{mvpId}/reject"
+      description: "Reject archive for MVP"
+
+testing_approach:
+  component_tests:
+    framework: "Vitest + React Testing Library"
+    tests:
+      - "test_portfolio_view_renders_all_sections"
+      - "test_stat_card_displays_correct_value"
+      - "test_stat_card_shows_upward_trend_green"
+      - "test_stat_card_shows_downward_trend_red"
+      - "test_top_performers_table_renders_25_rows"
+      - "test_top_performers_table_sorting"
+      - "test_top_performers_row_click_navigation"
+      - "test_archive_candidates_filtered_correctly"
+      - "test_archive_approve_button_click"
+      - "test_archive_reject_button_click"
+      - "test_portfolio_trends_charts_render"
+      - "test_loading_skeleton_displays"
+  
+  integration_tests:
+    framework: "Vitest + MSW"
+    tests:
+      - "test_portfolio_data_fetch_on_mount"
+      - "test_api_error_handling"
+      - "test_archive_action_api_call"
+      - "test_real_time_data_update"
+  
+  e2e_tests:
+    framework: "Playwright"
+    tests:
+      - "test_portfolio_page_load"
+      - "test_navigate_to_mvp_detail"
+      - "test_archive_workflow"
+      - "test_responsive_layout_mobile"
+
+code_structure:
+  portfolio_view_tsx: |
+    import { useEffect } from 'react'
+    import PortfolioStatsGrid from '../components/portfolio/PortfolioStatsGrid'
+    import TopPerformersTable from '../components/portfolio/TopPerformersTable'
+    import ArchiveCandidatesTable from '../components/portfolio/ArchiveCandidatesTable'
+    import PortfolioTrendsCharts from '../components/portfolio/PortfolioTrendsCharts'
+    import { usePortfolioData } from '../hooks/usePortfolioData'
+    import { useNavigate } from 'react-router-dom'
+    
+    export default function PortfolioView() {
+      const navigate = useNavigate()
+      const { stats, topPerformers, archiveCandidates, trends, loading } = usePortfolioData()
+      
+      const handleRowClick = (mvpId: string) => {
+        navigate(`/mvp/${mvpId}`)
+      }
+      
+      return (
+        <div className="space-y-6">
+          <h1 className="text-3xl font-bold">Portfolio Overview</h1>
+          <PortfolioStatsGrid stats={stats} loading={loading} />
+          <TopPerformersTable mvps={topPerformers} loading={loading} onRowClick={handleRowClick} />
+          <ArchiveCandidatesTable candidates={archiveCandidates} loading={loading} />
+          <PortfolioTrendsCharts trends={trends} loading={loading} />
+        </div>
+      )
+    }
+  
+  stat_card_tsx: |
+    import { TrendIndicator } from './TrendIndicator'
+    
+    interface StatCardProps {
+      title: string
+      value: string | number
+      change: number
+      changeLabel: string
+      icon: ReactNode
+      loading?: boolean
+    }
+    
+    export default function StatCard({ title, value, change, changeLabel, icon, loading }: StatCardProps) {
+      if (loading) return <div className="animate-pulse bg-gray-200 h-32 rounded-lg" />
+      
+      return (
+        <div className="bg-white p-6 rounded-lg shadow">
+          <div className="flex items-center justify-between">
+            <div className="text-gray-500 text-sm">{title}</div>
+            {icon}
+          </div>
+          <div className="mt-2 text-3xl font-bold">{value}</div>
+          <div className="mt-2 flex items-center text-sm">
+            <TrendIndicator change={change} />
+            <span className="ml-2 text-gray-500">{changeLabel}</span>
+          </div>
+        </div>
+      )
+    }
+
+quality_gates:
+  - gate: "All component tests pass"
+    enforced: true
+  
+  - gate: "Top performers table displays exactly 25 rows"
+    enforced: true
+  
+  - gate: "Archive candidates filtered to score <10"
+    enforced: true
+  
+  - gate: "Responsive grid works at all breakpoints"
+    enforced: true
+
+verification_checklist:
+  - "✓ PortfolioView renders all components"
+  - "✓ StatCard displays correct values and trends"
+  - "✓ TopPerformersTable sorted by priority score"
+  - "✓ Row click navigates to MVP detail"
+  - "✓ ArchiveCandidatesTable shows filtered MVPs"
+  - "✓ Archive actions call correct API endpoints"
+  - "✓ Portfolio trends charts display 30 data points"
+  - "✓ Loading skeletons shown during fetch"
+  - "✓ Responsive layout adapts to mobile/tablet"
+
+notes: |
+  - Integrates with LAYER-06-04 for chart components
+  - Integrates with LAYER-06-05 for API data fetching
+  - Uses TanStack Table for sortable, filterable tables
+  - Follows UI_VISUALIZATION.md wireframe design exactly
+  - Real-time updates via WebSocket from LAYER-06-05

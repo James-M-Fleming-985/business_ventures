@@ -1,0 +1,54 @@
+# ============================================================================
+# LAYER-CA-006-07-04: Archive Policy Configuration (PLACEHOLDER)
+# ============================================================================
+# Status: PLACEHOLDER - To be detailed when FEATURE-07 is prioritized
+# ============================================================================
+
+layer:
+  id: "LAYER-CA-006-07-04"
+  name: "Archive Policy Configuration"
+  feature_id: "FEATURE-CA-006-07"
+  status: "placeholder"
+  priority: "low"
+  estimated_effort: "14-18 hours"
+
+  description: |
+    PLACEHOLDER: UI for configuring archive thresholds, retention policies,
+    and approval workflows for the Archive Recommender (FEATURE-03).
+    
+    To be detailed when FEATURE-07 is prioritized for development.
+
+  # Planned components (to be detailed)
+  planned_components:
+    - "ArchiveManagementPanel.tsx - Main archive policy panel"
+    - "ArchiveThresholdsForm.tsx - Input fields for archive criteria"
+    - "RetentionPolicyEditor.tsx - Retention period and rules"
+    - "ApprovalWorkflowConfig.tsx - Approval process configuration"
+
+  # Wireframe reference
+  wireframe_reference:
+    file: "UI_VISUALIZATION.md"
+    section: "Analytics Integration Panel (lines 100-149)"
+    description: "Shows archive management section with threshold inputs"
+
+  # Placeholder acceptance criteria
+  acceptance_criteria:
+    - id: "AC-LAY-07-04-01"
+      description: "TODO: Admins can set archive recommendation thresholds"
+      status: "placeholder"
+    - id: "AC-LAY-07-04-02"
+      description: "TODO: Admins can configure retention policies for archived MVPs"
+      status: "placeholder"
+    - id: "AC-LAY-07-04-03"
+      description: "TODO: Admins can configure approval workflows (auto/manual)"
+      status: "placeholder"
+
+  # Backend API requirements (to be added to FEATURE-03)
+  backend_api_requirements:
+    - "GET /api/config/archive - Get current archive policies"
+    - "PUT /api/config/archive - Update archive policies"
+    - "GET /api/config/archive/history - Get archive policy change history"
+
+# ============================================================================
+# TODO: Complete this file when FEATURE-07 is prioritized
+# ============================================================================

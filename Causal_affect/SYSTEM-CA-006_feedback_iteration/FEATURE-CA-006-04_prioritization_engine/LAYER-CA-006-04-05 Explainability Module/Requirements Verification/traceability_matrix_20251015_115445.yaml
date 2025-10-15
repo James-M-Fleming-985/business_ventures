@@ -1,0 +1,151 @@
+matrix_metadata:
+  timestamp: '20251015_115445'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-LAY-006-04-05-01
+  requirement: Provide complete score breakdown with all components
+  description: Provide complete score breakdown with all components
+  test_files: &id001
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-04_prioritization_engine/LAYER-CA-006-04-05
+    Explainability Module/tests/test_generated_20251015_115414.py
+  test_methods:
+  - test_ac-lay-006-04-05-01
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-04-05-02
+  requirement: Generate natural language decision rationales
+  description: Generate natural language decision rationales
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-04-05-02
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-04-05-03
+  requirement: Highlight top 3 factors influencing score
+  description: Highlight top 3 factors influencing score
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-04-05-03
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-04_prioritization_engine/LAYER-CA-006-04-05
+    Explainability Module/src/implementation.py
+  lines: 256
+  methods:
+  - name: __init__
+    lines: 9-23
+  - name: generate_score_breakdown
+    lines: 24-80
+  - name: generate_rationale
+    lines: 81-141
+  - name: highlight_top_factors
+    lines: 142-184
+  - name: explain_decision
+    lines: 185-200
+  - name: _get_score_level
+    lines: 201-213
+  - name: _get_impact_level
+    lines: 214-226
+  - name: _get_factor_description
+    lines: 227-239
+  - name: _generate_conclusion
+    lines: 240-252
+  - name: create_explainability_module
+    lines: 253-263
+  classes:
+  - name: ExplainabilityModule
+    type: class
+    lines: 6-256
+  implements_requirements:
+  - AC-LAY-006-04-05-01
+  - AC-LAY-006-04-05-02
+  - AC-LAY-006-04-05-03
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-04_prioritization_engine/LAYER-CA-006-04-05
+    Explainability Module/tests/test_generated_20251015_115414.py
+  test_count: 0
+  implementation_files:
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-04_prioritization_engine/LAYER-CA-006-04-05
+    Explainability Module/src/implementation.py
+  methods_tested:
+  - __init__
+  - generate_score_breakdown
+  - generate_rationale
+  - highlight_top_factors
+  - explain_decision
+  - _get_score_level
+  - _get_impact_level
+  - _get_factor_description
+  - _generate_conclusion
+  - create_explainability_module
+  classes_tested:
+  - ExplainabilityModule
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-04_prioritization_engine/LAYER-CA-006-04-05
+    Explainability Module/src/implementation.py:9-23
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-04_prioritization_engine/LAYER-CA-006-04-05
+    Explainability Module/tests/test_generated_20251015_115414.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-04_prioritization_engine/LAYER-CA-006-04-05
+    Explainability Module/src/implementation.py:24-80
+  method_name: generate_score_breakdown
+  requirement: AC-001
+  test: test_generate_score_breakdown
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-04_prioritization_engine/LAYER-CA-006-04-05
+    Explainability Module/tests/test_generated_20251015_115414.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-04_prioritization_engine/LAYER-CA-006-04-05
+    Explainability Module/src/implementation.py:81-141
+  method_name: generate_rationale
+  requirement: AC-001
+  test: test_generate_rationale
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-04_prioritization_engine/LAYER-CA-006-04-05
+    Explainability Module/tests/test_generated_20251015_115414.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-04_prioritization_engine/LAYER-CA-006-04-05
+    Explainability Module/src/implementation.py:142-184
+  method_name: highlight_top_factors
+  requirement: AC-001
+  test: test_highlight_top_factors
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-04_prioritization_engine/LAYER-CA-006-04-05
+    Explainability Module/tests/test_generated_20251015_115414.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-04_prioritization_engine/LAYER-CA-006-04-05
+    Explainability Module/src/implementation.py:185-200
+  method_name: explain_decision
+  requirement: AC-001
+  test: test_explain_decision
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-04_prioritization_engine/LAYER-CA-006-04-05
+    Explainability Module/tests/test_generated_20251015_115414.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 3
+  requirements_traced: 3
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

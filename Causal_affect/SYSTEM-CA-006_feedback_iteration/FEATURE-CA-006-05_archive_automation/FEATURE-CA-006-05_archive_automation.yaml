@@ -7,10 +7,10 @@ metadata:
   requirement_type: Feature
   parent_system: SYSTEM-CA-006
   parent_project: business_ventures
-  
+
   team_size: small
   risk_level: high
-  
+
   estimated_effort_hours: 60
   actual_effort_hours: 0
   progress_percentage: 0
@@ -20,8 +20,8 @@ traceability:
   parent_system_id: SYSTEM-CA-006
   parent_requirement: "Automatically archives non-performing MVPs, preserving data and shutting down infrastructure"
   contributes_to_acceptance_criteria:
-    - AC-SYS-006-04  # Automated archiving triggers after evaluation period
-    - AC-SYS-006-05  # False archive rate below 5%
+    - AC-SYS-006-04 # Automated archiving triggers after evaluation period
+    - AC-SYS-006-05 # False archive rate below 5%
   contributes_to_business_value:
     - "Eliminates wasted resources on non-performers"
     - "Enables portfolio-level optimization"
@@ -30,11 +30,11 @@ description: |
   Automated workflow system for archiving and cleaning up non-performing MVPs.
   Safely shuts down infrastructure, preserves historical data for analysis,
   and manages the complete lifecycle of MVP retirement.
-  
+
   Implements multi-stage archive workflow with safety checks, manual approval
   gates, and rollback capabilities. Ensures complete data preservation while
   minimizing ongoing costs for non-viable MVPs.
-  
+
   Provides archive analytics to prevent false positives and continuously
   improve archive decision criteria based on historical outcomes.
 
@@ -52,42 +52,42 @@ acceptance_criteria:
     priority: critical
     test_type: "integration"
     traces_to: AC-SYS-006-04
-    
+
   - criterion_id: AC-FEAT-006-05-02
     criterion: "Preserve all historical data before infrastructure shutdown"
     verification: "Data preservation verification test"
     priority: critical
     test_type: "integration"
     traces_to: AC-SYS-006-04
-    
+
   - criterion_id: AC-FEAT-006-05-03
     criterion: "Shut down Railway services cleanly without data loss"
     verification: "Infrastructure shutdown test"
     priority: critical
     test_type: "integration"
     traces_to: AC-SYS-006-04
-    
+
   - criterion_id: AC-FEAT-006-05-04
     criterion: "Support manual approval before final archive"
     verification: "Approval workflow test"
     priority: high
     test_type: "integration"
     traces_to: AC-SYS-006-05
-    
+
   - criterion_id: AC-FEAT-006-05-05
     criterion: "Provide rollback capability within 7 days of archive"
     verification: "Archive rollback test"
     priority: high
     test_type: "integration"
     traces_to: AC-SYS-006-05
-    
+
   - criterion_id: AC-FEAT-006-05-06
     criterion: "Send notification to system operator before archiving"
     verification: "Notification delivery test"
     priority: medium
     test_type: "integration"
     traces_to: AC-SYS-006-04
-    
+
   - criterion_id: AC-FEAT-006-05-07
     criterion: "Complete archive workflow in <10 minutes"
     verification: "Archive workflow timing test"
@@ -102,38 +102,38 @@ technical_requirements:
       - "Validate MVP meets all archive criteria"
       - "Check for recent positive signals (safety check)"
       - "Log archive nomination with reasoning"
-    
+
     stage_2_notification:
       - "Send notification to system operator"
       - "Generate archive recommendation report"
       - "Include 30-day performance summary"
       - "Provide option for manual review/override"
-    
+
     stage_3_approval:
       - "Wait for approval (auto-approve after 7 days if configured)"
       - "Support manual approval/rejection"
       - "Log approval decision and approver"
       - "Cancel workflow if rejected"
-    
+
     stage_4_data_preservation:
       - "Export all MVP data to long-term storage"
       - "Create archive snapshot with metadata"
       - "Verify data integrity of export"
       - "Generate data inventory manifest"
-    
+
     stage_5_infrastructure_cleanup:
       - "Gracefully shutdown Railway services"
       - "Delete Railway deployments"
       - "Remove domain routing"
       - "Clean up database connections"
       - "Cancel scheduled jobs"
-    
+
     stage_6_finalization:
       - "Mark MVP as archived in system"
       - "Update portfolio metrics"
       - "Send completion notification"
       - "Create restoration checklist for rollback"
-  
+
   data_preservation:
     storage_location: "AWS S3 or Railway Volume"
     retention_period: "indefinite (cold storage)"
@@ -144,14 +144,14 @@ technical_requirements:
       - "Source code snapshot"
       - "Configuration and secrets (encrypted)"
       - "Infrastructure as code"
-    
+
     manifest_contents:
       - "MVP metadata (ID, name, created date)"
       - "Archive date and reason"
       - "Final performance metrics"
       - "Data file inventory"
       - "Restoration instructions"
-  
+
   rollback_capability:
     rollback_window: "7 days from archive completion"
     rollback_process:
@@ -174,7 +174,7 @@ testing_requirements:
       - "Infrastructure cleanup logic"
       - "Rollback restoration logic"
       - "Notification generation"
-    
+
   integration_tests:
     required: true
     minimum_count: 15
@@ -186,7 +186,7 @@ testing_requirements:
       - "Rollback from archive (7-day window)"
       - "Notification delivery (email, Slack)"
       - "Concurrent archive operations (safety)"
-      
+
   e2e_tests:
     required: true
     minimum_count: 5
@@ -210,28 +210,28 @@ layers:
     description: "Multi-stage workflow management (6 stages: review, approval, notification, export, cleanup, finalization) with approval gates (manual or auto-approve). Supports rollback within 7-day window."
     priority: critical
     estimated_hours: 20
-    requirement_file: FEATURE-CA-006-05_archive_automation.yaml
-    
+    requirement_file: "LAYER-CA-006-05-01_archive_workflow_orchestrator.yaml"
+
   - layer_id: LAYER-CA-006-05-02
     name: Infrastructure Cleanup Service
     description: "Railway service shutdown and resource cleanup. Gracefully stops services, deletes deployments, removes domain routing, cleans database connections, cancels scheduled jobs."
     priority: high
     estimated_hours: 16
-    requirement_file: FEATURE-CA-006-05_archive_automation.yaml
-    
+    requirement_file: "LAYER-CA-006-05-02_infrastructure_cleanup_service.yaml"
+
   - layer_id: LAYER-CA-006-05-03
     name: Data Preservation Service
     description: "Data export to AWS S3, archival with encryption, integrity verification. Preserves analytics, revenue data, user feedback, source code, configs (encrypted). Generates manifest with restoration instructions."
     priority: critical
     estimated_hours: 18
-    requirement_file: FEATURE-CA-006-05_archive_automation.yaml
-    
+    requirement_file: "LAYER-CA-006-05-03_data_preservation_service.yaml"
+
   - layer_id: LAYER-CA-006-05-04
     name: Notification Service
     description: "Multi-channel notifications for archive events (email, Slack). Sends archive review, approval request, completion confirmation. Includes rollback instructions in notifications."
     priority: medium
     estimated_hours: 6
-    requirement_file: FEATURE-CA-006-05_archive_automation.yaml
+    requirement_file: "LAYER-CA-006-05-04_notification_service.yaml"
 
 implementation_notes:
   design_decisions:
@@ -245,7 +245,7 @@ implementation_notes:
     - "Add safety checks before irreversible operations (require confirmation)"
     - "Support bulk archive operations for efficiency (batch low-performers)"
     - "Implement archive cost tracking and reporting (AWS S3 storage costs)"
-    
+
   code_structure:
     - "workflow_orchestrator.py: Multi-stage workflow, state machine, approval gates"
     - "infrastructure_cleanup.py: Railway API integration, service shutdown"
@@ -261,7 +261,7 @@ dependencies:
     - "slack-sdk: Slack notifications"
     - "sqlalchemy: Archive metadata persistence"
     - "pydantic: Workflow validation and state management"
-    
+
   configuration:
     - "Railway API key for infrastructure cleanup"
     - "AWS S3 bucket for archive storage (with encryption)"

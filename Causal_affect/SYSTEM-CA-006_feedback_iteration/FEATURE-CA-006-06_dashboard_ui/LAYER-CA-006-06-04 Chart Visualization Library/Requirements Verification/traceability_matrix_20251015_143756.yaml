@@ -1,0 +1,286 @@
+matrix_metadata:
+  timestamp: '20251015_143756'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-LAY-006-06-04-01
+  requirement: TimeSeriesChart renders line chart with multiple series
+  description: TimeSeriesChart renders line chart with multiple series
+  test_files: &id001
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-04
+    Chart Visualization Library/tests/test_generated_20251015_143713.py
+  test_methods:
+  - test_ac-lay-006-06-04-01
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-06-04-02
+  requirement: BarChart displays bars correctly with data labels
+  description: BarChart displays bars correctly with data labels
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-06-04-02
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-06-04-03
+  requirement: FunnelChart visualizes funnel with correct proportions
+  description: FunnelChart visualizes funnel with correct proportions
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-06-04-03
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-06-04-04
+  requirement: ProgressBar animates smoothly from 0 to target value
+  description: ProgressBar animates smoothly from 0 to target value
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-06-04-04
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-06-04-05
+  requirement: TrendIndicator shows correct arrow and color
+  description: TrendIndicator shows correct arrow and color
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-06-04-05
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-06-04-06
+  requirement: All charts responsive at desktop/tablet/mobile
+  description: All charts responsive at desktop/tablet/mobile
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-06-04-06
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LAY-006-06-04-07
+  requirement: Chart tooltips display formatted values correctly
+  description: Chart tooltips display formatted values correctly
+  test_files: *id001
+  test_methods:
+  - test_ac-lay-006-06-04-07
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-04
+    Chart Visualization Library/src/implementation.py
+  lines: 475
+  methods:
+  - name: _get_responsive_config
+    lines: 19-27
+  - name: _get_responsive_layout
+    lines: 28-39
+  - name: __init__
+    lines: 43-55
+  - name: add_series
+    lines: 56-72
+  - name: render
+    lines: 73-105
+  - name: get_config
+    lines: 106-114
+  - name: __init__
+    lines: 118-133
+  - name: set_data
+    lines: 134-145
+  - name: render
+    lines: 146-174
+  - name: get_config
+    lines: 175-183
+  - name: __init__
+    lines: 187-197
+  - name: set_data
+    lines: 198-209
+  - name: render
+    lines: 210-235
+  - name: get_proportions
+    lines: 236-245
+  - name: get_config
+    lines: 246-254
+  - name: __init__
+    lines: 258-271
+  - name: get_percentage
+    lines: 272-279
+  - name: animate_to_target
+    lines: 280-294
+  - name: render
+    lines: 295-310
+  - name: set_color
+    lines: 311-319
+  - name: __init__
+    lines: 323-334
+  - name: get_direction
+    lines: 335-347
+  - name: get_change
+    lines: 348-355
+  - name: get_percentage_change
+    lines: 356-365
+  - name: get_arrow
+    lines: 366-379
+  - name: get_color
+    lines: 380-393
+  - name: render
+    lines: 394-411
+  - name: get_breakpoints
+    lines: 416-428
+  - name: get_dimensions_for_device
+    lines: 429-445
+  - name: is_responsive
+    lines: 446-458
+  - name: format_tooltip_value
+    lines: 459-469
+  classes:
+  - name: TrendDirection
+    type: class
+    lines: 9-14
+  - name: ChartVisualizationLibrary
+    type: class
+    lines: 15-39
+  - name: TimeSeriesChart
+    type: class
+    lines: 40-114
+  - name: BarChart
+    type: class
+    lines: 115-183
+  - name: FunnelChart
+    type: class
+    lines: 184-254
+  - name: ProgressBar
+    type: class
+    lines: 255-319
+  - name: TrendIndicator
+    type: class
+    lines: 320-411
+  - name: ResponsiveChartMixin
+    type: class
+    lines: 412-475
+  implements_requirements:
+  - AC-LAY-006-06-04-01
+  - AC-LAY-006-06-04-02
+  - AC-LAY-006-06-04-03
+  - AC-LAY-006-06-04-04
+  - AC-LAY-006-06-04-05
+  - AC-LAY-006-06-04-06
+  - AC-LAY-006-06-04-07
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-04
+    Chart Visualization Library/tests/test_generated_20251015_143713.py
+  test_count: 0
+  implementation_files:
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-04
+    Chart Visualization Library/src/implementation.py
+  methods_tested:
+  - _get_responsive_config
+  - _get_responsive_layout
+  - __init__
+  - add_series
+  - render
+  - get_config
+  - __init__
+  - set_data
+  - render
+  - get_config
+  - __init__
+  - set_data
+  - render
+  - get_proportions
+  - get_config
+  - __init__
+  - get_percentage
+  - animate_to_target
+  - render
+  - set_color
+  - __init__
+  - get_direction
+  - get_change
+  - get_percentage_change
+  - get_arrow
+  - get_color
+  - render
+  - get_breakpoints
+  - get_dimensions_for_device
+  - is_responsive
+  - format_tooltip_value
+  classes_tested:
+  - TrendDirection
+  - ChartVisualizationLibrary
+  - TimeSeriesChart
+  - BarChart
+  - FunnelChart
+  - ProgressBar
+  - TrendIndicator
+  - ResponsiveChartMixin
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-04
+    Chart Visualization Library/src/implementation.py:19-27
+  method_name: _get_responsive_config
+  requirement: AC-001
+  test: test__get_responsive_config
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-04
+    Chart Visualization Library/tests/test_generated_20251015_143713.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-04
+    Chart Visualization Library/src/implementation.py:28-39
+  method_name: _get_responsive_layout
+  requirement: AC-001
+  test: test__get_responsive_layout
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-04
+    Chart Visualization Library/tests/test_generated_20251015_143713.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-04
+    Chart Visualization Library/src/implementation.py:43-55
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-04
+    Chart Visualization Library/tests/test_generated_20251015_143713.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-04
+    Chart Visualization Library/src/implementation.py:56-72
+  method_name: add_series
+  requirement: AC-001
+  test: test_add_series
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-04
+    Chart Visualization Library/tests/test_generated_20251015_143713.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-04
+    Chart Visualization Library/src/implementation.py:73-105
+  method_name: render
+  requirement: AC-001
+  test: test_render
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/LAYER-CA-006-06-04
+    Chart Visualization Library/tests/test_generated_20251015_143713.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 7
+  requirements_traced: 7
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

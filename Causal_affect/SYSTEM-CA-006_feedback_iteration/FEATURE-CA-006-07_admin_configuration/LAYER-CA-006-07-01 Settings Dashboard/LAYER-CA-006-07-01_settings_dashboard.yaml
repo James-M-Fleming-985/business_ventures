@@ -1,0 +1,45 @@
+# ============================================================================
+# LAYER-CA-006-07-01: Settings Dashboard (PLACEHOLDER)
+# ============================================================================
+# Status: PLACEHOLDER - To be detailed when FEATURE-07 is prioritized
+# ============================================================================
+
+layer:
+  id: "LAYER-CA-006-07-01"
+  name: "Settings Dashboard"
+  feature_id: "FEATURE-CA-006-07"
+  status: "placeholder"
+  priority: "low"
+  estimated_effort: "12-16 hours"
+
+  description: |
+    PLACEHOLDER: Main admin settings dashboard with navigation to all
+    configuration sections (analytics, prioritization, archive policies).
+    
+    To be detailed when FEATURE-07 is prioritized for development.
+
+  # Planned components (to be detailed)
+  planned_components:
+    - "SettingsPage.tsx - Main settings layout"
+    - "SettingsNavigation.tsx - Sidebar with config sections"
+    - "AdminHeader.tsx - Admin-specific header with user role badge"
+    - "ConfigurationCard.tsx - Reusable card for each config section"
+
+  # Placeholder acceptance criteria
+  acceptance_criteria:
+    - id: "AC-LAY-07-01-01"
+      description: "TODO: Settings page displays navigation to all config sections"
+      status: "placeholder"
+
+  # Routes (already defined in FEATURE-06 LAYER-01)
+  routes_reference:
+    note: "Admin routes are already defined in FEATURE-06 LAYER-01"
+    routes:
+      - "/settings - Main settings dashboard"
+      - "/settings/analytics - Analytics provider config"
+      - "/settings/prioritization - Prioritization rules"
+      - "/settings/archive - Archive policies"
+
+# ============================================================================
+# TODO: Complete this file when FEATURE-07 is prioritized
+# ============================================================================
