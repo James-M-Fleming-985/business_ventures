@@ -221,6 +221,33 @@ layers:
     requirement_file: "LAYER-CA-006-03-05_financial_reporting_layer.yaml"
 
 implementation_notes:
+  directory_structure: |
+    features/FEATURE-CA-006-03_revenue_tracking/
+    ├── __init__.py
+    ├── services/
+    │   ├── __init__.py
+    │   ├── revenue_collector.py
+    │   ├── conversion_tracker.py
+    │   ├── financial_calculator.py
+    │   ├── revenue_aggregator.py
+    │   └── financial_reporter.py
+    ├── models/
+    │   ├── __init__.py
+    │   ├── revenue_event.py
+    │   ├── conversion.py
+    │   └── financial_metrics.py
+    ├── db/
+    │   ├── __init__.py
+    │   ├── schema.py
+    │   └── repositories.py
+    └── tests/
+        ├── __init__.py
+        ├── test_revenue_collector.py
+        ├── test_conversion_tracker.py
+        ├── test_financial_calculator.py
+        ├── test_revenue_aggregator.py
+        └── test_financial_reporter.py
+  
   design_decisions:
     - "Use Stripe webhooks for real-time revenue event capture"
     - "Implement multi-touch attribution for CAC calculation (first-touch, last-touch, linear)"
@@ -230,11 +257,84 @@ implementation_notes:
     - "Exchange rate API with daily rate caching to minimize API calls"
     
   code_structure:
-    - "revenue_collector.py: Stripe/PayPal webhook handlers, event validation"
-    - "conversion_tracker.py: Funnel stage tracking, user journey mapping"
-    - "financial_calculator.py: Revenue metrics, CAC, LTV, cohort algorithms"
-    - "revenue_aggregator.py: Time-series aggregation, currency conversion"
-    - "financial_reporter.py: Report generation, dashboard data formatting"
+    # Services Layer
+    - "services/revenue_collector.py:
+        - RevenueEventCollector: Stripe/PayPal webhook handlers
+        - Methods: handle_payment_webhook(), validate_transaction(), record_revenue_event()"
+    
+    - "services/conversion_tracker.py:
+        - ConversionTracker: Multi-stage funnel tracking
+        - Methods: track_funnel_stage(), calculate_conversion_rate(), attribute_conversion()"
+    
+    - "services/financial_calculator.py:
+        - FinancialMetricsCalculator: Revenue, CAC, LTV calculations
+        - Methods: calculate_ltv(), calculate_cac(), calculate_arr(), calculate_cohort_retention()"
+    
+    - "services/revenue_aggregator.py:
+        - RevenueAggregator: Time-series aggregation and currency conversion
+        - Methods: aggregate_by_period(), convert_currency(), cache_revenue_metrics()"
+    
+    - "services/financial_reporter.py:
+        - FinancialReporter: Report generation for dashboard
+        - Methods: generate_revenue_report(), generate_cohort_report(), format_for_dashboard()"
+    
+    # Models Layer
+    - "models/revenue_event.py:
+        - RevenueEvent (Pydantic): event_id, user_id, amount, currency, payment_method, timestamp
+        - PaymentMethod (Enum): STRIPE, PAYPAL, CREDIT_CARD, BANK_TRANSFER
+        - TransactionStatus (Enum): PENDING, COMPLETED, REFUNDED, FAILED"
+    
+    - "models/conversion.py:
+        - ConversionEvent (Pydantic): funnel_stage, user_id, timestamp, attribution_data
+        - FunnelStage (Enum): IMPRESSION, CLICK, VISIT, SIGNUP, TRIAL, PURCHASE, REPEAT
+        - AttributionModel (Enum): FIRST_TOUCH, LAST_TOUCH, LINEAR, TIME_DECAY"
+    
+    - "models/financial_metrics.py:
+        - FinancialMetrics (Pydantic): revenue, cac, ltv, arr, mrr, cohort_data
+        - CohortData (Pydantic): cohort_id, signup_date, retention_curve, ltv_by_month
+        - MetricsResponse (Pydantic): API response with formatted financial data"
+    
+    # Database Layer
+    - "db/schema.py:
+        - RevenueEventORM (SQLAlchemy): Revenue transactions table with audit trail
+        - ConversionEventORM (SQLAlchemy): Funnel stage tracking table
+        - CohortORM (SQLAlchemy): Cohort analysis data table
+        - Indexes: user_id, timestamp, payment_method, funnel_stage for query optimization"
+    
+    - "db/repositories.py:
+        - RevenueRepository: Async CRUD for revenue data
+        - Methods: store_transaction(), get_revenue_by_period(), get_cohort_data()
+        - ConversionRepository: Async funnel tracking operations
+        - Methods: track_conversion(), get_funnel_metrics(), calculate_attribution()"
+    
+    # Tests Layer
+    - "tests/test_revenue_collector.py:
+        - test_stripe_webhook_success(): Verify webhook handling
+        - test_revenue_event_validation(): Verify Pydantic validation
+        - test_duplicate_transaction_handling(): Verify idempotency
+        - test_refund_processing(): Verify refund logic"
+    
+    - "tests/test_conversion_tracker.py:
+        - test_funnel_stage_tracking(): Verify funnel progression
+        - test_conversion_rate_calculation(): Verify rate calculations
+        - test_attribution_models(): Verify attribution logic
+        - test_multi_touch_attribution(): Verify complex attribution"
+    
+    - "tests/test_financial_calculator.py:
+        - test_ltv_calculation(): Verify LTV algorithm
+        - test_cac_calculation(): Verify CAC algorithm
+        - test_cohort_retention(): Verify cohort analysis
+        - test_arr_calculation(): Verify ARR/MRR calculations"
+    
+    - "tests/test_revenue_aggregator.py:
+        - test_time_series_aggregation(): Verify daily/weekly/monthly rollups
+        - test_currency_conversion(): Verify exchange rate handling
+        - test_cache_operations(): Verify Redis caching"
+    
+    - "tests/test_financial_reporter.py:
+        - test_revenue_report_generation(): Verify report formatting
+        - test_cohort_report_generation(): Verify cohort reports
+        - test_dashboard_data_format(): Verify API response format"
 
 dependencies:
   external_libraries:

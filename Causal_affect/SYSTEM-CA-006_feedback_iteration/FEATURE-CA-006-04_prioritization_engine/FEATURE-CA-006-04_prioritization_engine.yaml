@@ -244,6 +244,33 @@ layers:
     requirement_file: "LAYER-CA-006-04-05_explainability_module.yaml"
 
 implementation_notes:
+  directory_structure: |
+    features/FEATURE-CA-006-04_prioritization_engine/
+    ├── __init__.py
+    ├── services/
+    │   ├── __init__.py
+    │   ├── scoring_engine.py
+    │   ├── ranking_system.py
+    │   ├── threshold_manager.py
+    │   ├── decision_engine.py
+    │   └── explainability.py
+    ├── models/
+    │   ├── __init__.py
+    │   ├── score.py
+    │   ├── priority.py
+    │   └── decision.py
+    ├── db/
+    │   ├── __init__.py
+    │   ├── schema.py
+    │   └── repositories.py
+    └── tests/
+        ├── __init__.py
+        ├── test_scoring_engine.py
+        ├── test_ranking_system.py
+        ├── test_threshold_manager.py
+        ├── test_decision_engine.py
+        └── test_explainability.py
+  
   design_decisions:
     - "Store all score components for full explainability and debugging"
     - "Implement score history tracking for 90-day trend analysis"
@@ -255,11 +282,92 @@ implementation_notes:
     - "Support multiple scoring algorithm variants with A/B testing framework"
 
   code_structure:
-    - "scoring_engine.py: Multi-dimensional score calculation, normalization"
-    - "ranking_system.py: Percentile calculations, trending, MVP ordering"
-    - "threshold_manager.py: Configurable thresholds, rule evaluation"
-    - "decision_engine.py: Priority assignment, workflow triggers, archive logic"
-    - "explainability.py: Score breakdown, explanations, dashboard formatting"
+    # Services Layer
+    - "services/scoring_engine.py:
+        - ScoringEngine: Multi-dimensional score calculation
+        - Methods: calculate_total_score(), normalize_scores(), apply_weights()
+        - Algorithms: z_score_normalization(), winsorize_outliers()"
+    
+    - "services/ranking_system.py:
+        - RankingSystem: MVP ranking and percentile calculations
+        - Methods: rank_mvps(), calculate_percentiles(), identify_top_performers()
+        - Trending: calculate_growth_trend(), detect_negative_patterns()"
+    
+    - "services/threshold_manager.py:
+        - ThresholdManager: Configurable threshold management
+        - Methods: evaluate_thresholds(), get_priority_category(), check_archive_triggers()
+        - Configuration: load_thresholds(), update_thresholds(), validate_ranges()"
+    
+    - "services/decision_engine.py:
+        - DecisionEngine: Priority assignment and workflow triggers
+        - Methods: assign_priority(), trigger_iteration_workflow(), recommend_archive()
+        - Rules: evaluate_decision_rules(), check_archive_conditions(), manual_override()"
+    
+    - "services/explainability.py:
+        - ExplainabilityModule: Score breakdown and explanations
+        - Methods: generate_explanation(), get_component_scores(), format_for_dashboard()
+        - Insights: identify_score_drivers(), suggest_improvements()"
+    
+    # Models Layer
+    - "models/score.py:
+        - MVPScore (Pydantic): total_score, engagement_score, revenue_score, growth_score, potential_score
+        - ScoreComponents (Pydantic): Individual component values with weights
+        - ScoreHistory (Pydantic): Historical scores with timestamps for trend analysis"
+    
+    - "models/priority.py:
+        - PriorityData (Pydantic): mvp_id, priority_level, percentile_rank, category
+        - PriorityLevel (Enum): HIGH, MEDIUM, LOW, ARCHIVE_CANDIDATE
+        - PriorityCategory (Pydantic): Thresholds and rules for each priority level"
+    
+    - "models/decision.py:
+        - PriorityDecision (Pydantic): mvp_id, decision, rationale, triggered_workflows
+        - DecisionRationale (Pydantic): score_breakdown, threshold_evaluation, trend_analysis
+        - WorkflowTrigger (Pydantic): workflow_type, trigger_reason, parameters"
+    
+    # Database Layer
+    - "db/schema.py:
+        - MVPScoreORM (SQLAlchemy): Score history table with components
+        - PriorityDecisionORM (SQLAlchemy): Decision audit trail
+        - ThresholdConfigORM (SQLAlchemy): Configurable threshold storage
+        - Indexes: mvp_id, timestamp, priority_level for query optimization"
+    
+    - "db/repositories.py:
+        - ScoreRepository: Async CRUD for score data
+        - Methods: store_score(), get_score_history(), get_latest_scores()
+        - PriorityRepository: Decision tracking operations
+        - Methods: store_decision(), get_priority_history(), get_archive_candidates()"
+    
+    # Tests Layer
+    - "tests/test_scoring_engine.py:
+        - test_score_calculation(): Verify weighted score calculation
+        - test_normalization(): Verify z-score normalization
+        - test_outlier_handling(): Verify winsorization
+        - test_component_scores(): Verify individual dimension calculations"
+    
+    - "tests/test_ranking_system.py:
+        - test_mvp_ranking(): Verify ranking logic
+        - test_percentile_calculation(): Verify percentile accuracy
+        - test_trend_detection(): Verify growth trend analysis
+        - test_top_performer_identification(): Verify top 25% selection"
+    
+    - "tests/test_threshold_manager.py:
+        - test_threshold_evaluation(): Verify threshold checks
+        - test_priority_categorization(): Verify category assignment
+        - test_archive_trigger_detection(): Verify archive conditions
+        - test_threshold_configuration(): Verify dynamic threshold updates"
+    
+    - "tests/test_decision_engine.py:
+        - test_priority_assignment(): Verify priority logic
+        - test_workflow_triggering(): Verify workflow automation
+        - test_archive_recommendation(): Verify archive logic
+        - test_manual_override(): Verify escalation path
+        - test_decision_audit_trail(): Verify logging"
+    
+    - "tests/test_explainability.py:
+        - test_score_breakdown(): Verify component explanation
+        - test_explanation_generation(): Verify rationale formatting
+        - test_dashboard_formatting(): Verify API response
+        - test_score_driver_identification(): Verify key factor analysis"
 
 dependencies:
   external_libraries:

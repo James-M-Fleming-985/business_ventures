@@ -215,6 +215,35 @@ layers:
     requirement_file: "LAYER-CA-006-02-06_engagement_cache.yaml"
 
 implementation_notes:
+  directory_structure: |
+    features/FEATURE-CA-006-02_engagement_tracking/
+    ├── __init__.py
+    ├── services/
+    │   ├── __init__.py
+    │   ├── event_collector.py
+    │   ├── session_tracker.py
+    │   ├── metrics_calculator.py
+    │   ├── real_time_processor.py
+    │   ├── storage.py
+    │   └── cache.py
+    ├── models/
+    │   ├── __init__.py
+    │   ├── event.py
+    │   ├── session.py
+    │   └── metrics.py
+    ├── db/
+    │   ├── __init__.py
+    │   ├── schema.py
+    │   └── repositories.py
+    └── tests/
+        ├── __init__.py
+        ├── test_event_collector.py
+        ├── test_session_tracker.py
+        ├── test_metrics_calculator.py
+        ├── test_real_time_processor.py
+        ├── test_storage.py
+        └── test_cache.py
+  
   design_decisions:
     - "Use Redis Streams for real-time event processing"
     - "Implement time-series optimized storage schema"
@@ -223,12 +252,92 @@ implementation_notes:
     - "Use materialized views for complex aggregations"
   
   code_structure:
-    - "engagement/event_collector.py - EventCollector"
-    - "engagement/session_tracker.py - SessionTracker"
-    - "engagement/metrics_calculator.py - MetricsCalculator"
-    - "engagement/real_time_processor.py - RealTimeProcessor"
-    - "engagement/storage.py - EngagementStorage"
-    - "engagement/cache.py - EngagementCache"
+    # Services Layer
+    - "services/event_collector.py:
+        - EventCollector: High-performance async event ingestion
+        - Methods: collect_event(), validate_event(), batch_collect()"
+    
+    - "services/session_tracker.py:
+        - SessionTracker: Session management with timeout handling
+        - Methods: start_session(), end_session(), update_session(), check_timeout()"
+    
+    - "services/metrics_calculator.py:
+        - MetricsCalculator: Real-time metric computation
+        - Methods: calculate_engagement_score(), aggregate_metrics(), compute_rolling_avg()"
+    
+    - "services/real_time_processor.py:
+        - RealTimeProcessor: Stream processing pipeline
+        - Methods: process_event_stream(), apply_windowing(), aggregate_windows()"
+    
+    - "services/storage.py:
+        - EngagementStorage: Time-series storage facade
+        - Methods: store_event(), get_events_by_timerange(), get_session_events()"
+    
+    - "services/cache.py:
+        - EngagementCache: Redis cache for real-time metrics
+        - Methods: cache_metrics(), get_cached_metrics(), invalidate_cache()"
+    
+    # Models Layer
+    - "models/event.py:
+        - EngagementEvent (Pydantic): event_id, user_id, event_type, timestamp, properties
+        - EventType (Enum): PAGE_VIEW, CLICK, FORM_SUBMIT, VIDEO_PLAY, CUSTOM
+        - EventProperties (Pydantic): Additional event metadata"
+    
+    - "models/session.py:
+        - SessionData (Pydantic): session_id, user_id, start_time, end_time, events
+        - SessionStatus (Enum): ACTIVE, EXPIRED, TERMINATED
+        - SessionMetrics (Pydantic): duration, event_count, engagement_score"
+    
+    - "models/metrics.py:
+        - EngagementMetrics (Pydantic): total_events, unique_users, avg_session_duration
+        - AggregatedMetrics (Pydantic): Time-windowed aggregations (1m, 5m, 15m)
+        - MetricsResponse (Pydantic): API response format for dashboard"
+    
+    # Database Layer
+    - "db/schema.py:
+        - EngagementEventORM (SQLAlchemy): Time-series table for events
+        - SessionORM (SQLAlchemy): Session tracking table
+        - Indexes: user_id, timestamp, event_type, session_id for query optimization
+        - Partitioning: By timestamp for efficient time-range queries"
+    
+    - "db/repositories.py:
+        - EngagementRepository: Async CRUD operations
+        - Methods: create_event(), get_events_by_user(), get_session(), aggregate_metrics()
+        - Batch operations: bulk_insert_events(), batch_update_sessions()"
+    
+    # Tests Layer
+    - "tests/test_event_collector.py:
+        - test_collect_single_event(): Verify event ingestion
+        - test_validate_event_schema(): Verify Pydantic validation
+        - test_batch_collect_performance(): Verify batch ingestion
+        - test_invalid_event_handling(): Verify error handling
+        - test_concurrent_collection(): Verify thread safety"
+    
+    - "tests/test_session_tracker.py:
+        - test_start_session(): Verify session initialization
+        - test_session_timeout(): Verify timeout handling
+        - test_session_update(): Verify session updates
+        - test_concurrent_sessions(): Verify multi-user tracking"
+    
+    - "tests/test_metrics_calculator.py:
+        - test_engagement_score(): Verify score calculation
+        - test_aggregate_metrics(): Verify aggregation logic
+        - test_rolling_average(): Verify windowing calculations"
+    
+    - "tests/test_real_time_processor.py:
+        - test_stream_processing(): Verify stream handling
+        - test_windowing(): Verify time windows
+        - test_backpressure_handling(): Verify load handling"
+    
+    - "tests/test_storage.py:
+        - test_store_event(): Verify database storage
+        - test_time_range_query(): Verify time-series queries
+        - test_bulk_operations(): Verify batch performance"
+    
+    - "tests/test_cache.py:
+        - test_cache_metrics(): Verify Redis caching
+        - test_cache_invalidation(): Verify cache updates
+        - test_cache_hit_rate(): Verify cache efficiency"
 
 dependencies:
   external_libraries:

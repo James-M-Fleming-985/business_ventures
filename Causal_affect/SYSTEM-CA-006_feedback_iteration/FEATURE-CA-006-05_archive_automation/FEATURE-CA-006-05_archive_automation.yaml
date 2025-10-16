@@ -234,6 +234,31 @@ layers:
     requirement_file: "LAYER-CA-006-05-04_notification_service.yaml"
 
 implementation_notes:
+  directory_structure: |
+    features/FEATURE-CA-006-05_archive_automation/
+    ├── __init__.py
+    ├── services/
+    │   ├── __init__.py
+    │   ├── workflow_orchestrator.py
+    │   ├── infrastructure_cleanup.py
+    │   ├── data_preservation.py
+    │   └── notification_service.py
+    ├── models/
+    │   ├── __init__.py
+    │   ├── archive_workflow.py
+    │   ├── archive_decision.py
+    │   └── archive_metadata.py
+    ├── db/
+    │   ├── __init__.py
+    │   ├── schema.py
+    │   └── repositories.py
+    └── tests/
+        ├── __init__.py
+        ├── test_workflow_orchestrator.py
+        ├── test_infrastructure_cleanup.py
+        ├── test_data_preservation.py
+        └── test_notification_service.py
+  
   design_decisions:
     - "Implement idempotent workflow steps (safe to retry, no side effects)"
     - "Use database transactions for state changes (atomic operations)"
@@ -247,10 +272,82 @@ implementation_notes:
     - "Implement archive cost tracking and reporting (AWS S3 storage costs)"
 
   code_structure:
-    - "workflow_orchestrator.py: Multi-stage workflow, state machine, approval gates"
-    - "infrastructure_cleanup.py: Railway API integration, service shutdown"
-    - "data_preservation.py: S3 export, encryption, integrity verification"
-    - "notification_service.py: Email/Slack notifications, message formatting"
+    # Services Layer
+    - "services/workflow_orchestrator.py:
+        - ArchiveWorkflowOrchestrator: Multi-stage workflow state machine
+        - Methods: start_workflow(), advance_stage(), approve_archive(), rollback_archive()
+        - Stages: review → approval → notification → export → cleanup → finalization"
+    
+    - "services/infrastructure_cleanup.py:
+        - InfrastructureCleanup: Railway service shutdown and resource cleanup
+        - Methods: shutdown_service(), remove_domain(), cleanup_database(), cancel_jobs()
+        - Safety: dry_run_mode(), verify_before_delete(), create_restore_snapshot()"
+    
+    - "services/data_preservation.py:
+        - DataPreservationService: S3 export with encryption and integrity checks
+        - Methods: export_to_s3(), encrypt_data(), verify_integrity(), generate_manifest()
+        - Exports: analytics_data, revenue_data, source_code, configs, user_feedback"
+    
+    - "services/notification_service.py:
+        - NotificationService: Multi-channel notifications (email, Slack)
+        - Methods: send_archive_review(), send_approval_request(), send_completion_notice()
+        - Templates: archive_review_email, approval_request_slack, rollback_instructions"
+    
+    # Models Layer
+    - "models/archive_workflow.py:
+        - ArchiveWorkflow (Pydantic): workflow_id, mvp_id, current_stage, status, timestamps
+        - WorkflowStage (Enum): REVIEW, APPROVAL, NOTIFICATION, EXPORT, CLEANUP, FINALIZED
+        - WorkflowStatus (Enum): PENDING, IN_PROGRESS, APPROVED, REJECTED, COMPLETED, ROLLED_BACK"
+    
+    - "models/archive_decision.py:
+        - ArchiveDecision (Pydantic): decision_id, mvp_id, reason, approval_type, approver
+        - ApprovalType (Enum): AUTO_APPROVED, MANUAL_APPROVED, REJECTED
+        - ArchiveReason (Pydantic): score_threshold, consecutive_days, manual_override"
+    
+    - "models/archive_metadata.py:
+        - ArchiveMetadata (Pydantic): archive_id, mvp_id, archive_date, s3_location, manifest
+        - ArchiveManifest (Pydantic): data_files, checksums, restoration_instructions
+        - RollbackData (Pydantic): original_state, rollback_deadline, restore_procedure"
+    
+    # Database Layer
+    - "db/schema.py:
+        - ArchiveWorkflowORM (SQLAlchemy): Workflow state and history
+        - ArchiveMetadataORM (SQLAlchemy): Archive storage and rollback data
+        - ArchiveAuditLogORM (SQLAlchemy): Complete audit trail
+        - Indexes: mvp_id, workflow_status, archive_date for query optimization"
+    
+    - "db/repositories.py:
+        - ArchiveRepository: Async CRUD for archive workflows
+        - Methods: create_workflow(), update_stage(), get_rollback_candidates()
+        - AuditRepository: Archive decision tracking
+        - Methods: log_decision(), get_archive_history(), track_false_positives()"
+    
+    # Tests Layer
+    - "tests/test_workflow_orchestrator.py:
+        - test_workflow_stages(): Verify 6-stage progression
+        - test_approval_gates(): Verify manual and auto-approve logic
+        - test_rollback_workflow(): Verify 7-day rollback window
+        - test_idempotency(): Verify safe retry behavior
+        - test_dry_run_mode(): Verify simulation without deletion"
+    
+    - "tests/test_infrastructure_cleanup.py:
+        - test_railway_shutdown(): Verify service shutdown
+        - test_resource_cleanup(): Verify complete deallocation
+        - test_safety_checks(): Verify confirmation requirements
+        - test_restore_snapshot(): Verify backup before delete"
+    
+    - "tests/test_data_preservation.py:
+        - test_s3_export(): Verify data export to S3
+        - test_encryption(): Verify data encryption
+        - test_integrity_verification(): Verify checksum validation
+        - test_manifest_generation(): Verify restoration docs
+        - test_data_completeness(): Verify 100% data capture"
+    
+    - "tests/test_notification_service.py:
+        - test_email_notifications(): Verify SendGrid delivery
+        - test_slack_notifications(): Verify Slack webhook
+        - test_notification_timing(): Verify <2 min delivery
+        - test_rollback_instructions(): Verify clear guidance"
 
 dependencies:
   external_libraries:

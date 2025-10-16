@@ -315,11 +315,199 @@ quality_gates:
   - gate: "Zero ESLint errors"
     enforced: true
 
+implementation_notes:
+  directory_structure: |
+    features/FEATURE-CA-006-06_dashboard_ui/
+    ├── public/
+    │   └── index.html
+    ├── src/
+    │   ├── main.tsx              # React entry point
+    │   ├── App.tsx               # Root component with routing
+    │   ├── components/
+    │   │   ├── layout/
+    │   │   │   ├── DashboardLayout.tsx
+    │   │   │   ├── Navigation.tsx
+    │   │   │   └── Header.tsx
+    │   │   ├── portfolio/
+    │   │   │   ├── PortfolioOverview.tsx
+    │   │   │   ├── TopPerformersTable.tsx
+    │   │   │   └── ArchiveCandidatesTable.tsx
+    │   │   ├── mvp/
+    │   │   │   ├── MVPDetailView.tsx
+    │   │   │   ├── EngagementMetrics.tsx
+    │   │   │   ├── RevenueMetrics.tsx
+    │   │   │   ├── ScoreBreakdown.tsx
+    │   │   │   └── ConversionFunnel.tsx
+    │   │   ├── charts/
+    │   │   │   ├── TimeSeriesChart.tsx
+    │   │   │   ├── BarChart.tsx
+    │   │   │   ├── FunnelChart.tsx
+    │   │   │   └── MetricCard.tsx
+    │   │   └── common/
+    │   │       ├── LoadingSpinner.tsx
+    │   │       ├── ErrorBoundary.tsx
+    │   │       └── Toast.tsx
+    │   ├── services/
+    │   │   ├── api/
+    │   │   │   ├── client.ts         # Axios instance
+    │   │   │   ├── engagement.ts     # Engagement API calls
+    │   │   │   ├── revenue.ts        # Revenue API calls
+    │   │   │   ├── prioritization.ts # Priority API calls
+    │   │   │   └── archive.ts        # Archive API calls
+    │   │   └── websocket.ts          # WebSocket connection management
+    │   ├── stores/
+    │   │   ├── portfolioStore.ts     # Portfolio state (Zustand)
+    │   │   ├── mvpStore.ts           # MVP detail state
+    │   │   └── uiStore.ts            # UI state (modals, toasts)
+    │   ├── types/
+    │   │   ├── portfolio.ts          # Portfolio TypeScript types
+    │   │   ├── mvp.ts                # MVP TypeScript types
+    │   │   ├── metrics.ts            # Metrics TypeScript types
+    │   │   └── api.ts                # API response types
+    │   ├── hooks/
+    │   │   ├── usePortfolioData.ts   # Portfolio data hook
+    │   │   ├── useMVPDetail.ts       # MVP detail hook
+    │   │   ├── useWebSocket.ts       # WebSocket hook
+    │   │   └── useRealTimeUpdates.ts # Real-time updates hook
+    │   └── utils/
+    │       ├── formatting.ts         # Number/date formatting
+    │       ├── calculations.ts       # Client-side calculations
+    │       └── validation.ts         # Zod schemas
+    ├── tests/
+    │   ├── components/
+    │   │   ├── PortfolioOverview.test.tsx
+    │   │   ├── MVPDetailView.test.tsx
+    │   │   └── charts/
+    │   │       ├── TimeSeriesChart.test.tsx
+    │   │       └── MetricCard.test.tsx
+    │   ├── services/
+    │   │   ├── api.test.ts
+    │   │   └── websocket.test.ts
+    │   ├── hooks/
+    │   │   ├── usePortfolioData.test.ts
+    │   │   └── useWebSocket.test.ts
+    │   └── e2e/
+    │       ├── portfolio-navigation.spec.ts
+    │       ├── mvp-detail.spec.ts
+    │       └── realtime-updates.spec.ts
+    ├── package.json
+    ├── vite.config.ts
+    ├── tsconfig.json
+    ├── tailwind.config.js
+    └── README.md
+  
+  design_decisions:
+    - "Use Zustand for lightweight state management (simpler than Redux)"
+    - "WebSocket auto-reconnect with exponential backoff (1s, 2s, 4s, 8s)"
+    - "Lazy load routes and heavy components for code splitting"
+    - "Use TanStack Table for performant table rendering (virtualization)"
+    - "Implement React.memo and useMemo for expensive chart computations"
+    - "Use Recharts with responsive containers for all charts"
+    - "ErrorBoundary at route level for graceful error handling"
+    - "Use React Hook Form + Zod for type-safe form validation"
+    - "Implement optimistic updates for better UX"
+    - "Use Tailwind CSS utilities for consistent styling"
+  
+  code_structure:
+    # Components Layer
+    - "components/layout/DashboardLayout.tsx:
+        - DashboardLayout: Main layout with sidebar and header
+        - Props: children, showSidebar, onNavigate"
+    
+    - "components/portfolio/PortfolioOverview.tsx:
+        - PortfolioOverview: Portfolio-level metrics and tables
+        - Uses: TopPerformersTable, ArchiveCandidatesTable, MetricCard
+        - Data: usePortfolioData hook"
+    
+    - "components/mvp/MVPDetailView.tsx:
+        - MVPDetailView: Individual MVP analytics view
+        - Uses: EngagementMetrics, RevenueMetrics, ScoreBreakdown, ConversionFunnel
+        - Data: useMVPDetail hook with mvp_id param"
+    
+    - "components/charts/TimeSeriesChart.tsx:
+        - TimeSeriesChart: Recharts wrapper for time-series data
+        - Props: data, xKey, yKey, title, color
+        - Features: Tooltip, legend, responsive container"
+    
+    # Services Layer
+    - "services/api/client.ts:
+        - apiClient: Configured Axios instance
+        - Features: Base URL, auth headers, error interceptors, retry logic
+        - Methods: get(), post(), put(), delete()"
+    
+    - "services/api/engagement.ts:
+        - getPortfolioMetrics(): GET /api/v1/portfolio/metrics
+        - getMVPEngagement(mvpId): GET /api/v1/mvps/{mvp_id}/metrics
+        - Types: PortfolioMetrics, MVPEngagementMetrics"
+    
+    - "services/websocket.ts:
+        - WebSocketClient: WebSocket connection manager
+        - Methods: connect(), disconnect(), subscribe(), unsubscribe()
+        - Features: Auto-reconnect, event handling, connection state"
+    
+    # Stores Layer (Zustand)
+    - "stores/portfolioStore.ts:
+        - State: portfolioData, topPerformers, archiveCandidates, loading, error
+        - Actions: fetchPortfolio(), refreshData(), updateMetrics()
+        - Selectors: selectTopPerformers(), selectArchiveCandidates()"
+    
+    - "stores/mvpStore.ts:
+        - State: currentMVP, engagement, revenue, score, loading, error
+        - Actions: fetchMVPDetail(mvpId), updateRealtime(data)
+        - Selectors: selectEngagement(), selectRevenue()"
+    
+    # Types Layer
+    - "types/portfolio.ts:
+        - PortfolioMetrics: TypeScript interface for portfolio data
+        - TopPerformer: MVP with rank, score, metrics
+        - ArchiveCandidate: MVP with archive reason, workflow status"
+    
+    - "types/mvp.ts:
+        - MVPDetail: Complete MVP data
+        - EngagementMetrics: Event counts, sessions, users
+        - RevenueMetrics: Revenue, CAC, LTV, conversion rates
+        - PriorityScore: Total score, components, percentile"
+    
+    # Hooks Layer
+    - "hooks/usePortfolioData.ts:
+        - Custom hook for portfolio data fetching and real-time updates
+        - Returns: { data, loading, error, refresh }
+        - Features: Auto-refresh, WebSocket subscription, error handling"
+    
+    - "hooks/useMVPDetail.ts:
+        - Custom hook for MVP detail data
+        - Params: mvpId
+        - Returns: { mvp, engagement, revenue, score, loading, error }
+        - Features: Concurrent API calls, real-time updates"
+    
+    - "hooks/useWebSocket.ts:
+        - Custom hook for WebSocket connection
+        - Returns: { connected, subscribe, unsubscribe, send }
+        - Features: Auto-reconnect, connection state, event handling"
+    
+    # Tests Layer
+    - "tests/components/PortfolioOverview.test.tsx:
+        - test_renders_portfolio_metrics(): Verify metrics display
+        - test_displays_top_performers_table(): Verify table rendering
+        - test_handles_loading_state(): Verify loading spinner
+        - test_handles_error_state(): Verify error message"
+    
+    - "tests/services/api.test.ts:
+        - test_api_client_makes_correct_calls(): Verify API calls
+        - test_handles_401_unauthorized(): Verify auth error handling
+        - test_retries_on_network_error(): Verify retry logic"
+    
+    - "tests/hooks/useWebSocket.test.ts:
+        - test_establishes_connection(): Verify WebSocket connect
+        - test_auto_reconnects(): Verify reconnection logic
+        - test_handles_message_events(): Verify event handling"
+    
+    - "tests/e2e/portfolio-navigation.spec.ts:
+        - test_navigate_to_mvp_detail(): Verify navigation flow
+        - test_sort_top_performers_table(): Verify table sorting
+        - test_filter_archive_candidates(): Verify table filtering"
+
 deployment:
-  environment: "Railway"
-  build_command: "npm run build"
-  start_command: "npm run preview -- --host 0.0.0.0 --port $PORT"
-  environment_variables:
     - "VITE_API_URL: Backend API URL"
     - "VITE_WS_URL: WebSocket URL"
     - "VITE_ENV: production/staging/development"

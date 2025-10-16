@@ -222,6 +222,33 @@ layers:
     requirement_file: "LAYER-CA-006-01-05_analytics_error_handler.yaml"
 
 implementation_notes:
+  directory_structure: |
+    features/FEATURE-CA-006-01_analytics_integration/
+    ├── __init__.py
+    ├── services/
+    │   ├── __init__.py
+    │   ├── google_analytics_client.py
+    │   ├── mixpanel_client.py
+    │   ├── amplitude_client.py
+    │   ├── analytics_aggregator.py
+    │   └── error_handler.py
+    ├── models/
+    │   ├── __init__.py
+    │   ├── analytics_event.py
+    │   ├── provider_config.py
+    │   └── aggregated_metrics.py
+    ├── db/
+    │   ├── __init__.py
+    │   ├── schema.py
+    │   └── repositories.py
+    └── tests/
+        ├── __init__.py
+        ├── test_google_analytics_client.py
+        ├── test_mixpanel_client.py
+        ├── test_amplitude_client.py
+        ├── test_analytics_aggregator.py
+        └── test_error_handler.py
+  
   design_decisions:
     - "Use async/await for concurrent provider requests"
     - "Implement circuit breaker pattern for failing providers"
@@ -230,12 +257,80 @@ implementation_notes:
     - "Use Strategy pattern for provider abstraction"
   
   code_structure:
-    - "analytics/clients/google_analytics_client.py - GoogleAnalyticsClient"
-    - "analytics/clients/mixpanel_client.py - MixpanelClient"
-    - "analytics/clients/amplitude_client.py - AmplitudeClient"
-    - "analytics/aggregator.py - AnalyticsAggregator"
-    - "analytics/error_handler.py - AnalyticsErrorHandler"
-    - "analytics/models.py - Pydantic models for common schema"
+    # Services Layer
+    - "services/google_analytics_client.py:
+        - GoogleAnalyticsClient: Async client for GA4 API
+        - Methods: authenticate(), fetch_page_views(), fetch_events(), fetch_conversions()"
+    
+    - "services/mixpanel_client.py:
+        - MixpanelClient: Async client for Mixpanel API
+        - Methods: authenticate(), fetch_events(), fetch_user_profiles(), fetch_funnels()"
+    
+    - "services/amplitude_client.py:
+        - AmplitudeClient: Async client for Amplitude API
+        - Methods: authenticate(), fetch_user_behavior(), fetch_retention(), fetch_revenue()"
+    
+    - "services/analytics_aggregator.py:
+        - AnalyticsAggregator: Unified interface for all analytics providers
+        - Methods: collect_all_metrics(), normalize_events(), aggregate_by_mvp()"
+    
+    - "services/error_handler.py:
+        - AnalyticsErrorHandler: Centralized error handling and retry logic
+        - Methods: handle_provider_error(), retry_with_backoff(), circuit_breaker()"
+    
+    # Models Layer
+    - "models/analytics_event.py:
+        - AnalyticsEvent (Pydantic): event_id, mvp_id, event_type, timestamp, properties
+        - EventType (Enum): PAGE_VIEW, CLICK, CONVERSION, CUSTOM
+        - EventProperties (Pydantic): Additional event metadata"
+    
+    - "models/provider_config.py:
+        - ProviderConfig (Pydantic): provider_name, api_key, endpoint, timeout
+        - GoogleAnalyticsConfig (Pydantic): property_id, credentials_json
+        - MixpanelConfig (Pydantic): project_token, api_secret
+        - AmplitudeConfig (Pydantic): api_key, secret_key"
+    
+    - "models/aggregated_metrics.py:
+        - AggregatedMetrics (Pydantic): mvp_id, total_events, unique_users, time_range
+        - ProviderMetrics (Pydantic): provider_name, events_collected, collection_time
+        - MetricsResponse (Pydantic): API response format for aggregated data"
+    
+    # Database Layer
+    - "db/schema.py:
+        - AnalyticsEventORM (SQLAlchemy): Database table for analytics events
+        - ProviderStatusORM (SQLAlchemy): Track provider health and last sync time
+        - Indexes: mvp_id, event_type, timestamp for query optimization"
+    
+    - "db/repositories.py:
+        - AnalyticsRepository: Async CRUD operations for analytics data
+        - Methods: store_events(), get_events_by_mvp(), get_provider_status(), update_sync_time()"
+    
+    # Tests Layer
+    - "tests/test_google_analytics_client.py:
+        - test_authenticate_success(): Verify GA4 authentication
+        - test_fetch_page_views(): Verify page view collection
+        - test_handle_rate_limit(): Verify rate limit handling
+        - test_connection_timeout(): Verify timeout handling"
+    
+    - "tests/test_mixpanel_client.py:
+        - test_authenticate_success(): Verify Mixpanel auth
+        - test_fetch_events(): Verify event collection
+        - test_fetch_user_profiles(): Verify profile data"
+    
+    - "tests/test_amplitude_client.py:
+        - test_authenticate_success(): Verify Amplitude auth
+        - test_fetch_user_behavior(): Verify behavior analytics
+        - test_fetch_retention(): Verify retention metrics"
+    
+    - "tests/test_analytics_aggregator.py:
+        - test_collect_all_metrics(): Verify multi-provider collection
+        - test_normalize_events(): Verify data normalization
+        - test_aggregate_by_mvp(): Verify MVP-level aggregation"
+    
+    - "tests/test_error_handler.py:
+        - test_retry_with_backoff(): Verify exponential backoff
+        - test_circuit_breaker(): Verify circuit breaker pattern
+        - test_provider_fallback(): Verify fallback logic"
 
 dependencies:
   external_libraries:
