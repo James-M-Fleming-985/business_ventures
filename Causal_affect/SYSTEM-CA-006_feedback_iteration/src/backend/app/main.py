@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
 from app.config import settings
-from app.db.connection import engine, init_db, close_db
+from app.db.connection import close_db, init_db
 from app.middleware.cors import setup_cors
 from app.middleware.error_handler import setup_error_handlers
 from app.middleware.logging import setup_logging_middleware
@@ -16,7 +16,7 @@ from app.schemas.health import HealthResponse
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    """Manage application lifespan events."""
+    """Application lifespan manager for startup and shutdown events."""
     # Startup
     await init_db()
     yield
@@ -24,13 +24,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     await close_db()
 
 
-def create_application() -> FastAPI:
+def create_app() -> FastAPI:
     """Create and configure FastAPI application."""
     app = FastAPI(
         title=settings.APP_NAME,
         version="0.1.0",
-        docs_url="/docs" if settings.DEBUG else None,
-        redoc_url="/redoc" if settings.DEBUG else None,
+        debug=settings.DEBUG,
         lifespan=lifespan,
     )
 
@@ -41,15 +40,18 @@ def create_application() -> FastAPI:
 
     # Health check endpoint
     @app.get("/health", response_model=HealthResponse, tags=["health"])
-    async def health_check() -> HealthResponse:
-        """Check application health status."""
-        return HealthResponse(
-            status="healthy",
-            version="0.1.0",
-            database="connected",
+    async def health_check() -> JSONResponse:
+        """Health check endpoint."""
+        return JSONResponse(
+            status_code=200,
+            content={
+                "status": "healthy",
+                "service": settings.APP_NAME,
+                "version": "0.1.0",
+            },
         )
 
     return app
 
 
-app = create_application()
+app = create_app()
