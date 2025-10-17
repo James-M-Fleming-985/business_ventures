@@ -6,365 +6,795 @@ metadata:
   system_name: Data Ingestion & Processing Engine
   parent_project: PROJECT-CAUSAL_AFFECT
   created_date: 2025-10-13
+  updated_date: 2025-10-17
   status: planned
   priority: critical
   
   purpose: |
-    High-performance data ingestion pipeline that pulls data from 8-12 concurrent
-    external APIs, validates, transforms, and stores data for correlation analysis.
-    Phase 1: 50-100 GB in 30-60 minutes. Scales to 10+ TB as revenue grows.
+    High-performance data ingestion pipeline that pulls data from 15-20 concurrent
+    external APIs, validates, transforms, and stores time-series data for downstream
+    correlation analysis. Designed to handle 50-100 GB in Phase 1, scaling to 10+ TB
+    as business grows.
   
   business_value: |
-    - Enables access to diverse data sources (financial, web, ecommerce, developer)
+    - Enables access to diverse data sources (financial, weather, social, economic)
     - Handles API failures gracefully without data loss
-    - Provides clean, normalized data for analysis pipeline
-    - Scales easily as more data sources are added
+    - Provides clean, normalized data for CA-002 correlation analysis
+    - Scales easily as more data sources and volume are added
+    - Reduces manual data collection effort by 95%
 
 deployment:
   platform: Railway
-  service_type: Backend worker service (Celery workers)
+  service_type: Backend worker service (Celery workers + monitoring API)
   scaling: 2-4 workers (Phase 1) → 8-16 workers (Phase 2)
   estimated_cost: "$40/month (Phase 1) → $150/month (Phase 2)"
   
-  railway_config:
+  railway_config_workers:
     builder: NIXPACKS
     build_command: "pip install -r requirements.txt"
     start_command: "celery -A app.tasks worker --loglevel=info --concurrency=4"
     health_check: "/health"
     restart_policy: ON_FAILURE
-    environment_variables:
-      - DATABASE_URL (Railway PostgreSQL)
-      - REDIS_URL (Railway Redis)
-      - API_KEYS_* (configured per source)
+  
+  railway_config_api:
+    builder: NIXPACKS
+    build_command: "pip install -r requirements.txt"
+    start_command: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    health_check: "/health"
+    restart_policy: ON_FAILURE
+
+code_generation:
+  repository_root: "/workspaces/business_ventures/Causal_affect"
+  system_folder: "SYSTEM-CA-001_data_ingestion_processing"
+  
+  folder_structure:
+    requirements:
+      description: "Hierarchical folder structure with FEATURE and LAYER folders"
+      structure: |
+        SYSTEM-CA-001_data_ingestion_processing/
+        ├── SYSTEM-CA-001.yaml (at root)
+        ├── FEATURE-CA-001-01_api_connector/
+        │   ├── FEATURE-CA-001-01_api_connector.yaml
+        │   ├── LAYER-CA-001-01-01_http_client/
+        │   │   └── LAYER-CA-001-01-01_http_client.yaml
+        │   ├── LAYER-CA-001-01-02_auth_manager/
+        │   │   └── LAYER-CA-001-01-02_auth_manager.yaml
+        │   ├── LAYER-CA-001-01-03_rate_limiter/
+        │   │   └── LAYER-CA-001-01-03_rate_limiter.yaml
+        │   └── LAYER-CA-001-01-04_circuit_breaker/
+        │       └── LAYER-CA-001-01-04_circuit_breaker.yaml
+        ├── FEATURE-CA-001-02_data_validation/
+        │   ├── FEATURE-CA-001-02_data_validation.yaml
+        │   ├── LAYER-CA-001-02-01_schema_validator/
+        │   ├── LAYER-CA-001-02-02_data_cleaner/
+        │   ├── LAYER-CA-001-02-03_transformer/
+        │   └── LAYER-CA-001-02-04_quality_checker/
+        ├── FEATURE-CA-001-03_timeseries_storage/
+        │   ├── FEATURE-CA-001-03_timeseries_storage.yaml
+        │   ├── LAYER-CA-001-03-01_db_connection/
+        │   ├── LAYER-CA-001-03-02_partitioner/
+        │   ├── LAYER-CA-001-03-03_indexer/
+        │   └── LAYER-CA-001-03-04_compressor/
+        └── FEATURE-CA-001-04_monitoring/
+            ├── FEATURE-CA-001-04_monitoring.yaml
+            ├── LAYER-CA-001-04-01_metrics_collector/
+            ├── LAYER-CA-001-04-02_health_checker/
+            └── LAYER-CA-001-04-03_alerter/
+      
+      naming_convention:
+        feature_folder: "FEATURE-{SYSTEM_ID}-{NUMBER}_{feature_name}"
+        feature_file: "FEATURE-{SYSTEM_ID}-{NUMBER}_{feature_name}.yaml"
+        layer_folder: "LAYER-{SYSTEM_ID}-{FEATURE_NUM}-{LAYER_NUM}_{layer_name}"
+        layer_file: "LAYER-{SYSTEM_ID}-{FEATURE_NUM}-{LAYER_NUM}_{layer_name}.yaml"
+      
+      example_paths:
+        - "SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/FEATURE-CA-001-01_api_connector.yaml"
+        - "SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/LAYER-CA-001-01-01_http_client/LAYER-CA-001-01-01_http_client.yaml"
+    
+    source_backend:
+      base_path: "src/data_ingestion/backend"
+      description: "Celery-based worker service with hybrid architecture"
+      entry_point: "app/main.py"
+      structure:
+        app:
+          - "__init__.py"
+          - "main.py          # FastAPI app for monitoring API"
+          - "tasks.py         # Celery task definitions"
+          - "config.py        # System-wide configuration"
+          - "celery_app.py    # Celery app instance"
+          - "api/             # Monitoring and control API endpoints
+              - __init__.py
+              - health.py          # Health check endpoints
+              - status.py          # Ingestion status endpoints
+              - control.py         # Start/stop/configure endpoints"
+          - "db/              # System-level database infrastructure
+              - __init__.py
+              - connection.py      # SQLAlchemy engine for TimescaleDB
+              - base.py            # Declarative base"
+          - "middleware/      # Cross-cutting concerns
+              - __init__.py
+              - error_handler.py   # Global exception handling
+              - logging.py         # Request/response logging"
+          - "schemas/         # Shared DTOs
+              - __init__.py
+              - health.py          # HealthResponse
+              - error.py           # ErrorResponse"
+        features:
+          - "FEATURE-CA-001-01_api_connector/
+              - __init__.py
+              - services/         # HTTP clients, auth, rate limiting
+              - models/           # API configs, request/response models
+              - db/               # API metadata schema
+              - tests/            # Unit tests"
+          - "FEATURE-CA-001-02_data_validation/
+              - __init__.py
+              - services/         # Validators, cleaners, transformers
+              - models/           # Validation rules, schemas
+              - db/               # Validation error logs
+              - tests/            # Unit tests"
+          - "FEATURE-CA-001-03_timeseries_storage/
+              - __init__.py
+              - services/         # TimescaleDB operations
+              - models/           # Time-series data models
+              - db/               # Table schemas, partitions
+              - tests/            # Unit tests"
+          - "FEATURE-CA-001-04_monitoring/
+              - __init__.py
+              - services/         # Metrics collectors, health checks
+              - models/           # Monitoring data models
+              - db/               # Metrics storage
+              - tests/            # Unit tests"
+        root_files:
+          - "requirements.txt # Python dependencies"
+          - "Dockerfile.dev   # Development container"
+          - ".env.example     # Environment variable template"
+    
+    configuration:
+      base_path: "src/data_ingestion"
+      description: "Deployment and development configuration"
+      files:
+        - "railway.json           # Railway deployment configuration"
+        - "docker-compose.dev.yml # Local development with PostgreSQL + Redis"
+        - "README.md              # How to run CA-001 locally"
+        - ".gitignore             # Git ignore patterns"
+    
+    tests:
+      base_path: "tests/data_ingestion"
+      description: "Test files mirroring source structure"
+      structure:
+        unit:
+          - "test_api_connector.py     # API connector unit tests"
+          - "test_data_validation.py   # Validation unit tests"
+          - "test_timeseries_storage.py # Storage unit tests"
+        integration:
+          - "test_end_to_end_flow.py   # Full pipeline integration"
+          - "test_concurrent_ingestion.py # Concurrent API calls"
+        e2e:
+          - "test_new_source_onboarding.py # E2E: Add new API source"
+          - "test_failure_recovery.py      # E2E: API failure scenarios"
+    
+    documentation:
+      base_path: "SYSTEM-CA-001_data_ingestion_processing/docs"
+      description: "System-specific documentation"
+      files:
+        - "architecture.md     # System architecture"
+        - "api-sources.md      # Supported data sources"
+        - "deployment-guide.md # Railway deployment"
+        - "troubleshooting.md  # Common issues and fixes"
+  
+  phases:
+    description: "Multi-phase generation strategy for Claude API compliance"
+    total_phases: 10
+    estimated_total_time: "60-75 minutes"
+    
+    phase_01_system_infrastructure:
+      name: "System Infrastructure"
+      max_tokens: 8192
+      estimated_time: "5 minutes"
+      dependencies: []
+      files:
+        - "app/__init__.py"
+        - "app/main.py - FastAPI monitoring API"
+        - "app/config.py - Configuration management"
+        - "app/celery_app.py - Celery instance"
+        - "app/tasks.py - Task definitions"
+        - "app/db/__init__.py"
+        - "app/db/connection.py - TimescaleDB connection"
+        - "app/db/base.py - SQLAlchemy base"
+        - "app/middleware/__init__.py"
+        - "app/middleware/error_handler.py"
+        - "app/middleware/logging.py"
+        - "app/schemas/__init__.py"
+        - "app/schemas/health.py"
+        - "app/schemas/error.py"
+      acceptance_criteria:
+        - "FastAPI monitoring API starts"
+        - "Celery workers connect to Redis"
+        - "TimescaleDB connection works"
+    
+    phase_02_monitoring_api:
+      name: "Monitoring & Control API"
+      max_tokens: 8192
+      estimated_time: "6 minutes"
+      dependencies: ["phase_01_system_infrastructure"]
+      files:
+        - "app/api/__init__.py"
+        - "app/api/health.py - Health check endpoints"
+        - "app/api/status.py - Ingestion status API"
+        - "app/api/control.py - Start/stop/configure API"
+      acceptance_criteria:
+        - "Health endpoint returns status"
+        - "Status API shows active workers"
+        - "Control API can trigger tasks"
+    
+    phase_03_feature_01_api_connector:
+      name: "FEATURE-01: API Connector"
+      max_tokens: 8192
+      estimated_time: "12 minutes"
+      dependencies: ["phase_01_system_infrastructure"]
+      feature_id: "FEATURE-CA-001-01"
+      feature_yaml: "FEATURE-CA-001-01_api_connector/FEATURE-CA-001-01_api_connector.yaml"
+      files:
+        - "features/FEATURE-CA-001-01_api_connector/__init__.py"
+        - "features/FEATURE-CA-001-01_api_connector/services/__init__.py"
+        - "features/FEATURE-CA-001-01_api_connector/services/http_client.py"
+        - "features/FEATURE-CA-001-01_api_connector/services/auth_manager.py"
+        - "features/FEATURE-CA-001-01_api_connector/services/rate_limiter.py"
+        - "features/FEATURE-CA-001-01_api_connector/services/circuit_breaker.py"
+        - "features/FEATURE-CA-001-01_api_connector/models/__init__.py"
+        - "features/FEATURE-CA-001-01_api_connector/models/api_config.py"
+        - "features/FEATURE-CA-001-01_api_connector/db/__init__.py"
+        - "features/FEATURE-CA-001-01_api_connector/db/schema.py"
+      acceptance_criteria:
+        - "Can connect to 15-20 APIs simultaneously"
+        - "OAuth2 and API key auth work"
+        - "Rate limiting prevents API bans"
+    
+    phase_04_feature_02_validation:
+      name: "FEATURE-02: Data Validation"
+      max_tokens: 8192
+      estimated_time: "10 minutes"
+      dependencies: ["phase_01_system_infrastructure"]
+      feature_id: "FEATURE-CA-001-02"
+      feature_yaml: "FEATURE-CA-001-02_data_validation/FEATURE-CA-001-02_data_validation.yaml"
+      files:
+        - "features/FEATURE-CA-001-02_data_validation/__init__.py"
+        - "features/FEATURE-CA-001-02_data_validation/services/__init__.py"
+        - "features/FEATURE-CA-001-02_data_validation/services/schema_validator.py"
+        - "features/FEATURE-CA-001-02_data_validation/services/data_cleaner.py"
+        - "features/FEATURE-CA-001-02_data_validation/services/transformer.py"
+        - "features/FEATURE-CA-001-02_data_validation/models/__init__.py"
+        - "features/FEATURE-CA-001-02_data_validation/models/validation_rule.py"
+      acceptance_criteria:
+        - "100% of data validated"
+        - "Invalid data rejected with errors"
+        - "Missing values handled correctly"
+    
+    phase_05_feature_03_storage:
+      name: "FEATURE-03: TimeSeries Storage"
+      max_tokens: 8192
+      estimated_time: "10 minutes"
+      dependencies: ["phase_01_system_infrastructure"]
+      feature_id: "FEATURE-CA-001-03"
+      feature_yaml: "FEATURE-CA-001-03_timeseries_storage/FEATURE-CA-001-03_timeseries_storage.yaml"
+      files:
+        - "features/FEATURE-CA-001-03_timeseries_storage/__init__.py"
+        - "features/FEATURE-CA-001-03_timeseries_storage/services/__init__.py"
+        - "features/FEATURE-CA-001-03_timeseries_storage/services/db_writer.py"
+        - "features/FEATURE-CA-001-03_timeseries_storage/services/partitioner.py"
+        - "features/FEATURE-CA-001-03_timeseries_storage/models/__init__.py"
+        - "features/FEATURE-CA-001-03_timeseries_storage/models/timeseries_data.py"
+        - "features/FEATURE-CA-001-03_timeseries_storage/db/__init__.py"
+        - "features/FEATURE-CA-001-03_timeseries_storage/db/schema.py"
+      acceptance_criteria:
+        - "Data written to TimescaleDB"
+        - "Automatic partitioning works"
+        - "Compression applied correctly"
+    
+    phase_06_feature_04_monitoring:
+      name: "FEATURE-04: Monitoring"
+      max_tokens: 8192
+      estimated_time: "8 minutes"
+      dependencies: ["phase_03_feature_01_api_connector", "phase_04_feature_02_validation", "phase_05_feature_03_storage"]
+      feature_id: "FEATURE-CA-001-04"
+      feature_yaml: "FEATURE-CA-001-04_monitoring/FEATURE-CA-001-04_monitoring.yaml"
+      files:
+        - "features/FEATURE-CA-001-04_monitoring/__init__.py"
+        - "features/FEATURE-CA-001-04_monitoring/services/__init__.py"
+        - "features/FEATURE-CA-001-04_monitoring/services/metrics_collector.py"
+        - "features/FEATURE-CA-001-04_monitoring/services/health_checker.py"
+      acceptance_criteria:
+        - "Metrics exported to Prometheus"
+        - "Health checks show all sources"
+        - "Alerts trigger on failures"
+    
+    phase_07_integration_tasks:
+      name: "Celery Task Integration"
+      max_tokens: 8192
+      estimated_time: "10 minutes"
+      dependencies: ["phase_03_feature_01_api_connector", "phase_04_feature_02_validation", "phase_05_feature_03_storage"]
+      files:
+        - "app/tasks.py - Complete task definitions calling all features"
+      acceptance_criteria:
+        - "Tasks execute successfully"
+        - "All features integrated"
+        - "Error handling works"
+    
+    phase_08_tests:
+      name: "Unit & Integration Tests"
+      max_tokens: 8192
+      estimated_time: "12 minutes"
+      dependencies: ["phase_03_feature_01_api_connector", "phase_04_feature_02_validation", "phase_05_feature_03_storage", "phase_06_feature_04_monitoring"]
+      files:
+        - "tests/__init__.py"
+        - "tests/conftest.py - Pytest fixtures"
+        - "features/FEATURE-CA-001-01_api_connector/tests/test_http_client.py"
+        - "features/FEATURE-CA-001-02_data_validation/tests/test_validator.py"
+        - "features/FEATURE-CA-001-03_timeseries_storage/tests/test_storage.py"
+      acceptance_criteria:
+        - "All unit tests pass"
+        - "Test coverage > 85%"
+        - "Integration tests verify pipeline"
+    
+    phase_09_e2e_tests:
+      name: "End-to-End Tests"
+      max_tokens: 8192
+      estimated_time: "10 minutes"
+      dependencies: ["phase_08_tests"]
+      files:
+        - "tests/e2e/__init__.py"
+        - "tests/e2e/test_new_source_onboarding.py"
+        - "tests/e2e/test_failure_recovery.py"
+        - "tests/e2e/test_full_pipeline.py"
+      acceptance_criteria:
+        - "E2E tests pass in deployed environment"
+        - "User journeys validated"
+        - "Production-like testing complete"
+    
+    phase_10_devops:
+      name: "DevOps & Configuration"
+      max_tokens: 8192
+      estimated_time: "5 minutes"
+      dependencies: ["phase_01_system_infrastructure"]
+      files:
+        - "requirements.txt - All dependencies"
+        - "Dockerfile.dev - Development container"
+        - "docker-compose.dev.yml - Local environment"
+        - ".env.example - Environment variables"
+        - "railway.json - Railway configuration"
+        - "README.md - Setup and deployment guide"
+      acceptance_criteria:
+        - "docker-compose up works locally"
+        - "Railway deployment succeeds"
+        - "Documentation complete"
 
 system_requirements:
   performance_phase_1:
     ingestion_target: "50-100 GB per cycle"
-    concurrent_connections: "8-12 simultaneous API connections"
+    concurrent_connections: "15-20 simultaneous API connections"
     cycle_time: "30-60 minutes maximum"
     error_recovery_time: "Automatic retry within 30 seconds"
     data_validation_rate: "100% of ingested records validated"
   
   performance_phase_2:
     ingestion_target: "500 GB - 1 TB per cycle"
-    concurrent_connections: "15-20 simultaneous API connections"
+    concurrent_connections: "20-30 simultaneous API connections"
     cycle_time: "15-30 minutes maximum"
   
   scalability:
     phase_1: "50-100 GB with 2-4 Celery workers on Railway"
-    phase_2: "500 GB - 1 TB with 8-16 workers + Dask optimization"
-    horizontal_scaling: "Railway automatic scaling"
-    api_rate_limit_handling: "Automatic throttling and queueing"
+    phase_2: "500 GB - 1 TB with 8-16 workers"
+    horizontal_scaling: "Railway automatic scaling based on queue depth"
+    api_rate_limit_handling: "Automatic throttling and queueing per API"
   
   reliability:
     uptime_target: "99% (Phase 1) → 99.9% (Phase 2)"
     data_loss_tolerance: "Zero data loss on failures"
     retry_mechanism: "Exponential backoff with 5 max retries"
-    circuit_breaker: "Auto-disable failing sources, alert via Sentry"
+    circuit_breaker: "Auto-disable failing sources after 3 failures"
+    recovery: "Automatic backfill when sources recover"
 
 features:
   - feature_id: FEATURE-CA-001-01
     feature_name: Multi-Source API Connector
     description: |
-      Manages connections to multiple external APIs simultaneously with
-      authentication, rate limiting, and error handling
-    estimated_layers: 4-5
+      Manages connections to 15-20 external APIs simultaneously with OAuth2/API key
+      authentication, intelligent rate limiting, circuit breakers, and retry logic.
+    estimated_layers: 4
     priority: critical
+    key_capabilities:
+      - "Concurrent connections to 15-20 APIs"
+      - "OAuth2, API keys, JWT authentication"
+      - "Per-API rate limiting (prevents bans)"
+      - "Circuit breaker pattern (auto-disable failing APIs)"
+      - "Exponential backoff retry logic"
     
   - feature_id: FEATURE-CA-001-02
     feature_name: Data Validation & Transformation Pipeline
     description: |
-      Validates incoming data quality, handles missing values, normalizes
-      formats, and transforms to standard schema
-    estimated_layers: 4-5
+      Validates 100% of ingested data using Pydantic schemas, cleans missing values,
+      normalizes formats (dates, currencies, units), transforms to standard schema.
+    estimated_layers: 4
     priority: critical
+    key_capabilities:
+      - "Pydantic schema validation"
+      - "Missing value handling (forward-fill, interpolation)"
+      - "Format normalization (ISO dates, USD currency)"
+      - "Data quality scoring"
+      - "Error logging and reporting"
     
   - feature_id: FEATURE-CA-001-03
     feature_name: Time-Series Data Storage
     description: |
-      Efficiently stores time-series data in PostgreSQL (Railway) with proper
-      indexing. Migrate to TimescaleDB Cloud in Phase 2 if queries become slow.
-    estimated_layers: 4-5
+      Efficiently stores time-series data in PostgreSQL/TimescaleDB with automatic
+      partitioning by time, compression, and optimized indexing for fast queries.
+    estimated_layers: 4
     priority: critical
-    technology: PostgreSQL (Railway) → TimescaleDB Cloud (optional Phase 2)
+    key_capabilities:
+      - "TimescaleDB hypertables"
+      - "Automatic partitioning (monthly chunks)"
+      - "Compression after 7 days"
+      - "Indexes on time + source + metric"
+      - "Fast time-range queries for CA-002"
+    technology: PostgreSQL with TimescaleDB extension (Railway)
     
   - feature_id: FEATURE-CA-001-04
     feature_name: Ingestion Monitoring & Health Dashboard
     description: |
-      Real-time monitoring of ingestion pipeline health, API status,
-      throughput metrics via Railway dashboard + custom Grafana (Phase 2)
-    estimated_layers: 3-4
+      Real-time monitoring of pipeline health, API status, throughput metrics,
+      error rates. Prometheus metrics + Grafana dashboards (Phase 2).
+    estimated_layers: 3
     priority: high
-    technology: Railway metrics + Sentry error tracking
+    key_capabilities:
+      - "Prometheus metrics export"
+      - "Health check per API source"
+      - "Throughput and latency tracking"
+      - "Error rate monitoring"
+      - "Slack/email alerts on failures"
+    technology: Prometheus + Railway metrics
 
 acceptance_criteria:
-  - criterion_id: AC-SYS-001-01-P1
-    criterion: "System successfully connects to 8-12 concurrent APIs (Phase 1)"
+  - criterion_id: AC-SYS-001-01
+    criterion: "System connects to 15-20 concurrent APIs without errors"
     phase: 1
-    verification: "Integration test with all configured API sources"
+    verification: "Integration test with all configured sources"
     priority: critical
     
   - criterion_id: AC-SYS-001-02
-    criterion: "Data ingestion rate achieves 1 TB per 90 seconds"
-    verification: "Load test with simulated 10 TB dataset"
+    criterion: "Ingestion completes 50-100 GB in 30-60 minutes"
+    verification: "Performance test with realistic data volume"
     priority: critical
     
   - criterion_id: AC-SYS-001-03
-    criterion: "Complete ingestion cycle in <15 minutes for 10+ TB"
-    verification: "End-to-end timing test with production-like data"
+    criterion: "Zero data loss during API failures"
+    verification: "Chaos test: disable APIs mid-ingestion, verify recovery"
     priority: critical
     
   - criterion_id: AC-SYS-001-04
-    criterion: "Zero data loss during API failures and network issues"
-    verification: "Chaos engineering test with simulated failures"
-    priority: critical
+    criterion: "100% of data validated before storage"
+    verification: "Data quality audit on ingested datasets"
+    priority: high
     
   - criterion_id: AC-SYS-001-05
-    criterion: "100% of ingested data passes validation rules"
-    verification: "Data quality audit on processed datasets"
+    criterion: "Data available to CA-002 within 5 minutes of ingestion"
+    verification: "End-to-end latency test"
     priority: high
+    
+  - criterion_id: AC-SYS-001-06
+    criterion: "Monitoring dashboard shows real-time status of all sources"
+    verification: "Visual inspection of Grafana dashboard"
+    priority: medium
 
 data_sources:
   financial:
-    - "Alpha Vantage API - Stock market data"
-    - "Yahoo Finance API - Market indices"
-    - "IEX Cloud - Real-time trading data"
+    - name: "Alpha Vantage"
+      type: "Stock market data"
+      auth: "API key"
+      rate_limit: "5 calls/minute (free tier)"
+      
+    - name: "Yahoo Finance"
+      type: "Market indices"
+      auth: "None"
+      rate_limit: "2000 calls/hour"
+      
+    - name: "IEX Cloud"
+      type: "Real-time trading"
+      auth: "API key"
+      rate_limit: "Varies by plan"
   
   weather:
-    - "OpenWeatherMap - Current and forecast"
-    - "NOAA API - Historical weather"
-    - "Weather.gov - Regional data"
+    - name: "OpenWeatherMap"
+      type: "Current and forecast"
+      auth: "API key"
+      rate_limit: "60 calls/minute"
+      
+    - name: "NOAA"
+      type: "Historical weather"
+      auth: "None"
+      rate_limit: "1000 calls/day"
   
   social_media:
-    - "Twitter API - Social sentiment"
-    - "Reddit API - Community discussions"
-    - "News API - News articles and headlines"
+    - name: "Twitter API"
+      type: "Social sentiment"
+      auth: "OAuth2"
+      rate_limit: "900 calls/15 min"
+      
+    - name: "Reddit API"
+      type: "Community discussions"
+      auth: "OAuth2"
+      rate_limit: "60 calls/minute"
   
   economic:
-    - "FRED API - Federal Reserve economic data"
-    - "World Bank API - Global economic indicators"
-    - "IMF API - International monetary data"
+    - name: "FRED"
+      type: "Federal Reserve data"
+      auth: "API key"
+      rate_limit: "120 calls/minute"
+      
+    - name: "World Bank API"
+      type: "Global indicators"
+      auth: "None"
+      rate_limit: "Unlimited"
   
   commodities:
-    - "Quandl - Commodity prices"
-    - "EIA API - Energy data"
-    - "USDA API - Agricultural data"
-  
-  demographics:
-    - "Census Bureau API - Population data"
-    - "UN Data API - Global demographics"
-  
-  environmental:
-    - "EPA API - Environmental metrics"
-    - "Climate.gov - Climate data"
-    - "Copernicus - Earth observation"
+    - name: "Quandl"
+      type: "Commodity prices"
+      auth: "API key"
+      rate_limit: "300 calls/10 seconds"
 
 technology_stack:
-  ingestion_framework: "Apache Kafka or RabbitMQ for message streaming"
+  ingestion_framework: "Celery distributed task queue"
+  message_broker: "Redis (Railway managed)"
   api_client: "aiohttp for async HTTP requests"
   data_validation: "Pydantic for schema validation"
-  storage: "TimescaleDB (PostgreSQL extension) for time-series"
-  caching: "Redis for hot data and rate limiting"
-  monitoring: "Prometheus metrics + Grafana dashboards"
-  orchestration: "Celery for distributed task execution"
+  storage: "PostgreSQL + TimescaleDB extension (Railway)"
+  caching: "Redis for rate limiting and hot data"
+  monitoring: "Prometheus metrics + Railway built-in monitoring"
+  orchestration: "Celery Beat for scheduled tasks"
+  deployment: "Railway (auto-deploy from Git)"
 
 dependencies:
-  internal: []
+  internal:
+    - system_id: SYSTEM-CA-002
+      dependency_type: "Data consumer"
+      description: "CA-002 reads ingested data from TimescaleDB for correlation analysis"
+  
   external:
-    - "All configured external data source APIs"
-    - "TimescaleDB/PostgreSQL database"
-    - "Redis cache"
-    - "Message broker (Kafka/RabbitMQ)"
+    - "15-20 external data source APIs"
+    - "PostgreSQL database (Railway managed)"
+    - "Redis message broker (Railway managed)"
+    - "Internet connectivity for API access"
 
 testing_requirements:
-  philosophy: |
-    ALL TESTS MUST VERIFY ACTUAL BEHAVIOR AND SIDE EFFECTS.
-    No happy path shortcuts. No fake implementations. Real business problems only.
-    
-    1. Tests verify actual behavior, not just interfaces
-    2. Tests check side effects (files exist, data written, APIs called)
-    3. Tests use mocks to VERIFY calls, not just STUB returns
-    4. Integration tests run with REAL dependencies (real APIs, real databases)
-    5. Manual verification confirms system works end-to-end
-  
   unit_tests:
-    minimum_count: 40
-    coverage_threshold: 0.90
+    framework: "pytest"
+    coverage_target: "85%"
+    scope: "Individual functions and classes"
+    test_types:
+      - "Pure function testing (validators, transformers)"
+      - "Class method testing (API clients, database models)"
+      - "Mock-based testing for external dependencies"
+      - "Edge case and error condition testing"
     
-    required_verifications:
-      api_connector_tests:
-        - "VERIFY: HTTP request actually made with correct headers and auth"
-        - "VERIFY: Retry logic executes with exponential backoff (check timestamps)"
-        - "VERIFY: Circuit breaker opens after N failures (state tracked)"
-        - "VERIFY: Rate limiting queue enforced (requests delayed, not dropped)"
-        - "VERIFY: Response parsing handles malformed JSON (logs error, continues)"
-        - "Mock USAGE: Mock HTTP client to VERIFY request parameters, not stub responses"
+    test_locations:
+      - "features/FEATURE-CA-001-01_api_connector/tests/test_http_client.py"
+      - "features/FEATURE-CA-001-01_api_connector/tests/test_auth_manager.py"
+      - "features/FEATURE-CA-001-01_api_connector/tests/test_rate_limiter.py"
+      - "features/FEATURE-CA-001-02_data_validation/tests/test_schema_validator.py"
+      - "features/FEATURE-CA-001-02_data_validation/tests/test_data_cleaner.py"
+      - "features/FEATURE-CA-001-03_timeseries_storage/tests/test_db_writer.py"
+      - "features/FEATURE-CA-001-04_monitoring/tests/test_metrics_collector.py"
+    
+    example_tests:
+      - name: "test_rate_limiter_enforces_limits"
+        description: "Verify rate limiter blocks requests exceeding API limits"
+        assertion: "Rate limiter sleeps when limit reached, allows after cooldown"
         
-      data_validation_tests:
-        - "VERIFY: Invalid data rejected and logged with specific reason"
-        - "VERIFY: Missing required fields trigger validation errors"
-        - "VERIFY: Type mismatches caught (string vs int, etc.)"
-        - "VERIFY: Schema validation rules enforced (regex, ranges)"
-        - "VERIFY: Validation errors include field name, expected vs actual"
-        - "NO STUBBING: Use real validation rules, test actual edge cases"
+      - name: "test_schema_validator_rejects_invalid_data"
+        description: "Validate that invalid JSON is rejected with proper error messages"
+        assertion: "ValidationError raised with field-specific errors"
         
-      data_transformation_tests:
-        - "VERIFY: Transformation produces correct output format"
-        - "VERIFY: Date/time conversions handle timezones correctly"
-        - "VERIFY: Null/empty values handled per business rules"
-        - "VERIFY: Numeric conversions preserve precision"
-        - "VERIFY: Transformed data written to correct schema columns"
-        - "SIDE EFFECT CHECK: Verify output schema matches expected structure"
-        
-      storage_tests:
-        - "VERIFY: Data actually written to database (query to confirm)"
-        - "VERIFY: Transactions rolled back on error (check db state)"
-        - "VERIFY: Partitioning creates correct table partitions"
-        - "VERIFY: Indexes created and used (check query plan)"
-        - "VERIFY: Compression applied (check storage size)"
-        - "REAL DATABASE: Use test database, verify actual writes"
+      - name: "test_circuit_breaker_trips_after_failures"
+        description: "Circuit breaker opens after 3 consecutive failures"
+        assertion: "CircuitBreakerOpen exception raised on 4th attempt"
   
   integration_tests:
-    minimum_count: 20
-    coverage_threshold: 0.85
+    framework: "pytest with testcontainers"
+    scope: "Multi-component interactions"
+    test_types:
+      - "API to database integration"
+      - "Celery task execution with Redis"
+      - "Data flow through pipeline stages"
+      - "Authentication flow with mocked OAuth providers"
+      - "Multi-source concurrent ingestion"
     
-    required_scenarios:
-      end_to_end_ingestion:
-        description: "Complete data flow from API to database storage"
-        requirements:
-          - "USE REAL API: Test against actual API endpoint (or sandbox)"
-          - "VERIFY: Data fetched from API contains expected fields"
-          - "VERIFY: Data passes validation pipeline"
-          - "VERIFY: Data transformed correctly"
-          - "VERIFY: Data written to TimescaleDB (query to confirm rows exist)"
-          - "VERIFY: Monitoring metrics updated (Prometheus metrics scraped)"
-          - "NO MOCKING: All components run for real, verify end state"
-          - "MANUAL CHECK: Inspect database, confirm data quality"
+    test_locations:
+      - "tests/integration/test_api_to_storage_flow.py"
+      - "tests/integration/test_celery_task_execution.py"
+      - "tests/integration/test_concurrent_ingestion.py"
+      - "tests/integration/test_monitoring_integration.py"
+    
+    example_tests:
+      - name: "test_full_ingestion_pipeline"
+        description: "Mock API → Validation → Storage → CA-002 availability"
+        setup: "TestContainers PostgreSQL + Redis"
+        assertion: "Data retrieved from API is validated and stored in TimescaleDB"
         
-      concurrent_api_ingestion:
-        description: "20 concurrent API sources running simultaneously"
-        requirements:
-          - "SPAWN: 20 concurrent workers, each calling different API"
-          - "VERIFY: All 20 APIs called (check logs, network traces)"
-          - "VERIFY: No race conditions (data not corrupted)"
-          - "VERIFY: Rate limits respected per API (timestamps checked)"
-          - "VERIFY: All data written without conflicts"
-          - "PERFORMANCE: Complete within SLA (15 minutes for 10TB simulated)"
-          - "SIDE EFFECTS: Check database for expected row counts from each source"
+      - name: "test_concurrent_multi_source_ingestion"
+        description: "15 API sources ingesting simultaneously without conflicts"
+        setup: "15 mocked API endpoints"
+        assertion: "All 15 sources complete without deadlocks, data correctly partitioned"
         
-      failure_recovery:
-        description: "System recovers from API failures without data loss"
-        requirements:
-          - "CHAOS: Simulate API returning 500 errors"
-          - "VERIFY: Retry logic executes (check retry attempt count)"
-          - "VERIFY: Circuit breaker opens (state change logged)"
-          - "VERIFY: Failed requests queued for retry"
-          - "VERIFY: Data eventually ingested after API recovers"
-          - "VERIFY: Zero data loss (compare input vs output counts)"
-          - "NO HAPPY PATH: Test real failure scenarios from production"
-        
-      data_quality_pipeline:
-        description: "Invalid data filtered, valid data processed"
-        requirements:
-          - "INPUT: Mix of valid and invalid data from real API"
-          - "VERIFY: Invalid records rejected with specific errors"
-          - "VERIFY: Valid records processed successfully"
-          - "VERIFY: Validation error report generated (file exists)"
-          - "VERIFY: Error metrics incremented (Prometheus counter)"
-          - "VERIFY: Only valid data in database (query to confirm)"
-          - "REAL DATA: Use actual messy data from APIs, not sanitized test data"
-        
-      monitoring_and_alerting:
-        description: "Monitoring captures real metrics and triggers alerts"
-        requirements:
-          - "RUN: Full ingestion cycle with monitoring enabled"
-          - "VERIFY: Prometheus metrics exported (scrape endpoint)"
-          - "VERIFY: Metrics show correct counts (rows ingested, errors, latency)"
-          - "VERIFY: Alert triggers when error threshold exceeded"
-          - "VERIFY: Dashboard displays real-time data (check Grafana)"
-          - "MANUAL: Open monitoring dashboard, confirm data visible"
+      - name: "test_celery_task_retry_logic"
+        description: "Task retries on transient failures, fails permanently after 5 attempts"
+        setup: "Mock API that fails 3 times then succeeds"
+        assertion: "Task succeeds on 4th attempt with exponential backoff"
   
-  performance_tests:
-    required: true
-    philosophy: "Measure actual performance under realistic load, not theoretical"
+  e2e_tests:
+    framework: "pytest with real Railway services (staging)"
+    scope: "Complete user journeys in production-like environment"
+    description: |
+      End-to-end tests validate full user workflows from start to finish in a staging
+      environment that mirrors production. Unlike integration tests which test
+      component-to-component interactions, E2E tests verify real-world scenarios
+      including deployment configuration, network latency, and operational workflows.
     
-    scenarios:
-      large_scale_ingestion:
-        target: "10 TB ingestion under 15 minutes"
-        verification:
-          - "LOAD: Generate or use 10TB representative dataset"
-          - "MEASURE: Actual time from start to completion"
-          - "VERIFY: All data ingested (count input vs output rows)"
-          - "VERIFY: Throughput meets 1TB per 90 seconds"
-          - "MEASURE: Memory usage stays below limits"
-          - "MEASURE: Database write throughput (IOPS)"
-          - "FAIL IF: Any SLA violation (hard stop, not warning)"
-          
-      concurrent_connections:
-        target: "20 concurrent API connections without degradation"
-        verification:
-          - "SPAWN: 20 workers, each connecting to real API"
-          - "MEASURE: Latency per connection (should be consistent)"
-          - "VERIFY: No connection drops or timeouts"
-          - "VERIFY: All APIs complete successfully"
-          - "MEASURE: Resource usage (CPU, memory, network)"
-          - "COMPARE: Performance vs single connection baseline"
-          
-      failure_recovery_performance:
-        target: "Recovery within 30 seconds of API restoration"
-        verification:
-          - "BREAK: Simulate API failure mid-ingestion"
-          - "WAIT: Allow retry and circuit breaker logic to engage"
-          - "RESTORE: Bring API back online"
-          - "MEASURE: Time from restoration to successful ingestion"
-          - "VERIFY: No data lost during failure window"
-          - "VERIFY: Recovery completes within SLA"
-  
-  manual_verification:
-    required: true
-    description: "Human verification that system actually works"
+    environment:
+      deployment_target: "Railway staging environment"
+      database: "Dedicated Railway PostgreSQL instance (staging)"
+      message_broker: "Railway Redis instance (staging)"
+      api_sources: "Live external APIs (with test API keys)"
+      monitoring: "Railway metrics + logs"
     
-    checklist:
-      - "START: Run full ingestion cycle with real APIs"
-      - "OBSERVE: Watch logs for errors (should be clean)"
-      - "CHECK: Query database for expected data"
-      - "VALIDATE: Spot-check data quality (random samples)"
-      - "INSPECT: Grafana dashboard shows correct metrics"
-      - "TEST: Simulate API failure, observe recovery"
-      - "CONFIRM: All 15-20 data sources showing data"
-      - "VERIFY: Performance meets SLA (use stopwatch)"
-      - "DOCUMENT: Screenshot evidence of working system"
+    test_scenarios:
+      - scenario_id: E2E-CA-001-01
+        name: "New API Source Onboarding"
+        description: |
+          Admin adds a new external API source (e.g., "CoinGecko crypto prices")
+          through configuration, system auto-configures and begins ingestion.
+        user_journey:
+          - "Admin updates API configuration file with new source"
+          - "Redeploy CA-001 on Railway (git push triggers deploy)"
+          - "System auto-detects new source and initializes connection"
+          - "Data begins flowing from new source within 5 minutes"
+          - "CA-002 can query the new data source"
+        acceptance_criteria:
+          - "New source appears in monitoring dashboard"
+          - "Data successfully ingested and stored in TimescaleDB"
+          - "CA-002 correlation analysis includes new source"
+          - "No errors in Railway logs"
+        test_file: "tests/e2e/test_new_source_onboarding.py"
+      
+      - scenario_id: E2E-CA-001-02
+        name: "API Failure Recovery Without Data Loss"
+        description: |
+          External API goes down mid-ingestion, system handles gracefully
+          and recovers when API comes back online.
+        user_journey:
+          - "Ingestion running normally from 15 APIs"
+          - "1 API source fails (simulated by revoking API key)"
+          - "Circuit breaker trips, other 14 sources continue normally"
+          - "Failed API retries with exponential backoff"
+          - "API restored (re-enable API key)"
+          - "System auto-recovers and backfills missing data"
+        acceptance_criteria:
+          - "Zero data loss during failure"
+          - "Other sources unaffected by failure"
+          - "Alert triggered (Slack/email notification)"
+          - "Automatic backfill completes within 30 minutes"
+          - "Monitoring dashboard shows recovery"
+        test_file: "tests/e2e/test_failure_recovery.py"
+      
+      - scenario_id: E2E-CA-001-03
+        name: "Multi-Source Concurrent Ingestion at Scale"
+        description: |
+          Stress test with 15-20 APIs running concurrently for 50-100 GB ingestion
+          to verify performance, scalability, and resource management.
+        user_journey:
+          - "Configure 20 diverse API sources"
+          - "Trigger full ingestion cycle"
+          - "Monitor Railway metrics (CPU, memory, DB connections)"
+          - "Verify data quality and completeness"
+          - "Confirm CA-002 can query data efficiently"
+        acceptance_criteria:
+          - "Ingestion completes in 30-60 minutes"
+          - "Railway workers scale to 4 instances"
+          - "Database connections < 50 (no connection leaks)"
+          - "Memory usage < 2 GB per worker"
+          - "100% data validation success rate"
+          - "TimescaleDB query latency < 200ms for CA-002"
+        test_file: "tests/e2e/test_concurrent_scale.py"
+      
+      - scenario_id: E2E-CA-001-04
+        name: "Data Quality Validation End-to-End"
+        description: |
+          Inject known bad data to verify validation pipeline catches errors
+          and prevents corrupt data from reaching downstream systems.
+        user_journey:
+          - "Configure mock API with intentionally corrupt data (missing fields, wrong types)"
+          - "Trigger ingestion"
+          - "Verify validation errors logged"
+          - "Confirm corrupt data NOT stored in TimescaleDB"
+          - "CA-002 queries return only valid data"
+        acceptance_criteria:
+          - "100% of corrupt data rejected"
+          - "Validation errors logged with details"
+          - "Alert triggered for high error rate (>10%)"
+          - "Valid data from same source still ingested"
+          - "Database integrity maintained"
+        test_file: "tests/e2e/test_data_quality.py"
+      
+      - scenario_id: E2E-CA-001-05
+        name: "Monitoring and Alerting System Verification"
+        description: |
+          Verify monitoring dashboard, metrics export, and alerting work correctly
+          for various operational scenarios (success, partial failure, complete failure).
+        user_journey:
+          - "Access monitoring dashboard (FastAPI /status endpoint)"
+          - "Verify all 15-20 sources show current status"
+          - "Simulate API failure to trigger alert"
+          - "Confirm Slack/email alert received"
+          - "Check Prometheus metrics exported correctly"
+        acceptance_criteria:
+          - "Dashboard loads in < 2 seconds"
+          - "Real-time status accurate for all sources"
+          - "Alerts delivered within 1 minute of failure"
+          - "Metrics include: throughput, latency, error rate, queue depth"
+          - "Railway logs show detailed error traces"
+        test_file: "tests/e2e/test_monitoring.py"
+    
+    execution_strategy:
+      frequency: "Before each production deployment"
+      automation: "GitHub Actions CI/CD pipeline"
+      duration: "45-60 minutes for full E2E suite"
+      rollback_criteria: "Any E2E test failure blocks deployment"
 
 estimated_effort:
-  total_days: 10
-  team_size: 2 developers
-  
+  development_time: "120 hours (3 weeks at 40 hours/week)"
+  testing_time: "40 hours (1 week)"
+  deployment_time: "8 hours"
+  total_time: "168 hours (~4 weeks)"
+
 implementation_phases:
-  phase_1:
-    duration: 3 days
-    deliverable: "API connectors with authentication"
+  phase_1_core_ingestion:
+    duration: "2 weeks"
+    deliverables:
+      - "FEATURE-01: API Connector (working with 5 APIs)"
+      - "FEATURE-02: Data Validation pipeline"
+      - "FEATURE-03: TimescaleDB storage"
+      - "Unit + integration tests"
+    success_metric: "5 APIs → TimescaleDB → CA-002 can query"
   
-  phase_2:
-    duration: 3 days
-    deliverable: "Data validation and transformation pipeline"
+  phase_2_scale_and_monitor:
+    duration: "1 week"
+    deliverables:
+      - "Scale to 15-20 APIs"
+      - "FEATURE-04: Monitoring dashboard"
+      - "E2E tests + CI/CD pipeline"
+    success_metric: "50-100 GB ingested in 30-60 min with monitoring"
   
-  phase_3:
-    duration: 2 days
-    deliverable: "TimescaleDB storage with partitioning"
-  
-  phase_4:
-    duration: 2 days
-    deliverable: "Monitoring dashboard and alerting"
+  phase_3_production:
+    duration: "1 week"
+    deliverables:
+      - "Railway production deployment"
+      - "Documentation and runbooks"
+      - "Performance tuning"
+    success_metric: "Production-ready with 99% uptime"
 
 risks:
-  - risk: "API rate limits may constrain ingestion speed"
-    mitigation: "Implement request queueing, multiple API keys"
-    severity: high
-  
-  - risk: "Network latency with multiple concurrent connections"
-    mitigation: "Use async I/O, connection pooling"
-    severity: medium
-  
-  - risk: "Data quality varies significantly across sources"
-    mitigation: "Robust validation rules, configurable tolerance"
-    severity: medium
+  - risk_id: RISK-CA-001-01
+    description: "API rate limits more restrictive than expected"
+    probability: "Medium"
+    impact: "High - could slow ingestion significantly"
+    mitigation: "Implement adaptive rate limiting, fallback to paid API tiers"
+    
+  - risk_id: RISK-CA-001-02
+    description: "TimescaleDB performance degrades with large data volumes"
+    probability: "Low"
+    impact: "High - affects CA-002 query performance"
+    mitigation: "Optimize partitioning strategy, add indexes, consider compression"
+    
+  - risk_id: RISK-CA-001-03
+    description: "Railway cost exceeds budget as data volume grows"
+    probability: "Medium"
+    impact: "Medium - may need infrastructure changes"
+    mitigation: "Monitor costs closely, optimize worker count, consider AWS migration"
