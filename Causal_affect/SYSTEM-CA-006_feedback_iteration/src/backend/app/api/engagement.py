@@ -1,43 +1,23 @@
-"""Engagement API endpoints."""
-
-from typing import Any
+"""Engagement API router - placeholder for future implementation."""
 
 from fastapi import APIRouter, HTTPException, status
 
-router = APIRouter()
+router = APIRouter(prefix="/engagement", tags=["engagement"])
 
 
 @router.get("/metrics")
-async def get_engagement_metrics() -> dict[str, Any]:
-    """Get engagement metrics."""
+async def get_engagement_metrics():
+    """Get engagement metrics - not yet implemented."""
     raise HTTPException(
         status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Endpoint not implemented yet"
+        detail="Engagement metrics endpoint not yet implemented"
     )
 
 
 @router.get("/trends")
-async def get_engagement_trends() -> dict[str, Any]:
-    """Get engagement trends over time."""
+async def get_engagement_trends():
+    """Get engagement trends - not yet implemented."""
     raise HTTPException(
         status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Endpoint not implemented yet"
-    )
-
-
-@router.get("/users/{user_id}")
-async def get_user_engagement(user_id: int) -> dict[str, Any]:
-    """Get engagement metrics for specific user."""
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Endpoint not implemented yet"
-    )
-
-
-@router.post("/track")
-async def track_engagement_event() -> dict[str, Any]:
-    """Track new engagement event."""
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Endpoint not implemented yet"
+        detail="Engagement trends endpoint not yet implemented"
     )

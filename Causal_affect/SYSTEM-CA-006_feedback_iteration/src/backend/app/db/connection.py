@@ -1,78 +1,79 @@
 """Database connection and session management."""
 
-from collections.abc import AsyncGenerator
-from typing import Optional
+import logging
+from typing import AsyncGenerator
 
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
+from sqlalchemy.pool import NullPool, AsyncAdaptedQueuePool
 
-from app.config import settings
+from app.core.config import settings
+from app.core.exceptions import DatabaseError
 
-# Global engine and session factory
-_engine: Optional[AsyncEngine] = None
-_async_session_factory: Optional[async_sessionmaker[AsyncSession]] = None
+logger = logging.getLogger(__name__)
 
+# Create async engine with appropriate pooling strategy
+is_sqlite = settings.DATABASE_URL.startswith("sqlite")
 
-def get_engine() -> AsyncEngine:
-    """Get or create database engine."""
-    global _engine
-    if _engine is None:
-        _engine = create_async_engine(
-            str(settings.DATABASE_URL),
-            echo=settings.DB_ECHO,
-            pool_size=settings.DB_POOL_SIZE,
-            max_overflow=settings.DB_MAX_OVERFLOW,
-            pool_pre_ping=True,
-            pool_recycle=3600,
-        )
-    return _engine
+if is_sqlite:
+    engine: AsyncEngine = create_async_engine(
+        settings.DATABASE_URL,
+        echo=settings.DATABASE_ECHO,
+        poolclass=NullPool,
+    )
+else:
+    engine: AsyncEngine = create_async_engine(
+        settings.DATABASE_URL,
+        echo=settings.DATABASE_ECHO,
+        pool_pre_ping=True,
+        pool_size=settings.DATABASE_POOL_SIZE,
+        max_overflow=settings.DATABASE_MAX_OVERFLOW,
+        pool_timeout=settings.DATABASE_POOL_TIMEOUT,
+        pool_recycle=settings.DATABASE_POOL_RECYCLE,
+        poolclass=AsyncAdaptedQueuePool,
+    )
 
-
-def get_session_factory() -> async_sessionmaker[AsyncSession]:
-    """Get or create session factory."""
-    global _async_session_factory
-    if _async_session_factory is None:
-        engine = get_engine()
-        _async_session_factory = async_sessionmaker(
-            engine,
-            class_=AsyncSession,
-            expire_on_commit=False,
-            autocommit=False,
-            autoflush=False,
-        )
-    return _async_session_factory
+# Create async session factory
+async_session_maker = async_sessionmaker(
+    engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+    autoflush=False,
+)
 
 
-async def get_session() -> AsyncGenerator[AsyncSession, None]:
-    """Dependency for getting database session."""
-    session_factory = get_session_factory()
-    async with session_factory() as session:
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    """Dependency to get database session."""
+    async with async_session_maker() as session:
         try:
             yield session
             await session.commit()
-        except Exception:
+        except SQLAlchemyError as e:
             await session.rollback()
-            raise
+            logger.error(f"Database error: {e}")
+            raise DatabaseError("Database operation failed") from e
         finally:
             await session.close()
 
 
 async def init_db() -> None:
-    """Initialize database connection pool."""
-    engine = get_engine()
-    # Test connection
-    async with engine.begin() as conn:
-        await conn.run_sync(lambda _: None)
+    """Initialize database connection."""
+    try:
+        async with engine.begin() as conn:
+            # Test connection
+            await conn.run_sync(lambda sync_conn: sync_conn.scalar("SELECT 1"))
+        logger.info("Database connection initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize database: {e}")
+        raise DatabaseError("Failed to initialize database connection") from e
 
 
 async def close_db() -> None:
-    """Close database connections."""
-    global _engine, _async_session_factory
-    if _engine is not None:
-        await _engine.dispose()
-        _engine = None
-    _async_session_factory = None
+    """Close database connection."""
+    await engine.dispose()
+    logger.info("Database connection closed")

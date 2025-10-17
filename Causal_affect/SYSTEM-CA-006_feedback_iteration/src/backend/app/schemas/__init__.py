@@ -1,6 +1,10 @@
-"""Pydantic schemas package."""
+"""Pydantic schemas for API request/response validation."""
 
-from app.schemas.error import ErrorResponse, ValidationErrorDetail
-from app.schemas.health import HealthResponse
+from .error import ErrorResponse, ValidationError
+from .health import HealthResponse
 
-__all__ = ["ErrorResponse", "HealthResponse", "ValidationErrorDetail"]
+__all__ = [
+    "ErrorResponse",
+    "ValidationError",
+    "HealthResponse",
+]

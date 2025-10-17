@@ -1,83 +1,106 @@
-"""Request and response logging middleware."""
-
-import logging
+import json
 import time
-from typing import Callable
+import uuid
+from typing import Callable, Dict, Any
 
-from fastapi import FastAPI, Request, Response
+from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
-
-from app.config import settings
-
-logger = logging.getLogger(__name__)
 
 
 class LoggingMiddleware(BaseHTTPMiddleware):
-    """Middleware for logging requests and responses."""
+    """Request/response logging middleware."""
 
-    async def dispatch(
-        self, request: Request, call_next: Callable
-    ) -> Response:
-        """Process request and log details."""
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        request_id = str(uuid.uuid4())
         start_time = time.time()
-        request_id = request.headers.get("X-Request-ID", "")
+
+        # Store request ID in request state for use in logs
+        request.state.request_id = request_id
 
         # Log request
-        logger.info(
-            f"Request started",
-            extra={
-                "method": request.method,
-                "url": str(request.url),
-                "client": request.client.host if request.client else None,
-                "request_id": request_id,
-            },
-        )
+        await self._log_request(request, request_id)
 
         # Process request
-        try:
-            response = await call_next(request)
-        except Exception as exc:
-            logger.exception(
-                f"Request failed",
-                extra={
-                    "method": request.method,
-                    "url": str(request.url),
-                    "request_id": request_id,
-                    "error": str(exc),
-                },
-            )
-            raise
+        response = await call_next(request)
 
-        # Calculate duration
-        duration = time.time() - start_time
-
-        # Log response
-        logger.info(
-            f"Request completed",
-            extra={
-                "method": request.method,
-                "url": str(request.url),
-                "status_code": response.status_code,
-                "duration": f"{duration:.3f}s",
-                "request_id": request_id,
-            },
-        )
+        # Calculate processing time
+        process_time = time.time() - start_time
 
         # Add custom headers
-        response.headers["X-Process-Time"] = str(duration)
-        if request_id:
-            response.headers["X-Request-ID"] = request_id
+        response.headers["X-Request-ID"] = request_id
+        response.headers["X-Process-Time"] = str(process_time)
+
+        # Log response
+        await self._log_response(request, response, process_time, request_id)
 
         return response
 
+    async def _log_request(self, request: Request, request_id: str) -> None:
+        """Log incoming request details."""
+        log_data: Dict[str, Any] = {
+            "request_id": request_id,
+            "timestamp": time.time(),
+            "method": request.method,
+            "url": str(request.url),
+            "path": request.url.path,
+            "query_params": dict(request.query_params),
+            "headers": self._get_safe_headers(request.headers),
+            "client": f"{request.client.host}:{request.client.port}" if request.client else None,
+        }
 
-def setup_logging_middleware(app: FastAPI) -> None:
-    """Setup logging middleware."""
-    # Configure logging
-    logging.basicConfig(
-        level=getattr(logging, settings.LOG_LEVEL),
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    )
+        # Log body for non-GET requests if it's not too large
+        if request.method != "GET":
+            content_length = request.headers.get("content-length")
+            if content_length and int(content_length) < 10000:  # 10KB limit
+                try:
+                    body = await request.body()
+                    request._body = body  # Cache body for FastAPI to use
+                    log_data["body"] = body.decode("utf-8") if body else None
+                except Exception:
+                    log_data["body"] = "<error reading body>"
 
-    # Add middleware
-    app.add_middleware(LoggingMiddleware)
+        print(f"REQUEST: {json.dumps(log_data)}")
+
+    async def _log_response(self, request: Request, response: Response, process_time: float, request_id: str) -> None:
+        """Log response details."""
+        log_data: Dict[str, Any] = {
+            "request_id": request_id,
+            "timestamp": time.time(),
+            "method": request.method,
+            "path": request.url.path,
+            "status_code": response.status_code,
+            "process_time": process_time,
+            "headers": self._get_safe_headers(response.headers),
+        }
+
+        print(f"RESPONSE: {json.dumps(log_data)}")
+
+    def _get_safe_headers(self, headers: Dict[str, str]) -> Dict[str, str]:
+        """Get headers with sensitive data masked."""
+        safe_headers = dict(headers)
+        sensitive_headers = [
+            "authorization",
+            "cookie",
+            "x-api-key",
+            "x-auth-token",
+            "x-csrf-token",
+        ]
+
+        for header in sensitive_headers:
+            if header in safe_headers:
+                safe_headers[header] = "***"
+
+        return safe_headers
+
+
+class RequestIDMiddleware(BaseHTTPMiddleware):
+    """Middleware to ensure request ID is always present."""
+
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
+        request.state.request_id = request_id
+        
+        response = await call_next(request)
+        response.headers["X-Request-ID"] = request_id
+        
+        return response

@@ -1,6 +1,4 @@
-"""Database module for analytics integration."""
+from .repositories import AnalyticsEventRepository
+from .schema import AnalyticsEventDB, Base
 
-from features.FEATURE-CA-006-01_analytics_integration.db.schema import AnalyticsEventDB
-from features.FEATURE-CA-006-01_analytics_integration.db.repositories import AnalyticsEventRepository
-
-__all__ = ["AnalyticsEventDB", "AnalyticsEventRepository"]
+__all__ = ["AnalyticsEventRepository", "AnalyticsEventDB", "Base"]
