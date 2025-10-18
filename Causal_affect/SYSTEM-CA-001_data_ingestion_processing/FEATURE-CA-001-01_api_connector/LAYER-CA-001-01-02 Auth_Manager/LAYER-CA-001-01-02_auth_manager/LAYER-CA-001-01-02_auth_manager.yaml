@@ -1,0 +1,104 @@
+# LAYER-CA-001-01-02: Authentication Manager
+# ===========================================
+
+metadata:
+  layer_id: LAYER-CA-001-01-02
+  layer_name: Authentication Manager
+  parent_feature: FEATURE-CA-001-01
+  parent_system: SYSTEM-CA-001
+  created_date: 2025-10-18
+  status: planned
+  priority: critical
+  
+  description: |
+    Multi-authentication support for OAuth2, API keys, JWT tokens with
+    automatic token refresh and secure credential storage.
+
+technical_specifications:
+  supported_auth_types:
+    - "OAuth2 (authorization code + refresh token)"
+    - "API Key (header or query param)"
+    - "JWT Bearer Token"
+    - "Basic Auth (username/password)"
+    - "No Auth (public APIs)"
+  
+  token_storage: "Redis cache with TTL"
+  token_refresh: "Automatic before expiry (5 min buffer)"
+  
+  features:
+    - "OAuth2 token acquisition and refresh"
+    - "API key injection (header: X-API-Key or query param)"
+    - "JWT token validation and renewal"
+    - "Token caching with expiry"
+    - "Credential encryption at rest"
+
+implementation_details:
+  class_name: "AuthManager"
+  file_path: "src/data_ingestion/backend/features/FEATURE-CA-001-01_api_connector/services/auth_manager.py"
+  
+  public_methods:
+    - name: "async def get_auth_headers(source_id, auth_config)"
+      description: "Generate authentication headers for API source"
+      returns: "dict (e.g., {'Authorization': 'Bearer token'})"
+      
+    - name: "async def refresh_oauth2_token(source_id, refresh_token)"
+      description: "Refresh expired OAuth2 access token"
+      returns: "new_access_token, expires_in"
+      
+    - name: "def encrypt_credentials(credentials)"
+      description: "Encrypt API keys/secrets before storage"
+      returns: "encrypted_string"
+      
+    - name: "def decrypt_credentials(encrypted_credentials)"
+      description: "Decrypt stored credentials"
+      returns: "decrypted_credentials"
+  
+  dependencies:
+    - "authlib for OAuth2 flows"
+    - "redis for token caching"
+    - "cryptography.fernet for encryption"
+    - "pydantic models for auth config validation"
+
+data_models:
+  AuthConfig:
+    fields:
+      - "auth_type: enum (oauth2, api_key, jwt, basic, none)"
+      - "credentials: dict (encrypted at rest)"
+      - "oauth2_token_url: str (for OAuth2)"
+      - "oauth2_scopes: list[str]"
+      - "api_key_location: enum (header, query)"
+      - "api_key_name: str (default: 'X-API-Key')"
+      - "token_expiry: datetime (cached token expiry)"
+
+acceptance_criteria:
+  - criterion_id: AC-LY-001-01-02-01
+    criterion: "OAuth2 token automatically refreshes before expiry"
+    verification: "Mock OAuth2 server, verify refresh called before expiry"
+    
+  - criterion_id: AC-LY-001-01-02-02
+    criterion: "API key correctly injected in header or query param"
+    verification: "Inspect request headers/params for API key presence"
+    
+  - criterion_id: AC-LY-001-01-02-03
+    criterion: "Credentials encrypted at rest in database"
+    verification: "Query database, verify credentials column is encrypted"
+
+testing_requirements:
+  unit_tests:
+    - "test_oauth2_token_acquisition"
+    - "test_oauth2_token_refresh"
+    - "test_api_key_header_injection"
+    - "test_api_key_query_param_injection"
+    - "test_jwt_bearer_token"
+    - "test_credential_encryption_decryption"
+    - "test_token_cache_hit"
+    - "test_token_cache_miss"
+    
+  integration_tests:
+    - "test_oauth2_flow_with_mock_server"
+    - "test_api_key_auth_with_live_api"
+
+estimated_effort:
+  development: "10 hours"
+  testing: "2 hours"
+  total: "12 hours"

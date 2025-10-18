@@ -1,0 +1,138 @@
+matrix_metadata:
+  timestamp: '20251018_112035'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping: []
+implementation_to_requirement_mapping:
+- implementation_file: LAYER-CA-001-03-04 Compressor/LAYER-CA-001-03-04_compressor/src/implementation.py
+  lines: 450
+  methods:
+  - name: __init__
+    lines: 52-64
+  - name: compress
+    lines: 65-111
+  - name: decompress
+    lines: 112-138
+  - name: compress_file
+    lines: 139-196
+  - name: decompress_file
+    lines: 197-264
+  - name: get_stats
+    lines: 265-273
+  - name: get_all_stats
+    lines: 274-282
+  - name: reset_stats
+    lines: 283-286
+  - name: benchmark
+    lines: 287-337
+  - name: __init__
+    lines: 341-350
+  - name: compress_files
+    lines: 351-392
+  - name: decompress_files
+    lines: 393-423
+  - name: get_results
+    lines: 424-427
+  - name: clear_results
+    lines: 428-432
+  - name: create_compressor
+    lines: 433-443
+  classes:
+  - name: CompressionType
+    type: class
+    lines: 14-21
+  - name: CompressionError
+    type: class
+    lines: 22-27
+  - name: CompressionStats
+    type: class
+    lines: 28-36
+  - name: FileMetadata
+    type: class
+    lines: 37-45
+  - name: Compressor
+    type: class
+    lines: 46-337
+  - name: BatchCompressor
+    type: class
+    lines: 338-450
+  implements_requirements: []
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: LAYER-CA-001-03-04 Compressor/LAYER-CA-001-03-04_compressor/tests/test_generated_20251018_111942.py
+  test_count: 0
+  implementation_files:
+  - LAYER-CA-001-03-04 Compressor/LAYER-CA-001-03-04_compressor/src/implementation.py
+  methods_tested:
+  - __init__
+  - compress
+  - decompress
+  - compress_file
+  - decompress_file
+  - get_stats
+  - get_all_stats
+  - reset_stats
+  - benchmark
+  - __init__
+  - compress_files
+  - decompress_files
+  - get_results
+  - clear_results
+  - create_compressor
+  classes_tested:
+  - CompressionType
+  - CompressionError
+  - CompressionStats
+  - FileMetadata
+  - Compressor
+  - BatchCompressor
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: LAYER-CA-001-03-04 Compressor/LAYER-CA-001-03-04_compressor/src/implementation.py:52-64
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: LAYER-CA-001-03-04 Compressor/LAYER-CA-001-03-04_compressor/tests/test_generated_20251018_111942.py
+  verified: true
+- implementation_location: LAYER-CA-001-03-04 Compressor/LAYER-CA-001-03-04_compressor/src/implementation.py:65-111
+  method_name: compress
+  requirement: AC-001
+  test: test_compress
+  test_file: LAYER-CA-001-03-04 Compressor/LAYER-CA-001-03-04_compressor/tests/test_generated_20251018_111942.py
+  verified: true
+- implementation_location: LAYER-CA-001-03-04 Compressor/LAYER-CA-001-03-04_compressor/src/implementation.py:112-138
+  method_name: decompress
+  requirement: AC-001
+  test: test_decompress
+  test_file: LAYER-CA-001-03-04 Compressor/LAYER-CA-001-03-04_compressor/tests/test_generated_20251018_111942.py
+  verified: true
+- implementation_location: LAYER-CA-001-03-04 Compressor/LAYER-CA-001-03-04_compressor/src/implementation.py:139-196
+  method_name: compress_file
+  requirement: AC-001
+  test: test_compress_file
+  test_file: LAYER-CA-001-03-04 Compressor/LAYER-CA-001-03-04_compressor/tests/test_generated_20251018_111942.py
+  verified: true
+- implementation_location: LAYER-CA-001-03-04 Compressor/LAYER-CA-001-03-04_compressor/src/implementation.py:197-264
+  method_name: decompress_file
+  requirement: AC-001
+  test: test_decompress_file
+  test_file: LAYER-CA-001-03-04 Compressor/LAYER-CA-001-03-04_compressor/tests/test_generated_20251018_111942.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 0
+  requirements_traced: 0
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

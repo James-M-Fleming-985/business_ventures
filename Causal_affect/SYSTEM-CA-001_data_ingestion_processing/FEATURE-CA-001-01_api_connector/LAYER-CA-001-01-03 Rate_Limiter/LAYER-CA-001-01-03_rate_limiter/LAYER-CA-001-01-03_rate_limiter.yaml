@@ -1,0 +1,105 @@
+# LAYER-CA-001-01-03: Rate Limiter
+# ==================================
+
+metadata:
+  layer_id: LAYER-CA-001-01-03
+  layer_name: Rate Limiter
+  parent_feature: FEATURE-CA-001-01
+  parent_system: SYSTEM-CA-001
+  created_date: 2025-10-18
+  status: planned
+  priority: critical
+  
+  description: |
+    Per-API rate limiting using token bucket algorithm to prevent API bans.
+    Enforces different rate limits for each external API source.
+
+technical_specifications:
+  algorithm: "Token Bucket"
+  storage: "Redis (for distributed rate limiting across workers)"
+  granularity: "Per-source rate limiting"
+  
+  features:
+    - "Token bucket algorithm (refills at configured rate)"
+    - "Per-API source rate limits (e.g., 60 req/min for API A, 300 req/min for API B)"
+    - "Async waiting when rate limit reached"
+    - "Rate limit status monitoring"
+    - "Distributed rate limiting (Redis-backed)"
+
+implementation_details:
+  class_name: "RateLimiter"
+  file_path: "src/data_ingestion/backend/features/FEATURE-CA-001-01_api_connector/services/rate_limiter.py"
+  
+  public_methods:
+    - name: "async def acquire(source_id, rate_limit)"
+      description: "Acquire token from bucket, wait if necessary"
+      returns: "bool (True when token acquired)"
+      behavior: "Blocks (async sleep) if no tokens available"
+      
+    - name: "async def check_available(source_id)"
+      description: "Check tokens available without consuming"
+      returns: "int (tokens remaining)"
+      
+    - name: "async def reset(source_id)"
+      description: "Reset rate limit for source (admin function)"
+      
+    - name: "get_status(source_id)"
+      description: "Get rate limit status"
+      returns: "RateLimitStatus(tokens_remaining, refill_rate, last_refill)"
+  
+  algorithm_details: |
+    Token Bucket:
+    - Bucket capacity = rate_limit (e.g., 60 tokens)
+    - Refill rate = rate_limit / 60 seconds (1 token per second for 60/min)
+    - Each request consumes 1 token
+    - If bucket empty, wait until token available
+    
+    Redis keys:
+    - rate_limit:{source_id}:tokens -> current token count
+    - rate_limit:{source_id}:last_refill -> last refill timestamp
+  
+  dependencies:
+    - "redis for distributed storage"
+    - "asyncio.sleep for waiting"
+    - "datetime for timestamp tracking"
+
+data_models:
+  RateLimitStatus:
+    fields:
+      - "source_id: str"
+      - "tokens_remaining: int"
+      - "capacity: int"
+      - "refill_rate: float (tokens per second)"
+      - "last_refill: datetime"
+      - "next_token_available: datetime"
+
+acceptance_criteria:
+  - criterion_id: AC-LY-001-01-03-01
+    criterion: "Rate limiter prevents exceeding configured limit"
+    verification: "Send 100 requests to 60/min API, verify only 60 in first minute"
+    
+  - criterion_id: AC-LY-001-01-03-02
+    criterion: "Tokens refill at correct rate"
+    verification: "Exhaust tokens, wait, verify refill matches configured rate"
+    
+  - criterion_id: AC-LY-001-01-03-03
+    criterion: "Works across multiple workers (distributed)"
+    verification: "Run 2 workers, verify total rate limit enforced globally"
+
+testing_requirements:
+  unit_tests:
+    - "test_token_bucket_algorithm"
+    - "test_rate_limit_blocking"
+    - "test_token_refill_rate"
+    - "test_check_available_without_consuming"
+    - "test_rate_limit_reset"
+    
+  integration_tests:
+    - "test_distributed_rate_limiting_redis"
+    - "test_concurrent_requests_respect_limit"
+    - "test_multiple_sources_independent_limits"
+
+estimated_effort:
+  development: "8 hours"
+  testing: "2 hours"
+  total: "10 hours"

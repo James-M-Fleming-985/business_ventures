@@ -1,0 +1,170 @@
+matrix_metadata:
+  timestamp: '20251018_102833'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-LY-001-01-04-01
+  requirement: Circuit opens after 3 consecutive failures
+  description: Circuit opens after 3 consecutive failures
+  test_files: &id001
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/LAYER-CA-001-01-04
+    Circuit_Breaker/LAYER-CA-001-01-04_circuit_breaker/tests/test_generated_20251018_102807.py
+  test_methods:
+  - test_ac-ly-001-01-04-01
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LY-001-01-04-02
+  requirement: Circuit transitions to HALF_OPEN after timeout
+  description: Circuit transitions to HALF_OPEN after timeout
+  test_files: *id001
+  test_methods:
+  - test_ac-ly-001-01-04-02
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LY-001-01-04-03
+  requirement: Circuit closes after successful recovery
+  description: Circuit closes after successful recovery
+  test_files: *id001
+  test_methods:
+  - test_ac-ly-001-01-04-03
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LY-001-01-04-04
+  requirement: Exponential backoff delays requests
+  description: Exponential backoff delays requests
+  test_files: *id001
+  test_methods:
+  - test_ac-ly-001-01-04-04
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/LAYER-CA-001-01-04
+    Circuit_Breaker/LAYER-CA-001-01-04_circuit_breaker/src/implementation.py
+  lines: 185
+  methods:
+  - name: __init__
+    lines: 23-49
+  - name: state
+    lines: 50-54
+  - name: failure_count
+    lines: 55-58
+  - name: call
+    lines: 59-120
+  - name: __call__
+    lines: 121-134
+  - name: wrapper
+    lines: 131-134
+  - name: reset
+    lines: 135-143
+  - name: with_circuit_breaker
+    lines: 153-163
+  - name: decorator
+    lines: 177-187
+  - name: wrapper
+    lines: 179-189
+  classes:
+  - name: CircuitState
+    type: class
+    lines: 8-14
+  - name: CircuitBreaker
+    type: class
+    lines: 15-143
+  - name: CircuitOpenError
+    type: class
+    lines: 144-185
+  implements_requirements:
+  - AC-LY-001-01-04-01
+  - AC-LY-001-01-04-02
+  - AC-LY-001-01-04-03
+  - AC-LY-001-01-04-04
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/LAYER-CA-001-01-04
+    Circuit_Breaker/LAYER-CA-001-01-04_circuit_breaker/tests/test_generated_20251018_102807.py
+  test_count: 0
+  implementation_files:
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/LAYER-CA-001-01-04
+    Circuit_Breaker/LAYER-CA-001-01-04_circuit_breaker/src/implementation.py
+  methods_tested:
+  - __init__
+  - state
+  - failure_count
+  - call
+  - __call__
+  - wrapper
+  - reset
+  - with_circuit_breaker
+  - decorator
+  - wrapper
+  classes_tested:
+  - CircuitState
+  - CircuitBreaker
+  - CircuitOpenError
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/LAYER-CA-001-01-04
+    Circuit_Breaker/LAYER-CA-001-01-04_circuit_breaker/src/implementation.py:23-49
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/LAYER-CA-001-01-04
+    Circuit_Breaker/LAYER-CA-001-01-04_circuit_breaker/tests/test_generated_20251018_102807.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/LAYER-CA-001-01-04
+    Circuit_Breaker/LAYER-CA-001-01-04_circuit_breaker/src/implementation.py:50-54
+  method_name: state
+  requirement: AC-001
+  test: test_state
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/LAYER-CA-001-01-04
+    Circuit_Breaker/LAYER-CA-001-01-04_circuit_breaker/tests/test_generated_20251018_102807.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/LAYER-CA-001-01-04
+    Circuit_Breaker/LAYER-CA-001-01-04_circuit_breaker/src/implementation.py:55-58
+  method_name: failure_count
+  requirement: AC-001
+  test: test_failure_count
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/LAYER-CA-001-01-04
+    Circuit_Breaker/LAYER-CA-001-01-04_circuit_breaker/tests/test_generated_20251018_102807.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/LAYER-CA-001-01-04
+    Circuit_Breaker/LAYER-CA-001-01-04_circuit_breaker/src/implementation.py:59-120
+  method_name: call
+  requirement: AC-001
+  test: test_call
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/LAYER-CA-001-01-04
+    Circuit_Breaker/LAYER-CA-001-01-04_circuit_breaker/tests/test_generated_20251018_102807.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/LAYER-CA-001-01-04
+    Circuit_Breaker/LAYER-CA-001-01-04_circuit_breaker/src/implementation.py:121-134
+  method_name: __call__
+  requirement: AC-001
+  test: test___call__
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/LAYER-CA-001-01-04
+    Circuit_Breaker/LAYER-CA-001-01-04_circuit_breaker/tests/test_generated_20251018_102807.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 4
+  requirements_traced: 4
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

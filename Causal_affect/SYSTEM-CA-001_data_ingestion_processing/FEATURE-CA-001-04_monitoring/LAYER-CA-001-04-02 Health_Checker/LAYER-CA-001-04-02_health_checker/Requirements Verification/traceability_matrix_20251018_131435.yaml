@@ -1,0 +1,141 @@
+matrix_metadata:
+  timestamp: '20251018_131435'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping: []
+implementation_to_requirement_mapping:
+- implementation_file: LAYER-CA-001-04-02 Health_Checker/LAYER-CA-001-04-02_health_checker/src/implementation.py
+  lines: 354
+  methods:
+  - name: __init__
+    lines: 30-43
+  - name: check_cpu
+    lines: 44-51
+  - name: check_memory
+    lines: 52-59
+  - name: check_disk
+    lines: 60-70
+  - name: check_network
+    lines: 71-87
+  - name: get_metrics
+    lines: 88-103
+  - name: _check_thresholds
+    lines: 104-125
+  - name: get_alerts
+    lines: 126-133
+  - name: clear_alerts
+    lines: 134-137
+  - name: get_history
+    lines: 138-150
+  - name: get_summary
+    lines: 151-170
+  - name: monitor
+    lines: 171-188
+  - name: __init__
+    lines: 192-200
+  - name: add_service
+    lines: 201-215
+  - name: check_services
+    lines: 216-237
+  - name: get_system_info
+    lines: 238-269
+  - name: get_processes
+    lines: 270-293
+  - name: create_health_checker
+    lines: 294-308
+  - name: format_bytes
+    lines: 309-324
+  - name: generate_report
+    lines: 325-335
+  classes:
+  - name: HealthMetrics
+    type: class
+    lines: 18-26
+  - name: HealthChecker
+    type: class
+    lines: 27-188
+  - name: SystemMonitor
+    type: class
+    lines: 189-354
+  implements_requirements: []
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: LAYER-CA-001-04-02 Health_Checker/LAYER-CA-001-04-02_health_checker/tests/test_generated_20251018_131349.py
+  test_count: 0
+  implementation_files:
+  - LAYER-CA-001-04-02 Health_Checker/LAYER-CA-001-04-02_health_checker/src/implementation.py
+  methods_tested:
+  - __init__
+  - check_cpu
+  - check_memory
+  - check_disk
+  - check_network
+  - get_metrics
+  - _check_thresholds
+  - get_alerts
+  - clear_alerts
+  - get_history
+  - get_summary
+  - monitor
+  - __init__
+  - add_service
+  - check_services
+  - get_system_info
+  - get_processes
+  - create_health_checker
+  - format_bytes
+  - generate_report
+  classes_tested:
+  - HealthMetrics
+  - HealthChecker
+  - SystemMonitor
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: LAYER-CA-001-04-02 Health_Checker/LAYER-CA-001-04-02_health_checker/src/implementation.py:30-43
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: LAYER-CA-001-04-02 Health_Checker/LAYER-CA-001-04-02_health_checker/tests/test_generated_20251018_131349.py
+  verified: true
+- implementation_location: LAYER-CA-001-04-02 Health_Checker/LAYER-CA-001-04-02_health_checker/src/implementation.py:44-51
+  method_name: check_cpu
+  requirement: AC-001
+  test: test_check_cpu
+  test_file: LAYER-CA-001-04-02 Health_Checker/LAYER-CA-001-04-02_health_checker/tests/test_generated_20251018_131349.py
+  verified: true
+- implementation_location: LAYER-CA-001-04-02 Health_Checker/LAYER-CA-001-04-02_health_checker/src/implementation.py:52-59
+  method_name: check_memory
+  requirement: AC-001
+  test: test_check_memory
+  test_file: LAYER-CA-001-04-02 Health_Checker/LAYER-CA-001-04-02_health_checker/tests/test_generated_20251018_131349.py
+  verified: true
+- implementation_location: LAYER-CA-001-04-02 Health_Checker/LAYER-CA-001-04-02_health_checker/src/implementation.py:60-70
+  method_name: check_disk
+  requirement: AC-001
+  test: test_check_disk
+  test_file: LAYER-CA-001-04-02 Health_Checker/LAYER-CA-001-04-02_health_checker/tests/test_generated_20251018_131349.py
+  verified: true
+- implementation_location: LAYER-CA-001-04-02 Health_Checker/LAYER-CA-001-04-02_health_checker/src/implementation.py:71-87
+  method_name: check_network
+  requirement: AC-001
+  test: test_check_network
+  test_file: LAYER-CA-001-04-02 Health_Checker/LAYER-CA-001-04-02_health_checker/tests/test_generated_20251018_131349.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 0
+  requirements_traced: 0
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

@@ -1,0 +1,118 @@
+matrix_metadata:
+  timestamp: '20251018_105243'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-LY-001-02-02-01
+  requirement: Missing values handled without data loss
+  description: Missing values handled without data loss
+  test_files:
+  - LAYER-CA-001-02-02 Data_Cleaner/LAYER-CA-001-02-02_data_cleaner/tests/test_generated_20251018_105206.py
+  test_methods:
+  - test_ac-ly-001-02-02-01
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: LAYER-CA-001-02-02 Data_Cleaner/LAYER-CA-001-02-02_data_cleaner/src/implementation.py
+  lines: 245
+  methods:
+  - name: __init__
+    lines: 16-20
+  - name: clean_data
+    lines: 21-46
+  - name: _clean_dataframe
+    lines: 47-61
+  - name: _clean_series
+    lines: 62-74
+  - name: _clean_list
+    lines: 75-86
+  - name: _clean_dict
+    lines: 87-98
+  - name: _clean_array
+    lines: 99-109
+  - name: handle_missing
+    lines: 110-141
+  - name: get_missing_value_report
+    lines: 142-171
+  - name: restore_missing_values
+    lines: 172-195
+  - name: impute_missing
+    lines: 196-206
+  classes:
+  - name: DataCleaner
+    type: class
+    lines: 8-245
+  implements_requirements:
+  - AC-LY-001-02-02-01
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: LAYER-CA-001-02-02 Data_Cleaner/LAYER-CA-001-02-02_data_cleaner/tests/test_generated_20251018_105206.py
+  test_count: 0
+  implementation_files:
+  - LAYER-CA-001-02-02 Data_Cleaner/LAYER-CA-001-02-02_data_cleaner/src/implementation.py
+  methods_tested:
+  - __init__
+  - clean_data
+  - _clean_dataframe
+  - _clean_series
+  - _clean_list
+  - _clean_dict
+  - _clean_array
+  - handle_missing
+  - get_missing_value_report
+  - restore_missing_values
+  - impute_missing
+  classes_tested:
+  - DataCleaner
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: LAYER-CA-001-02-02 Data_Cleaner/LAYER-CA-001-02-02_data_cleaner/src/implementation.py:16-20
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: LAYER-CA-001-02-02 Data_Cleaner/LAYER-CA-001-02-02_data_cleaner/tests/test_generated_20251018_105206.py
+  verified: true
+- implementation_location: LAYER-CA-001-02-02 Data_Cleaner/LAYER-CA-001-02-02_data_cleaner/src/implementation.py:21-46
+  method_name: clean_data
+  requirement: AC-001
+  test: test_clean_data
+  test_file: LAYER-CA-001-02-02 Data_Cleaner/LAYER-CA-001-02-02_data_cleaner/tests/test_generated_20251018_105206.py
+  verified: true
+- implementation_location: LAYER-CA-001-02-02 Data_Cleaner/LAYER-CA-001-02-02_data_cleaner/src/implementation.py:47-61
+  method_name: _clean_dataframe
+  requirement: AC-001
+  test: test__clean_dataframe
+  test_file: LAYER-CA-001-02-02 Data_Cleaner/LAYER-CA-001-02-02_data_cleaner/tests/test_generated_20251018_105206.py
+  verified: true
+- implementation_location: LAYER-CA-001-02-02 Data_Cleaner/LAYER-CA-001-02-02_data_cleaner/src/implementation.py:62-74
+  method_name: _clean_series
+  requirement: AC-001
+  test: test__clean_series
+  test_file: LAYER-CA-001-02-02 Data_Cleaner/LAYER-CA-001-02-02_data_cleaner/tests/test_generated_20251018_105206.py
+  verified: true
+- implementation_location: LAYER-CA-001-02-02 Data_Cleaner/LAYER-CA-001-02-02_data_cleaner/src/implementation.py:75-86
+  method_name: _clean_list
+  requirement: AC-001
+  test: test__clean_list
+  test_file: LAYER-CA-001-02-02 Data_Cleaner/LAYER-CA-001-02-02_data_cleaner/tests/test_generated_20251018_105206.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 1
+  requirements_traced: 1
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

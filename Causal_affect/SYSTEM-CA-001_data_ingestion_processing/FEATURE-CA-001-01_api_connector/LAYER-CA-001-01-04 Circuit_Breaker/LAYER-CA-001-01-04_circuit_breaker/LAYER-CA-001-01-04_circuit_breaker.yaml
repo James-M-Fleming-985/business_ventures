@@ -1,0 +1,135 @@
+# LAYER-CA-001-01-04: Circuit Breaker
+# =====================================
+
+metadata:
+  layer_id: LAYER-CA-001-01-04
+  layer_name: Circuit Breaker
+  parent_feature: FEATURE-CA-001-01
+  parent_system: SYSTEM-CA-001
+  created_date: 2025-10-18
+  status: planned
+  priority: high
+  
+  description: |
+    Automatic failure detection and source disabling using circuit breaker pattern.
+    Prevents cascading failures by stopping requests to failing APIs.
+
+technical_specifications:
+  pattern: "Circuit Breaker (Martin Fowler)"
+  failure_threshold: 3
+  timeout_duration: "5 minutes (circuit open)"
+  half_open_timeout: "30 seconds (test recovery)"
+  
+  states:
+    closed: "Normal operation, requests flow through"
+    open: "Failure detected, all requests fail fast"
+    half_open: "Testing recovery, limited requests allowed"
+  
+  features:
+    - "Track consecutive failures per API source"
+    - "Auto-open circuit after 3 failures"
+    - "Auto-close circuit after successful recovery test"
+    - "Exponential backoff retry (1s, 2s, 4s, 8s, 16s)"
+    - "Circuit state persistence (survives restarts)"
+    - "Alert on circuit open"
+
+implementation_details:
+  class_name: "CircuitBreaker"
+  file_path: "src/data_ingestion/backend/features/FEATURE-CA-001-01_api_connector/services/circuit_breaker.py"
+  
+  public_methods:
+    - name: "async def call(source_id, func, *args, **kwargs)"
+      description: "Execute function through circuit breaker"
+      returns: "func result or raises CircuitBreakerOpen exception"
+      behavior: |
+        - CLOSED: Execute func, track failures
+        - OPEN: Raise CircuitBreakerOpen immediately
+        - HALF_OPEN: Execute func, close on success or re-open on failure
+      
+    - name: "def get_state(source_id)"
+      description: "Get current circuit state"
+      returns: "CircuitState enum (CLOSED, OPEN, HALF_OPEN)"
+      
+    - name: "def force_open(source_id)"
+      description: "Manually open circuit (admin function)"
+      
+    - name: "def force_close(source_id)"
+      description: "Manually close circuit (admin function)"
+      
+    - name: "def get_failure_count(source_id)"
+      description: "Get consecutive failure count"
+      returns: "int"
+  
+  state_machine: |
+    CLOSED --> (3 failures) --> OPEN
+    OPEN --> (5 min timeout) --> HALF_OPEN
+    HALF_OPEN --> (success) --> CLOSED
+    HALF_OPEN --> (failure) --> OPEN
+  
+  dependencies:
+    - "PostgreSQL for circuit state persistence"
+    - "Redis for failure count tracking"
+    - "asyncio for retry delays"
+
+data_models:
+  CircuitState:
+    fields:
+      - "source_id: str"
+      - "state: enum (CLOSED, OPEN, HALF_OPEN)"
+      - "failure_count: int"
+      - "last_failure_time: datetime"
+      - "opened_at: datetime (when circuit opened)"
+      - "last_success_time: datetime"
+      
+  CircuitBreakerConfig:
+    fields:
+      - "failure_threshold: int (default 3)"
+      - "open_timeout_seconds: int (default 300)"
+      - "half_open_timeout_seconds: int (default 30)"
+
+database_schema:
+  table: circuit_breaker_state
+  columns:
+    - "source_id VARCHAR(100) PRIMARY KEY"
+    - "state VARCHAR(20) NOT NULL"
+    - "failure_count INT DEFAULT 0"
+    - "last_failure_time TIMESTAMP"
+    - "opened_at TIMESTAMP"
+    - "last_success_time TIMESTAMP"
+    - "updated_at TIMESTAMP DEFAULT NOW()"
+
+acceptance_criteria:
+  - criterion_id: AC-LY-001-01-04-01
+    criterion: "Circuit opens after 3 consecutive failures"
+    verification: "Mock 3 API failures, verify circuit state = OPEN"
+    
+  - criterion_id: AC-LY-001-01-04-02
+    criterion: "Circuit transitions to HALF_OPEN after timeout"
+    verification: "Open circuit, wait 5 min, verify state = HALF_OPEN"
+    
+  - criterion_id: AC-LY-001-01-04-03
+    criterion: "Circuit closes after successful recovery"
+    verification: "HALF_OPEN state, mock success, verify state = CLOSED"
+    
+  - criterion_id: AC-LY-001-01-04-04
+    criterion: "Exponential backoff delays requests"
+    verification: "Track retry timestamps, verify 1s, 2s, 4s, 8s, 16s delays"
+
+testing_requirements:
+  unit_tests:
+    - "test_circuit_opens_after_3_failures"
+    - "test_circuit_fail_fast_when_open"
+    - "test_circuit_half_open_after_timeout"
+    - "test_circuit_closes_on_success"
+    - "test_circuit_reopens_on_failure_in_half_open"
+    - "test_exponential_backoff_calculation"
+    - "test_circuit_state_persistence"
+    
+  integration_tests:
+    - "test_circuit_breaker_with_real_api"
+    - "test_circuit_recovery_flow"
+
+estimated_effort:
+  development: "8 hours"
+  testing: "2 hours"
+  total: "10 hours"

@@ -1,0 +1,163 @@
+matrix_metadata:
+  timestamp: '20251018_102535'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-LY-001-01-02-01
+  requirement: OAuth2 token automatically refreshes before expiry
+  description: OAuth2 token automatically refreshes before expiry
+  test_files: &id001
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/LAYER-CA-001-01-02
+    Auth_Manager/LAYER-CA-001-01-02_auth_manager/tests/test_generated_20251018_102455.py
+  test_methods:
+  - test_ac-ly-001-01-02-01
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LY-001-01-02-02
+  requirement: API key correctly injected in header or query param
+  description: API key correctly injected in header or query param
+  test_files: *id001
+  test_methods:
+  - test_ac-ly-001-01-02-02
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LY-001-01-02-03
+  requirement: Credentials encrypted at rest in database
+  description: Credentials encrypted at rest in database
+  test_files: *id001
+  test_methods:
+  - test_ac-ly-001-01-02-03
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/LAYER-CA-001-01-02
+    Auth_Manager/LAYER-CA-001-01-02_auth_manager/src/implementation.py
+  lines: 278
+  methods:
+  - name: __init__
+    lines: 18-32
+  - name: _setup_encryption
+    lines: 33-40
+  - name: store_credentials
+    lines: 41-59
+  - name: get_credentials
+    lines: 60-82
+  - name: setup_oauth2
+    lines: 83-110
+  - name: _get_oauth2_token
+    lines: 111-134
+  - name: _refresh_oauth2_token
+    lines: 135-153
+  - name: _start_refresh_thread
+    lines: 154-166
+  - name: refresh_loop
+    lines: 156-166
+  - name: setup_api_key
+    lines: 167-186
+  - name: get_auth_headers
+    lines: 187-215
+  - name: get_auth_params
+    lines: 216-236
+  - name: make_authenticated_request
+    lines: 237-272
+  - name: close
+    lines: 273-283
+  classes:
+  - name: AuthManager
+    type: class
+    lines: 15-278
+  implements_requirements:
+  - AC-LY-001-01-02-01
+  - AC-LY-001-01-02-02
+  - AC-LY-001-01-02-03
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/LAYER-CA-001-01-02
+    Auth_Manager/LAYER-CA-001-01-02_auth_manager/tests/test_generated_20251018_102455.py
+  test_count: 0
+  implementation_files:
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/LAYER-CA-001-01-02
+    Auth_Manager/LAYER-CA-001-01-02_auth_manager/src/implementation.py
+  methods_tested:
+  - __init__
+  - _setup_encryption
+  - store_credentials
+  - get_credentials
+  - setup_oauth2
+  - _get_oauth2_token
+  - _refresh_oauth2_token
+  - _start_refresh_thread
+  - refresh_loop
+  - setup_api_key
+  - get_auth_headers
+  - get_auth_params
+  - make_authenticated_request
+  - close
+  classes_tested:
+  - AuthManager
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/LAYER-CA-001-01-02
+    Auth_Manager/LAYER-CA-001-01-02_auth_manager/src/implementation.py:18-32
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/LAYER-CA-001-01-02
+    Auth_Manager/LAYER-CA-001-01-02_auth_manager/tests/test_generated_20251018_102455.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/LAYER-CA-001-01-02
+    Auth_Manager/LAYER-CA-001-01-02_auth_manager/src/implementation.py:33-40
+  method_name: _setup_encryption
+  requirement: AC-001
+  test: test__setup_encryption
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/LAYER-CA-001-01-02
+    Auth_Manager/LAYER-CA-001-01-02_auth_manager/tests/test_generated_20251018_102455.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/LAYER-CA-001-01-02
+    Auth_Manager/LAYER-CA-001-01-02_auth_manager/src/implementation.py:41-59
+  method_name: store_credentials
+  requirement: AC-001
+  test: test_store_credentials
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/LAYER-CA-001-01-02
+    Auth_Manager/LAYER-CA-001-01-02_auth_manager/tests/test_generated_20251018_102455.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/LAYER-CA-001-01-02
+    Auth_Manager/LAYER-CA-001-01-02_auth_manager/src/implementation.py:60-82
+  method_name: get_credentials
+  requirement: AC-001
+  test: test_get_credentials
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/LAYER-CA-001-01-02
+    Auth_Manager/LAYER-CA-001-01-02_auth_manager/tests/test_generated_20251018_102455.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/LAYER-CA-001-01-02
+    Auth_Manager/LAYER-CA-001-01-02_auth_manager/src/implementation.py:83-110
+  method_name: setup_oauth2
+  requirement: AC-001
+  test: test_setup_oauth2
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/LAYER-CA-001-01-02
+    Auth_Manager/LAYER-CA-001-01-02_auth_manager/tests/test_generated_20251018_102455.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 3
+  requirements_traced: 3
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

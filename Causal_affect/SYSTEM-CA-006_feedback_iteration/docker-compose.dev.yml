@@ -1,0 +1,86 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: ca006-postgres
+    environment:
+      POSTGRES_DB: feedback_iteration
+      POSTGRES_USER: ca006_user
+      POSTGRES_PASSWORD: dev_password_change_in_prod
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ca006_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: ca006-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # FastAPI Backend
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: ca006-backend
+    environment:
+      # Database
+      DATABASE_URL: postgresql://ca006_user:dev_password_change_in_prod@postgres:5432/feedback_iteration
+      # Redis
+      REDIS_URL: redis://redis:6379/0
+      # API Keys (set in .env file)
+      GOOGLE_ANALYTICS_CREDENTIALS: ${GOOGLE_ANALYTICS_CREDENTIALS:-}
+      MIXPANEL_API_SECRET: ${MIXPANEL_API_SECRET:-}
+      AMPLITUDE_API_KEY: ${AMPLITUDE_API_KEY:-}
+      # Environment
+      ENVIRONMENT: development
+      DEBUG: "true"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./src/backend:/app:delegated
+      - ./logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # Celery Worker (for background tasks)
+  celery-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: ca006-celery-worker
+    environment:
+      DATABASE_URL: postgresql://ca006_user:dev_password_change_in_prod@postgres:5432/feedback_iteration
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+    volumes:
+      - ./src/backend:/app:delegated
+    depends_on:
+      - postgres
+      - redis
+    command: celery -A app.celery_app worker --loglevel=info
+
+volumes:
+  postgres_data:
+  redis_data:

@@ -1,0 +1,202 @@
+metadata:
+  system_id: SYSTEM-CA-006
+  system_name: Feedback Collection & Iteration Orchestrator
+  generated_at: '2025-10-17T17:12:20.630137'
+  total_layers: 30
+  total_features: 6
+  generator: SystemVerificationGenerator
+pyramid_summary:
+  total_tests: 0
+  unit_tests: 0
+  integration_tests: 0
+  system_tests: 0
+  unit_percentage: 0
+  integration_percentage: 0
+  system_percentage: 0
+coverage:
+  average_coverage: 0.0
+  layers_above_80_percent: 0
+  layers_above_90_percent: 0
+  coverage_status: NEEDS_IMPROVEMENT
+feature_breakdown:
+  FEATURE-CA-006-01_analytics_integration:
+    unit_tests: 0
+    integration_tests: 0
+    system_tests: 0
+    layers:
+    - LAYER-CA-006-01-01 Google Analytics Client
+    - LAYER-CA-006-01-02 Mixpanel Client
+    - LAYER-CA-006-01-03 Amplitude Client
+    - LAYER-CA-006-01-04 Analytics Aggregator
+    - LAYER-CA-006-01-05 Analytics Error Handler
+  FEATURE-CA-006-02_engagement_tracking:
+    unit_tests: 0
+    integration_tests: 0
+    system_tests: 0
+    layers:
+    - LAYER-CA-006-02-01 Event Collector
+    - LAYER-CA-006-02-02 Session Tracker
+    - LAYER-CA-006-02-03 Metrics Calculator
+    - LAYER-CA-006-02-04 Real-Time Processor
+    - LAYER-CA-006-02-05 Engagement Storage Layer
+    - LAYER-CA-006-02-06 Engagement Cache Layer
+  FEATURE-CA-006-03_revenue_tracking:
+    unit_tests: 0
+    integration_tests: 0
+    system_tests: 0
+    layers:
+    - LAYER-CA-006-03-01 Revenue Event Collector
+    - LAYER-CA-006-03-02 Conversion Funnel Tracker
+    - LAYER-CA-006-03-03 Financial Metrics Calculator
+    - LAYER-CA-006-03-04 Revenue Aggregator
+    - LAYER-CA-006-03-05 Financial Reporting Layer
+  FEATURE-CA-006-04_prioritization_engine:
+    unit_tests: 0
+    integration_tests: 0
+    system_tests: 0
+    layers:
+    - LAYER-CA-006-04-01 Scoring Algorithm Engine
+    - LAYER-CA-006-04-02 Ranking System
+    - LAYER-CA-006-04-03 Threshold Manager
+    - LAYER-CA-006-04-04 Decision Engine
+    - LAYER-CA-006-04-05 Explainability Module
+  FEATURE-CA-006-05_archive_automation:
+    unit_tests: 0
+    integration_tests: 0
+    system_tests: 0
+    layers:
+    - LAYER-CA-006-05-01 Archive Workflow Orchestrator
+    - LAYER-CA-006-05-02 Infrastructure Cleanup Service
+    - LAYER-CA-006-05-03 Data Preservation Service
+    - LAYER-CA-006-05-04 Notification Service
+  FEATURE-CA-006-06_dashboard_ui:
+    unit_tests: 0
+    integration_tests: 0
+    system_tests: 0
+    layers:
+    - LAYER-CA-006-06-01 Dashboard Container & Routing
+    - LAYER-CA-006-06-02 Portfolio Overview Components
+    - LAYER-CA-006-06-03 MVP Detail View Components
+    - LAYER-CA-006-06-04 Chart Visualization Library
+    - LAYER-CA-006-06-05 API Integration & Real-time Updates
+layer_details:
+- layer_id: LAYER-CA-006-01-01 Google Analytics Client
+  feature_id: FEATURE-CA-006-01_analytics_integration
+  test_count: 0
+  coverage: 0.0
+- layer_id: LAYER-CA-006-01-02 Mixpanel Client
+  feature_id: FEATURE-CA-006-01_analytics_integration
+  test_count: 0
+  coverage: 0.0
+- layer_id: LAYER-CA-006-01-03 Amplitude Client
+  feature_id: FEATURE-CA-006-01_analytics_integration
+  test_count: 0
+  coverage: 0.0
+- layer_id: LAYER-CA-006-01-04 Analytics Aggregator
+  feature_id: FEATURE-CA-006-01_analytics_integration
+  test_count: 0
+  coverage: 0.0
+- layer_id: LAYER-CA-006-01-05 Analytics Error Handler
+  feature_id: FEATURE-CA-006-01_analytics_integration
+  test_count: 0
+  coverage: 0.0
+- layer_id: LAYER-CA-006-02-01 Event Collector
+  feature_id: FEATURE-CA-006-02_engagement_tracking
+  test_count: 0
+  coverage: 0.0
+- layer_id: LAYER-CA-006-02-02 Session Tracker
+  feature_id: FEATURE-CA-006-02_engagement_tracking
+  test_count: 0
+  coverage: 0.0
+- layer_id: LAYER-CA-006-02-03 Metrics Calculator
+  feature_id: FEATURE-CA-006-02_engagement_tracking
+  test_count: 0
+  coverage: 0.0
+- layer_id: LAYER-CA-006-02-04 Real-Time Processor
+  feature_id: FEATURE-CA-006-02_engagement_tracking
+  test_count: 0
+  coverage: 0.0
+- layer_id: LAYER-CA-006-02-05 Engagement Storage Layer
+  feature_id: FEATURE-CA-006-02_engagement_tracking
+  test_count: 0
+  coverage: 0.0
+- layer_id: LAYER-CA-006-02-06 Engagement Cache Layer
+  feature_id: FEATURE-CA-006-02_engagement_tracking
+  test_count: 0
+  coverage: 0.0
+- layer_id: LAYER-CA-006-03-01 Revenue Event Collector
+  feature_id: FEATURE-CA-006-03_revenue_tracking
+  test_count: 0
+  coverage: 0.0
+- layer_id: LAYER-CA-006-03-02 Conversion Funnel Tracker
+  feature_id: FEATURE-CA-006-03_revenue_tracking
+  test_count: 0
+  coverage: 0.0
+- layer_id: LAYER-CA-006-03-03 Financial Metrics Calculator
+  feature_id: FEATURE-CA-006-03_revenue_tracking
+  test_count: 0
+  coverage: 0.0
+- layer_id: LAYER-CA-006-03-04 Revenue Aggregator
+  feature_id: FEATURE-CA-006-03_revenue_tracking
+  test_count: 0
+  coverage: 0.0
+- layer_id: LAYER-CA-006-03-05 Financial Reporting Layer
+  feature_id: FEATURE-CA-006-03_revenue_tracking
+  test_count: 0
+  coverage: 0.0
+- layer_id: LAYER-CA-006-04-01 Scoring Algorithm Engine
+  feature_id: FEATURE-CA-006-04_prioritization_engine
+  test_count: 0
+  coverage: 0.0
+- layer_id: LAYER-CA-006-04-02 Ranking System
+  feature_id: FEATURE-CA-006-04_prioritization_engine
+  test_count: 0
+  coverage: 0.0
+- layer_id: LAYER-CA-006-04-03 Threshold Manager
+  feature_id: FEATURE-CA-006-04_prioritization_engine
+  test_count: 0
+  coverage: 0.0
+- layer_id: LAYER-CA-006-04-04 Decision Engine
+  feature_id: FEATURE-CA-006-04_prioritization_engine
+  test_count: 0
+  coverage: 0.0
+- layer_id: LAYER-CA-006-04-05 Explainability Module
+  feature_id: FEATURE-CA-006-04_prioritization_engine
+  test_count: 0
+  coverage: 0.0
+- layer_id: LAYER-CA-006-05-01 Archive Workflow Orchestrator
+  feature_id: FEATURE-CA-006-05_archive_automation
+  test_count: 0
+  coverage: 0.0
+- layer_id: LAYER-CA-006-05-02 Infrastructure Cleanup Service
+  feature_id: FEATURE-CA-006-05_archive_automation
+  test_count: 0
+  coverage: 0.0
+- layer_id: LAYER-CA-006-05-03 Data Preservation Service
+  feature_id: FEATURE-CA-006-05_archive_automation
+  test_count: 0
+  coverage: 0.0
+- layer_id: LAYER-CA-006-05-04 Notification Service
+  feature_id: FEATURE-CA-006-05_archive_automation
+  test_count: 0
+  coverage: 0.0
+- layer_id: LAYER-CA-006-06-01 Dashboard Container & Routing
+  feature_id: FEATURE-CA-006-06_dashboard_ui
+  test_count: 0
+  coverage: 0.0
+- layer_id: LAYER-CA-006-06-02 Portfolio Overview Components
+  feature_id: FEATURE-CA-006-06_dashboard_ui
+  test_count: 0
+  coverage: 0.0
+- layer_id: LAYER-CA-006-06-03 MVP Detail View Components
+  feature_id: FEATURE-CA-006-06_dashboard_ui
+  test_count: 0
+  coverage: 0.0
+- layer_id: LAYER-CA-006-06-04 Chart Visualization Library
+  feature_id: FEATURE-CA-006-06_dashboard_ui
+  test_count: 0
+  coverage: 0.0
+- layer_id: LAYER-CA-006-06-05 API Integration & Real-time Updates
+  feature_id: FEATURE-CA-006-06_dashboard_ui
+  test_count: 0
+  coverage: 0.0

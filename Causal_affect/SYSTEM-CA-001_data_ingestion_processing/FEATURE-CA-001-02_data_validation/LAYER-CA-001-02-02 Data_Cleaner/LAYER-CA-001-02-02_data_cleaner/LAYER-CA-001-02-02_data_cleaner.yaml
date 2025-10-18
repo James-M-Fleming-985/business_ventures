@@ -1,0 +1,67 @@
+# LAYER-CA-001-02-02: Data Cleaner
+# ==================================
+
+metadata:
+  layer_id: LAYER-CA-001-02-02
+  layer_name: Data Cleaner
+  parent_feature: FEATURE-CA-001-02
+  parent_system: SYSTEM-CA-001
+  created_date: 2025-10-18
+  status: planned
+  priority: critical
+  
+  description: |
+    Handles missing values, outliers, and data quality issues using
+    statistical methods and business rules.
+
+technical_specifications:
+  strategies:
+    missing_values:
+      - "Forward fill (use last valid value)"
+      - "Interpolation (linear, polynomial)"
+      - "Default value (configurable per field)"
+      - "Drop row (if critical field missing)"
+    
+    outliers:
+      - "Z-score detection (>3 std dev)"
+      - "IQR method (values outside 1.5*IQR)"
+      - "Configurable thresholds per metric"
+  
+  features:
+    - "Detect and handle missing values"
+    - "Outlier detection and treatment"
+    - "Duplicate detection"
+    - "Data type coercion"
+    - "Whitespace trimming"
+
+implementation_details:
+  class_name: "DataCleaner"
+  file_path: "src/data_ingestion/backend/features/FEATURE-CA-001-02_data_validation/services/data_cleaner.py"
+  
+  public_methods:
+    - name: "clean(data, cleaning_rules)"
+      description: "Apply cleaning rules to data"
+      returns: "CleanedData(data: dict, issues_found: list, actions_taken: list)"
+      
+    - name: "handle_missing_values(data, strategy)"
+      description: "Fill or remove missing values"
+      
+    - name: "detect_outliers(data, method, threshold)"
+      description: "Identify outlier values"
+      returns: "list[OutlierInfo]"
+
+acceptance_criteria:
+  - criterion_id: AC-LY-001-02-02-01
+    criterion: "Missing values handled without data loss"
+    verification: "Test missing data, verify forward-fill works"
+
+testing_requirements:
+  unit_tests:
+    - "test_forward_fill_missing_values"
+    - "test_outlier_detection_zscore"
+    - "test_duplicate_removal"
+
+estimated_effort:
+  development: "8 hours"
+  testing: "2 hours"
+  total: "10 hours"

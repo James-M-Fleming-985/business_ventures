@@ -1,0 +1,1415 @@
+metadata:
+  system_id: SYSTEM-CA-006
+  system_name: Feedback Collection & Iteration Orchestrator
+  parent_project: PROJECT-CAUSAL_AFFECT
+  created_date: 2025-10-13
+  status: planned
+  priority: critical
+  purpose: 'Automated feedback collection using analytics providers (Google Analytics,
+
+    Mixpanel, Amplitude). Tracks engagement across MVPs, prioritizes high-performers,
+
+    archives non-performers. Operates with <5 minute latency.
+
+    '
+  business_value: '- Identifies successful MVPs for further investment
+
+    - Eliminates wasted resources on non-performers
+
+    - Provides data-driven iteration priorities
+
+    - Enables portfolio-level optimization
+
+    '
+deployment:
+  platform: Railway
+  service_type: Backend API + Frontend Dashboard
+  scaling: 1 backend + 1 frontend (Phase 1) → 2-3 replicas (Phase 2)
+  estimated_cost: $20/month (Phase 1) → $60/month (Phase 2)
+  railway_config_backend:
+    builder: NIXPACKS
+    build_command: pip install -r requirements.txt
+    start_command: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    health_check: /health
+    restart_policy: ON_FAILURE
+  railway_config_frontend:
+    builder: NIXPACKS
+    build_command: npm install && npm run build
+    start_command: npm run preview -- --host 0.0.0.0 --port $PORT
+    health_check: /
+    restart_policy: ON_FAILURE
+code_generation:
+  repository_root: /workspaces/business_ventures/Causal_affect
+  system_folder: SYSTEM-CA-006_feedback_iteration
+  folder_structure:
+    requirements:
+      description: Hierarchical folder structure with FEATURE and LAYER folders
+      structure: 'SYSTEM-CA-006_feedback_iteration/
+
+        ├── SYSTEM-CA-006.yaml (at root)
+
+        ├── FEATURE-CA-006-01_analytics_integration/
+
+        │   ├── FEATURE-CA-006-01_analytics_integration.yaml (FEATURE requirements at folder root)
+
+        │   ├── LAYER-CA-006-01-01_google_analytics_client/
+
+        │   │   └── LAYER-CA-006-01-01_google_analytics_client.yaml (LAYER requirements at folder root)
+
+        │   ├── LAYER-CA-006-01-02_mixpanel_client/
+
+        │   │   └── LAYER-CA-006-01-02_mixpanel_client.yaml
+
+        │   └── ... (additional layers)
+
+        ├── FEATURE-CA-006-02_engagement_tracking/
+
+        │   └── FEATURE-CA-006-02_engagement_tracking.yaml
+
+        └── ... (additional features)
+
+        '
+      naming_convention:
+        feature_folder: FEATURE-{SYSTEM_ID}-{NUMBER}_{feature_name}
+        feature_file: FEATURE-{SYSTEM_ID}-{NUMBER}_{feature_name}.yaml
+        layer_folder: LAYER-{SYSTEM_ID}-{FEATURE_NUM}-{LAYER_NUM}_{layer_name}
+        layer_file: LAYER-{SYSTEM_ID}-{FEATURE_NUM}-{LAYER_NUM}_{layer_name}.yaml
+      example_paths:
+      - SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/FEATURE-CA-006-01_analytics_integration.yaml
+      - SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-01_analytics_integration/LAYER-CA-006-01-01_google_analytics_client/LAYER-CA-006-01-01_google_analytics_client.yaml
+    source_backend:
+      base_path: src/feedback_iteration/backend
+      description: FastAPI backend implementation with hybrid architecture
+      entry_point: app/main.py
+      structure:
+        app:
+        - __init__.py
+        - 'main.py          # FastAPI app instance, lifespan, routers'
+        - 'config.py        # System-wide Pydantic Settings'
+        - 'api/             # Thin router wrappers calling feature services - __init__.py - engagement.py      # Routes to
+          features/FEATURE-02/services/ - revenue.py         # Routes to features/FEATURE-03/services/ - prioritization.py  #
+          Routes to features/FEATURE-04/services/ - iteration.py       # Routes to features/FEATURE-05/services/ - dashboard.py       #
+          Routes to features/FEATURE-06/services/'
+        - 'db/              # System-level database infrastructure ONLY - __init__.py - connection.py      # SQLAlchemy engine,
+          async session factory - base.py            # Declarative base for features to inherit'
+        - 'middleware/      # Cross-cutting concerns - __init__.py - error_handler.py   # Global exception handling - logging.py         #
+          Request/response logging - cors.py            # CORS configuration'
+        - 'schemas/         # Shared DTOs only (no domain models) - __init__.py - health.py          # HealthResponse - error.py           #
+          ErrorResponse, ValidationError'
+        features:
+        - 'FEATURE-CA-006-01_analytics_integration/ - __init__.py - services/         # Google Analytics, Mixpanel, Amplitude
+          clients - models/           # Analytics event models, client configs - db/               # Analytics event schema,
+          repositories - tests/            # Unit tests for analytics clients'
+        - 'FEATURE-CA-006-02_engagement_tracking/ - __init__.py - services/         # EventCollector, SessionTracker, MetricsCalculator
+          - models/           # EngagementEvent, SessionData, Metrics - db/               # Engagement schema, repositories
+          - tests/            # Unit tests for engagement services'
+        - 'FEATURE-CA-006-03_revenue_tracking/ - __init__.py - services/         # ConversionTracker, RevenueCalculator -
+          models/           # ConversionEvent, RevenueMetrics - db/               # Revenue schema, repositories - tests/            #
+          Unit tests for revenue tracking'
+        - 'FEATURE-CA-006-04_prioritization_engine/ - __init__.py - services/         # ScoreCalculator, PriorityRanker -
+          models/           # FeatureScore, PriorityData - db/               # Priority schema, repositories - tests/            #
+          Unit tests for prioritization'
+        - 'FEATURE-CA-006-05_automated_iteration/ - __init__.py - services/         # IterationOrchestrator, ArchiveManager
+          - models/           # IterationPlan, ArchiveDecision - db/               # Iteration history schema - tests/            #
+          Unit tests for iteration logic'
+        - 'FEATURE-CA-006-06_dashboard_visualization/ - __init__.py - services/         # DashboardDataAggregator, ChartGenerator
+          - models/           # DashboardConfig, ChartData - db/               # Dashboard config schema - tests/            #
+          Unit tests for dashboard services'
+        root_files:
+        - 'requirements.txt # Python dependencies'
+        - 'Dockerfile.dev   # Development container'
+        - '.env.example     # Environment variable template'
+    source_frontend:
+      base_path: src/feedback_iteration/frontend
+      description: React + Vite + TypeScript frontend
+      entry_point: src/main.tsx
+      structure:
+        src:
+        - 'main.tsx         # React entry point'
+        - 'App.tsx          # Root component with routing'
+        - 'config.ts        # Frontend configuration'
+        - 'components/      # React components (Dashboard, Metrics, Charts)'
+        - 'services/        # API client, WebSocket for real-time updates'
+        - 'stores/          # Zustand state management'
+        - 'types/           # TypeScript type definitions'
+        root_files:
+        - 'package.json     # NPM dependencies'
+        - 'vite.config.ts   # Vite build configuration'
+        - 'tsconfig.json    # TypeScript configuration'
+        - 'Dockerfile.dev   # Development container'
+        - '.env.example     # Environment variable template'
+    configuration:
+      base_path: src/feedback_iteration
+      description: Deployment and development configuration
+      files:
+      - 'railway.json           # Railway deployment configuration'
+      - 'docker-compose.dev.yml # Local development environment'
+      - 'README.md              # How to run CA-006 locally and deploy'
+      - '.gitignore             # Git ignore patterns'
+    tests:
+      base_path: tests/feedback_iteration
+      description: Test files mirroring source structure
+      structure:
+        backend:
+        - 'test_analytics.py        # Analytics integration tests'
+        - 'test_metrics.py          # Metrics collection tests'
+        - 'test_prioritization.py   # Prioritization engine tests'
+        - 'test_integration.py      # End-to-end integration tests'
+        frontend:
+        - 'Dashboard.test.tsx       # Dashboard component tests'
+        - 'MetricsCard.test.tsx     # Metrics card tests'
+        - 'api.test.ts              # API client tests'
+    documentation:
+      base_path: SYSTEM-CA-006_feedback_iteration/docs
+      description: System-specific documentation
+      files:
+      - 'architecture.md     # System architecture and design decisions'
+      - 'api-design.md       # API endpoint specifications'
+      - 'deployment-guide.md # Railway deployment instructions'
+      - 'analytics-setup.md  # Analytics provider configuration'
+  phases:
+    description: Multi-phase generation strategy to comply with Claude API 8K token output limit
+    total_phases: 43
+    estimated_total_time: 60-75 minutes
+    phase_01a_app_core:
+      name: 'System: App Core'
+      max_tokens: 20480
+      estimated_time: 3 minutes
+      dependencies: []
+      files:
+      - app/__init__.py
+      - app/main.py - FastAPI app initialization, lifespan, router includes
+      - app/config.py - Pydantic Settings with feature flags, DB URL, Redis URL
+      acceptance_criteria:
+      - FastAPI app initialized
+    phase_01b_database:
+      name: 'System: Database'
+      max_tokens: 20480
+      estimated_time: 3 minutes
+      dependencies:
+      - phase_01a_app_core
+      files:
+      - app/db/__init__.py
+      - app/db/connection.py - Async SQLAlchemy engine, session factory
+      - app/db/base.py - Declarative base for ORM models
+      acceptance_criteria:
+      - Database connection configured
+    phase_01c_middleware:
+      name: 'System: Middleware'
+      max_tokens: 20480
+      estimated_time: 3 minutes
+      dependencies:
+      - phase_01a_app_core
+      files:
+      - app/middleware/__init__.py
+      - app/middleware/error_handler.py - Global exception handling
+      - app/middleware/logging.py - Request/response logging
+      - app/middleware/cors.py - CORS configuration
+      acceptance_criteria:
+      - Middleware chain configured
+    phase_01d_schemas:
+      name: 'System: Schemas'
+      max_tokens: 20480
+      estimated_time: 2 minutes
+      dependencies:
+      - phase_01a_app_core
+      files:
+      - app/schemas/__init__.py
+      - app/schemas/health.py - HealthResponse model
+      - app/schemas/error.py - ErrorResponse, ValidationError models
+      acceptance_criteria:
+      - FastAPI app starts without errors
+      - Database connection pool initializes
+      - Health endpoint returns 200 OK
+    phase_02a_api_routers_1:
+      name: 'System: API Routers 1'
+      max_tokens: 20480
+      estimated_time: 3 minutes
+      dependencies:
+      - phase_01a_app_core
+      files:
+      - app/api/__init__.py
+      - app/api/engagement.py - Router for engagement endpoints, calls feature services
+      - app/api/revenue.py - Router for revenue endpoints
+      acceptance_criteria:
+      - Engagement and revenue endpoints created
+    phase_02b_api_routers_2:
+      name: 'System: API Routers 2'
+      max_tokens: 20480
+      estimated_time: 3 minutes
+      dependencies:
+      - phase_02a_api_routers_1
+      files:
+      - app/api/prioritization.py - Router for prioritization endpoints
+      - app/api/iteration.py - Router for iteration endpoints
+      - app/api/dashboard.py - Router for dashboard endpoints
+      acceptance_criteria:
+      - All routers registered in main.py
+      - Each router has placeholder endpoints returning 501 Not Implemented
+      - OpenAPI docs generated successfully
+    phase_03a_analytics_init:
+      name: 'FEATURE-01: Analytics Init'
+      max_tokens: 20480
+      estimated_time: 3 minutes
+      dependencies:
+      - phase_01a_app_core
+      feature_id: FEATURE-CA-006-01
+      feature_yaml: FEATURE-CA-006-01_analytics_integration/FEATURE-CA-006-01_analytics_integration.yaml
+      files:
+      - features/FEATURE-CA-006-01_analytics_integration/__init__.py
+      - features/FEATURE-CA-006-01_analytics_integration/services/__init__.py
+      - features/FEATURE-CA-006-01_analytics_integration/services/google_analytics_client.py
+      acceptance_criteria:
+      - Module and GA client
+    phase_03b_analytics_clients:
+      name: 'FEATURE-01: Analytics Clients'
+      max_tokens: 16384
+      estimated_time: 3 minutes
+      dependencies:
+      - phase_03a_analytics_init
+      feature_id: FEATURE-CA-006-01
+      feature_yaml: FEATURE-CA-006-01_analytics_integration/FEATURE-CA-006-01_analytics_integration.yaml
+      files:
+      - features/FEATURE-CA-006-01_analytics_integration/services/mixpanel_client.py
+      - features/FEATURE-CA-006-01_analytics_integration/models/__init__.py
+      acceptance_criteria:
+      - Mixpanel client
+    phase_03c_analytics_db:
+      name: 'FEATURE-01: Analytics DB'
+      max_tokens: 20480
+      estimated_time: 3 minutes
+      dependencies:
+      - phase_03b_analytics_clients
+      feature_id: FEATURE-CA-006-01
+      feature_yaml: FEATURE-CA-006-01_analytics_integration/FEATURE-CA-006-01_analytics_integration.yaml
+      files:
+      - features/FEATURE-CA-006-01_analytics_integration/models/analytics_event.py
+      - features/FEATURE-CA-006-01_analytics_integration/db/__init__.py
+      - features/FEATURE-CA-006-01_analytics_integration/db/schema.py
+      - features/FEATURE-CA-006-01_analytics_integration/db/repositories.py
+      acceptance_criteria:
+      - Analytics clients can send events to Google Analytics
+      - Mixpanel integration works with API key
+      - Events stored in database
+    phase_04a_engagement_init:
+      name: 'FEATURE-02: Engagement Init'
+      max_tokens: 16384
+      estimated_time: 3 minutes
+      dependencies:
+      - phase_01a_app_core
+      feature_id: FEATURE-CA-006-02
+      feature_yaml: FEATURE-CA-006-02_engagement_tracking/FEATURE-CA-006-02_engagement_tracking.yaml
+      files:
+      - features/FEATURE-CA-006-02_engagement_tracking/__init__.py
+      - features/FEATURE-CA-006-02_engagement_tracking/services/__init__.py
+      acceptance_criteria:
+      - Module structure
+    phase_04b_engagement_services_1:
+      name: 'FEATURE-02: Services 1'
+      max_tokens: 16384
+      estimated_time: 3 minutes
+      dependencies:
+      - phase_04a_engagement_init
+      feature_id: FEATURE-CA-006-02
+      feature_yaml: FEATURE-CA-006-02_engagement_tracking/FEATURE-CA-006-02_engagement_tracking.yaml
+      files:
+      - features/FEATURE-CA-006-02_engagement_tracking/services/event_collector.py
+      - features/FEATURE-CA-006-02_engagement_tracking/services/session_tracker.py
+      acceptance_criteria:
+      - Event collector, session tracker
+    phase_04c_engagement_services_2:
+      name: 'FEATURE-02: Services 2'
+      max_tokens: 16384
+      estimated_time: 3 minutes
+      dependencies:
+      - phase_04b_engagement_services_1
+      feature_id: FEATURE-CA-006-02
+      feature_yaml: FEATURE-CA-006-02_engagement_tracking/FEATURE-CA-006-02_engagement_tracking.yaml
+      files:
+      - features/FEATURE-CA-006-02_engagement_tracking/services/metrics_calculator.py
+      - features/FEATURE-CA-006-02_engagement_tracking/models/__init__.py
+      acceptance_criteria:
+      - Metric calculator
+    phase_04d_engagement_models:
+      name: 'FEATURE-02: Models'
+      max_tokens: 16384
+      estimated_time: 3 minutes
+      dependencies:
+      - phase_04c_engagement_services_2
+      feature_id: FEATURE-CA-006-02
+      feature_yaml: FEATURE-CA-006-02_engagement_tracking/FEATURE-CA-006-02_engagement_tracking.yaml
+      files:
+      - features/FEATURE-CA-006-02_engagement_tracking/models/event.py
+      - features/FEATURE-CA-006-02_engagement_tracking/models/session.py
+      acceptance_criteria:
+      - Data models
+    phase_04e_engagement_db:
+      name: 'FEATURE-02: Database'
+      max_tokens: 16384
+      estimated_time: 3 minutes
+      dependencies:
+      - phase_04d_engagement_models
+      feature_id: FEATURE-CA-006-02
+      feature_yaml: FEATURE-CA-006-02_engagement_tracking/FEATURE-CA-006-02_engagement_tracking.yaml
+      files:
+      - features/FEATURE-CA-006-02_engagement_tracking/models/metrics.py
+      - features/FEATURE-CA-006-02_engagement_tracking/db/__init__.py
+      acceptance_criteria:
+      - DB schema
+    phase_04f_engagement_repos:
+      name: 'FEATURE-02: Repositories'
+      max_tokens: 16384
+      estimated_time: 3 minutes
+      dependencies:
+      - phase_04e_engagement_db
+      feature_id: FEATURE-CA-006-02
+      feature_yaml: FEATURE-CA-006-02_engagement_tracking/FEATURE-CA-006-02_engagement_tracking.yaml
+      files:
+      - features/FEATURE-CA-006-02_engagement_tracking/db/schema.py
+      - features/FEATURE-CA-006-02_engagement_tracking/db/repositories.py
+      acceptance_criteria:
+      - Can collect engagement events via POST /api/engagement/events
+      - Sessions tracked with timeout logic
+      - Metrics calculated in real-time
+    phase_05a_revenue_init:
+      name: 'FEATURE-03: Revenue Init'
+      max_tokens: 16384
+      estimated_time: 3 minutes
+      dependencies:
+      - phase_01a_app_core
+      feature_id: FEATURE-CA-006-03
+      feature_yaml: FEATURE-CA-006-03_revenue_tracking/FEATURE-CA-006-03_revenue_tracking.yaml
+      files:
+      - features/FEATURE-CA-006-03_revenue_tracking/__init__.py
+      - features/FEATURE-CA-006-03_revenue_tracking/services/__init__.py
+      acceptance_criteria:
+      - Module structure
+    phase_05b_revenue_services:
+      name: 'FEATURE-03: Services'
+      max_tokens: 16384
+      estimated_time: 3 minutes
+      dependencies:
+      - phase_05a_revenue_init
+      feature_id: FEATURE-CA-006-03
+      feature_yaml: FEATURE-CA-006-03_revenue_tracking/FEATURE-CA-006-03_revenue_tracking.yaml
+      files:
+      - features/FEATURE-CA-006-03_revenue_tracking/services/conversion_tracker.py
+      - features/FEATURE-CA-006-03_revenue_tracking/services/revenue_calculator.py
+      acceptance_criteria:
+      - Conversion/revenue services
+    phase_05c_revenue_models:
+      name: 'FEATURE-03: Models'
+      max_tokens: 20480
+      estimated_time: 3 minutes
+      dependencies:
+      - phase_05b_revenue_services
+      feature_id: FEATURE-CA-006-03
+      feature_yaml: FEATURE-CA-006-03_revenue_tracking/FEATURE-CA-006-03_revenue_tracking.yaml
+      files:
+      - features/FEATURE-CA-006-03_revenue_tracking/models/__init__.py
+      - features/FEATURE-CA-006-03_revenue_tracking/models/conversion.py
+      - features/FEATURE-CA-006-03_revenue_tracking/models/revenue.py
+      acceptance_criteria:
+      - Data models
+    phase_05d_revenue_db:
+      name: 'FEATURE-03: Database'
+      max_tokens: 16384
+      estimated_time: 3 minutes
+      dependencies:
+      - phase_05c_revenue_models
+      feature_id: FEATURE-CA-006-03
+      feature_yaml: FEATURE-CA-006-03_revenue_tracking/FEATURE-CA-006-03_revenue_tracking.yaml
+      files:
+      - features/FEATURE-CA-006-03_revenue_tracking/db/__init__.py
+      - features/FEATURE-CA-006-03_revenue_tracking/db/schema.py
+      acceptance_criteria:
+      - DB schema
+    phase_05e_revenue_repos:
+      name: 'FEATURE-03: Repositories'
+      max_tokens: 8192
+      estimated_time: 3 minutes
+      dependencies:
+      - phase_05d_revenue_db
+      feature_id: FEATURE-CA-006-03
+      feature_yaml: FEATURE-CA-006-03_revenue_tracking/FEATURE-CA-006-03_revenue_tracking.yaml
+      files:
+      - features/FEATURE-CA-006-03_revenue_tracking/db/repositories.py
+      acceptance_criteria:
+      - Conversion events tracked with attribution
+      - Revenue calculated with LTV metrics
+      - Funnel analysis available
+    phase_06a_prioritization_init:
+      name: 'FEATURE-04: Prioritization Init'
+      max_tokens: 16384
+      estimated_time: 3 minutes
+      dependencies:
+      - phase_04f_engagement_repos
+      - phase_05e_revenue_repos
+      feature_id: FEATURE-CA-006-04
+      feature_yaml: FEATURE-CA-006-04_prioritization_engine/FEATURE-CA-006-04_prioritization_engine.yaml
+      files:
+      - features/FEATURE-CA-006-04_prioritization_engine/__init__.py
+      - features/FEATURE-CA-006-04_prioritization_engine/services/__init__.py
+      acceptance_criteria:
+      - Module structure
+    phase_06b_prioritization_services:
+      name: 'FEATURE-04: Services'
+      max_tokens: 16384
+      estimated_time: 3 minutes
+      dependencies:
+      - phase_06a_prioritization_init
+      feature_id: FEATURE-CA-006-04
+      feature_yaml: FEATURE-CA-006-04_prioritization_engine/FEATURE-CA-006-04_prioritization_engine.yaml
+      files:
+      - features/FEATURE-CA-006-04_prioritization_engine/services/score_calculator.py
+      - features/FEATURE-CA-006-04_prioritization_engine/services/priority_ranker.py
+      acceptance_criteria:
+      - Score calculator, priority ranker
+    phase_06c_prioritization_models:
+      name: 'FEATURE-04: Models'
+      max_tokens: 20480
+      estimated_time: 3 minutes
+      dependencies:
+      - phase_06b_prioritization_services
+      feature_id: FEATURE-CA-006-04
+      feature_yaml: FEATURE-CA-006-04_prioritization_engine/FEATURE-CA-006-04_prioritization_engine.yaml
+      files:
+      - features/FEATURE-CA-006-04_prioritization_engine/models/__init__.py
+      - features/FEATURE-CA-006-04_prioritization_engine/models/score.py
+      - features/FEATURE-CA-006-04_prioritization_engine/models/priority.py
+      acceptance_criteria:
+      - Data models
+    phase_06d_prioritization_db:
+      name: 'FEATURE-04: Database'
+      max_tokens: 16384
+      estimated_time: 3 minutes
+      dependencies:
+      - phase_06c_prioritization_models
+      feature_id: FEATURE-CA-006-04
+      feature_yaml: FEATURE-CA-006-04_prioritization_engine/FEATURE-CA-006-04_prioritization_engine.yaml
+      files:
+      - features/FEATURE-CA-006-04_prioritization_engine/db/__init__.py
+      - features/FEATURE-CA-006-04_prioritization_engine/db/schema.py
+      acceptance_criteria:
+      - DB schema
+    phase_06e_prioritization_repos:
+      name: 'FEATURE-04: Repositories'
+      max_tokens: 8192
+      estimated_time: 3 minutes
+      dependencies:
+      - phase_06d_prioritization_db
+      feature_id: FEATURE-CA-006-04
+      feature_yaml: FEATURE-CA-006-04_prioritization_engine/FEATURE-CA-006-04_prioritization_engine.yaml
+      files:
+      - features/FEATURE-CA-006-04_prioritization_engine/db/repositories.py
+      acceptance_criteria:
+      - Features scored using engagement + revenue data
+      - Priority ranking updates in real-time
+      - Top 5 features identified correctly
+    phase_07a_iteration_init:
+      name: 'FEATURE-05: Iteration Init'
+      max_tokens: 16384
+      estimated_time: 3 minutes
+      dependencies:
+      - phase_06e_prioritization_repos
+      feature_id: FEATURE-CA-006-05
+      feature_yaml: FEATURE-CA-006-05_automated_iteration/FEATURE-CA-006-05_automated_iteration.yaml
+      files:
+      - features/FEATURE-CA-006-05_automated_iteration/__init__.py
+      - features/FEATURE-CA-006-05_automated_iteration/services/__init__.py
+      acceptance_criteria:
+      - Module structure
+    phase_07b_iteration_services:
+      name: 'FEATURE-05: Services'
+      max_tokens: 16384
+      estimated_time: 3 minutes
+      dependencies:
+      - phase_07a_iteration_init
+      feature_id: FEATURE-CA-006-05
+      feature_yaml: FEATURE-CA-006-05_automated_iteration/FEATURE-CA-006-05_automated_iteration.yaml
+      files:
+      - features/FEATURE-CA-006-05_automated_iteration/services/iteration_orchestrator.py
+      - features/FEATURE-CA-006-05_automated_iteration/services/archive_manager.py
+      acceptance_criteria:
+      - Iteration orchestrator, archive manager
+    phase_07c_iteration_models:
+      name: 'FEATURE-05: Models'
+      max_tokens: 20480
+      estimated_time: 3 minutes
+      dependencies:
+      - phase_07b_iteration_services
+      feature_id: FEATURE-CA-006-05
+      feature_yaml: FEATURE-CA-006-05_automated_iteration/FEATURE-CA-006-05_automated_iteration.yaml
+      files:
+      - features/FEATURE-CA-006-05_automated_iteration/models/__init__.py
+      - features/FEATURE-CA-006-05_automated_iteration/models/iteration_plan.py
+      - features/FEATURE-CA-006-05_automated_iteration/models/archive_decision.py
+      acceptance_criteria:
+      - Data models
+    phase_07d_iteration_db:
+      name: 'FEATURE-05: Database'
+      max_tokens: 16384
+      estimated_time: 3 minutes
+      dependencies:
+      - phase_07c_iteration_models
+      feature_id: FEATURE-CA-006-05
+      feature_yaml: FEATURE-CA-006-05_automated_iteration/FEATURE-CA-006-05_automated_iteration.yaml
+      files:
+      - features/FEATURE-CA-006-05_automated_iteration/db/__init__.py
+      - features/FEATURE-CA-006-05_automated_iteration/db/schema.py
+      acceptance_criteria:
+      - DB schema
+    phase_07e_iteration_repos:
+      name: 'FEATURE-05: Repositories'
+      max_tokens: 8192
+      estimated_time: 3 minutes
+      dependencies:
+      - phase_07d_iteration_db
+      feature_id: FEATURE-CA-006-05
+      feature_yaml: FEATURE-CA-006-05_automated_iteration/FEATURE-CA-006-05_automated_iteration.yaml
+      files:
+      - features/FEATURE-CA-006-05_automated_iteration/db/repositories.py
+      acceptance_criteria:
+      - Iteration plans generated based on priority scores
+      - Low-performing features archived automatically
+      - Iteration history tracked in database
+    phase_08a_dashboard_init:
+      name: 'FEATURE-06: Dashboard Init'
+      max_tokens: 16384
+      estimated_time: 3 minutes
+      dependencies:
+      - phase_04f_engagement_repos
+      - phase_05e_revenue_repos
+      - phase_06e_prioritization_repos
+      feature_id: FEATURE-CA-006-06
+      feature_yaml: FEATURE-CA-006-06_dashboard_visualization/FEATURE-CA-006-06_dashboard_visualization.yaml
+      files:
+      - features/FEATURE-CA-006-06_dashboard_visualization/__init__.py
+      - features/FEATURE-CA-006-06_dashboard_visualization/services/__init__.py
+      acceptance_criteria:
+      - Module structure
+    phase_08b_dashboard_services:
+      name: 'FEATURE-06: Services'
+      max_tokens: 16384
+      estimated_time: 3 minutes
+      dependencies:
+      - phase_08a_dashboard_init
+      feature_id: FEATURE-CA-006-06
+      feature_yaml: FEATURE-CA-006-06_dashboard_visualization/FEATURE-CA-006-06_dashboard_visualization.yaml
+      files:
+      - features/FEATURE-CA-006-06_dashboard_visualization/services/data_aggregator.py
+      - features/FEATURE-CA-006-06_dashboard_visualization/services/chart_generator.py
+      acceptance_criteria:
+      - Data aggregator, chart generator
+    phase_08c_dashboard_models:
+      name: 'FEATURE-06: Models'
+      max_tokens: 20480
+      estimated_time: 3 minutes
+      dependencies:
+      - phase_08b_dashboard_services
+      feature_id: FEATURE-CA-006-06
+      feature_yaml: FEATURE-CA-006-06_dashboard_visualization/FEATURE-CA-006-06_dashboard_visualization.yaml
+      files:
+      - features/FEATURE-CA-006-06_dashboard_visualization/models/__init__.py
+      - features/FEATURE-CA-006-06_dashboard_visualization/models/dashboard_config.py
+      - features/FEATURE-CA-006-06_dashboard_visualization/models/chart_data.py
+      acceptance_criteria:
+      - Data models
+    phase_08d_dashboard_db:
+      name: 'FEATURE-06: Database'
+      max_tokens: 16384
+      estimated_time: 3 minutes
+      dependencies:
+      - phase_08c_dashboard_models
+      feature_id: FEATURE-CA-006-06
+      feature_yaml: FEATURE-CA-006-06_dashboard_visualization/FEATURE-CA-006-06_dashboard_visualization.yaml
+      files:
+      - features/FEATURE-CA-006-06_dashboard_visualization/db/__init__.py
+      - features/FEATURE-CA-006-06_dashboard_visualization/db/schema.py
+      acceptance_criteria:
+      - DB schema
+    phase_08e_dashboard_repos:
+      name: 'FEATURE-06: Repositories'
+      max_tokens: 8192
+      estimated_time: 3 minutes
+      dependencies:
+      - phase_08d_dashboard_db
+      feature_id: FEATURE-CA-006-06
+      feature_yaml: FEATURE-CA-006-06_dashboard_visualization/FEATURE-CA-006-06_dashboard_visualization.yaml
+      files:
+      - features/FEATURE-CA-006-06_dashboard_visualization/db/repositories.py
+      acceptance_criteria:
+      - Dashboard data aggregated from all features
+      - Chart data formatted for frontend consumption
+      - Real-time updates via WebSocket
+    phase_09a_test_setup:
+      name: 'Tests: Setup'
+      max_tokens: 16384
+      estimated_time: 3 minutes
+      dependencies:
+      - phase_03c_analytics_db
+      - phase_04f_engagement_repos
+      - phase_05e_revenue_repos
+      files:
+      - tests/__init__.py
+      - tests/conftest.py - Pytest fixtures for DB, Redis, test clients
+      acceptance_criteria:
+      - Test fixtures configured
+    phase_09b_test_analytics:
+      name: 'Tests: Analytics'
+      max_tokens: 16384
+      estimated_time: 3 minutes
+      dependencies:
+      - phase_09a_test_setup
+      files:
+      - features/FEATURE-CA-006-01_analytics_integration/tests/__init__.py
+      - features/FEATURE-CA-006-01_analytics_integration/tests/test_google_analytics_client.py
+      acceptance_criteria:
+      - Analytics tests pass
+    phase_09c_test_engagement:
+      name: 'Tests: Engagement'
+      max_tokens: 16384
+      estimated_time: 3 minutes
+      dependencies:
+      - phase_09a_test_setup
+      files:
+      - features/FEATURE-CA-006-02_engagement_tracking/tests/__init__.py
+      - features/FEATURE-CA-006-02_engagement_tracking/tests/test_event_collector.py
+      acceptance_criteria:
+      - Engagement tests pass
+    phase_09d_test_revenue:
+      name: 'Tests: Revenue'
+      max_tokens: 16384
+      estimated_time: 3 minutes
+      dependencies:
+      - phase_09a_test_setup
+      files:
+      - features/FEATURE-CA-006-03_revenue_tracking/tests/__init__.py
+      - features/FEATURE-CA-006-03_revenue_tracking/tests/test_conversion_tracker.py
+      acceptance_criteria:
+      - Revenue tests pass
+    phase_09e_test_features:
+      name: 'Tests: Prioritization+Iteration+Dashboard'
+      max_tokens: 20480
+      estimated_time: 4 minutes
+      dependencies:
+      - phase_09a_test_setup
+      files:
+      - features/FEATURE-CA-006-04_prioritization_engine/tests/__init__.py
+      - features/FEATURE-CA-006-04_prioritization_engine/tests/test_score_calculator.py
+      - features/FEATURE-CA-006-05_automated_iteration/tests/__init__.py
+      - features/FEATURE-CA-006-05_automated_iteration/tests/test_iteration_orchestrator.py
+      - features/FEATURE-CA-006-06_dashboard_visualization/tests/__init__.py
+      - features/FEATURE-CA-006-06_dashboard_visualization/tests/test_data_aggregator.py
+      acceptance_criteria:
+      - All tests pass with pytest
+      - Test coverage > 80%
+      - Integration tests verify feature interactions
+    phase_10a_devops_docker:
+      name: 'DevOps: Docker'
+      max_tokens: 20480
+      estimated_time: 3 minutes
+      dependencies:
+      - phase_01a_app_core
+      files:
+      - requirements.txt - Complete dependencies (SQLAlchemy, Redis, Celery, etc.)
+      - Dockerfile.dev - Development container with hot reload
+      - docker-compose.dev.yml - PostgreSQL, Redis, backend services
+      acceptance_criteria:
+      - Docker config created
+    phase_10b_devops_alembic:
+      name: 'DevOps: Alembic'
+      max_tokens: 20480
+      estimated_time: 3 minutes
+      dependencies:
+      - phase_10a_devops_docker
+      files:
+      - .env.example - All environment variables documented
+      - alembic.ini - Database migration configuration
+      - alembic/env.py - Alembic environment setup
+      - alembic/versions/001_initial_schema.py - Initial DB migration
+      acceptance_criteria:
+      - Alembic configured
+    phase_10c_devops_docs:
+      name: 'DevOps: Documentation'
+      max_tokens: 8192
+      estimated_time: 2 minutes
+      dependencies:
+      - phase_10b_devops_alembic
+      files:
+      - README.md - How to run CA-006 locally and deploy
+      acceptance_criteria:
+      - docker-compose up starts all services
+      - Database migrations run successfully
+      - All environment variables documented
+  file_naming_conventions:
+    python_modules: lowercase_with_underscores.py
+    python_classes: PascalCase
+    python_functions: snake_case
+    typescript_files: PascalCase.tsx or camelCase.ts
+    react_components: PascalCase.tsx
+    test_files: test_*.py or *.test.tsx
+    yaml_files: FEATURE-CA-006-XX.yaml or LAYER-CA-006-XX-YY.yaml
+  technology_stack:
+    backend:
+      language: Python 3.11+
+      framework: FastAPI 0.104+
+      validation: Pydantic 2.0+
+      database_orm: SQLAlchemy 2.0+
+      migrations: Alembic
+      testing: pytest, pytest-asyncio
+      linting: ruff, black, mypy
+    frontend:
+      language: TypeScript 5.0+
+      framework: React 18+
+      build_tool: Vite 5+
+      styling: TailwindCSS 3+
+      state_management: Zustand
+      charts: Recharts
+      testing: Vitest, React Testing Library
+      linting: ESLint, Prettier
+    infrastructure:
+      deployment: Railway
+      database: PostgreSQL 15+ (Railway)
+      cache: Redis (Railway)
+      analytics: Google Analytics, Mixpanel, Amplitude
+  configuration_management:
+    approach: Environment-based configuration via Pydantic Settings
+    no_main_py: true
+    explanation: 'DO NOT create a main.py at repository root. Each service has its own entry point:
+
+      - Backend: uvicorn app.main:app (defined in railway.json)
+
+      - Frontend: npm run dev or npm run preview (defined in package.json)
+
+
+      Configuration is loaded from environment variables using Pydantic Settings:
+
+      - Development: .env files with docker-compose.dev.yml
+
+      - Production: Railway environment variables
+
+
+      This prevents version confusion and ensures dev/prod parity.
+
+      '
+    environment_files:
+      backend_env_example: '# Backend .env.example
+
+        ENVIRONMENT=development
+
+        LOG_LEVEL=debug
+
+        DATABASE_URL=postgresql://user:pass@postgres:5432/ca006
+
+        REDIS_URL=redis://redis:6379
+
+        GOOGLE_ANALYTICS_ID=UA-XXXXXXXXX-X
+
+        MIXPANEL_TOKEN=your_mixpanel_token
+
+        AMPLITUDE_API_KEY=your_amplitude_key
+
+        CORS_ORIGINS=["http://localhost:5173"]
+
+        '
+      frontend_env_example: '# Frontend .env.example
+
+        VITE_API_URL=http://localhost:8000
+
+        VITE_WS_URL=ws://localhost:8000/ws
+
+        VITE_ENVIRONMENT=development
+
+        '
+system_requirements:
+  performance_phase_1:
+    metric_collection_latency: <5 minutes
+    dashboard_refresh_rate: Real-time (<1 minute)
+    prioritization_calculation: <2 minutes per cycle
+    archive_processing_time: <10 minutes
+  data_collection:
+    metrics_per_mvp: 10+ key metrics (DAU, conversions, revenue, retention)
+    data_retention: Indefinite for active MVPs, 90 days for archived
+    analytics_providers: Google Analytics (free) + Mixpanel/Amplitude (free tier)
+  decision_accuracy:
+    iteration_priority_precision: '>85%'
+    false_archive_rate: <5% (archiving a potential winner)
+    false_iteration_rate: <10% (iterating on a loser)
+features:
+- feature_id: FEATURE-CA-006-01
+  feature_name: Multi-Source Analytics Integration
+  description: 'Integrates with analytics providers (Google Analytics, Mixpanel, etc.)
+
+    to collect engagement, traffic, and conversion metrics
+
+    '
+  estimated_layers: 4-5
+  priority: critical
+- feature_id: FEATURE-CA-006-02
+  feature_name: Real-Time Engagement Tracking
+  description: 'Real-time tracking of user engagement, session duration, page views,
+
+    bounce rates, and custom events across all MVPs
+
+    '
+  estimated_layers: 5-6
+  priority: critical
+- feature_id: FEATURE-CA-006-03
+  feature_name: Revenue & Conversion Tracking
+  description: 'Tracks financial metrics including revenue, conversions, average order
+
+    value, customer acquisition cost, and lifetime value
+
+    '
+  estimated_layers: 4-5
+  priority: critical
+- feature_id: FEATURE-CA-006-04
+  feature_name: Automated Prioritization Engine
+  description: 'Scores MVPs based on engagement, revenue, growth rate, and potential,
+
+    automatically moving high-performers to iteration pipeline
+
+    '
+  estimated_layers: 4-5
+  priority: critical
+- feature_id: FEATURE-CA-006-05
+  feature_name: Archive & Cleanup Automation
+  description: 'Automatically archives non-performing MVPs after evaluation period,
+
+    preserving data and shutting down infrastructure
+
+    '
+  estimated_layers: 3-4
+  priority: high
+- feature_id: FEATURE-CA-006-06
+  feature_name: Dashboard User Interface
+  description: 'Modern React-based dashboard interface providing real-time visibility into all deployed MVPs.
+
+    Displays portfolio-level metrics, individual MVP analytics, prioritization scores, and
+
+    archive candidates with interactive charts and tables. Built with React 18, TypeScript,
+
+    TailwindCSS, and Recharts for production-grade user experience with <30 second data refresh.
+
+    '
+  estimated_layers: 5
+  priority: critical
+  technologies:
+  - React 18 + TypeScript 5
+  - Vite 5 (build tool)
+  - TailwindCSS 3 (styling)
+  - Zustand (state management)
+  - Recharts (charts)
+  - TanStack Table (data tables)
+  - WebSocket API (real-time updates)
+- feature_id: FEATURE-CA-006-07
+  feature_name: Admin Configuration UI
+  status: placeholder
+  description: 'PLACEHOLDER: Administrative interface for configuring system settings including analytics
+
+    providers (Google Analytics, Mixpanel), prioritization rules (scoring weights, thresholds),
+
+    and archive policies (retention, approval workflows). This is a FUTURE ENHANCEMENT to be
+
+    implemented after FEATURE-06 (Dashboard UI) is deployed and validated with users.
+
+    '
+  estimated_layers: 4
+  priority: low
+  implementation_priority: After FEATURE-06 deployment
+  technologies:
+  - React 18 + TypeScript 5 (same as FEATURE-06)
+  - React Hook Form + Zod (form handling)
+  - TanStack Table (config lists)
+  notes:
+  - Requires backend configuration management API (CRUD operations)
+  - Requires role-based access control (admin role)
+  - Requires audit logging for configuration changes
+  - Admin routes already defined in FEATURE-06 LAYER-01 (/settings, /settings/analytics, etc.)
+acceptance_criteria:
+- criterion_id: AC-SYS-006-01
+  criterion: Metrics collected from all MVPs with <5 minute latency
+  verification: Real-time monitoring of collection pipeline
+  priority: critical
+- criterion_id: AC-SYS-006-02
+  criterion: Dashboard displays real-time data with <30 second refresh
+  verification: UI responsiveness test with live data
+  priority: critical
+- criterion_id: AC-SYS-006-03
+  criterion: Prioritization engine accurately identifies top performers (>85%)
+  verification: Validation against manual expert assessment
+  priority: critical
+- criterion_id: AC-SYS-006-04
+  criterion: Automated archiving triggers after evaluation period for low-performers
+  verification: Archive workflow test with simulated low-engagement MVPs
+  priority: high
+- criterion_id: AC-SYS-006-05
+  criterion: False archive rate below 5%
+  verification: Historical tracking of archived MVPs that later succeeded
+  priority: high
+- criterion_id: AC-SYS-006-06
+  criterion: Portfolio dashboard provides actionable insights
+  verification: User feedback from system operator
+  priority: medium
+- criterion_id: AC-SYS-006-07
+  criterion: Dashboard UI displays all portfolio metrics with <30 second refresh
+  verification: UI real-time update test with WebSocket connection
+  priority: critical
+  features:
+  - FEATURE-CA-006-06
+- criterion_id: AC-SYS-006-08
+  criterion: Dashboard responsive design works on desktop (>1024px), tablet (768-1024px), mobile (<768px)
+  verification: Visual regression testing at all breakpoints
+  priority: high
+  features:
+  - FEATURE-CA-006-06
+- criterion_id: AC-SYS-006-09
+  criterion: Dashboard initial load completes in <3 seconds
+  verification: Lighthouse performance test
+  priority: high
+  features:
+  - FEATURE-CA-006-06
+- criterion_id: AC-SYS-006-10
+  criterion: All UI components accessible (WCAG AA compliance)
+  verification: Lighthouse accessibility audit
+  priority: medium
+  features:
+  - FEATURE-CA-006-06
+engagement_metrics:
+  traffic_metrics:
+  - metric: Unique visitors
+    importance: high
+    threshold: '>100 per day'
+  - metric: Page views
+    importance: medium
+    threshold: '>500 per day'
+  - metric: Bounce rate
+    importance: high
+    threshold: <60%
+  - metric: Average session duration
+    importance: high
+    threshold: '>2 minutes'
+  - metric: Pages per session
+    importance: medium
+    threshold: '>3 pages'
+  engagement_metrics:
+  - metric: Daily active users (DAU)
+    importance: critical
+    threshold: '>50'
+  - metric: Weekly active users (WAU)
+    importance: critical
+    threshold: '>200'
+  - metric: Monthly active users (MAU)
+    importance: critical
+    threshold: '>500'
+  - metric: DAU/MAU ratio (stickiness)
+    importance: high
+    threshold: '>20%'
+  - metric: User retention (Day 7)
+    importance: critical
+    threshold: '>30%'
+  - metric: User retention (Day 30)
+    importance: critical
+    threshold: '>15%'
+  conversion_metrics:
+  - metric: Conversion rate
+    importance: critical
+    threshold: '>2%'
+  - metric: Sign-up rate
+    importance: high
+    threshold: '>10%'
+  - metric: Trial-to-paid conversion
+    importance: critical
+    threshold: '>5%'
+  - metric: Checkout abandonment
+    importance: high
+    threshold: <70%
+  financial_metrics:
+  - metric: Revenue (daily)
+    importance: critical
+    threshold: '>$10'
+  - metric: Revenue (monthly)
+    importance: critical
+    threshold: '>$500'
+  - metric: Average revenue per user (ARPU)
+    importance: high
+    threshold: '>$5'
+  - metric: Customer acquisition cost (CAC)
+    importance: critical
+    threshold: <$50
+  - metric: Customer lifetime value (LTV)
+    importance: critical
+    threshold: '>$100'
+  - metric: LTV:CAC ratio
+    importance: critical
+    threshold: '>3:1'
+  growth_metrics:
+  - metric: Week-over-week growth
+    importance: high
+    threshold: '>10%'
+  - metric: Month-over-month growth
+    importance: high
+    threshold: '>20%'
+  - metric: Viral coefficient
+    importance: medium
+    threshold: '>0.5'
+prioritization_algorithm:
+  factors:
+    engagement_score:
+      weight: 0.3
+      calculation: Weighted average of DAU, WAU, MAU, retention
+    revenue_score:
+      weight: 0.25
+      calculation: Actual revenue vs projected, growth rate
+    growth_trajectory:
+      weight: 0.2
+      calculation: Week-over-week and month-over-month trends
+    product_market_fit_indicators:
+      weight: 0.15
+      calculation: Retention, NPS, organic growth signals
+    resource_efficiency:
+      weight: 0.1
+      calculation: LTV:CAC ratio, infrastructure cost efficiency
+  thresholds:
+    iteration_priority:
+      high: '>80th percentile across all MVPs'
+      medium: 60-80th percentile
+      low: 40-60th percentile
+      archive: <40th percentile after evaluation period
+  evaluation_periods:
+    initial_assessment: 7 days post-deployment
+    iteration_decision: 30 days post-deployment
+    final_assessment: 90 days post-deployment
+archive_criteria:
+  automatic_archive_triggers:
+  - condition: <10 DAU after 30 days
+    reason: No user traction
+  - condition: $0 revenue after 60 days
+    reason: No monetization potential
+  - condition: <5% week-over-week growth for 8 consecutive weeks
+    reason: No growth trajectory
+  - condition: '>90% bounce rate after 30 days'
+    reason: Poor product-market fit
+  - condition: Infrastructure cost > 5x revenue for 60 days
+    reason: Unsustainable economics
+  manual_override:
+    allow: true
+    reason: Operator can prevent archive if strategic value exists
+analytics_integrations:
+  web_analytics:
+  - Google Analytics 4
+  - Mixpanel
+  - Amplitude
+  - Plausible (privacy-focused)
+  product_analytics:
+  - Segment (data pipeline)
+  - Heap (auto-tracking)
+  - PostHog (open-source)
+  revenue_tracking:
+  - Stripe (payments)
+  - ChartMogul (SaaS metrics)
+  - Baremetrics (revenue analytics)
+  monitoring:
+  - Sentry (error tracking)
+  - LogRocket (session replay)
+  - Hotjar (heatmaps)
+portfolio_dashboard_views:
+  overview:
+  - Total active MVPs
+  - MVPs in iteration pipeline
+  - MVPs pending archive
+  - Portfolio-level revenue
+  - Total users across all MVPs
+  performance_grid:
+  - All MVPs in grid layout
+  - Key metrics per MVP (DAU, revenue, growth)
+  - Color-coded status (green/yellow/red)
+  - Click through to detailed view
+  top_performers:
+  - Top 10 MVPs by engagement
+  - Top 10 MVPs by revenue
+  - Top 10 MVPs by growth rate
+  - Recent winners (entered iteration pipeline)
+  at_risk:
+  - MVPs approaching archive threshold
+  - MVPs with declining metrics
+  - MVPs with high costs, low revenue
+  trends:
+  - Portfolio growth over time
+  - Success rate (% MVPs in iteration pipeline)
+  - Average time to iteration decision
+  - Archive rate and reasons
+technology_stack:
+  data_collection: Segment for unified analytics pipeline
+  storage: ClickHouse for analytics data, PostgreSQL for operational
+  processing: Apache Kafka for real-time streaming
+  calculations: Python with Pandas for metric calculations
+  dashboard: React + Recharts + D3.js for visualization
+  api: FastAPI for backend API
+  caching: Redis for dashboard performance
+dependencies:
+  internal:
+  - 'SYSTEM-CA-005: MVP Deployment (provides deployed MVPs to track)'
+  external:
+  - Analytics platforms (GA4, Mixpanel, etc.)
+  - Payment processors (Stripe)
+  - ClickHouse or similar analytics database
+  - Kafka for event streaming
+testing_requirements:
+  philosophy: 'ALL TESTS MUST VERIFY ACTUAL FEEDBACK COLLECTION AND ITERATION LOGIC.
+
+    No fake metrics or stubbed analytics. Use real data pipelines. Verify decisions are data-driven.
+
+
+    1. Tests verify actual behavior, not just interfaces
+
+    2. Tests check side effects (metrics collected, decisions made correctly)
+
+    3. Tests use mocks to VERIFY calls, not just STUB returns
+
+    4. Integration tests run with REAL analytics data and REAL decision logic
+
+    5. Manual verification confirms feedback loop drives meaningful improvements
+
+    '
+  unit_tests:
+    minimum_count: 40
+    coverage_threshold: 0.85
+    required_verifications:
+      analytics_integration_tests:
+      - 'VERIFY: Analytics provider SDK initialized correctly'
+      - 'VERIFY: Google Analytics integration works (tracking ID configured)'
+      - 'VERIFY: Mixpanel integration works (project token configured)'
+      - 'VERIFY: Amplitude integration works (API key configured)'
+      - 'VERIFY: Custom events tracked correctly'
+      - 'VERIFY: User properties set correctly'
+      - 'VERIFY: Event data includes required fields (timestamp, user_id, properties)'
+      - 'VERIFY: Multiple providers supported simultaneously'
+      - 'NO MOCKING: Use real analytics SDK, verify events sent'
+      - 'SIDE EFFECT: Check analytics dashboard for test events'
+      - 'EDGE CASE: Network failure, invalid credentials, rate limits'
+      metric_collection_tests:
+      - 'VERIFY: User engagement metrics calculated correctly (DAU, WAU, MAU)'
+      - 'VERIFY: Conversion metrics calculated correctly (signups, purchases, activations)'
+      - 'VERIFY: Revenue metrics calculated correctly (MRR, ARR, LTV)'
+      - 'VERIFY: Retention metrics calculated correctly (D1, D7, D30 retention)'
+      - 'VERIFY: Churn metrics calculated correctly (user churn, revenue churn)'
+      - 'VERIFY: Metrics aggregated correctly (per MVP, per opportunity, system-wide)'
+      - 'VERIFY: Metrics stored in TimescaleDB with timestamps'
+      - 'VERIFY: Metric queries performant (< 1 second for dashboard)'
+      - 'REAL DATA: Use actual event data from analytics providers'
+      - 'MATH CHECK: Manual metric calculation vs system calculation'
+      - 'EDGE CASE: Zero users, negative values, missing data'
+      prioritization_algorithm_tests:
+      - 'VERIFY: Prioritization formula mathematically correct'
+      - 'VERIFY: Factors weighted correctly (traction, growth rate, ROI, risk)'
+      - 'VERIFY: High-traction MVPs prioritized over low-traction'
+      - 'VERIFY: Fast-growing MVPs prioritized over stagnant'
+      - 'VERIFY: High-ROI MVPs prioritized over low-ROI'
+      - 'VERIFY: Priority score range 0-100 enforced'
+      - 'VERIFY: Priorities recalculated regularly (every 5 minutes)'
+      - 'VERIFY: Priority changes trigger notifications'
+      - 'VERIFY: Priorities persisted in database'
+      - 'SIDE EFFECT: Check database for priority records'
+      - 'MATH CHECK: Manual priority calculation vs algorithm'
+      archive_automation_tests:
+      - 'VERIFY: Archive criteria evaluated correctly'
+      - 'VERIFY: Low-performing MVPs identified (< threshold for 60 days)'
+      - 'VERIFY: Archive recommendation generated'
+      - 'VERIFY: Manual approval required before archiving'
+      - 'VERIFY: Archived MVPs shut down gracefully (drain connections)'
+      - 'VERIFY: Infrastructure destroyed (Terraform destroy)'
+      - 'VERIFY: Data backed up before archiving'
+      - 'VERIFY: Archive status recorded in database'
+      - 'VERIFY: Archive notifications sent'
+      - 'NO AUTO-ARCHIVE: Require explicit human approval'
+      - 'SIDE EFFECT: Check archived MVPs inaccessible'
+      - 'EDGE CASE: Prevent accidental archive of successful MVPs'
+      dashboard_rendering_tests:
+      - 'VERIFY: Dashboard data API returns correct metrics'
+      - 'VERIFY: Portfolio view shows all active MVPs'
+      - 'VERIFY: Individual MVP view shows detailed metrics'
+      - 'VERIFY: Opportunity pipeline view shows assessment status'
+      - 'VERIFY: Charts render correctly (time-series, bar, pie)'
+      - 'VERIFY: Filters work (by status, by priority, by date range)'
+      - 'VERIFY: Search works (by name, by opportunity type)'
+      - 'VERIFY: Real-time updates work (WebSocket or polling)'
+      - 'VERIFY: Dashboard loads within 2 seconds'
+      - 'NO FAKE DATA: Use actual metrics from database'
+      - 'VISUAL CHECK: Screenshot, verify layout correct'
+  integration_tests:
+    minimum_count: 25
+    coverage_threshold: 0.8
+    required_scenarios:
+      end_to_end_feedback_loop:
+        description: Complete feedback cycle from MVP to iteration decision
+        requirements:
+        - 'SETUP: Deploy MVP with analytics integration'
+        - 'INJECT: Simulate user activity (page views, events, conversions)'
+        - 'VERIFY: Analytics events sent to providers'
+        - 'VERIFY: Events ingested into TimescaleDB (query to confirm)'
+        - 'VERIFY: Metrics calculated correctly (DAU, conversions, revenue)'
+        - 'VERIFY: Priority score updated based on metrics'
+        - 'VERIFY: Dashboard shows updated metrics'
+        - 'VERIFY: Iteration recommendations generated'
+        - 'VERIFY: Complete cycle within 5-minute latency'
+        - 'NO MOCKING: Real analytics providers, real data pipeline'
+        - 'MANUAL: Check analytics dashboard, verify events present'
+      real_time_metric_collection:
+        description: Metrics collected and displayed with < 5-minute latency
+        requirements:
+        - 'DEPLOY: MVP with analytics integration'
+        - 'GENERATE: User events (clicks, conversions, etc.)'
+        - 'MEASURE: Time from event to dashboard display'
+        - 'VERIFY: Latency < 5 minutes (measured)'
+        - 'VERIFY: No events dropped or lost'
+        - 'VERIFY: Event ordering preserved'
+        - 'VERIFY: Metrics accurate (match analytics provider)'
+        - 'REAL-TIME: Use actual event streaming, not batch'
+        - 'LOAD TEST: Generate high event volume, verify no degradation'
+      prioritization_calculation:
+        description: MVP priorities calculated correctly based on real metrics
+        requirements:
+        - 'SETUP: 5+ MVPs with different performance profiles'
+        - 'MVP-1: High traction, fast growth (should be #1 priority)'
+        - 'MVP-2: Medium traction, slow growth (should be medium priority)'
+        - 'MVP-3: Low traction, declining (should be low priority, archive candidate)'
+        - 'MVP-4: New MVP, no data yet (should be medium priority, give time)'
+        - 'MVP-5: High traction, negative ROI (should be deprioritized, investigate)'
+        - 'VERIFY: Priorities calculated correctly for each'
+        - 'VERIFY: Priority ranking matches expected order'
+        - 'VERIFY: Priorities update as metrics change'
+        - 'REAL DATA: Use actual metrics, not hardcoded values'
+        - 'MANUAL: Review priorities, verify they make business sense'
+      archive_automation_workflow:
+        description: Low-performing MVPs identified and archived correctly
+        requirements:
+        - 'SETUP: MVP with consistently low metrics (< threshold for 60 days)'
+        - 'VERIFY: Archive recommendation generated'
+        - 'VERIFY: Notification sent to operator'
+        - 'VERIFY: Manual approval recorded'
+        - 'TRIGGER: Archive workflow'
+        - 'VERIFY: MVP shut down gracefully (no dropped requests)'
+        - 'VERIFY: Infrastructure destroyed (Terraform destroy)'
+        - 'VERIFY: Data backed up to S3'
+        - 'VERIFY: Archive status recorded in database'
+        - 'VERIFY: MVP no longer accessible'
+        - 'REAL ARCHIVE: Actual shutdown and cleanup, verify resources gone'
+        - 'MANUAL: Attempt to access archived MVP, verify 404 or offline'
+      dashboard_real_time_updates:
+        description: Dashboard shows real-time metrics and updates
+        requirements:
+        - 'OPEN: Dashboard in browser'
+        - 'GENERATE: New events for one MVP'
+        - 'VERIFY: Dashboard metrics update within 5 minutes'
+        - 'VERIFY: Charts reflect new data'
+        - 'VERIFY: Priority changes reflected'
+        - 'VERIFY: Notifications appear for significant changes'
+        - 'VERIFY: No page refresh required (WebSocket or auto-refresh)'
+        - 'REAL DASHBOARD: Actual frontend, verify in browser'
+        - 'MANUAL: Watch dashboard update in real-time'
+  real_time_tests:
+    required: true
+    scenarios:
+      latency_verification:
+        target: 5-minute latency from event to dashboard
+        verification:
+        - 'GENERATE: Test event in MVP'
+        - 'RECORD: Event timestamp'
+        - 'WAIT: Monitor dashboard for update'
+        - 'RECORD: Dashboard update timestamp'
+        - 'CALCULATE: Latency = update time - event time'
+        - 'VERIFY: Latency < 5 minutes'
+        - 'PROFILE: Identify bottlenecks (analytics API, ingestion, aggregation, query)'
+      dashboard_update_speed:
+        target: Real-time dashboard updates
+        verification:
+        - 'OPEN: Dashboard in browser'
+        - 'INJECT: High-frequency events'
+        - 'VERIFY: Dashboard updates continuously'
+        - 'VERIFY: No UI freezing or lag'
+        - 'VERIFY: Update frequency reasonable (not too fast to read)'
+        - 'MEASURE: Update latency, target < 5 seconds'
+      prioritization_calculation_speed:
+        target: Priority recalculation every 5 minutes
+        verification:
+        - 'SCHEDULE: Priority calculation task'
+        - 'VERIFY: Task runs every 5 minutes (measured)'
+        - 'VERIFY: Calculation completes before next run'
+        - 'VERIFY: No backlog or queue buildup'
+        - 'MEASURE: Calculation time, target < 1 minute'
+  performance_tests:
+    required: true
+    scenarios:
+      high_volume_event_ingestion:
+        description: Handle high event volume from multiple MVPs
+        verification:
+        - 'GENERATE: 10000+ events/minute across 10 MVPs'
+        - 'VERIFY: All events ingested successfully'
+        - 'VERIFY: No events dropped or lost'
+        - 'VERIFY: Ingestion latency remains < 5 minutes'
+        - 'VERIFY: Database performance acceptable (no slowdown)'
+        - 'MEASURE: Throughput, latency, resource usage'
+      dashboard_load_time:
+        description: Dashboard loads quickly with many MVPs
+        verification:
+        - 'SETUP: 50+ MVPs with metrics'
+        - 'LOAD: Dashboard portfolio view'
+        - 'MEASURE: Time to interactive'
+        - 'VERIFY: Load time < 2 seconds'
+        - 'VERIFY: UI responsive (no lag)'
+        - 'OPTIMIZE: Query optimization, caching, pagination'
+      concurrent_dashboard_users:
+        description: Multiple users access dashboard simultaneously
+        verification:
+        - 'SPAWN: 20 concurrent dashboard sessions'
+        - 'VERIFY: All sessions load successfully'
+        - 'VERIFY: No significant slowdown vs single user'
+        - 'VERIFY: Real-time updates work for all users'
+        - 'MEASURE: Per-user latency, server resource usage'
+  manual_verification:
+    required: true
+    description: Human verification that feedback loop drives meaningful improvements
+    checklist:
+    - 'START: Deploy MVP with real analytics integration'
+    - 'GENERATE: Actual user activity (or simulate realistically)'
+    - 'CHECK: Analytics provider dashboard shows events'
+    - 'WAIT: 5 minutes for metrics to propagate'
+    - 'VERIFY: Causal Affect dashboard shows updated metrics'
+    - 'CHECK: Metrics match analytics provider (spot-check)'
+    - 'VERIFY: Priority score makes business sense'
+    - 'TEST: Low-performing MVP shows archive recommendation'
+    - 'VERIFY: Dashboard charts render correctly'
+    - 'TEST: Filter and search work'
+    - 'VERIFY: Real-time updates work (generate event, watch dashboard)'
+    - 'MEASURE: Event-to-dashboard latency with stopwatch'
+    - 'TEST: Archive workflow (simulate approval, verify shutdown)'
+    - 'VERIFY: Archived MVP inaccessible'
+    - 'DOCUMENT: Screenshot evidence of working feedback loop'
+estimated_effort:
+  total_days: 7
+  team_size: 2 developers
+implementation_phases:
+  phase_1:
+    duration: 2 days
+    deliverable: Analytics integration with major providers
+  phase_2:
+    duration: 2 days
+    deliverable: Real-time metric collection pipeline
+  phase_3:
+    duration: 2 days
+    deliverable: Prioritization engine and archive automation
+  phase_4:
+    duration: 1 day
+    deliverable: Portfolio dashboard with key views
+risks:
+- risk: Analytics provider API limits may constrain data collection
+  mitigation: Use Segment as intermediary, batch API calls
+  severity: medium
+- risk: False archives may eliminate potential winners
+  mitigation: Conservative thresholds, manual override, long evaluation
+  severity: medium
+- risk: Dashboard may become overwhelming with many MVPs
+  mitigation: Filtering, search, grouping, summary views
+  severity: low

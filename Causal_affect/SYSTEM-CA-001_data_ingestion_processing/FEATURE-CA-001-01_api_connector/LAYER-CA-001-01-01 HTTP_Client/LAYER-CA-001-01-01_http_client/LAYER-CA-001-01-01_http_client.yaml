@@ -1,0 +1,83 @@
+# LAYER-CA-001-01-01: HTTP Client
+# ==================================
+
+metadata:
+  layer_id: LAYER-CA-001-01-01
+  layer_name: HTTP Client
+  parent_feature: FEATURE-CA-001-01
+  parent_system: SYSTEM-CA-001
+  created_date: 2025-10-18
+  status: planned
+  priority: critical
+  
+  description: |
+    Asynchronous HTTP client with connection pooling, timeout management,
+    and request/response handling for concurrent API connections.
+
+technical_specifications:
+  library: "aiohttp 3.9.0"
+  connection_pool_size: 100
+  timeout_default: 30
+  retry_strategy: "Exponential backoff (handled by circuit breaker layer)"
+  
+  features:
+    - "Async HTTP GET/POST/PUT/DELETE"
+    - "Connection pooling (max 100 concurrent)"
+    - "Per-request timeouts"
+    - "Automatic connection reuse"
+    - "Request/response logging"
+    - "Error classification (network, timeout, HTTP error)"
+
+implementation_details:
+  class_name: "AsyncHTTPClient"
+  file_path: "src/data_ingestion/backend/features/FEATURE-CA-001-01_api_connector/services/http_client.py"
+  
+  public_methods:
+    - name: "async def request(method, url, headers, params, body, timeout)"
+      description: "Execute HTTP request with timeout"
+      returns: "HTTPResponse(status_code, body, headers, latency_ms)"
+      
+    - name: "async def get(url, headers, params, timeout)"
+      description: "GET request wrapper"
+      
+    - name: "async def post(url, headers, body, timeout)"
+      description: "POST request wrapper"
+      
+    - name: "async def close()"
+      description: "Close connection pool gracefully"
+  
+  dependencies:
+    - "aiohttp.ClientSession for connection pooling"
+    - "asyncio for async/await"
+    - "pydantic models for request/response validation"
+
+acceptance_criteria:
+  - criterion_id: AC-LY-001-01-01
+    criterion: "Can handle 100 concurrent requests without errors"
+    verification: "Load test with 100 parallel requests"
+    
+  - criterion_id: AC-LY-001-01-02
+    criterion: "Request timeout enforced (30s default)"
+    verification: "Mock slow API, verify timeout exception"
+    
+  - criterion_id: AC-LY-001-01-03
+    criterion: "Connection pool reuses connections"
+    verification: "Monitor open connections, verify <= 100"
+
+testing_requirements:
+  unit_tests:
+    - "test_http_get_success"
+    - "test_http_post_with_json_body"
+    - "test_request_timeout_enforced"
+    - "test_connection_pool_limit"
+    - "test_error_classification"
+    
+  mocking:
+    - "Mock aiohttp.ClientSession responses"
+    - "Mock network errors (ConnectionError)"
+    - "Mock slow responses (asyncio.sleep)"
+
+estimated_effort:
+  development: "6 hours"
+  testing: "2 hours"
+  total: "8 hours"

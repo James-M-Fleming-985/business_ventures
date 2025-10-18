@@ -1,0 +1,141 @@
+matrix_metadata:
+  timestamp: '20251018_105119'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-LY-001-02-01-01
+  requirement: 100% of data validated before storage
+  description: 100% of data validated before storage
+  test_files: &id001
+  - LAYER-CA-001-02-01 Schema_Validator/LAYER-CA-001-02-01_schema_validator/tests/test_generated_20251018_105042.py
+  test_methods:
+  - test_ac-ly-001-02-01-01
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LY-001-02-01-02
+  requirement: Invalid data rejected with field-specific errors
+  description: Invalid data rejected with field-specific errors
+  test_files: *id001
+  test_methods:
+  - test_ac-ly-001-02-01-02
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: LAYER-CA-001-02-01 Schema_Validator/LAYER-CA-001-02-01_schema_validator/src/implementation.py
+  lines: 289
+  methods:
+  - name: __init__
+    lines: 28-31
+  - name: register_schema
+    lines: 32-40
+  - name: validate
+    lines: 41-98
+  - name: _validate_field
+    lines: 99-170
+  - name: _check_type
+    lines: 171-199
+  - name: __init__
+    lines: 203-211
+  - name: store
+    lines: 212-233
+  - name: get_all
+    lines: 234-244
+  - name: clear
+    lines: 245-255
+  - name: create_validator_with_schema
+    lines: 256-270
+  - name: validate_and_store
+    lines: 271-281
+  classes:
+  - name: ValidationError
+    type: class
+    lines: 10-17
+  - name: ValidationResult
+    type: class
+    lines: 18-24
+  - name: SchemaValidator
+    type: class
+    lines: 25-199
+  - name: DataStorage
+    type: class
+    lines: 200-289
+  implements_requirements:
+  - AC-LY-001-02-01-01
+  - AC-LY-001-02-01-02
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: LAYER-CA-001-02-01 Schema_Validator/LAYER-CA-001-02-01_schema_validator/tests/test_generated_20251018_105042.py
+  test_count: 0
+  implementation_files:
+  - LAYER-CA-001-02-01 Schema_Validator/LAYER-CA-001-02-01_schema_validator/src/implementation.py
+  methods_tested:
+  - __init__
+  - register_schema
+  - validate
+  - _validate_field
+  - _check_type
+  - __init__
+  - store
+  - get_all
+  - clear
+  - create_validator_with_schema
+  - validate_and_store
+  classes_tested:
+  - ValidationError
+  - ValidationResult
+  - SchemaValidator
+  - DataStorage
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: LAYER-CA-001-02-01 Schema_Validator/LAYER-CA-001-02-01_schema_validator/src/implementation.py:28-31
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: LAYER-CA-001-02-01 Schema_Validator/LAYER-CA-001-02-01_schema_validator/tests/test_generated_20251018_105042.py
+  verified: true
+- implementation_location: LAYER-CA-001-02-01 Schema_Validator/LAYER-CA-001-02-01_schema_validator/src/implementation.py:32-40
+  method_name: register_schema
+  requirement: AC-001
+  test: test_register_schema
+  test_file: LAYER-CA-001-02-01 Schema_Validator/LAYER-CA-001-02-01_schema_validator/tests/test_generated_20251018_105042.py
+  verified: true
+- implementation_location: LAYER-CA-001-02-01 Schema_Validator/LAYER-CA-001-02-01_schema_validator/src/implementation.py:41-98
+  method_name: validate
+  requirement: AC-001
+  test: test_validate
+  test_file: LAYER-CA-001-02-01 Schema_Validator/LAYER-CA-001-02-01_schema_validator/tests/test_generated_20251018_105042.py
+  verified: true
+- implementation_location: LAYER-CA-001-02-01 Schema_Validator/LAYER-CA-001-02-01_schema_validator/src/implementation.py:99-170
+  method_name: _validate_field
+  requirement: AC-001
+  test: test__validate_field
+  test_file: LAYER-CA-001-02-01 Schema_Validator/LAYER-CA-001-02-01_schema_validator/tests/test_generated_20251018_105042.py
+  verified: true
+- implementation_location: LAYER-CA-001-02-01 Schema_Validator/LAYER-CA-001-02-01_schema_validator/src/implementation.py:171-199
+  method_name: _check_type
+  requirement: AC-001
+  test: test__check_type
+  test_file: LAYER-CA-001-02-01 Schema_Validator/LAYER-CA-001-02-01_schema_validator/tests/test_generated_20251018_105042.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 2
+  requirements_traced: 2
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

@@ -1,0 +1,7 @@
+# LAYER-CA-001-04-02_health
+metadata:
+  layer_id: LAYER-CA-001-04-02_health
+  parent_feature: FEATURE-CA-001-04
+  parent_system: SYSTEM-CA-001
+  created_date: 2025-10-18
+  status: planned

@@ -1,0 +1,68 @@
+# LAYER-CA-001-02-03: Transformer
+# =================================
+
+metadata:
+  layer_id: LAYER-CA-001-02-03
+  layer_name: Transformer
+  parent_feature: FEATURE-CA-001-02
+  parent_system: SYSTEM-CA-001
+  created_date: 2025-10-18
+  status: planned
+  priority: critical
+  
+  description: |
+    Normalize and standardize data formats (dates, currencies, units)
+    to ensure consistency across all API sources.
+
+technical_specifications:
+  transformations:
+    dates:
+      - "Parse various formats (MM/DD/YYYY, YYYY-MM-DD, timestamps)"
+      - "Convert to ISO 8601 format"
+      - "Timezone normalization (all to UTC)"
+    
+    currencies:
+      - "Convert to USD using latest exchange rates"
+      - "Store original currency for reference"
+    
+    units:
+      - "Standardize measurements (meters, kilograms, etc.)"
+      - "Temperature (all to Celsius)"
+  
+  features:
+    - "Date format normalization"
+    - "Currency conversion"
+    - "Unit standardization"
+    - "Text normalization (lowercase, trim)"
+    - "Enum mapping (source-specific to standard)"
+
+implementation_details:
+  class_name: "DataTransformer"
+  file_path: "src/data_ingestion/backend/features/FEATURE-CA-001-02_data_validation/services/transformer.py"
+  
+  public_methods:
+    - name: "transform(data, transformation_rules)"
+      description: "Apply transformations to data"
+      returns: "TransformedData"
+      
+    - name: "normalize_date(date_string, source_format)"
+      description: "Convert date to ISO 8601 UTC"
+      
+    - name: "convert_currency(amount, from_currency, to_currency)"
+      description: "Convert currency using current rates"
+
+acceptance_criteria:
+  - criterion_id: AC-LY-001-02-03-01
+    criterion: "All dates stored in ISO 8601 UTC format"
+    verification: "Query database, verify date format consistency"
+
+testing_requirements:
+  unit_tests:
+    - "test_date_normalization_various_formats"
+    - "test_currency_conversion"
+    - "test_unit_standardization"
+
+estimated_effort:
+  development: "8 hours"
+  testing: "2 hours"
+  total: "10 hours"

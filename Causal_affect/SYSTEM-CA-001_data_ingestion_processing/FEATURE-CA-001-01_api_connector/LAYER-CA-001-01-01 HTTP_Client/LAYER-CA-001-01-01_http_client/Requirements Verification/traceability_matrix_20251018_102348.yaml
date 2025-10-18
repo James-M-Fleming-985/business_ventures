@@ -1,0 +1,148 @@
+matrix_metadata:
+  timestamp: '20251018_102348'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-LY-001-01-01
+  requirement: Can handle 100 concurrent requests without errors
+  description: Can handle 100 concurrent requests without errors
+  test_files: &id001
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/LAYER-CA-001-01-01
+    HTTP_Client/LAYER-CA-001-01-01_http_client/tests/test_generated_20251018_102321.py
+  test_methods:
+  - test_ac-ly-001-01-01
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LY-001-01-02
+  requirement: Request timeout enforced (30s default)
+  description: Request timeout enforced (30s default)
+  test_files: *id001
+  test_methods:
+  - test_ac-ly-001-01-02
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-LY-001-01-03
+  requirement: Connection pool reuses connections
+  description: Connection pool reuses connections
+  test_files: *id001
+  test_methods:
+  - test_ac-ly-001-01-03
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/LAYER-CA-001-01-01
+    HTTP_Client/LAYER-CA-001-01-01_http_client/src/implementation.py
+  lines: 198
+  methods:
+  - name: __init__
+    lines: 12-26
+  - name: __enter__
+    lines: 27-30
+  - name: __exit__
+    lines: 31-34
+  - name: _get_loop
+    lines: 35-92
+  - name: request
+    lines: 93-115
+  - name: get
+    lines: 116-128
+  - name: post
+    lines: 129-160
+  - name: concurrent_requests
+    lines: 161-184
+  - name: close
+    lines: 185-195
+  classes:
+  - name: HTTPClient
+    type: class
+    lines: 9-198
+  implements_requirements:
+  - AC-LY-001-01-01
+  - AC-LY-001-01-02
+  - AC-LY-001-01-03
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/LAYER-CA-001-01-01
+    HTTP_Client/LAYER-CA-001-01-01_http_client/tests/test_generated_20251018_102321.py
+  test_count: 0
+  implementation_files:
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/LAYER-CA-001-01-01
+    HTTP_Client/LAYER-CA-001-01-01_http_client/src/implementation.py
+  methods_tested:
+  - __init__
+  - __enter__
+  - __exit__
+  - _get_loop
+  - request
+  - get
+  - post
+  - concurrent_requests
+  - close
+  classes_tested:
+  - HTTPClient
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/LAYER-CA-001-01-01
+    HTTP_Client/LAYER-CA-001-01-01_http_client/src/implementation.py:12-26
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/LAYER-CA-001-01-01
+    HTTP_Client/LAYER-CA-001-01-01_http_client/tests/test_generated_20251018_102321.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/LAYER-CA-001-01-01
+    HTTP_Client/LAYER-CA-001-01-01_http_client/src/implementation.py:27-30
+  method_name: __enter__
+  requirement: AC-001
+  test: test___enter__
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/LAYER-CA-001-01-01
+    HTTP_Client/LAYER-CA-001-01-01_http_client/tests/test_generated_20251018_102321.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/LAYER-CA-001-01-01
+    HTTP_Client/LAYER-CA-001-01-01_http_client/src/implementation.py:31-34
+  method_name: __exit__
+  requirement: AC-001
+  test: test___exit__
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/LAYER-CA-001-01-01
+    HTTP_Client/LAYER-CA-001-01-01_http_client/tests/test_generated_20251018_102321.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/LAYER-CA-001-01-01
+    HTTP_Client/LAYER-CA-001-01-01_http_client/src/implementation.py:35-92
+  method_name: _get_loop
+  requirement: AC-001
+  test: test__get_loop
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/LAYER-CA-001-01-01
+    HTTP_Client/LAYER-CA-001-01-01_http_client/tests/test_generated_20251018_102321.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/LAYER-CA-001-01-01
+    HTTP_Client/LAYER-CA-001-01-01_http_client/src/implementation.py:93-115
+  method_name: request
+  requirement: AC-001
+  test: test_request
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-001_data_ingestion_processing/FEATURE-CA-001-01_api_connector/LAYER-CA-001-01-01
+    HTTP_Client/LAYER-CA-001-01-01_http_client/tests/test_generated_20251018_102321.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 3
+  requirements_traced: 3
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

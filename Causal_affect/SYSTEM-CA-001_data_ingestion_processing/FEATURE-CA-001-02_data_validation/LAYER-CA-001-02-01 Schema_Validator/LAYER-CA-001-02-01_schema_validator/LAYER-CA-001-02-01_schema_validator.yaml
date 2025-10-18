@@ -1,0 +1,74 @@
+# LAYER-CA-001-02-01: Schema Validator
+# ======================================
+
+metadata:
+  layer_id: LAYER-CA-001-02-01
+  layer_name: Schema Validator
+  parent_feature: FEATURE-CA-001-02
+  parent_system: SYSTEM-CA-001
+  created_date: 2025-10-18
+  status: planned
+  priority: critical
+  
+  description: |
+    Pydantic-based schema validation ensuring all ingested data conforms
+    to expected structure and types.
+
+technical_specifications:
+  library: "Pydantic v2.4+"
+  validation_mode: "Strict (reject invalid data)"
+  error_reporting: "Field-level error messages"
+  
+  features:
+    - "Type validation (str, int, float, datetime, enum)"
+    - "Required field enforcement"
+    - "Range validation (min/max values)"
+    - "Pattern matching (regex for strings)"
+    - "Custom validators (business logic)"
+    - "Nested object validation"
+
+implementation_details:
+  class_name: "SchemaValidator"
+  file_path: "src/data_ingestion/backend/features/FEATURE-CA-001-02_data_validation/services/schema_validator.py"
+  
+  public_methods:
+    - name: "validate(data, schema_name)"
+      description: "Validate data against registered schema"
+      returns: "ValidationResult(valid: bool, errors: list, validated_data: dict)"
+      
+    - name: "register_schema(schema_name, pydantic_model)"
+      description: "Register new validation schema"
+      
+    - name: "get_schema(schema_name)"
+      description: "Retrieve registered schema"
+
+data_models:
+  BaseDataSchema:
+    description: "Base schema all API data must conform to"
+    fields:
+      - "source_id: str (required)"
+      - "timestamp: datetime (required, ISO 8601)"
+      - "data_type: str (required, enum)"
+      - "raw_data: dict (required)"
+      - "metadata: dict (optional)"
+
+acceptance_criteria:
+  - criterion_id: AC-LY-001-02-01-01
+    criterion: "100% of data validated before storage"
+    verification: "Validation metrics show 100% coverage"
+    
+  - criterion_id: AC-LY-001-02-01-02
+    criterion: "Invalid data rejected with field-specific errors"
+    verification: "Test invalid data, verify error messages identify fields"
+
+testing_requirements:
+  unit_tests:
+    - "test_valid_data_passes"
+    - "test_missing_required_field_fails"
+    - "test_wrong_type_fails"
+    - "test_custom_validator_enforced"
+
+estimated_effort:
+  development: "6 hours"
+  testing: "2 hours"
+  total: "8 hours"

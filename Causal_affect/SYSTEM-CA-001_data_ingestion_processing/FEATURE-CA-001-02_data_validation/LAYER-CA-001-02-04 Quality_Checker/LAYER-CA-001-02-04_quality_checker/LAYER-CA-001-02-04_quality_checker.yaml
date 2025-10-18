@@ -1,0 +1,72 @@
+# LAYER-CA-001-02-04: Quality Checker
+# =====================================
+
+metadata:
+  layer_id: LAYER-CA-001-02-04
+  layer_name: Quality Checker
+  parent_feature: FEATURE-CA-001-02
+  parent_system: SYSTEM-CA-001
+  created_date: 2025-10-18
+  status: planned
+  priority: high
+  
+  description: |
+    Data quality scoring and reporting based on completeness, accuracy,
+    consistency, and timeliness metrics.
+
+technical_specifications:
+  quality_dimensions:
+    completeness: "% of required fields populated"
+    accuracy: "% of values passing validation"
+    consistency: "% of values matching expected patterns"
+    timeliness: "Data freshness (age since collection)"
+  
+  scoring:
+    - "Each dimension scored 0-100"
+    - "Overall quality = weighted average"
+    - "Weights: completeness(30%), accuracy(40%), consistency(20%), timeliness(10%)"
+  
+  thresholds:
+    excellent: ">= 95"
+    good: ">= 85"
+    acceptable: ">= 70"
+    poor: "< 70"
+
+implementation_details:
+  class_name: "QualityChecker"
+  file_path: "src/data_ingestion/backend/features/FEATURE-CA-001-02_data_validation/services/quality_checker.py"
+  
+  public_methods:
+    - name: "assess_quality(data)"
+      description: "Calculate quality scores for data"
+      returns: "QualityReport"
+      
+    - name: "generate_report(source_id, time_range)"
+      description: "Generate quality report for source over time"
+
+data_models:
+  QualityReport:
+    fields:
+      - "source_id: str"
+      - "completeness_score: float"
+      - "accuracy_score: float"
+      - "consistency_score: float"
+      - "timeliness_score: float"
+      - "overall_score: float"
+      - "quality_grade: enum (excellent, good, acceptable, poor)"
+      - "issues: list[QualityIssue]"
+
+acceptance_criteria:
+  - criterion_id: AC-LY-001-02-04-01
+    criterion: "Quality scores calculated for all ingested data"
+    verification: "Check quality_scores table populated"
+
+testing_requirements:
+  unit_tests:
+    - "test_quality_score_calculation"
+    - "test_quality_grade_assignment"
+
+estimated_effort:
+  development: "6 hours"
+  testing: "2 hours"
+  total: "8 hours"

@@ -1,0 +1,7 @@
+# LAYER-CA-001-03-01_db
+metadata:
+  layer_id: LAYER-CA-001-03-01_db
+  parent_feature: FEATURE-CA-001-03
+  parent_system: SYSTEM-CA-001
+  created_date: 2025-10-18
+  status: planned

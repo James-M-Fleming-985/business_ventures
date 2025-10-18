@@ -1,0 +1,226 @@
+# ====================================================================================
+# FEATURE REQUIREMENTS INDEX: Multi-Source API Connector
+# ====================================================================================
+# FEATURE ID: FEATURE-CA-001-01
+# VERSION: 1.0.0
+# LAST UPDATED: 2025-10-18
+# ====================================================================================
+
+metadata:
+  requirement_id: "FEATURE-CA-001-01"
+  requirement_name: "Multi-Source API Connector"
+  feature_code: "API_CONNECTOR"
+  version: "1.0.0"
+  status: "Active"
+  created_date: "2025-10-18"
+  last_modified: "2025-10-18"
+  parent_system: "SYSTEM-CA-001"
+  priority: "MUST HAVE"
+  target_date: "2025-10-25"
+  
+  # ====================================================================================
+# FEATURE OVERVIEW
+# ====================================================================================
+
+overview:
+  description: |
+    Manages concurrent connections to 15-20 external data APIs with intelligent
+    authentication (OAuth2, API keys), per-API rate limiting, circuit breakers, and retry logic.
+    
+    This feature enables high-performance data ingestion from multiple heterogeneous
+    sources simultaneously while preventing API bans, handling failures gracefully,
+    and ensuring zero data loss.
+  
+  business_value:
+    - "Enables parallel data ingestion from 15-20 sources simultaneously"
+    - "Prevents API bans through intelligent rate limiting per source"
+    - "Automatic failure recovery without manual intervention"
+    - "Zero data loss through circuit breaker and retry mechanisms"
+  
+  user_story: |
+    As a Data Ingestion System,
+    I want to connect to 15-20 external APIs simultaneously with intelligent failure handling,
+    So that I can reliably ingest data at scale without API bans or data loss.
+  
+  acceptance_criteria:
+    - "Connect to 15-20 APIs simultaneously without errors"
+    - "OAuth2 and API key authentication work for all source types"
+    - "Rate limiter prevents API bans (respects per-API limits)"
+    - "Circuit breaker trips after 3 consecutive failures"
+    - "Exponential backoff retry succeeds after transient failures"
+    - "Zero data loss during API failures"
+
+# ====================================================================================
+# LAYER ARCHITECTURE
+# ====================================================================================
+
+layers:
+  - layer_id: "LAYER-CA-001-01-01"
+    name: "HTTP_Client"
+    requirement_file: "LAYER-CA-001-01-01_http_client/LAYER-CA-001-01-01_http_client.yaml"
+    description: "Async HTTP client with connection pooling and timeout management"
+    estimated_effort: "8 hours"
+    requirements:
+      - "Async HTTP GET/POST/PUT/DELETE"
+      - "Connection pooling (max 100 concurrent)"
+      - "Per-request timeouts (30s default)"
+      - "Request/response logging"
+    
+  - layer_id: "LAYER-CA-001-01-02"
+    name: "Auth_Manager"
+    requirement_file: "LAYER-CA-001-01-02_auth_manager/LAYER-CA-001-01-02_auth_manager.yaml"
+    description: "Multi-auth support (OAuth2, API keys, JWT) with token refresh"
+    estimated_effort: "12 hours"
+    requirements:
+      - "OAuth2 token acquisition and refresh"
+      - "API key injection (header or query param)"
+      - "JWT token validation"
+      - "Token caching with expiry"
+    
+  - layer_id: "LAYER-CA-001-01-03"
+    name: "Rate_Limiter"
+    requirement_file: "LAYER-CA-001-01-03_rate_limiter/LAYER-CA-001-01-03_rate_limiter.yaml"
+    description: "Per-API rate limiting with token bucket algorithm"
+    estimated_effort: "10 hours"
+    requirements:
+      - "Token bucket algorithm implementation"
+      - "Per-source rate limits"
+      - "Redis-backed distributed limiting"
+      - "Async waiting when limit reached"
+    
+  - layer_id: "LAYER-CA-001-01-04"
+    name: "Circuit_Breaker"
+    requirement_file: "LAYER-CA-001-01-04_circuit_breaker/LAYER-CA-001-01-04_circuit_breaker.yaml"
+    description: "Automatic failure detection and source disabling"
+    estimated_effort: "10 hours"
+    requirements:
+      - "Track consecutive failures"
+      - "Auto-open circuit after 3 failures"
+      - "Exponential backoff retry"
+      - "Circuit state persistence"
+
+api_endpoints:
+  monitoring:
+    - endpoint: "GET /api/connectors/status"
+      description: "Get status of all API connectors"
+      response: "List of connector states (connected, rate_limited, circuit_open, error)"
+      
+    - endpoint: "POST /api/connectors/{source_id}/test"
+      description: "Test connection to specific API source"
+      response: "Connection test result with latency and sample data"
+
+data_models:
+  APISource:
+    fields:
+      - source_id: "string (unique identifier)"
+      - source_name: "string (human-readable name)"
+      - base_url: "string (API base URL)"
+      - auth_type: "enum (oauth2, api_key, jwt, none)"
+      - auth_config: "json (auth credentials and settings)"
+      - rate_limit: "int (max requests per minute)"
+      - timeout: "int (request timeout in seconds)"
+      - enabled: "boolean (active/inactive)"
+      - circuit_state: "enum (closed, open, half_open)"
+      
+  APIRequest:
+    fields:
+      - request_id: "uuid"
+      - source_id: "string"
+      - endpoint: "string"
+      - method: "enum (GET, POST, PUT, DELETE)"
+      - params: "json (query parameters)"
+      - timestamp: "datetime"
+      - status: "enum (pending, success, failed, rate_limited)"
+      
+  APIResponse:
+    fields:
+      - request_id: "uuid"
+      - source_id: "string"
+      - status_code: "int"
+      - response_data: "json"
+      - latency_ms: "int"
+      - timestamp: "datetime"
+
+database_schema:
+  tables:
+    api_sources:
+      description: "Configuration for all external API sources"
+      columns:
+        - "id SERIAL PRIMARY KEY"
+        - "source_id VARCHAR(100) UNIQUE NOT NULL"
+        - "source_name VARCHAR(200) NOT NULL"
+        - "base_url TEXT NOT NULL"
+        - "auth_type VARCHAR(50) NOT NULL"
+        - "auth_config JSONB NOT NULL"
+        - "rate_limit INTEGER DEFAULT 60"
+        - "timeout INTEGER DEFAULT 30"
+        - "enabled BOOLEAN DEFAULT TRUE"
+        - "circuit_state VARCHAR(20) DEFAULT 'closed'"
+        - "created_at TIMESTAMP DEFAULT NOW()"
+        - "updated_at TIMESTAMP DEFAULT NOW()"
+      indexes:
+        - "CREATE INDEX idx_api_sources_enabled ON api_sources(enabled)"
+        - "CREATE INDEX idx_api_sources_circuit ON api_sources(circuit_state)"
+    
+    api_request_log:
+      description: "Log of all API requests for monitoring and debugging"
+      columns:
+        - "id BIGSERIAL PRIMARY KEY"
+        - "request_id UUID UNIQUE NOT NULL"
+        - "source_id VARCHAR(100) NOT NULL"
+        - "endpoint TEXT NOT NULL"
+        - "method VARCHAR(10) NOT NULL"
+        - "params JSONB"
+        - "status VARCHAR(50) NOT NULL"
+        - "status_code INTEGER"
+        - "latency_ms INTEGER"
+        - "error_message TEXT"
+        - "timestamp TIMESTAMP DEFAULT NOW()"
+      indexes:
+        - "CREATE INDEX idx_request_log_source ON api_request_log(source_id)"
+        - "CREATE INDEX idx_request_log_timestamp ON api_request_log(timestamp DESC)"
+        - "CREATE INDEX idx_request_log_status ON api_request_log(status)"
+
+testing_requirements:
+  unit_tests:
+    - "test_http_client_connection_pooling"
+    - "test_oauth2_token_refresh"
+    - "test_api_key_auth_headers"
+    - "test_rate_limiter_token_bucket"
+    - "test_circuit_breaker_state_transitions"
+    - "test_exponential_backoff_calculation"
+    
+  integration_tests:
+    - "test_full_api_request_lifecycle"
+    - "test_concurrent_multi_source_requests"
+    - "test_rate_limit_across_multiple_requests"
+    - "test_circuit_breaker_auto_recovery"
+    
+  e2e_tests:
+    - "test_add_new_api_source_configuration"
+    - "test_api_failure_and_recovery"
+
+dependencies:
+  python_packages:
+    - "aiohttp==3.9.0  # Async HTTP client"
+    - "httpx==0.25.0  # Alternative async HTTP"
+    - "authlib==1.2.1  # OAuth2 support"
+    - "pydantic==2.4.2  # Data validation"
+    - "redis==5.0.0  # Rate limiting storage"
+    
+  internal:
+    - system: "SYSTEM-CA-001"
+      component: "app/db/connection.py"
+      reason: "Database access for API source configs"
+
+estimated_effort:
+  development: "40 hours (1 week)"
+  testing: "16 hours"
+  total: "56 hours"
+
+implementation_notes: |
+  1. Use aiohttp for async HTTP requests to enable concurrent API calls
+  2. Store rate limit tokens in Redis for distributed rate limiting
+  3. Circuit breaker state persists in PostgreSQL to survive restarts
+  4. Auth tokens cached in Redis with TTL matching token expiry
+  5. Connection pool size: 100 concurrent connections per worker

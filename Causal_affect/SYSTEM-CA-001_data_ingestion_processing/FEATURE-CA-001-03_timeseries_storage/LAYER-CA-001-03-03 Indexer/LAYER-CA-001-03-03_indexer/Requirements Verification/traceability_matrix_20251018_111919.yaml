@@ -1,0 +1,143 @@
+matrix_metadata:
+  timestamp: '20251018_111919'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping: []
+implementation_to_requirement_mapping:
+- implementation_file: LAYER-CA-001-03-03 Indexer/LAYER-CA-001-03-03_indexer/src/implementation.py
+  lines: 420
+  methods:
+  - name: __init__
+    lines: 20-28
+  - name: _update_file_info
+    lines: 29-43
+  - name: _calculate_checksum
+    lines: 44-55
+  - name: to_dict
+    lines: 56-67
+  - name: from_dict
+    lines: 68-77
+  - name: __init__
+    lines: 81-91
+  - name: _load_index
+    lines: 92-103
+  - name: save_index
+    lines: 104-113
+  - name: add_file
+    lines: 114-132
+  - name: add_directory
+    lines: 133-176
+  - name: remove_file
+    lines: 177-192
+  - name: get_entry
+    lines: 193-204
+  - name: update_entry
+    lines: 205-225
+  - name: search
+    lines: 226-255
+  - name: verify_integrity
+    lines: 256-302
+  - name: clear
+    lines: 303-307
+  - name: get_stats
+    lines: 308-329
+  - name: export_index
+    lines: 330-357
+  - name: import_index
+    lines: 358-376
+  - name: create_indexer
+    lines: 377-390
+  - name: quick_index_directory
+    lines: 391-406
+  - name: verify_file_integrity
+    lines: 407-417
+  classes:
+  - name: IndexEntry
+    type: class
+    lines: 17-77
+  - name: Indexer
+    type: class
+    lines: 78-420
+  implements_requirements: []
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: LAYER-CA-001-03-03 Indexer/LAYER-CA-001-03-03_indexer/tests/test_generated_20251018_111826.py
+  test_count: 0
+  implementation_files:
+  - LAYER-CA-001-03-03 Indexer/LAYER-CA-001-03-03_indexer/src/implementation.py
+  methods_tested:
+  - __init__
+  - _update_file_info
+  - _calculate_checksum
+  - to_dict
+  - from_dict
+  - __init__
+  - _load_index
+  - save_index
+  - add_file
+  - add_directory
+  - remove_file
+  - get_entry
+  - update_entry
+  - search
+  - verify_integrity
+  - clear
+  - get_stats
+  - export_index
+  - import_index
+  - create_indexer
+  - quick_index_directory
+  - verify_file_integrity
+  classes_tested:
+  - IndexEntry
+  - Indexer
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: LAYER-CA-001-03-03 Indexer/LAYER-CA-001-03-03_indexer/src/implementation.py:20-28
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: LAYER-CA-001-03-03 Indexer/LAYER-CA-001-03-03_indexer/tests/test_generated_20251018_111826.py
+  verified: true
+- implementation_location: LAYER-CA-001-03-03 Indexer/LAYER-CA-001-03-03_indexer/src/implementation.py:29-43
+  method_name: _update_file_info
+  requirement: AC-001
+  test: test__update_file_info
+  test_file: LAYER-CA-001-03-03 Indexer/LAYER-CA-001-03-03_indexer/tests/test_generated_20251018_111826.py
+  verified: true
+- implementation_location: LAYER-CA-001-03-03 Indexer/LAYER-CA-001-03-03_indexer/src/implementation.py:44-55
+  method_name: _calculate_checksum
+  requirement: AC-001
+  test: test__calculate_checksum
+  test_file: LAYER-CA-001-03-03 Indexer/LAYER-CA-001-03-03_indexer/tests/test_generated_20251018_111826.py
+  verified: true
+- implementation_location: LAYER-CA-001-03-03 Indexer/LAYER-CA-001-03-03_indexer/src/implementation.py:56-67
+  method_name: to_dict
+  requirement: AC-001
+  test: test_to_dict
+  test_file: LAYER-CA-001-03-03 Indexer/LAYER-CA-001-03-03_indexer/tests/test_generated_20251018_111826.py
+  verified: true
+- implementation_location: LAYER-CA-001-03-03 Indexer/LAYER-CA-001-03-03_indexer/src/implementation.py:68-77
+  method_name: from_dict
+  requirement: AC-001
+  test: test_from_dict
+  test_file: LAYER-CA-001-03-03 Indexer/LAYER-CA-001-03-03_indexer/tests/test_generated_20251018_111826.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 0
+  requirements_traced: 0
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

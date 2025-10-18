@@ -1,0 +1,141 @@
+matrix_metadata:
+  timestamp: '20251018_105351'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-LY-001-02-03-01
+  requirement: All dates stored in ISO 8601 UTC format
+  description: All dates stored in ISO 8601 UTC format
+  test_files:
+  - LAYER-CA-001-02-03 Transformer/LAYER-CA-001-02-03_transformer/tests/test_generated_20251018_105316.py
+  test_methods:
+  - test_ac-ly-001-02-03-01
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: LAYER-CA-001-02-03 Transformer/LAYER-CA-001-02-03_transformer/src/implementation.py
+  lines: 290
+  methods:
+  - name: __init__
+    lines: 10-13
+  - name: transform
+    lines: 14-40
+  - name: _apply_transformation
+    lines: 41-75
+  - name: _ensure_iso8601_utc
+    lines: 76-120
+  - name: get_transformation_history
+    lines: 121-129
+  - name: clear_history
+    lines: 130-133
+  - name: batch_transform
+    lines: 134-151
+  - name: get_statistics
+    lines: 152-174
+  - name: validate_iso8601_utc
+    lines: 179-196
+  - name: validate_data_structure
+    lines: 197-223
+  - name: __init__
+    lines: 227-230
+  - name: add_step
+    lines: 231-247
+  - name: execute
+    lines: 248-262
+  - name: clear
+    lines: 263-267
+  - name: ensure_dates_iso8601_utc
+    lines: 268-281
+  - name: create_transformer
+    lines: 282-292
+  classes:
+  - name: TransformerService
+    type: class
+    lines: 7-174
+  - name: DataValidator
+    type: class
+    lines: 175-223
+  - name: TransformationPipeline
+    type: class
+    lines: 224-290
+  implements_requirements:
+  - AC-LY-001-02-03-01
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: LAYER-CA-001-02-03 Transformer/LAYER-CA-001-02-03_transformer/tests/test_generated_20251018_105316.py
+  test_count: 0
+  implementation_files:
+  - LAYER-CA-001-02-03 Transformer/LAYER-CA-001-02-03_transformer/src/implementation.py
+  methods_tested:
+  - __init__
+  - transform
+  - _apply_transformation
+  - _ensure_iso8601_utc
+  - get_transformation_history
+  - clear_history
+  - batch_transform
+  - get_statistics
+  - validate_iso8601_utc
+  - validate_data_structure
+  - __init__
+  - add_step
+  - execute
+  - clear
+  - ensure_dates_iso8601_utc
+  - create_transformer
+  classes_tested:
+  - TransformerService
+  - DataValidator
+  - TransformationPipeline
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: LAYER-CA-001-02-03 Transformer/LAYER-CA-001-02-03_transformer/src/implementation.py:10-13
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: LAYER-CA-001-02-03 Transformer/LAYER-CA-001-02-03_transformer/tests/test_generated_20251018_105316.py
+  verified: true
+- implementation_location: LAYER-CA-001-02-03 Transformer/LAYER-CA-001-02-03_transformer/src/implementation.py:14-40
+  method_name: transform
+  requirement: AC-001
+  test: test_transform
+  test_file: LAYER-CA-001-02-03 Transformer/LAYER-CA-001-02-03_transformer/tests/test_generated_20251018_105316.py
+  verified: true
+- implementation_location: LAYER-CA-001-02-03 Transformer/LAYER-CA-001-02-03_transformer/src/implementation.py:41-75
+  method_name: _apply_transformation
+  requirement: AC-001
+  test: test__apply_transformation
+  test_file: LAYER-CA-001-02-03 Transformer/LAYER-CA-001-02-03_transformer/tests/test_generated_20251018_105316.py
+  verified: true
+- implementation_location: LAYER-CA-001-02-03 Transformer/LAYER-CA-001-02-03_transformer/src/implementation.py:76-120
+  method_name: _ensure_iso8601_utc
+  requirement: AC-001
+  test: test__ensure_iso8601_utc
+  test_file: LAYER-CA-001-02-03 Transformer/LAYER-CA-001-02-03_transformer/tests/test_generated_20251018_105316.py
+  verified: true
+- implementation_location: LAYER-CA-001-02-03 Transformer/LAYER-CA-001-02-03_transformer/src/implementation.py:121-129
+  method_name: get_transformation_history
+  requirement: AC-001
+  test: test_get_transformation_history
+  test_file: LAYER-CA-001-02-03 Transformer/LAYER-CA-001-02-03_transformer/tests/test_generated_20251018_105316.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 1
+  requirements_traced: 1
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%
