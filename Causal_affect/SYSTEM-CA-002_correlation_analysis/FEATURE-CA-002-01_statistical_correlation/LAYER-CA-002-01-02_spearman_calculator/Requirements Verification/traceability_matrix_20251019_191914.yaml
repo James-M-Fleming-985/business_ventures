@@ -1,0 +1,232 @@
+matrix_metadata:
+  timestamp: '20251019_191914'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-001
+  requirement: Calculation produces statistically correct results
+  description: Calculation produces statistically correct results
+  test_files: &id001
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-01_statistical_correlation/LAYER-CA-002-01-02_spearman_calculator/tests/test_generated_20251019_191828.py
+  test_methods:
+  - test_ac_001
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-002
+  requirement: Handles missing data gracefully
+  description: Handles missing data gracefully
+  test_files: *id001
+  test_methods:
+  - test_ac_002
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-003
+  requirement: Returns results in expected format
+  description: Returns results in expected format
+  test_files: *id001
+  test_methods:
+  - test_ac_003
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-004
+  requirement: Integrates with feature orchestrator
+  description: Integrates with feature orchestrator
+  test_files: *id001
+  test_methods:
+  - test_ac_004
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-005
+  requirement: Completes calculation in <5 seconds for 10K data points
+  description: Completes calculation in <5 seconds for 10K data points
+  test_files: *id001
+  test_methods:
+  - test_ac_005
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-006
+  requirement: Supports concurrent execution
+  description: Supports concurrent execution
+  test_files: *id001
+  test_methods:
+  - test_ac_006
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-007
+  requirement: Unit test coverage >90%
+  description: Unit test coverage >90%
+  test_files: *id001
+  test_methods:
+  - test_ac_007
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-008
+  requirement: Passes integration tests
+  description: Passes integration tests
+  test_files: *id001
+  test_methods:
+  - test_ac_008
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-009
+  requirement: Code follows project style guide
+  description: Code follows project style guide
+  test_files: *id001
+  test_methods:
+  - test_ac_009
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-010
+  requirement: Documentation complete
+  description: Documentation complete
+  test_files: *id001
+  test_methods:
+  - test_ac_010
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-01_statistical_correlation/LAYER-CA-002-01-02_spearman_calculator/src/implementation.py
+  lines: 318
+  methods:
+  - name: __init__
+    lines: 41-52
+  - name: _validate_confidence_level
+    lines: 53-57
+  - name: calculate
+    lines: 58-100
+  - name: _validate_and_clean_data
+    lines: 101-136
+  - name: _calculate_confidence_interval
+    lines: 137-166
+  - name: calculate_pairwise
+    lines: 167-205
+  - name: _calculate_pair
+    lines: 206-209
+  - name: calculate_with_bootstrapping
+    lines: 210-252
+  - name: __init__
+    lines: 256-260
+  - name: calculate_correlation
+    lines: 261-279
+  - name: integrate_with_calculator
+    lines: 280-295
+  - name: calculate_spearman_correlation
+    lines: 296-306
+  classes:
+  - name: CorrelationMethod
+    type: class
+    lines: 16-22
+  - name: CorrelationResult
+    type: class
+    lines: 23-32
+  - name: SpearmanCalculator
+    type: class
+    lines: 33-252
+  - name: FeatureOrchestrator
+    type: class
+    lines: 253-318
+  implements_requirements:
+  - AC-001
+  - AC-002
+  - AC-003
+  - AC-004
+  - AC-005
+  - AC-006
+  - AC-007
+  - AC-008
+  - AC-009
+  - AC-010
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-01_statistical_correlation/LAYER-CA-002-01-02_spearman_calculator/tests/test_generated_20251019_191828.py
+  test_count: 0
+  implementation_files:
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-01_statistical_correlation/LAYER-CA-002-01-02_spearman_calculator/src/implementation.py
+  methods_tested:
+  - __init__
+  - _validate_confidence_level
+  - calculate
+  - _validate_and_clean_data
+  - _calculate_confidence_interval
+  - calculate_pairwise
+  - _calculate_pair
+  - calculate_with_bootstrapping
+  - __init__
+  - calculate_correlation
+  - integrate_with_calculator
+  - calculate_spearman_correlation
+  classes_tested:
+  - CorrelationMethod
+  - CorrelationResult
+  - SpearmanCalculator
+  - FeatureOrchestrator
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-01_statistical_correlation/LAYER-CA-002-01-02_spearman_calculator/src/implementation.py:41-52
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-01_statistical_correlation/LAYER-CA-002-01-02_spearman_calculator/tests/test_generated_20251019_191828.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-01_statistical_correlation/LAYER-CA-002-01-02_spearman_calculator/src/implementation.py:53-57
+  method_name: _validate_confidence_level
+  requirement: AC-001
+  test: test__validate_confidence_level
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-01_statistical_correlation/LAYER-CA-002-01-02_spearman_calculator/tests/test_generated_20251019_191828.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-01_statistical_correlation/LAYER-CA-002-01-02_spearman_calculator/src/implementation.py:58-100
+  method_name: calculate
+  requirement: AC-001
+  test: test_calculate
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-01_statistical_correlation/LAYER-CA-002-01-02_spearman_calculator/tests/test_generated_20251019_191828.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-01_statistical_correlation/LAYER-CA-002-01-02_spearman_calculator/src/implementation.py:101-136
+  method_name: _validate_and_clean_data
+  requirement: AC-001
+  test: test__validate_and_clean_data
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-01_statistical_correlation/LAYER-CA-002-01-02_spearman_calculator/tests/test_generated_20251019_191828.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-01_statistical_correlation/LAYER-CA-002-01-02_spearman_calculator/src/implementation.py:137-166
+  method_name: _calculate_confidence_interval
+  requirement: AC-001
+  test: test__calculate_confidence_interval
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-01_statistical_correlation/LAYER-CA-002-01-02_spearman_calculator/tests/test_generated_20251019_191828.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 10
+  requirements_traced: 10
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

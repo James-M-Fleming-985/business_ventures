@@ -1,0 +1,149 @@
+# ====================================================================================
+# FEATURE REQUIREMENTS: Correlation Dashboard & Visualization
+# ====================================================================================
+# FEATURE ID: FEATURE-CA-002-04
+# VERSION: 1.0.0
+# LAST UPDATED: 2025-10-19
+# SYSTEM: CA-002 Correlation Analysis Engine
+# ====================================================================================
+
+metadata:
+  requirement_id: "FEATURE-CA-002-04"
+  requirement_name: "Correlation Dashboard & Visualization"
+  feature_code: "CA-002-04"
+  version: "1.0.0"
+  status: "Active"
+  created_date: "2025-10-19"
+  last_modified: "2025-10-19"
+  owner: "Causal Affect Team"
+  priority: "MUST HAVE"
+  target_date: "2025-01-30"
+
+# ====================================================================================
+# FEATURE OVERVIEW
+# ====================================================================================
+
+overview:
+  description: |
+    Interactive web dashboard for exploring correlations with heatmaps, time-series plots, network graphs, leaderboards, and drill-down views.
+  
+  business_value:
+    - "Enables visual exploration of correlation patterns"
+    - "Provides intuitive access to complex statistical results"
+    - "Supports data-driven decision making for MVP selection"
+    - "Facilitates communication of findings to stakeholders"
+  
+  user_story: |
+    As a product manager, I want an interactive dashboard to explore correlations visually, so that I can identify promising MVP opportunities and communicate findings to the team.
+  
+  acceptance_criteria:
+    - "All layer implementations complete and passing tests"
+    - "API endpoints functional and returning correct data"
+    - "Integration with CA-001 data source working"
+    - "Performance meets system requirements"
+    - "Documentation complete and accurate"
+
+# ====================================================================================
+# LAYER ARCHITECTURE
+# ====================================================================================
+
+layers:
+  - layer_id: "LAYER-CA-002-04-01"
+    name: "Heatmap Generator"
+    responsibility: "Generates interactive correlation matrix heatmaps"
+    technology: "D3.js, React"
+    requirement_file: "LAYER-CA-002-04-01_heatmap_generator.yaml"
+    requirements:
+      - "LAYER-CA-002-04-01"
+  
+  - layer_id: "LAYER-CA-002-04-02"
+    name: "Time Series Plotter"
+    responsibility: "Plots time-series data with correlation overlays"
+    technology: "Recharts, React"
+    requirement_file: "LAYER-CA-002-04-02_time_series_plotter.yaml"
+    requirements:
+      - "LAYER-CA-002-04-02"
+  
+  - layer_id: "LAYER-CA-002-04-03"
+    name: "Network Graph"
+    responsibility: "Visualizes causal relationships as directed network graphs"
+    technology: "D3.js, React, NetworkX"
+    requirement_file: "LAYER-CA-002-04-03_network_graph.yaml"
+    requirements:
+      - "LAYER-CA-002-04-03"
+  
+  - layer_id: "LAYER-CA-002-04-04"
+    name: "Leaderboard"
+    responsibility: "Displays top correlations ranked by exploitation score"
+    technology: "React, Tailwind CSS"
+    requirement_file: "LAYER-CA-002-04-04_leaderboard.yaml"
+    requirements:
+      - "LAYER-CA-002-04-04"
+  
+
+# ====================================================================================
+# FEATURE REQUIREMENTS
+# ====================================================================================
+
+requirements:
+  - id: "FEAT-CA-002-04-REQ-001"
+    title: "Core Implementation"
+    description: "Implement all layers with correct statistical algorithms and data handling"
+    priority: "MUST HAVE"
+    status: "Active"
+    traces_to:
+      system_requirements: ["SYSTEM-CA-002"]
+      layer_requirements: ["LAYER-CA-002-04-01", "LAYER-CA-002-04-02", "LAYER-CA-002-04-03", "LAYER-CA-002-04-04"]
+  
+  - id: "FEAT-CA-002-04-REQ-002"
+    title: "Integration"
+    description: "Integrate with CA-001 TimescaleDB and system orchestrator"
+    priority: "MUST HAVE"
+    status: "Active"
+    traces_to:
+      system_requirements: ["SYSTEM-CA-002", "SYSTEM-CA-001"]
+  
+  - id: "FEAT-CA-002-04-REQ-003"
+    title: "Testing"
+    description: "Unit, integration, and end-to-end tests with >85% coverage"
+    priority: "MUST HAVE"
+    status: "Active"
+    traces_to:
+      system_requirements: ["SYSTEM-CA-002"]
+  
+  - id: "FEAT-CA-002-04-REQ-004"
+    title: "Performance"
+    description: "Meet performance requirements specified in SYSTEM-CA-002"
+    priority: "MUST HAVE"
+    status: "Active"
+    traces_to:
+      system_requirements: ["SYSTEM-CA-002"]
+  
+  - id: "FEAT-CA-002-04-REQ-005"
+    title: "Documentation"
+    description: "API documentation, architectural decisions, usage examples"
+    priority: "MUST HAVE"
+    status: "Active"
+    traces_to:
+      system_requirements: ["SYSTEM-CA-002"]
+
+# ====================================================================================
+# TECHNICAL SPECIFICATIONS
+# ====================================================================================
+
+technical_specifications:
+  architecture: "Feature-based architecture with service layer pattern"
+  data_flow: "CA-001 → Data Retrieval → Calculation → Cache → API Response"
+  error_handling: "Comprehensive error handling with graceful degradation"
+  caching: "Redis caching for expensive calculations"
+  testing: "Pytest with fixtures, mocks, and real data validation"
+
+# ====================================================================================
+# TRACEABILITY
+# ====================================================================================
+
+traceability:
+  traces_from:
+    system: "SYSTEM-CA-002"
+  traces_to:
+    layers: ["LAYER-CA-002-04-01", "LAYER-CA-002-04-02", "LAYER-CA-002-04-03", "LAYER-CA-002-04-04"]

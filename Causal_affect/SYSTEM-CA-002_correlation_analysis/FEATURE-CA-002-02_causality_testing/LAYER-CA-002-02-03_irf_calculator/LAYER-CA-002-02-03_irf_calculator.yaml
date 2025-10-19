@@ -1,0 +1,91 @@
+metadata:
+  requirement_id: LAYER-CA-002-02-03
+  requirement_title: IRF Calculator
+  layer: LAYER-CA-002-02-03_irf_calculator
+  feature: FEATURE-CA-002-02_causality_testing_engine
+  version: 1.0.0
+  status: Active
+  priority: MUST HAVE
+  created_date: '2025-10-19'
+  updated_date: '2025-10-19'
+  owner: Causal Affect Team
+  target_date: '2025-01-30'
+  change_log:
+  - version: 1.0.0
+    date: '2025-10-19'
+    changes: Initial version
+requirement:
+  title: IRF Calculator
+  description: 'Calculates Impulse Response Functions to quantify shock effects
+
+
+    Part of the Causality Testing Engine feature in the CA-002 Correlation Analysis
+    Engine.
+
+    Integrates with CA-001 time-series data and provides results to system orchestrator.
+
+    '
+  rationale: 'This layer implements a critical component of the correlation analysis
+    pipeline.
+
+    It provides specialized functionality that contributes to the overall goal of
+
+    identifying exploitable market correlations for MVP opportunities.
+
+    '
+specification:
+  structure:
+    entry_point: src/backend/app/features/FEATURE-CA-002-02_causality_testing_engine/services/irf_calculator.py
+    modules:
+    - irf_calculator.py - Main implementation
+    - tests/test_irf_calculator.py - Unit tests
+  implementation_details:
+    libraries:
+    - Statsmodels
+    patterns:
+    - Service Layer Pattern
+    - Repository Pattern
+    error_handling:
+    - error_type: DataError
+      handling: Validate input data, raise informative errors
+    - error_type: CalculationError
+      handling: Log error, return None or default value
+  inputs:
+  - name: time_series_data
+    type: pd.DataFrame
+    description: Time-series data from CA-001
+    example: DataFrame with datetime index and variable columns
+  outputs:
+  - name: result
+    type: dict
+    description: Calculation result with statistics
+    example: '{"coefficient": 0.85, "p_value": 0.001, "confidence_interval": [0.75,
+      0.95]}'
+acceptance_criteria:
+- criterion: Calculation produces statistically correct results
+  category: functional
+- criterion: Handles missing data gracefully
+  category: functional
+- criterion: Returns results in expected format
+  category: functional
+- criterion: Integrates with feature orchestrator
+  category: functional
+- criterion: Completes calculation in <5 seconds for 10K data points
+  category: performance
+- criterion: Supports concurrent execution
+  category: performance
+- criterion: Unit test coverage >90%
+  category: quality
+- criterion: Passes integration tests
+  category: quality
+- criterion: Code follows project style guide
+  category: quality
+- criterion: Documentation complete
+  category: quality
+traceability:
+  traces_from:
+    feature: FEATURE-CA-002-02
+    system: SYSTEM-CA-002
+  traces_to:
+    implementation: src/backend/app/features/FEATURE-CA-002-02_causality_testing_engine/services/irf_calculator.py
+    tests: src/backend/app/features/FEATURE-CA-002-02_causality_testing_engine/tests/test_irf_calculator.py

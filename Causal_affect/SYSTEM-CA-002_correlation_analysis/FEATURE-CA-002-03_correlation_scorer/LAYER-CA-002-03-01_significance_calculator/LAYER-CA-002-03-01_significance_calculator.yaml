@@ -1,0 +1,93 @@
+metadata:
+  requirement_id: LAYER-CA-002-03-01
+  requirement_title: Significance Calculator
+  layer: LAYER-CA-002-03-01_significance_calculator
+  feature: FEATURE-CA-002-03_correlation_exploitation_scorer
+  version: 1.0.0
+  status: Active
+  priority: MUST HAVE
+  created_date: '2025-10-19'
+  updated_date: '2025-10-19'
+  owner: Causal Affect Team
+  target_date: '2025-01-30'
+  change_log:
+  - version: 1.0.0
+    date: '2025-10-19'
+    changes: Initial version
+requirement:
+  title: Significance Calculator
+  description: 'Calculates p-values, applies multiple testing corrections (Bonferroni,
+    FDR)
+
+
+    Part of the Correlation Exploitation Scorer feature in the CA-002 Correlation
+    Analysis Engine.
+
+    Integrates with CA-001 time-series data and provides results to system orchestrator.
+
+    '
+  rationale: 'This layer implements a critical component of the correlation analysis
+    pipeline.
+
+    It provides specialized functionality that contributes to the overall goal of
+
+    identifying exploitable market correlations for MVP opportunities.
+
+    '
+specification:
+  structure:
+    entry_point: src/backend/app/features/FEATURE-CA-002-03_correlation_exploitation_scorer/services/significance_calculator.py
+    modules:
+    - significance_calculator.py - Main implementation
+    - tests/test_significance_calculator.py - Unit tests
+  implementation_details:
+    libraries:
+    - SciPy
+    - Statsmodels
+    patterns:
+    - Service Layer Pattern
+    - Repository Pattern
+    error_handling:
+    - error_type: DataError
+      handling: Validate input data, raise informative errors
+    - error_type: CalculationError
+      handling: Log error, return None or default value
+  inputs:
+  - name: time_series_data
+    type: pd.DataFrame
+    description: Time-series data from CA-001
+    example: DataFrame with datetime index and variable columns
+  outputs:
+  - name: result
+    type: dict
+    description: Calculation result with statistics
+    example: '{"coefficient": 0.85, "p_value": 0.001, "confidence_interval": [0.75,
+      0.95]}'
+acceptance_criteria:
+- criterion: Calculation produces statistically correct results
+  category: functional
+- criterion: Handles missing data gracefully
+  category: functional
+- criterion: Returns results in expected format
+  category: functional
+- criterion: Integrates with feature orchestrator
+  category: functional
+- criterion: Completes calculation in <5 seconds for 10K data points
+  category: performance
+- criterion: Supports concurrent execution
+  category: performance
+- criterion: Unit test coverage >90%
+  category: quality
+- criterion: Passes integration tests
+  category: quality
+- criterion: Code follows project style guide
+  category: quality
+- criterion: Documentation complete
+  category: quality
+traceability:
+  traces_from:
+    feature: FEATURE-CA-002-03
+    system: SYSTEM-CA-002
+  traces_to:
+    implementation: src/backend/app/features/FEATURE-CA-002-03_correlation_exploitation_scorer/services/significance_calculator.py
+    tests: src/backend/app/features/FEATURE-CA-002-03_correlation_exploitation_scorer/tests/test_significance_calculator.py

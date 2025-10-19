@@ -1,415 +1,661 @@
-# SYSTEM-CA-002: Correlation Analysis & Pattern Recognition
-# ==========================================================
+# SYSTEM-CA-002: Correlation Analysis Engine
+# ==========================================
 
 metadata:
   system_id: SYSTEM-CA-002
-  system_name: Correlation Analysis & Pattern Recognition
+  system_name: Correlation Analysis Engine
   parent_project: PROJECT-CAUSAL_AFFECT
-  created_date: 2025-10-13
+  created_date: 2025-01-19
   status: planned
   priority: critical
   
   purpose: |
-    Correlation calculation engine that identifies strong variable relationships.
-    Phase 1: 1000-2000 correlations in 20 minutes. Scales to 10000+ as needed.
+    Analyzes time-series data from CA-001 to identify statistically significant
+    correlations between variables. Performs causality testing to distinguish
+    correlation from causation. Scores correlations by exploitability for MVP
+    opportunities. Provides interactive dashboard for correlation exploration.
   
   business_value: |
-    - Discovers novel variable relationships before competitors
-    - Filters statistically significant correlations (p<0.05)
-    - Prioritizes by exploitability potential
-    - Enables data-driven opportunity identification
+    - Identifies market opportunities from data relationships
+    - Distinguishes actionable correlations from noise
+    - Provides foundation for drift forecasting (CA-003)
+    - Enables data-driven MVP recommendations (CA-004)
+    - Reduces false positives through rigorous statistical testing
 
 deployment:
   platform: Railway
-  service_type: Backend worker service (Celery workers)
-  scaling: 2-4 workers (Phase 1) → 8-16 workers (Phase 2)
-  estimated_cost: "$40/month (Phase 1) → $150/month (Phase 2)"
+  service_type: Backend API + Frontend Dashboard
+  scaling: 1 backend + 1 frontend (Phase 1) → 2-3 replicas (Phase 2)
+  estimated_cost: "$25/month (Phase 1) → $70/month (Phase 2)"
   
-  railway_config:
+  railway_config_backend:
     builder: NIXPACKS
     build_command: "pip install -r requirements.txt"
-    start_command: "celery -A app.correlation worker --loglevel=info --concurrency=4"
+    start_command: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
     health_check: "/health"
     restart_policy: ON_FAILURE
+  
+  railway_config_frontend:
+    builder: NIXPACKS
+    build_command: "npm install && npm run build"
+    start_command: "npm run preview -- --host 0.0.0.0 --port $PORT"
+    health_check: "/"
+    restart_policy: ON_FAILURE
+
+code_generation:
+  repository_root: "/workspaces/business_ventures/Causal_affect"
+  system_folder: "SYSTEM-CA-002_correlation_analysis"
+  
+  folder_structure:
+    requirements:
+      description: "Hierarchical folder structure with FEATURE and LAYER folders"
+      structure: |
+        SYSTEM-CA-002_correlation_analysis/
+        ├── SYSTEM-CA-002.yaml (at root)
+        ├── FEATURE-CA-002-01_statistical_correlation/
+        │   ├── FEATURE-CA-002-01_statistical_correlation.yaml
+        │   ├── LAYER-CA-002-01-01_pearson_calculator/
+        │   │   └── LAYER-CA-002-01-01_pearson_calculator.yaml
+        │   ├── LAYER-CA-002-01-02_spearman_calculator/
+        │   │   └── LAYER-CA-002-01-02_spearman_calculator.yaml
+        │   └── ... (additional layers)
+        ├── FEATURE-CA-002-02_causality_testing/
+        │   └── FEATURE-CA-002-02_causality_testing.yaml
+        ├── FEATURE-CA-002-03_correlation_scorer/
+        │   └── FEATURE-CA-002-03_correlation_scorer.yaml
+        └── FEATURE-CA-002-04_correlation_dashboard/
+            └── FEATURE-CA-002-04_correlation_dashboard.yaml
+      
+      naming_convention:
+        feature_folder: "FEATURE-{SYSTEM_ID}-{NUMBER}_{feature_name}"
+        feature_file: "FEATURE-{SYSTEM_ID}-{NUMBER}_{feature_name}.yaml"
+        layer_folder: "LAYER-{SYSTEM_ID}-{FEATURE_NUM}-{LAYER_NUM}_{layer_name}"
+        layer_file: "LAYER-{SYSTEM_ID}-{FEATURE_NUM}-{LAYER_NUM}_{layer_name}.yaml"
+      
+      example_paths:
+        - "SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-01_statistical_correlation/FEATURE-CA-002-01_statistical_correlation.yaml"
+        - "SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-01_statistical_correlation/LAYER-CA-002-01-01_pearson_calculator/LAYER-CA-002-01-01_pearson_calculator.yaml"
+    
+    source_backend:
+      base_path: "SYSTEM-CA-002_correlation_analysis/src/backend"
+      description: |
+        FastAPI backend implementation with hybrid architecture.
+        NOTE: All generated files will be saved INSIDE the SYSTEM folder at:
+        /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/src/backend/app/
+      entry_point: "app/main.py"
+      structure:
+        app:
+          - "__init__.py"
+          - "main.py          # FastAPI app instance, lifespan, routers"
+          - "config.py        # System-wide Pydantic Settings"
+          - "api/             # Thin router wrappers calling feature services
+              - __init__.py
+              - correlation.py     # Routes to correlation calculation
+              - causality.py       # Routes to causality testing
+              - scoring.py         # Routes to correlation scoring
+              - dashboard.py       # Routes to dashboard data"
+          - "db/              # System-level database infrastructure ONLY
+              - __init__.py
+              - connection.py      # SQLAlchemy engine, async session factory
+              - base.py            # Declarative base for features to inherit"
+          - "middleware/      # Cross-cutting concerns
+              - __init__.py
+              - error_handler.py   # Global exception handling
+              - logging.py         # Request/response logging
+              - cors.py            # CORS configuration"
+          - "schemas/         # Shared DTOs only (no domain models)
+              - __init__.py
+              - health.py          # HealthResponse
+              - error.py           # ErrorResponse, ValidationError"
+          - "api/__init__.py"
+        features:
+          - "FEATURE-CA-002-01_statistical_correlation/
+              - __init__.py
+              - services/         # Pearson, Spearman, Kendall, Partial, Lagged calculators
+              - models/           # Correlation result models
+              - db/               # Correlation cache schema, repositories
+              - tests/            # Unit tests for correlation calculations"
+          - "FEATURE-CA-002-02_causality_testing/
+              - __init__.py
+              - services/         # Granger, VAR, IRF, TransferEntropy, DAG
+              - models/           # Causality test result models
+              - db/               # Causality test schema, repositories
+              - tests/            # Unit tests for causality tests"
+          - "FEATURE-CA-002-03_correlation_scorer/
+              - __init__.py
+              - services/         # StatSigCalculator, EffectSizeAnalyzer, StabilityTracker
+              - models/           # Score models, ranking models
+              - db/               # Scoring schema, repositories
+              - tests/            # Unit tests for scoring logic"
+          - "FEATURE-CA-002-04_correlation_dashboard/
+              - __init__.py
+              - services/         # DashboardAggregator, ChartGenerator, NetworkGraphBuilder
+              - models/           # Dashboard config, chart data models
+              - db/               # Dashboard config schema
+              - tests/            # Unit tests for dashboard services"
+        root_files:
+          - "requirements.txt # Python dependencies"
+          - "Dockerfile       # Production container"
+          - "Dockerfile.dev   # Development container"
+          - ".env.example     # Environment variable template"
+      
+    source_frontend:
+      base_path: "SYSTEM-CA-002_correlation_analysis/src/frontend"
+      description: "React + Vite + TypeScript frontend with D3.js visualizations"
+      entry_point: "src/main.tsx"
+      structure:
+        src:
+          - "main.tsx         # React entry point"
+          - "App.tsx          # Root component with routing"
+          - "config.ts        # Frontend configuration"
+          - "components/      # React components (Heatmap, NetworkGraph, Leaderboard)"
+          - "services/        # API client for correlation data"
+          - "stores/          # Zustand state management"
+          - "types/           # TypeScript type definitions"
+        root_files:
+          - "package.json     # NPM dependencies"
+          - "vite.config.ts   # Vite build configuration"
+          - "tsconfig.json    # TypeScript configuration"
+          - "Dockerfile.dev   # Development container"
+          - ".env.example     # Environment variable template"
+    
+    configuration:
+      base_path: "SYSTEM-CA-002_correlation_analysis"
+      description: "Deployment and development configuration"
+      files:
+        - "railway.json           # Railway deployment configuration"
+        - "docker-compose.yml     # Local development environment"
+        - "README.md              # How to run CA-002 locally and deploy"
+        - ".gitignore             # Git ignore patterns"
+    
+    tests:
+      base_path: "SYSTEM-CA-002_correlation_analysis/tests"
+      description: "Test files mirroring source structure"
+      structure:
+        backend:
+          - "test_correlation.py      # Correlation calculation tests"
+          - "test_causality.py        # Causality testing tests"
+          - "test_scoring.py          # Scoring algorithm tests"
+          - "test_integration.py      # End-to-end integration tests"
+        frontend:
+          - "Heatmap.test.tsx         # Heatmap component tests"
+          - "NetworkGraph.test.tsx    # Network graph tests"
+          - "api.test.ts              # API client tests"
+    
+    documentation:
+      base_path: "SYSTEM-CA-002_correlation_analysis/docs"
+      description: "System-specific documentation"
+      files:
+        - "architecture.md           # System architecture and design decisions"
+        - "statistical-methods.md    # Correlation and causality methods explained"
+        - "scoring-algorithm.md      # Exploitation scoring formula"
+        - "deployment-guide.md       # Railway deployment instructions"
 
 system_requirements:
-  performance_phase_1:
-    calculation_rate: "1000-2000 correlation pairs in 20 minutes"
-    parallel_processing: "4 workers with Pandas/NumPy/SciPy"
-    memory_efficiency: "Handle 50-100 GB datasets"
-    real_time_scoring: "Prioritization scoring <1 minute"
+  core_capabilities:
+    - "Calculate Pearson, Spearman, Kendall correlations for all variable pairs"
+    - "Perform time-lagged correlation analysis (0-30 day lags)"
+    - "Execute Granger causality tests to identify causal relationships"
+    - "Build directed acyclic graphs (DAG) of causal relationships"
+    - "Score correlations by statistical significance, effect size, stability"
+    - "Rank correlations by exploitability for MVP opportunities"
+    - "Provide interactive correlation heatmap visualization"
+    - "Display network graph of causal relationships"
+    - "Export correlation reports in JSON/CSV formats"
+    - "API endpoints for downstream systems (CA-003, CA-004)"
   
-  performance_phase_2:
-    calculation_rate: "5000-10000 correlation pairs in 15 minutes"
-    parallel_processing: "8-16 workers with Dask for distributed computation"
-    memory_efficiency: "Handle 500 GB - 1 TB datasets"
+  performance_requirements:
+    - "Calculate correlations for 1000+ variable pairs in <5 minutes"
+    - "Granger causality tests complete in <10 minutes for 100 pairs"
+    - "Dashboard loads in <2 seconds"
+    - "Real-time filtering and search (<500ms response)"
+    - "Support 100K+ data points per variable"
   
-  accuracy:
-    statistical_significance: "p-value < 0.05 threshold"
-    false_positive_rate: "<5%"
-    correlation_strength_range: "-1.0 to +1.0 (Pearson)"
-    minimum_data_points: "30+ observations per correlation"
-  
-  scalability:
-    phase_1: "1000-2000 correlations with Pandas (in-memory)"
-    phase_2: "5000-10000 correlations with Dask (distributed)"
-    time_window_flexibility: "Multiple time ranges (1d, 7d, 30d, 90d)"
-    incremental_updates: "Add new correlations without full recalculation"
+  data_requirements:
+    - "Integrate with CA-001 TimescaleDB for time-series data"
+    - "Handle missing data gracefully (interpolation/imputation)"
+    - "Support multiple data frequencies (daily, weekly, monthly)"
+    - "Cache correlation results for performance"
+    - "Store causality test results for drift analysis"
 
 features:
   - feature_id: FEATURE-CA-002-01
-    feature_name: Parallel Correlation Calculation Engine
+    name: Statistical Correlation Calculator
     description: |
-      High-performance engine. Phase 1: Pandas/NumPy for 1000-2000 correlations.
-      Phase 2: Add Dask for 5000-10000 distributed correlations.
-    estimated_layers: 5-6
-    priority: critical
-    technology: Pandas + NumPy + SciPy → Dask (Phase 2)
+      Calculates multiple correlation coefficients between time-series variable pairs.
+      Supports Pearson (linear), Spearman (monotonic), Kendall Tau (rank), partial
+      correlation (controlling confounders), and time-lagged correlation (delayed effects).
+    layers:
+      - LAYER-CA-002-01-01: Pearson Calculator
+      - LAYER-CA-002-01-02: Spearman Calculator
+      - LAYER-CA-002-01-03: Kendall Tau Calculator
+      - LAYER-CA-002-01-04: Partial Correlation Calculator
+      - LAYER-CA-002-01-05: Lagged Correlation Calculator
     
   - feature_id: FEATURE-CA-002-02
-    feature_name: Statistical Significance Testing
+    name: Causality Testing Engine
     description: |
-      Validates correlation strength using p-values, confidence intervals,
-      and multiple testing corrections (Bonferroni, FDR)
-    estimated_layers: 4-5
-    priority: critical
+      Distinguishes correlation from causation using econometric tests. Implements
+      Granger causality, Vector Autoregression (VAR), Impulse Response Functions (IRF),
+      Transfer Entropy, and Directed Acyclic Graph (DAG) inference.
+    layers:
+      - LAYER-CA-002-02-01: Granger Causality Test
+      - LAYER-CA-002-02-02: VAR Model Builder
+      - LAYER-CA-002-02-03: IRF Calculator
+      - LAYER-CA-002-02-04: Transfer Entropy Calculator
+      - LAYER-CA-002-02-05: DAG Inference Engine
     
   - feature_id: FEATURE-CA-002-03
-    feature_name: Correlation Scoring & Prioritization
+    name: Correlation Exploitation Scorer
     description: |
-      Multi-factor scoring algorithm that ranks correlations by strength,
-      novelty, exploitability, and business potential
-    estimated_layers: 4-5
-    priority: critical
+      Ranks correlations by their potential for MVP exploitation. Scores based on
+      statistical significance, effect size, temporal stability, actionability, and
+      market size. Outputs prioritized list of exploitable correlations.
+    layers:
+      - LAYER-CA-002-03-01: Statistical Significance Calculator
+      - LAYER-CA-002-03-02: Effect Size Analyzer
+      - LAYER-CA-002-03-03: Temporal Stability Tracker
+      - LAYER-CA-002-03-04: Actionability Classifier
+      - LAYER-CA-002-03-05: Market Opportunity Estimator
     
   - feature_id: FEATURE-CA-002-04
-    feature_name: Pattern Recognition & Clustering
+    name: Correlation Dashboard & Visualization
     description: |
-      Identifies clusters of related correlations and patterns across
-      multiple variables using unsupervised learning
-    estimated_layers: 4-5
-    priority: high
-    
-  - feature_id: FEATURE-CA-002-05
-    feature_name: Correlation Results Storage & Indexing
-    description: |
-      Efficient storage and retrieval of correlation results with indexing
-      for fast querying and historical tracking
-    estimated_layers: 3-4
-    priority: high
+      Interactive web dashboard for exploring correlations. Provides heatmap,
+      time-series plots, network graphs, leaderboards, and drill-down views.
+      Supports filtering, search, and export functionality.
+    layers:
+      - LAYER-CA-002-04-01: Heatmap Generator
+      - LAYER-CA-002-04-02: Time Series Plotter
+      - LAYER-CA-002-04-03: Network Graph Builder
+      - LAYER-CA-002-04-04: Leaderboard Component
 
 acceptance_criteria:
-  - criterion_id: AC-SYS-002-01
-    criterion: "Calculate 10000+ correlation pairs within 10 minutes"
-    verification: "Performance benchmark with real dataset"
-    priority: critical
-    
-  - criterion_id: AC-SYS-002-02
-    criterion: "All correlations meet statistical significance (p<0.05)"
-    verification: "Statistical validation on test dataset"
-    priority: critical
-    
-  - criterion_id: AC-SYS-002-03
-    criterion: "False positive rate remains below 5%"
-    verification: "Validation against known correlations"
-    priority: critical
-    
-  - criterion_id: AC-SYS-002-04
-    criterion: "Prioritization algorithm ranks exploitable correlations highest"
-    verification: "Algorithm validation with historical success data"
-    priority: critical
-    
-  - criterion_id: AC-SYS-002-05
-    criterion: "System handles datasets exceeding 10 TB without failure"
-    verification: "Load test with large-scale data"
-    priority: high
-
-correlation_algorithms:
-  primary:
-    - "Pearson correlation coefficient (linear relationships)"
-    - "Spearman rank correlation (monotonic relationships)"
-    - "Kendall tau (ordinal relationships)"
+  statistical_accuracy:
+    - "Pearson correlations match scipy.stats.pearsonr within 0.001"
+    - "Granger p-values match statsmodels within 0.01"
+    - "All significance tests use appropriate corrections (Bonferroni, FDR)"
   
-  advanced:
-    - "Partial correlation (controlling for confounders)"
-    - "Time-lagged correlation (lead/lag relationships)"
-    - "Distance correlation (non-linear dependencies)"
+  performance:
+    - "1000 correlation pairs calculated in <5 minutes"
+    - "Dashboard loads initial view in <2 seconds"
+    - "Search/filter operations complete in <500ms"
   
-  statistical_tests:
-    - "P-value calculation for significance"
-    - "Confidence intervals (95%, 99%)"
-    - "Multiple testing correction (Bonferroni, FDR)"
-    - "Bootstrap resampling for robustness"
-
-scoring_factors:
-  correlation_strength:
-    weight: 0.30
-    description: "Absolute value of correlation coefficient"
+  data_integration:
+    - "Successfully queries CA-001 TimescaleDB"
+    - "Handles missing data without errors"
+    - "Caches results for repeated queries"
   
-  statistical_significance:
-    weight: 0.25
-    description: "Based on p-value (lower = better)"
-  
-  novelty_score:
-    weight: 0.20
-    description: "Not previously identified or documented"
-  
-  exploitability_potential:
-    weight: 0.15
-    description: "Can be acted upon within time window"
-  
-  data_quality:
-    weight: 0.10
-    description: "Number of observations, missing data ratio"
+  visualization_quality:
+    - "Heatmap renders for 100x100 correlation matrix"
+    - "Network graph displays 500+ nodes without lag"
+    - "Charts update smoothly (<100ms) on interaction"
 
 technology_stack:
-  computation: "Dask or Ray for distributed processing"
-  algorithms: "NumPy, SciPy, scikit-learn"
-  statistical_analysis: "statsmodels for advanced testing"
-  data_structures: "Pandas for tabular data manipulation"
-  storage: "PostgreSQL with GiST indexes"
-  caching: "Redis for frequently accessed correlations"
+  backend:
+    framework: "FastAPI 0.104+"
+    statistical_libs: "NumPy, SciPy, Pandas, Statsmodels"
+    causality_libs: "CausalNex, NetworkX, pyGranger"
+    database: "PostgreSQL 15 (shared with CA-001)"
+    cache: "Redis 7 for correlation results"
+    async: "asyncio, asyncpg for async database access"
+  
+  frontend:
+    framework: "React 18 + TypeScript"
+    visualization: "D3.js, Recharts, Plotly.js"
+    state_management: "Zustand"
+    build: "Vite"
+  
+  deployment:
+    platform: "Railway"
+    containers: "Docker multi-stage builds"
+    ci_cd: "GitHub Actions"
 
 dependencies:
   internal:
-    - "SYSTEM-CA-001: Data Ingestion (provides input data)"
+    - "SYSTEM-CA-001: Data Ingestion (provides time-series data)"
   
   external:
-    - "PostgreSQL database for results storage"
-    - "Redis for caching"
-    - "Dask/Ray cluster for distributed compute"
+    - "TimescaleDB (CA-001's time-series database)"
+    - "PostgreSQL (shared operational database)"
+    - "Redis (caching layer)"
 
 testing_requirements:
   philosophy: |
-    ALL TESTS MUST VERIFY ACTUAL CORRELATION CALCULATIONS AND STATISTICAL VALIDITY.
-    No synthetic perfect correlations. Use real messy data. Verify math is correct.
-    
-    1. Tests verify actual behavior, not just interfaces
-    2. Tests check side effects (results stored, metrics calculated correctly)
-    3. Tests use mocks to VERIFY calls, not just STUB returns
-    4. Integration tests run with REAL data and REAL calculations
-    5. Manual verification confirms correlations are meaningful and accurate
+    ALL TESTS MUST VERIFY ACTUAL STATISTICAL CALCULATIONS AND CAUSALITY TESTS.
+    Use real data samples to validate correctness. Compare against known libraries.
+    Test edge cases (missing data, constant series, perfect correlation).
   
   unit_tests:
-    minimum_count: 50
-    coverage_threshold: 0.90
-    
-    required_verifications:
-      correlation_calculation_tests:
-        - "VERIFY: Pearson correlation formula implemented correctly"
-        - "VERIFY: Known dataset produces expected correlation coefficient"
-        - "VERIFY: Handles missing data per business rules (drop, interpolate, etc.)"
-        - "VERIFY: Correlation of identical series = 1.0"
-        - "VERIFY: Correlation of inverse series = -1.0"
-        - "VERIFY: Correlation of random series ≈ 0 (within tolerance)"
-        - "VERIFY: Division by zero handled (zero variance case)"
-        - "NO MOCKING: Use real numpy/scipy functions, verify against known values"
-        - "EDGE CASE: Empty data, single data point, all zeros, all same value"
-        
-      statistical_significance_tests:
-        - "VERIFY: P-value calculation mathematically correct"
-        - "VERIFY: Known correlation produces expected p-value"
-        - "VERIFY: Sample size affects significance calculation"
-        - "VERIFY: P-value < 0.05 correctly identifies significant correlations"
-        - "VERIFY: Confidence intervals calculated correctly (95%, 99%)"
-        - "VERIFY: Multiple testing correction applied (Bonferroni, FDR)"
-        - "VERIFY: False positive rate controlled"
-        - "MATH CHECK: Use statistical reference values, verify precision"
-        
-      scoring_algorithm_tests:
-        - "VERIFY: Scoring formula produces expected range (0-100)"
-        - "VERIFY: Strong correlation scores higher than weak"
-        - "VERIFY: Novel correlations prioritized over known"
-        - "VERIFY: All scoring factors weighted correctly (sum to 1.0)"
-        - "VERIFY: Edge cases handled (negative correlations, zero scores)"
-        - "VERIFY: Scoring deterministic (same input = same score)"
-        - "VERIFY: Score persisted to database with correlation ID"
-        - "SIDE EFFECT: Check database for score values"
-        
-      parallel_processing_tests:
-        - "VERIFY: Results identical to sequential processing"
-        - "VERIFY: No race conditions in shared data structures"
-        - "VERIFY: All correlation pairs calculated (count verification)"
-        - "VERIFY: Performance scales with worker count"
-        - "VERIFY: Memory usage stays within limits"
-        - "REAL PARALLELISM: Use actual Dask/Ray, not mocked"
+    coverage_target: ">85%"
+    focus_areas:
+      - "Correlation calculation accuracy"
+      - "Causality test implementation"
+      - "Scoring algorithm correctness"
+      - "Data handling edge cases"
   
   integration_tests:
-    minimum_count: 25
-    coverage_threshold: 0.85
-    
     required_scenarios:
-      end_to_end_correlation_pipeline:
-        description: "Complete correlation analysis from data to stored results"
-        requirements:
-          - "INPUT: Real time-series data from data ingestion system"
-          - "VERIFY: Data loaded from TimescaleDB (actual query)"
-          - "VERIFY: 10000+ correlation pairs calculated"
-          - "VERIFY: Statistical significance computed for each pair"
-          - "VERIFY: Scores calculated and ranked"
-          - "VERIFY: Results stored in PostgreSQL (query to confirm)"
-          - "VERIFY: Completion time < 10 minutes (measured)"
-          - "NO MOCKING: All components real, verify end state"
-          - "MANUAL: Query database, spot-check correlation values"
-        
-      large_scale_calculation:
-        description: "10000+ correlations calculated correctly and efficiently"
-        requirements:
-          - "INPUT: Real dataset with 100+ variables over time"
-          - "CALCULATE: All pairwise correlations (N*(N-1)/2 pairs)"
-          - "VERIFY: Correlation matrix symmetric (corr(A,B) = corr(B,A))"
-          - "VERIFY: Diagonal elements = 1.0 (self-correlation)"
-          - "VERIFY: No NaN or Inf values in results"
-          - "VERIFY: All results have valid p-values"
-          - "VERIFY: Calculation completes within SLA (10 minutes)"
-          - "PERFORMANCE: Measure time, memory, CPU usage"
-          - "MATH VALIDATION: Sample correlations, verify manually"
-        
-      statistical_filtering:
-        description: "Only statistically significant correlations retained"
-        requirements:
-          - "INPUT: Mix of strong, weak, and random correlations"
-          - "CALCULATE: Correlations and p-values for all"
-          - "FILTER: Apply p < 0.05 threshold"
-          - "VERIFY: Strong correlations pass filter"
-          - "VERIFY: Random correlations fail filter (p > 0.05)"
-          - "VERIFY: Filtered results stored separately"
-          - "VERIFY: Metrics show filter rate (e.g., 80% filtered out)"
-          - "VALIDATION: Known significant correlation passes"
-          - "VALIDATION: Known random relationship fails"
-        
-      scoring_and_prioritization:
-        description: "Correlations scored and ranked correctly"
-        requirements:
-          - "INPUT: Diverse set of significant correlations"
-          - "SCORE: Apply multi-factor scoring algorithm"
-          - "VERIFY: Scores in expected range (0-100)"
-          - "VERIFY: Top-ranked correlations have highest scores"
-          - "VERIFY: Novelty factor affects ranking"
-          - "VERIFY: Exploitability factor affects ranking"
-          - "VERIFY: Rankings stored in correct order"
-          - "QUERY: Database for top 10, verify they're actually strongest"
-          - "MANUAL: Review top correlations, assess business sense"
-        
-      parallel_processing_validation:
-        description: "Distributed calculation produces correct results"
-        requirements:
-          - "SETUP: Configure Dask/Ray cluster (real cluster, not mocked)"
-          - "INPUT: Large dataset requiring parallel processing"
-          - "EXECUTE: Run parallel correlation calculation"
-          - "VERIFY: Results match sequential baseline (within tolerance)"
-          - "VERIFY: All workers contributed (check worker logs)"
-          - "VERIFY: No data corruption from race conditions"
-          - "MEASURE: Speedup factor (parallel vs sequential)"
-          - "VERIFY: Memory distributed across workers"
-          - "MONITOR: Cluster metrics during execution"
+      - "CA-001 database integration"
+      - "End-to-end correlation pipeline"
+      - "Dashboard data aggregation"
   
-  performance_tests:
-    required: true
-    philosophy: "Measure actual calculation performance with realistic data complexity"
-    
-    scenarios:
-      calculation_speed:
-        target: "10000+ correlations in < 10 minutes"
-        verification:
-          - "INPUT: Real dataset with sufficient variables"
-          - "START: Record timestamp before calculation"
-          - "EXECUTE: Calculate all correlations"
-          - "END: Record timestamp after completion"
-          - "VERIFY: Duration < 10 minutes (hard requirement)"
-          - "VERIFY: All 10000+ correlations calculated"
-          - "VERIFY: No calculation errors or exceptions"
-          - "MEASURE: Correlations per second rate"
-          
-      memory_efficiency:
-        target: "Handle 10+ TB dataset without OOM"
-        verification:
-          - "INPUT: Large time-series dataset (10+ TB)"
-          - "MONITOR: Memory usage throughout processing"
-          - "VERIFY: Memory stays below system limits"
-          - "VERIFY: Chunked processing works correctly"
-          - "VERIFY: Results still accurate with chunking"
-          - "VERIFY: No memory leaks (stable over time)"
-          
-      parallel_scaling:
-        target: "Linear speedup with worker count"
-        verification:
-          - "BASELINE: Single-threaded calculation time"
-          - "TEST: 2, 4, 8 worker configurations"
-          - "MEASURE: Calculation time for each"
-          - "VERIFY: Speedup factor >= 0.8 * worker_count"
-          - "VERIFY: No performance degradation with more workers"
-  
-  mathematical_validation:
-    required: true
-    description: "Verify correlation calculations are mathematically correct"
-    
-    test_cases:
-      perfect_positive_correlation:
-        input: "Two identical time series"
-        expected: "Correlation = 1.0, p-value ≈ 0"
-        verification: "Calculate and assert exact match"
-        
-      perfect_negative_correlation:
-        input: "Two inverse time series (x and -x)"
-        expected: "Correlation = -1.0, p-value ≈ 0"
-        verification: "Calculate and assert exact match"
-        
-      zero_correlation:
-        input: "Two independent random series"
-        expected: "Correlation ≈ 0, p-value > 0.05"
-        verification: "Calculate, verify near zero within tolerance"
-        
-      known_correlation:
-        input: "Standard test datasets (e.g., Anscombe's quartet)"
-        expected: "Published correlation values"
-        verification: "Calculate and compare to published values"
-  
-  manual_verification:
-    required: true
-    description: "Human verification that correlations are meaningful and accurate"
-    
-    checklist:
-      - "SELECT: Random sample of top-ranked correlations"
-      - "PLOT: Scatter plots of selected variable pairs"
-      - "ASSESS: Visual confirmation of correlation strength"
-      - "VALIDATE: P-values make sense given visual inspection"
-      - "CHECK: Known correlations (e.g., temperature vs AC usage)"
-      - "VERIFY: Novel correlations seem plausible"
-      - "QUERY: Database for specific correlation, verify stored correctly"
-      - "COMPARE: Manual calculation vs system calculation for sample"
-      - "DOCUMENT: Evidence that correlations are real and meaningful"
+  e2e_tests:
+    required_scenarios:
+      - "User calculates correlations via API"
+      - "User views heatmap in dashboard"
+      - "User explores causal network graph"
+      - "User exports correlation report"
 
 estimated_effort:
-  total_days: 10
-  team_size: 2 developers
+  development: "5-7 days"
+  testing: "2-3 days"
+  deployment: "1 day"
+  total: "8-11 days"
 
 implementation_phases:
-  phase_1:
-    duration: 3 days
-    deliverable: "Core correlation calculation engine"
+  ai_model: "claude-opus-4"
   
-  phase_2:
-    duration: 3 days
-    deliverable: "Statistical significance testing"
+  phase_01_system_infrastructure:
+    name: "System Infrastructure"
+    max_tokens: 20480
+    estimated_time: "8 minutes"
+    dependencies: []
+    files:
+      - "src/backend/app/__init__.py"
+      - "src/backend/app/main.py"
+      - "src/backend/app/config.py"
+      - "src/backend/app/db/__init__.py"
+      - "src/backend/app/db/connection.py"
+      - "src/backend/app/db/base.py"
+      - "src/backend/app/middleware/__init__.py"
+      - "src/backend/app/middleware/error_handler.py"
+      - "src/backend/app/middleware/logging.py"
+      - "src/backend/app/middleware/cors.py"
+      - "src/backend/app/schemas/__init__.py"
+      - "src/backend/app/schemas/health.py"
+      - "src/backend/app/schemas/error.py"
+      - "src/backend/app/api/__init__.py"
+    acceptance_criteria:
+      - "FastAPI app starts successfully"
+      - "Health endpoint returns 200"
+      - "Database connection pool initializes"
+      - "CORS middleware configured"
+      - "Error handling middleware active"
   
-  phase_3:
-    duration: 2 days
-    deliverable: "Scoring and prioritization algorithm"
+  phase_02a_feature_01_pearson:
+    name: "FEATURE-01: Pearson Correlation"
+    max_tokens: 18432
+    estimated_time: "10 minutes"
+    dependencies: ["phase_01_system_infrastructure"]
+    feature_id: "FEATURE-CA-002-01"
+    files:
+      - "src/backend/app/features/FEATURE-CA-002-01_statistical_correlation/__init__.py"
+      - "src/backend/app/features/FEATURE-CA-002-01_statistical_correlation/services/__init__.py"
+      - "src/backend/app/features/FEATURE-CA-002-01_statistical_correlation/services/pearson.py"
+      - "src/backend/app/features/FEATURE-CA-002-01_statistical_correlation/models/__init__.py"
+      - "src/backend/app/features/FEATURE-CA-002-01_statistical_correlation/models/correlation.py"
+      - "src/backend/app/features/FEATURE-CA-002-01_statistical_correlation/db/__init__.py"
+      - "src/backend/app/features/FEATURE-CA-002-01_statistical_correlation/db/schema.py"
+    acceptance_criteria:
+      - "Pearson correlation calculated correctly"
+      - "P-values and confidence intervals computed"
+      - "Results cached in database"
   
-  phase_4:
-    duration: 2 days
-    deliverable: "Results storage and retrieval optimization"
+  phase_02b_feature_01_spearman:
+    name: "FEATURE-01: Spearman Correlation"
+    max_tokens: 16384
+    estimated_time: "8 minutes"
+    dependencies: ["phase_02a_feature_01_pearson"]
+    feature_id: "FEATURE-CA-002-01"
+    files:
+      - "src/backend/app/features/FEATURE-CA-002-01_statistical_correlation/services/spearman.py"
+      - "src/backend/app/features/FEATURE-CA-002-01_statistical_correlation/services/kendall.py"
+    acceptance_criteria:
+      - "Spearman correlation calculated correctly"
+      - "Kendall Tau calculated correctly"
+  
+  phase_02c_feature_01_partial_lagged:
+    name: "FEATURE-01: Partial & Lagged Correlation"
+    max_tokens: 18432
+    estimated_time: "10 minutes"
+    dependencies: ["phase_02b_feature_01_spearman"]
+    feature_id: "FEATURE-CA-002-01"
+    files:
+      - "src/backend/app/features/FEATURE-CA-002-01_statistical_correlation/services/partial.py"
+      - "src/backend/app/features/FEATURE-CA-002-01_statistical_correlation/services/lagged.py"
+      - "src/backend/app/features/FEATURE-CA-002-01_statistical_correlation/db/repositories.py"
+    acceptance_criteria:
+      - "Partial correlation controls for confounders"
+      - "Lagged correlation finds optimal lag"
+  
+  phase_02d_feature_01_routes_tests:
+    name: "FEATURE-01: Routes & Tests"
+    max_tokens: 16384
+    estimated_time: "8 minutes"
+    dependencies: ["phase_02c_feature_01_partial_lagged"]
+    feature_id: "FEATURE-CA-002-01"
+    files:
+      - "src/backend/app/api/correlation.py"
+      - "src/backend/app/features/FEATURE-CA-002-01_statistical_correlation/tests/__init__.py"
+      - "src/backend/app/features/FEATURE-CA-002-01_statistical_correlation/tests/test_pearson.py"
+      - "src/backend/app/features/FEATURE-CA-002-01_statistical_correlation/tests/test_spearman.py"
+    acceptance_criteria:
+      - "API routes return correlation results"
+      - "Tests validate calculation accuracy"
+  
+  phase_03a_feature_02_granger:
+    name: "FEATURE-02: Granger Causality"
+    max_tokens: 18432
+    estimated_time: "10 minutes"
+    dependencies: ["phase_01_system_infrastructure"]
+    feature_id: "FEATURE-CA-002-02"
+    files:
+      - "src/backend/app/features/FEATURE-CA-002-02_causality_testing/__init__.py"
+      - "src/backend/app/features/FEATURE-CA-002-02_causality_testing/services/__init__.py"
+      - "src/backend/app/features/FEATURE-CA-002-02_causality_testing/services/granger.py"
+      - "src/backend/app/features/FEATURE-CA-002-02_causality_testing/models/__init__.py"
+      - "src/backend/app/features/FEATURE-CA-002-02_causality_testing/models/causality.py"
+      - "src/backend/app/features/FEATURE-CA-002-02_causality_testing/db/__init__.py"
+      - "src/backend/app/features/FEATURE-CA-002-02_causality_testing/db/schema.py"
+    acceptance_criteria:
+      - "Granger causality test executes"
+      - "P-values and F-statistics calculated"
+      - "Results stored in database"
+  
+  phase_03b_feature_02_var_irf:
+    name: "FEATURE-02: VAR & IRF"
+    max_tokens: 18432
+    estimated_time: "10 minutes"
+    dependencies: ["phase_03a_feature_02_granger"]
+    feature_id: "FEATURE-CA-002-02"
+    files:
+      - "src/backend/app/features/FEATURE-CA-002-02_causality_testing/services/var_model.py"
+      - "src/backend/app/features/FEATURE-CA-002-02_causality_testing/services/irf.py"
+    acceptance_criteria:
+      - "VAR model fits time-series data"
+      - "Impulse responses calculated"
+  
+  phase_03c_feature_02_entropy_dag:
+    name: "FEATURE-02: Transfer Entropy & DAG"
+    max_tokens: 18432
+    estimated_time: "10 minutes"
+    dependencies: ["phase_03b_feature_02_var_irf"]
+    feature_id: "FEATURE-CA-002-02"
+    files:
+      - "src/backend/app/features/FEATURE-CA-002-02_causality_testing/services/transfer_entropy.py"
+      - "src/backend/app/features/FEATURE-CA-002-02_causality_testing/services/dag_inference.py"
+      - "src/backend/app/features/FEATURE-CA-002-02_causality_testing/db/repositories.py"
+    acceptance_criteria:
+      - "Transfer entropy quantifies information flow"
+      - "DAG infers causal structure"
+  
+  phase_03d_feature_02_routes_tests:
+    name: "FEATURE-02: Routes & Tests"
+    max_tokens: 16384
+    estimated_time: "8 minutes"
+    dependencies: ["phase_03c_feature_02_entropy_dag"]
+    feature_id: "FEATURE-CA-002-02"
+    files:
+      - "src/backend/app/api/causality.py"
+      - "src/backend/app/features/FEATURE-CA-002-02_causality_testing/tests/__init__.py"
+      - "src/backend/app/features/FEATURE-CA-002-02_causality_testing/tests/test_granger.py"
+      - "src/backend/app/features/FEATURE-CA-002-02_causality_testing/tests/test_var.py"
+    acceptance_criteria:
+      - "API routes return causality results"
+      - "Tests validate test implementations"
+  
+  phase_04a_feature_03_significance:
+    name: "FEATURE-03: Statistical Significance"
+    max_tokens: 18432
+    estimated_time: "10 minutes"
+    dependencies: ["phase_01_system_infrastructure"]
+    feature_id: "FEATURE-CA-002-03"
+    files:
+      - "src/backend/app/features/FEATURE-CA-002-03_correlation_scorer/__init__.py"
+      - "src/backend/app/features/FEATURE-CA-002-03_correlation_scorer/services/__init__.py"
+      - "src/backend/app/features/FEATURE-CA-002-03_correlation_scorer/services/significance.py"
+      - "src/backend/app/features/FEATURE-CA-002-03_correlation_scorer/models/__init__.py"
+      - "src/backend/app/features/FEATURE-CA-002-03_correlation_scorer/models/score.py"
+      - "src/backend/app/features/FEATURE-CA-002-03_correlation_scorer/db/__init__.py"
+      - "src/backend/app/features/FEATURE-CA-002-03_correlation_scorer/db/schema.py"
+    acceptance_criteria:
+      - "P-value thresholds applied correctly"
+      - "Sample size considered in scoring"
+  
+  phase_04b_feature_03_effect_stability:
+    name: "FEATURE-03: Effect Size & Stability"
+    max_tokens: 18432
+    estimated_time: "10 minutes"
+    dependencies: ["phase_04a_feature_03_significance"]
+    feature_id: "FEATURE-CA-002-03"
+    files:
+      - "src/backend/app/features/FEATURE-CA-002-03_correlation_scorer/services/effect_size.py"
+      - "src/backend/app/features/FEATURE-CA-002-03_correlation_scorer/services/stability.py"
+    acceptance_criteria:
+      - "Cohen's d calculated for effect size"
+      - "Rolling correlations tracked for stability"
+  
+  phase_04c_feature_03_actionability:
+    name: "FEATURE-03: Actionability & Market"
+    max_tokens: 18432
+    estimated_time: "10 minutes"
+    dependencies: ["phase_04b_feature_03_effect_stability"]
+    feature_id: "FEATURE-CA-002-03"
+    files:
+      - "src/backend/app/features/FEATURE-CA-002-03_correlation_scorer/services/actionability.py"
+      - "src/backend/app/features/FEATURE-CA-002-03_correlation_scorer/services/market_estimator.py"
+      - "src/backend/app/features/FEATURE-CA-002-03_correlation_scorer/db/repositories.py"
+    acceptance_criteria:
+      - "MVP feasibility classified"
+      - "Market size estimated from data"
+  
+  phase_04d_feature_03_routes_tests:
+    name: "FEATURE-03: Routes & Tests"
+    max_tokens: 16384
+    estimated_time: "8 minutes"
+    dependencies: ["phase_04c_feature_03_actionability"]
+    feature_id: "FEATURE-CA-002-03"
+    files:
+      - "src/backend/app/api/scoring.py"
+      - "src/backend/app/features/FEATURE-CA-002-03_correlation_scorer/tests/__init__.py"
+      - "src/backend/app/features/FEATURE-CA-002-03_correlation_scorer/tests/test_scoring.py"
+    acceptance_criteria:
+      - "API returns ranked correlations"
+      - "Tests validate scoring formula"
+  
+  phase_05a_feature_04_heatmap:
+    name: "FEATURE-04: Heatmap Generator"
+    max_tokens: 18432
+    estimated_time: "10 minutes"
+    dependencies: ["phase_01_system_infrastructure"]
+    feature_id: "FEATURE-CA-002-04"
+    files:
+      - "src/backend/app/features/FEATURE-CA-002-04_correlation_dashboard/__init__.py"
+      - "src/backend/app/features/FEATURE-CA-002-04_correlation_dashboard/services/__init__.py"
+      - "src/backend/app/features/FEATURE-CA-002-04_correlation_dashboard/services/heatmap.py"
+      - "src/backend/app/features/FEATURE-CA-002-04_correlation_dashboard/models/__init__.py"
+      - "src/backend/app/features/FEATURE-CA-002-04_correlation_dashboard/models/dashboard.py"
+      - "src/backend/app/features/FEATURE-CA-002-04_correlation_dashboard/db/__init__.py"
+      - "src/backend/app/features/FEATURE-CA-002-04_correlation_dashboard/db/schema.py"
+    acceptance_criteria:
+      - "Correlation matrix converted to heatmap data"
+      - "Color scaling applied correctly"
+  
+  phase_05b_feature_04_network:
+    name: "FEATURE-04: Network Graph"
+    max_tokens: 18432
+    estimated_time: "10 minutes"
+    dependencies: ["phase_05a_feature_04_heatmap"]
+    feature_id: "FEATURE-CA-002-04"
+    files:
+      - "src/backend/app/features/FEATURE-CA-002-04_correlation_dashboard/services/network_graph.py"
+      - "src/backend/app/features/FEATURE-CA-002-04_correlation_dashboard/services/leaderboard.py"
+    acceptance_criteria:
+      - "Causal graph built from DAG"
+      - "Top correlations ranked in leaderboard"
+  
+  phase_05c_feature_04_routes_tests:
+    name: "FEATURE-04: Routes & Tests"
+    max_tokens: 16384
+    estimated_time: "8 minutes"
+    dependencies: ["phase_05b_feature_04_network"]
+    feature_id: "FEATURE-CA-002-04"
+    files:
+      - "src/backend/app/api/dashboard.py"
+      - "src/backend/app/features/FEATURE-CA-002-04_correlation_dashboard/tests/__init__.py"
+      - "src/backend/app/features/FEATURE-CA-002-04_correlation_dashboard/tests/test_dashboard.py"
+      - "src/backend/app/features/FEATURE-CA-002-04_correlation_dashboard/db/repositories.py"
+    acceptance_criteria:
+      - "API returns dashboard data"
+      - "Tests validate data aggregation"
+  
+  phase_06_integration:
+    name: "Integration & Orchestration"
+    max_tokens: 20480
+    estimated_time: "12 minutes"
+    dependencies: ["phase_02d_feature_01_routes_tests", "phase_03d_feature_02_routes_tests", "phase_04d_feature_03_routes_tests", "phase_05c_feature_04_routes_tests"]
+    files:
+      - "src/backend/app/integration/__init__.py"
+      - "src/backend/app/integration/orchestrator.py"
+      - "src/backend/app/integration/ca001_client.py"
+      - "src/backend/app/tasks.py"
+    acceptance_criteria:
+      - "Orchestrator coordinates all features"
+      - "CA-001 integration works"
+      - "Background tasks execute"
+  
+  phase_07_devops:
+    name: "DevOps & Deployment"
+    max_tokens: 16384
+    estimated_time: "8 minutes"
+    dependencies: ["phase_06_integration"]
+    files:
+      - "Dockerfile"
+      - "docker-compose.yml"
+      - "requirements.txt"
+      - ".env.example"
+      - "scripts/deploy.sh"
+      - "prometheus.yml"
+      - "README.md"
+    acceptance_criteria:
+      - "Docker builds successfully"
+      - "docker-compose starts all services"
+      - "Railway deployment ready"
 
 risks:
-  - risk: "Computation time may exceed 10-minute target"
-    mitigation: "Use GPU acceleration, optimize algorithms"
-    severity: high
+  - risk: "Correlation calculations too slow for large datasets"
+    mitigation: "Use NumPy vectorization, parallel processing, Redis caching"
+    severity: "medium"
   
-  - risk: "Multiple testing may increase false negatives"
-    mitigation: "Balance Bonferroni vs FDR, tune thresholds"
-    severity: medium
+  - risk: "False positives in causality tests"
+    mitigation: "Apply multiple correction methods, require multiple test agreement"
+    severity: "high"
   
-  - risk: "Memory constraints with large correlation matrices"
-    mitigation: "Chunked processing, sparse matrix storage"
-    severity: medium
+  - risk: "Dashboard performance with 1000+ variables"
+    mitigation: "Implement pagination, lazy loading, server-side filtering"
+    severity: "medium"
+  
+  - risk: "CA-001 database schema changes break integration"
+    mitigation: "Define clear interface contract, versioned API"
+    severity: "low"

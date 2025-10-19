@@ -1,0 +1,37 @@
+feature_id: FEATURE-CA-002-01
+feature_name: Statistical Correlation Calculator
+verification_timestamp: '20251019_192833'
+total_layers: 5
+layers_completed: 5
+feature_level_tests:
+  integration_tests: REQUIRED
+  e2e_tests: REQUIRED
+  status: PENDING_EXECUTION
+layer_summary:
+- layer_id: LAYER-CA-002-01-01
+  layer_name: Pearson Calculator
+  implementation: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-01_statistical_correlation/LAYER-CA-002-01-01_pearson_calculator/src/implementation.py
+  tests: 3
+  status: COMPLETED
+- layer_id: LAYER-CA-002-01-02
+  layer_name: Spearman Calculator
+  implementation: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-01_statistical_correlation/LAYER-CA-002-01-02_spearman_calculator/src/implementation.py
+  tests: 2
+  status: COMPLETED
+- layer_id: LAYER-CA-002-01-03
+  layer_name: Kendall Calculator
+  implementation: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-01_statistical_correlation/LAYER-CA-002-01-03_kendall_calculator/src/implementation.py
+  tests: 2
+  status: COMPLETED
+- layer_id: LAYER-CA-002-01-04
+  layer_name: Partial Correlation
+  implementation: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-01_statistical_correlation/LAYER-CA-002-01-04_partial_correlation/src/implementation.py
+  tests: 2
+  status: COMPLETED
+- layer_id: LAYER-CA-002-01-05
+  layer_name: Lagged Correlation
+  implementation: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-01_statistical_correlation/LAYER-CA-002-01-05_lagged_correlation/src/implementation.py
+  tests: 2
+  status: COMPLETED
+acceptance_criteria: []
+acceptance_status: PENDING_FEATURE_TESTS

@@ -1,0 +1,217 @@
+matrix_metadata:
+  timestamp: '20251019_192417'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-001
+  requirement: Calculation produces statistically correct results
+  description: Calculation produces statistically correct results
+  test_files: &id001
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-01_statistical_correlation/LAYER-CA-002-01-05_lagged_correlation/tests/test_generated_20251019_192313.py
+  test_methods:
+  - test_ac_001
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-002
+  requirement: Handles missing data gracefully
+  description: Handles missing data gracefully
+  test_files: *id001
+  test_methods:
+  - test_ac_002
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-003
+  requirement: Returns results in expected format
+  description: Returns results in expected format
+  test_files: *id001
+  test_methods:
+  - test_ac_003
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-004
+  requirement: Integrates with feature orchestrator
+  description: Integrates with feature orchestrator
+  test_files: *id001
+  test_methods:
+  - test_ac_004
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-005
+  requirement: Completes calculation in <5 seconds for 10K data points
+  description: Completes calculation in <5 seconds for 10K data points
+  test_files: *id001
+  test_methods:
+  - test_ac_005
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-006
+  requirement: Supports concurrent execution
+  description: Supports concurrent execution
+  test_files: *id001
+  test_methods:
+  - test_ac_006
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-007
+  requirement: Unit test coverage >90%
+  description: Unit test coverage >90%
+  test_files: *id001
+  test_methods:
+  - test_ac_007
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-008
+  requirement: Passes integration tests
+  description: Passes integration tests
+  test_files: *id001
+  test_methods:
+  - test_ac_008
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-009
+  requirement: Code follows project style guide
+  description: Code follows project style guide
+  test_files: *id001
+  test_methods:
+  - test_ac_009
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-010
+  requirement: Documentation complete
+  description: Documentation complete
+  test_files: *id001
+  test_methods:
+  - test_ac_010
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-01_statistical_correlation/LAYER-CA-002-01-05_lagged_correlation/src/implementation.py
+  lines: 487
+  methods:
+  - name: __init__
+    lines: 21-32
+  - name: calculate_lagged_correlation
+    lines: 33-90
+  - name: calculate_cross_correlation
+    lines: 91-144
+  - name: find_optimal_lag
+    lines: 145-186
+  - name: calculate_autocorrelation
+    lines: 187-212
+  - name: calculate_partial_autocorrelation
+    lines: 213-244
+  - name: _to_numpy
+    lines: 245-255
+  - name: _compute_correlation_at_lag
+    lines: 256-295
+  - name: analyze_with_confidence_intervals
+    lines: 296-375
+  - name: test_significance
+    lines: 376-447
+  - name: calculate_lagged_correlations
+    lines: 448-458
+  classes:
+  - name: LaggedCorrelationAnalyzer
+    type: class
+    lines: 13-487
+  implements_requirements:
+  - AC-001
+  - AC-002
+  - AC-003
+  - AC-004
+  - AC-005
+  - AC-006
+  - AC-007
+  - AC-008
+  - AC-009
+  - AC-010
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-01_statistical_correlation/LAYER-CA-002-01-05_lagged_correlation/tests/test_generated_20251019_192313.py
+  test_count: 0
+  implementation_files:
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-01_statistical_correlation/LAYER-CA-002-01-05_lagged_correlation/src/implementation.py
+  methods_tested:
+  - __init__
+  - calculate_lagged_correlation
+  - calculate_cross_correlation
+  - find_optimal_lag
+  - calculate_autocorrelation
+  - calculate_partial_autocorrelation
+  - _to_numpy
+  - _compute_correlation_at_lag
+  - analyze_with_confidence_intervals
+  - test_significance
+  - calculate_lagged_correlations
+  classes_tested:
+  - LaggedCorrelationAnalyzer
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-01_statistical_correlation/LAYER-CA-002-01-05_lagged_correlation/src/implementation.py:21-32
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-01_statistical_correlation/LAYER-CA-002-01-05_lagged_correlation/tests/test_generated_20251019_192313.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-01_statistical_correlation/LAYER-CA-002-01-05_lagged_correlation/src/implementation.py:33-90
+  method_name: calculate_lagged_correlation
+  requirement: AC-001
+  test: test_calculate_lagged_correlation
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-01_statistical_correlation/LAYER-CA-002-01-05_lagged_correlation/tests/test_generated_20251019_192313.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-01_statistical_correlation/LAYER-CA-002-01-05_lagged_correlation/src/implementation.py:91-144
+  method_name: calculate_cross_correlation
+  requirement: AC-001
+  test: test_calculate_cross_correlation
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-01_statistical_correlation/LAYER-CA-002-01-05_lagged_correlation/tests/test_generated_20251019_192313.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-01_statistical_correlation/LAYER-CA-002-01-05_lagged_correlation/src/implementation.py:145-186
+  method_name: find_optimal_lag
+  requirement: AC-001
+  test: test_find_optimal_lag
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-01_statistical_correlation/LAYER-CA-002-01-05_lagged_correlation/tests/test_generated_20251019_192313.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-01_statistical_correlation/LAYER-CA-002-01-05_lagged_correlation/src/implementation.py:187-212
+  method_name: calculate_autocorrelation
+  requirement: AC-001
+  test: test_calculate_autocorrelation
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-01_statistical_correlation/LAYER-CA-002-01-05_lagged_correlation/tests/test_generated_20251019_192313.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 10
+  requirements_traced: 10
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%
