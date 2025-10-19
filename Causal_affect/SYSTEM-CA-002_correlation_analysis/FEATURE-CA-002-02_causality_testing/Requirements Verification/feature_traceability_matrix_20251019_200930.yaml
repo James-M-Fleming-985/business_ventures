@@ -1,0 +1,47 @@
+feature_id: FEATURE-CA-002-02
+feature_name: Causality Testing Engine
+traceability_timestamp: '20251019_200930'
+feature_to_layers:
+  LAYER-CA-002-02-01:
+    layer_name: Granger Test
+    implementation: implementation.py
+    test_files:
+    - test_generated_20251019_195307.py
+    traceability_status: VERIFIED
+  LAYER-CA-002-02-02:
+    layer_name: VAR Model
+    implementation: implementation.py
+    test_files:
+    - test_generated_20251019_195538.py
+    traceability_status: VERIFIED
+  LAYER-CA-002-02-03:
+    layer_name: IRF Calculator
+    implementation: implementation.py
+    test_files:
+    - test_generated_20251019_195840.py
+    traceability_status: VERIFIED
+  LAYER-CA-002-02-04:
+    layer_name: Transfer Entropy
+    implementation: implementation.py
+    test_files:
+    - test_generated_20251019_200037.py
+    traceability_status: VERIFIED
+  LAYER-CA-002-02-05:
+    layer_name: DAG Inference
+    implementation: implementation.py
+    test_files:
+    - test_generated_20251019_200312.py
+    traceability_status: VERIFIED
+feature_integration:
+  integration_file: src/feature_integration.py
+  orchestrates_layers:
+  - LAYER-CA-002-02-01
+  - LAYER-CA-002-02-02
+  - LAYER-CA-002-02-03
+  - LAYER-CA-002-02-04
+  - LAYER-CA-002-02-05
+  status: IMPLEMENTED
+requirements_coverage:
+  layer_requirements: 100%
+  feature_requirements: PENDING_FEATURE_TESTS
+  acceptance_criteria: 0

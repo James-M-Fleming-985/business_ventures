@@ -1,0 +1,19 @@
+feature_id: FEATURE-CA-002-02
+feature_name: Causality Testing Engine
+test_pyramid_timestamp: '20251019_200930'
+layer_tests:
+  unit_tests: 5
+  layer_count: 5
+feature_tests:
+  integration_tests:
+    location: tests/integration/
+    count: 10
+    status: COMPLETED
+  e2e_tests:
+    location: tests/e2e/
+    count: 6
+    status: COMPLETED
+integration_scenarios: []
+e2e_scenarios: []
+test_coverage_goal: 90%
+status: PYRAMID_STRUCTURE_DEFINED

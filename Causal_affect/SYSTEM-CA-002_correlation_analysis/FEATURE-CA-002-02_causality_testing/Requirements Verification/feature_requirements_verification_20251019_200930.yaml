@@ -1,0 +1,37 @@
+feature_id: FEATURE-CA-002-02
+feature_name: Causality Testing Engine
+verification_timestamp: '20251019_200930'
+total_layers: 5
+layers_completed: 5
+feature_level_tests:
+  integration_tests: REQUIRED
+  e2e_tests: REQUIRED
+  status: PENDING_EXECUTION
+layer_summary:
+- layer_id: LAYER-CA-002-02-01
+  layer_name: Granger Test
+  implementation: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-02_causality_testing/LAYER-CA-002-02-01_granger_test/src/implementation.py
+  tests: 1
+  status: COMPLETED
+- layer_id: LAYER-CA-002-02-02
+  layer_name: VAR Model
+  implementation: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-02_causality_testing/LAYER-CA-002-02-02_var_model/src/implementation.py
+  tests: 1
+  status: COMPLETED
+- layer_id: LAYER-CA-002-02-03
+  layer_name: IRF Calculator
+  implementation: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-02_causality_testing/LAYER-CA-002-02-03_irf_calculator/src/implementation.py
+  tests: 1
+  status: COMPLETED
+- layer_id: LAYER-CA-002-02-04
+  layer_name: Transfer Entropy
+  implementation: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-02_causality_testing/LAYER-CA-002-02-04_transfer_entropy/src/implementation.py
+  tests: 1
+  status: COMPLETED
+- layer_id: LAYER-CA-002-02-05
+  layer_name: DAG Inference
+  implementation: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-02_causality_testing/LAYER-CA-002-02-05_dag_inference/src/implementation.py
+  tests: 1
+  status: COMPLETED
+acceptance_criteria: []
+acceptance_status: PENDING_FEATURE_TESTS

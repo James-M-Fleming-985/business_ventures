@@ -1,0 +1,273 @@
+matrix_metadata:
+  timestamp: '20251019_200425'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-001
+  requirement: Calculation produces statistically correct results
+  description: Calculation produces statistically correct results
+  test_files: &id001
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-02_causality_testing/LAYER-CA-002-02-05_dag_inference/tests/test_generated_20251019_200312.py
+  test_methods:
+  - test_ac_001
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-002
+  requirement: Handles missing data gracefully
+  description: Handles missing data gracefully
+  test_files: *id001
+  test_methods:
+  - test_ac_002
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-003
+  requirement: Returns results in expected format
+  description: Returns results in expected format
+  test_files: *id001
+  test_methods:
+  - test_ac_003
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-004
+  requirement: Integrates with feature orchestrator
+  description: Integrates with feature orchestrator
+  test_files: *id001
+  test_methods:
+  - test_ac_004
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-005
+  requirement: Completes calculation in <5 seconds for 10K data points
+  description: Completes calculation in <5 seconds for 10K data points
+  test_files: *id001
+  test_methods:
+  - test_ac_005
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-006
+  requirement: Supports concurrent execution
+  description: Supports concurrent execution
+  test_files: *id001
+  test_methods:
+  - test_ac_006
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-007
+  requirement: Unit test coverage >90%
+  description: Unit test coverage >90%
+  test_files: *id001
+  test_methods:
+  - test_ac_007
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-008
+  requirement: Passes integration tests
+  description: Passes integration tests
+  test_files: *id001
+  test_methods:
+  - test_ac_008
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-009
+  requirement: Code follows project style guide
+  description: Code follows project style guide
+  test_files: *id001
+  test_methods:
+  - test_ac_009
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-010
+  requirement: Documentation complete
+  description: Documentation complete
+  test_files: *id001
+  test_methods:
+  - test_ac_010
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-02_causality_testing/LAYER-CA-002-02-05_dag_inference/src/implementation.py
+  lines: 458
+  methods:
+  - name: timing_decorator
+    lines: 20-32
+  - name: wrapper
+    lines: 23-32
+  - name: __init__
+    lines: 46-60
+  - name: fit
+    lines: 61-92
+  - name: _handle_missing_data
+    lines: 93-103
+  - name: _pc_algorithm
+    lines: 104-124
+  - name: _skeleton_discovery
+    lines: 125-149
+  - name: _get_neighbors
+    lines: 150-157
+  - name: _test_conditional_independence
+    lines: 158-178
+  - name: _partial_correlation_test
+    lines: 179-205
+  - name: _orient_edges
+    lines: 206-248
+  - name: _create_graph
+    lines: 249-260
+  - name: get_adjacency_matrix
+    lines: 261-266
+  - name: get_edges
+    lines: 267-272
+  - name: get_parents
+    lines: 273-280
+  - name: get_children
+    lines: 281-288
+  - name: is_dag
+    lines: 289-294
+  - name: topological_sort
+    lines: 295-302
+  - name: get_causal_order
+    lines: 303-306
+  - name: predict_intervention
+    lines: 307-350
+  - name: fit_parallel
+    lines: 351-380
+  - name: _fit_single
+    lines: 381-385
+  - name: to_dict
+    lines: 386-398
+  - name: from_dict
+    lines: 399-406
+  - name: visualize
+    lines: 407-425
+  - name: __init__
+    lines: 429-431
+  - name: process
+    lines: 432-442
+  classes:
+  - name: DAGInferenceError
+    type: class
+    lines: 33-37
+  - name: DAGInference
+    type: class
+    lines: 38-425
+  - name: FeatureOrchestrator
+    type: class
+    lines: 426-458
+  implements_requirements:
+  - AC-001
+  - AC-002
+  - AC-003
+  - AC-004
+  - AC-005
+  - AC-006
+  - AC-007
+  - AC-008
+  - AC-009
+  - AC-010
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-02_causality_testing/LAYER-CA-002-02-05_dag_inference/tests/test_generated_20251019_200312.py
+  test_count: 0
+  implementation_files:
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-02_causality_testing/LAYER-CA-002-02-05_dag_inference/src/implementation.py
+  methods_tested:
+  - timing_decorator
+  - wrapper
+  - __init__
+  - fit
+  - _handle_missing_data
+  - _pc_algorithm
+  - _skeleton_discovery
+  - _get_neighbors
+  - _test_conditional_independence
+  - _partial_correlation_test
+  - _orient_edges
+  - _create_graph
+  - get_adjacency_matrix
+  - get_edges
+  - get_parents
+  - get_children
+  - is_dag
+  - topological_sort
+  - get_causal_order
+  - predict_intervention
+  - fit_parallel
+  - _fit_single
+  - to_dict
+  - from_dict
+  - visualize
+  - __init__
+  - process
+  classes_tested:
+  - DAGInferenceError
+  - DAGInference
+  - FeatureOrchestrator
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-02_causality_testing/LAYER-CA-002-02-05_dag_inference/src/implementation.py:20-32
+  method_name: timing_decorator
+  requirement: AC-001
+  test: test_timing_decorator
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-02_causality_testing/LAYER-CA-002-02-05_dag_inference/tests/test_generated_20251019_200312.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-02_causality_testing/LAYER-CA-002-02-05_dag_inference/src/implementation.py:23-32
+  method_name: wrapper
+  requirement: AC-001
+  test: test_wrapper
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-02_causality_testing/LAYER-CA-002-02-05_dag_inference/tests/test_generated_20251019_200312.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-02_causality_testing/LAYER-CA-002-02-05_dag_inference/src/implementation.py:46-60
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-02_causality_testing/LAYER-CA-002-02-05_dag_inference/tests/test_generated_20251019_200312.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-02_causality_testing/LAYER-CA-002-02-05_dag_inference/src/implementation.py:61-92
+  method_name: fit
+  requirement: AC-001
+  test: test_fit
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-02_causality_testing/LAYER-CA-002-02-05_dag_inference/tests/test_generated_20251019_200312.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-02_causality_testing/LAYER-CA-002-02-05_dag_inference/src/implementation.py:93-103
+  method_name: _handle_missing_data
+  requirement: AC-001
+  test: test__handle_missing_data
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-02_causality_testing/LAYER-CA-002-02-05_dag_inference/tests/test_generated_20251019_200312.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 10
+  requirements_traced: 10
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

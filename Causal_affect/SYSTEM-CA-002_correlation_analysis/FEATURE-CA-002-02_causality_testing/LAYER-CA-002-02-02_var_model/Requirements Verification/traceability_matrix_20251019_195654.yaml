@@ -1,0 +1,255 @@
+matrix_metadata:
+  timestamp: '20251019_195654'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-001
+  requirement: Calculation produces statistically correct results
+  description: Calculation produces statistically correct results
+  test_files: &id001
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-02_causality_testing/LAYER-CA-002-02-02_var_model/tests/test_generated_20251019_195538.py
+  test_methods:
+  - test_ac_001
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-002
+  requirement: Handles missing data gracefully
+  description: Handles missing data gracefully
+  test_files: *id001
+  test_methods:
+  - test_ac_002
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-003
+  requirement: Returns results in expected format
+  description: Returns results in expected format
+  test_files: *id001
+  test_methods:
+  - test_ac_003
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-004
+  requirement: Integrates with feature orchestrator
+  description: Integrates with feature orchestrator
+  test_files: *id001
+  test_methods:
+  - test_ac_004
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-005
+  requirement: Completes calculation in <5 seconds for 10K data points
+  description: Completes calculation in <5 seconds for 10K data points
+  test_files: *id001
+  test_methods:
+  - test_ac_005
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-006
+  requirement: Supports concurrent execution
+  description: Supports concurrent execution
+  test_files: *id001
+  test_methods:
+  - test_ac_006
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-007
+  requirement: Unit test coverage >90%
+  description: Unit test coverage >90%
+  test_files: *id001
+  test_methods:
+  - test_ac_007
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-008
+  requirement: Passes integration tests
+  description: Passes integration tests
+  test_files: *id001
+  test_methods:
+  - test_ac_008
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-009
+  requirement: Code follows project style guide
+  description: Code follows project style guide
+  test_files: *id001
+  test_methods:
+  - test_ac_009
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-010
+  requirement: Documentation complete
+  description: Documentation complete
+  test_files: *id001
+  test_methods:
+  - test_ac_010
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-02_causality_testing/LAYER-CA-002-02-02_var_model/src/implementation.py
+  lines: 482
+  methods:
+  - name: to_dict
+    lines: 30-45
+  - name: __init__
+    lines: 49-63
+  - name: fit
+    lines: 64-100
+  - name: _handle_missing_data
+    lines: 101-111
+  - name: _select_lag_order
+    lines: 112-128
+  - name: _compute_aic
+    lines: 129-150
+  - name: _create_lagged_matrix
+    lines: 151-169
+  - name: _fit_var
+    lines: 170-180
+  - name: predict
+    lines: 181-216
+  - name: granger_causality_test
+    lines: 217-260
+  - name: impulse_response
+    lines: 261-295
+  - name: forecast_error_variance_decomposition
+    lines: 296-333
+  - name: get_results
+    lines: 334-372
+  - name: __init__
+    lines: 376-385
+  - name: fit_multiple_models
+    lines: 386-416
+  - name: _fit_single_model
+    lines: 417-422
+  - name: shutdown
+    lines: 423-426
+  - name: __enter__
+    lines: 427-430
+  - name: __exit__
+    lines: 431-436
+  - name: calculate_var_features
+    lines: 437-467
+  - name: cached_var_calculation
+    lines: 468-478
+  classes:
+  - name: VARResults
+    type: class
+    lines: 18-45
+  - name: VARModel
+    type: class
+    lines: 46-372
+  - name: VARModelOrchestrator
+    type: class
+    lines: 373-482
+  implements_requirements:
+  - AC-001
+  - AC-002
+  - AC-003
+  - AC-004
+  - AC-005
+  - AC-006
+  - AC-007
+  - AC-008
+  - AC-009
+  - AC-010
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-02_causality_testing/LAYER-CA-002-02-02_var_model/tests/test_generated_20251019_195538.py
+  test_count: 0
+  implementation_files:
+  - /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-02_causality_testing/LAYER-CA-002-02-02_var_model/src/implementation.py
+  methods_tested:
+  - to_dict
+  - __init__
+  - fit
+  - _handle_missing_data
+  - _select_lag_order
+  - _compute_aic
+  - _create_lagged_matrix
+  - _fit_var
+  - predict
+  - granger_causality_test
+  - impulse_response
+  - forecast_error_variance_decomposition
+  - get_results
+  - __init__
+  - fit_multiple_models
+  - _fit_single_model
+  - shutdown
+  - __enter__
+  - __exit__
+  - calculate_var_features
+  - cached_var_calculation
+  classes_tested:
+  - VARResults
+  - VARModel
+  - VARModelOrchestrator
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-02_causality_testing/LAYER-CA-002-02-02_var_model/src/implementation.py:30-45
+  method_name: to_dict
+  requirement: AC-001
+  test: test_to_dict
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-02_causality_testing/LAYER-CA-002-02-02_var_model/tests/test_generated_20251019_195538.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-02_causality_testing/LAYER-CA-002-02-02_var_model/src/implementation.py:49-63
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-02_causality_testing/LAYER-CA-002-02-02_var_model/tests/test_generated_20251019_195538.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-02_causality_testing/LAYER-CA-002-02-02_var_model/src/implementation.py:64-100
+  method_name: fit
+  requirement: AC-001
+  test: test_fit
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-02_causality_testing/LAYER-CA-002-02-02_var_model/tests/test_generated_20251019_195538.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-02_causality_testing/LAYER-CA-002-02-02_var_model/src/implementation.py:101-111
+  method_name: _handle_missing_data
+  requirement: AC-001
+  test: test__handle_missing_data
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-02_causality_testing/LAYER-CA-002-02-02_var_model/tests/test_generated_20251019_195538.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-02_causality_testing/LAYER-CA-002-02-02_var_model/src/implementation.py:112-128
+  method_name: _select_lag_order
+  requirement: AC-001
+  test: test__select_lag_order
+  test_file: /workspaces/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-02_causality_testing/LAYER-CA-002-02-02_var_model/tests/test_generated_20251019_195538.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 10
+  requirements_traced: 10
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%
