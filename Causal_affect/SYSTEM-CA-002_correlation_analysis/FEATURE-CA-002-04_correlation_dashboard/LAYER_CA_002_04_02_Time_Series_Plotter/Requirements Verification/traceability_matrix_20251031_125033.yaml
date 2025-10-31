@@ -1,0 +1,242 @@
+matrix_metadata:
+  timestamp: '20251031_125033'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-001
+  requirement: Calculation produces statistically correct results
+  description: Calculation produces statistically correct results
+  test_files: &id001
+  - /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-04_correlation_dashboard/LAYER_CA_002_04_02_Time_Series_Plotter/tests/test_generated_20251031_124913.py
+  test_methods:
+  - test_ac_001
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-002
+  requirement: Handles missing data gracefully
+  description: Handles missing data gracefully
+  test_files: *id001
+  test_methods:
+  - test_ac_002
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-003
+  requirement: Returns results in expected format
+  description: Returns results in expected format
+  test_files: *id001
+  test_methods:
+  - test_ac_003
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-004
+  requirement: Integrates with feature orchestrator
+  description: Integrates with feature orchestrator
+  test_files: *id001
+  test_methods:
+  - test_ac_004
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-005
+  requirement: Completes calculation in <5 seconds for 10K data points
+  description: Completes calculation in <5 seconds for 10K data points
+  test_files: *id001
+  test_methods:
+  - test_ac_005
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-006
+  requirement: Supports concurrent execution
+  description: Supports concurrent execution
+  test_files: *id001
+  test_methods:
+  - test_ac_006
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-007
+  requirement: Unit test coverage >90%
+  description: Unit test coverage >90%
+  test_files: *id001
+  test_methods:
+  - test_ac_007
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-008
+  requirement: Passes integration tests
+  description: Passes integration tests
+  test_files: *id001
+  test_methods:
+  - test_ac_008
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-009
+  requirement: Code follows project style guide
+  description: Code follows project style guide
+  test_files: *id001
+  test_methods:
+  - test_ac_009
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-010
+  requirement: Documentation complete
+  description: Documentation complete
+  test_files: *id001
+  test_methods:
+  - test_ac_010
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-04_correlation_dashboard/LAYER_CA_002_04_02_Time_Series_Plotter/src/implementation.py
+  lines: 554
+  methods:
+  - name: __init__
+    lines: 41-62
+  - name: set_data
+    lines: 63-76
+  - name: plot_time_series
+    lines: 77-142
+  - name: plot_correlation_matrix
+    lines: 143-192
+  - name: plot_rolling_correlation
+    lines: 193-254
+  - name: calculate_correlations
+    lines: 255-327
+  - name: detect_correlation_changes
+    lines: 328-363
+  - name: save_plot
+    lines: 364-375
+  - name: get_summary_statistics
+    lines: 376-400
+  - name: __del__
+    lines: 401-406
+  - name: __init__
+    lines: 412-416
+  - name: register_plotter
+    lines: 417-427
+  - name: execute_analysis
+    lines: 428-480
+  - name: get_cached_result
+    lines: 481-497
+  - name: clear_cache
+    lines: 498-504
+  - name: create_sample_data
+    lines: 505-543
+  - name: timed_execution
+    lines: 544-554
+  - name: wrapper
+    lines: 546-556
+  classes:
+  - name: TimeSeriesPlotter
+    type: class
+    lines: 30-406
+  - name: FeatureOrchestrator
+    type: class
+    lines: 407-554
+  implements_requirements:
+  - AC-001
+  - AC-002
+  - AC-003
+  - AC-004
+  - AC-005
+  - AC-006
+  - AC-007
+  - AC-008
+  - AC-009
+  - AC-010
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-04_correlation_dashboard/LAYER_CA_002_04_02_Time_Series_Plotter/tests/test_generated_20251031_124913.py
+  test_count: 0
+  implementation_files:
+  - /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-04_correlation_dashboard/LAYER_CA_002_04_02_Time_Series_Plotter/src/implementation.py
+  methods_tested:
+  - __init__
+  - set_data
+  - plot_time_series
+  - plot_correlation_matrix
+  - plot_rolling_correlation
+  - calculate_correlations
+  - detect_correlation_changes
+  - save_plot
+  - get_summary_statistics
+  - __del__
+  - __init__
+  - register_plotter
+  - execute_analysis
+  - get_cached_result
+  - clear_cache
+  - create_sample_data
+  - timed_execution
+  - wrapper
+  classes_tested:
+  - TimeSeriesPlotter
+  - FeatureOrchestrator
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-04_correlation_dashboard/LAYER_CA_002_04_02_Time_Series_Plotter/src/implementation.py:41-62
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-04_correlation_dashboard/LAYER_CA_002_04_02_Time_Series_Plotter/tests/test_generated_20251031_124913.py
+  verified: true
+- implementation_location: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-04_correlation_dashboard/LAYER_CA_002_04_02_Time_Series_Plotter/src/implementation.py:63-76
+  method_name: set_data
+  requirement: AC-001
+  test: test_set_data
+  test_file: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-04_correlation_dashboard/LAYER_CA_002_04_02_Time_Series_Plotter/tests/test_generated_20251031_124913.py
+  verified: true
+- implementation_location: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-04_correlation_dashboard/LAYER_CA_002_04_02_Time_Series_Plotter/src/implementation.py:77-142
+  method_name: plot_time_series
+  requirement: AC-001
+  test: test_plot_time_series
+  test_file: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-04_correlation_dashboard/LAYER_CA_002_04_02_Time_Series_Plotter/tests/test_generated_20251031_124913.py
+  verified: true
+- implementation_location: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-04_correlation_dashboard/LAYER_CA_002_04_02_Time_Series_Plotter/src/implementation.py:143-192
+  method_name: plot_correlation_matrix
+  requirement: AC-001
+  test: test_plot_correlation_matrix
+  test_file: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-04_correlation_dashboard/LAYER_CA_002_04_02_Time_Series_Plotter/tests/test_generated_20251031_124913.py
+  verified: true
+- implementation_location: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-04_correlation_dashboard/LAYER_CA_002_04_02_Time_Series_Plotter/src/implementation.py:193-254
+  method_name: plot_rolling_correlation
+  requirement: AC-001
+  test: test_plot_rolling_correlation
+  test_file: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-04_correlation_dashboard/LAYER_CA_002_04_02_Time_Series_Plotter/tests/test_generated_20251031_124913.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 10
+  requirements_traced: 10
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

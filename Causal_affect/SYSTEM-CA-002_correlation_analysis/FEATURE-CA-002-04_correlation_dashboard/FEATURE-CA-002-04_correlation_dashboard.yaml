@@ -8,7 +8,9 @@
 # ====================================================================================
 
 metadata:
+  feature_id: "FEATURE-CA-002-04"
   requirement_id: "FEATURE-CA-002-04"
+  feature_name: "Correlation Dashboard & Visualization"
   requirement_name: "Correlation Dashboard & Visualization"
   feature_code: "CA-002-04"
   version: "1.0.0"

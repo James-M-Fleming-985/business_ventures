@@ -1,0 +1,238 @@
+matrix_metadata:
+  timestamp: '20251031_125515'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-001
+  requirement: Calculation produces statistically correct results
+  description: Calculation produces statistically correct results
+  test_files: &id001
+  - /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-04_correlation_dashboard/LAYER_CA_002_04_04_Leaderboard/tests/test_generated_20251031_125410.py
+  test_methods:
+  - test_ac_001
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-002
+  requirement: Handles missing data gracefully
+  description: Handles missing data gracefully
+  test_files: *id001
+  test_methods:
+  - test_ac_002
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-003
+  requirement: Returns results in expected format
+  description: Returns results in expected format
+  test_files: *id001
+  test_methods:
+  - test_ac_003
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-004
+  requirement: Integrates with feature orchestrator
+  description: Integrates with feature orchestrator
+  test_files: *id001
+  test_methods:
+  - test_ac_004
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-005
+  requirement: Completes calculation in <5 seconds for 10K data points
+  description: Completes calculation in <5 seconds for 10K data points
+  test_files: *id001
+  test_methods:
+  - test_ac_005
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-006
+  requirement: Supports concurrent execution
+  description: Supports concurrent execution
+  test_files: *id001
+  test_methods:
+  - test_ac_006
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-007
+  requirement: Unit test coverage >90%
+  description: Unit test coverage >90%
+  test_files: *id001
+  test_methods:
+  - test_ac_007
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-008
+  requirement: Passes integration tests
+  description: Passes integration tests
+  test_files: *id001
+  test_methods:
+  - test_ac_008
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-009
+  requirement: Code follows project style guide
+  description: Code follows project style guide
+  test_files: *id001
+  test_methods:
+  - test_ac_009
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-010
+  requirement: Documentation complete
+  description: Documentation complete
+  test_files: *id001
+  test_methods:
+  - test_ac_010
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-04_correlation_dashboard/LAYER_CA_002_04_04_Leaderboard/src/implementation.py
+  lines: 464
+  methods:
+  - name: __init__
+    lines: 58-74
+  - name: calculate_correlations
+    lines: 75-112
+  - name: _calculate_pair_correlation
+    lines: 113-160
+  - name: _calculate_confidence_interval
+    lines: 161-187
+  - name: generate_leaderboard
+    lines: 188-245
+  - name: _get_significance_level
+    lines: 246-256
+  - name: calculate_leaderboard
+    lines: 257-308
+  - name: format_leaderboard
+    lines: 309-360
+  - name: __init__
+    lines: 369-374
+  - name: process_correlation_request
+    lines: 375-429
+  - name: _generate_cache_key
+    lines: 430-435
+  - name: get_cached_results
+    lines: 436-439
+  - name: clear_cache
+    lines: 440-450
+  - name: calculate_leaderboard
+    lines: 451-461
+  classes:
+  - name: CorrelationResult
+    type: class
+    lines: 26-37
+  - name: LeaderboardEntry
+    type: class
+    lines: 38-49
+  - name: LeaderboardCalculator
+    type: class
+    lines: 50-360
+  - name: FeatureOrchestrator
+    type: class
+    lines: 361-464
+  implements_requirements:
+  - AC-001
+  - AC-002
+  - AC-003
+  - AC-004
+  - AC-005
+  - AC-006
+  - AC-007
+  - AC-008
+  - AC-009
+  - AC-010
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-04_correlation_dashboard/LAYER_CA_002_04_04_Leaderboard/tests/test_generated_20251031_125410.py
+  test_count: 0
+  implementation_files:
+  - /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-04_correlation_dashboard/LAYER_CA_002_04_04_Leaderboard/src/implementation.py
+  methods_tested:
+  - __init__
+  - calculate_correlations
+  - _calculate_pair_correlation
+  - _calculate_confidence_interval
+  - generate_leaderboard
+  - _get_significance_level
+  - calculate_leaderboard
+  - format_leaderboard
+  - __init__
+  - process_correlation_request
+  - _generate_cache_key
+  - get_cached_results
+  - clear_cache
+  - calculate_leaderboard
+  classes_tested:
+  - CorrelationResult
+  - LeaderboardEntry
+  - LeaderboardCalculator
+  - FeatureOrchestrator
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-04_correlation_dashboard/LAYER_CA_002_04_04_Leaderboard/src/implementation.py:58-74
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-04_correlation_dashboard/LAYER_CA_002_04_04_Leaderboard/tests/test_generated_20251031_125410.py
+  verified: true
+- implementation_location: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-04_correlation_dashboard/LAYER_CA_002_04_04_Leaderboard/src/implementation.py:75-112
+  method_name: calculate_correlations
+  requirement: AC-001
+  test: test_calculate_correlations
+  test_file: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-04_correlation_dashboard/LAYER_CA_002_04_04_Leaderboard/tests/test_generated_20251031_125410.py
+  verified: true
+- implementation_location: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-04_correlation_dashboard/LAYER_CA_002_04_04_Leaderboard/src/implementation.py:113-160
+  method_name: _calculate_pair_correlation
+  requirement: AC-001
+  test: test__calculate_pair_correlation
+  test_file: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-04_correlation_dashboard/LAYER_CA_002_04_04_Leaderboard/tests/test_generated_20251031_125410.py
+  verified: true
+- implementation_location: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-04_correlation_dashboard/LAYER_CA_002_04_04_Leaderboard/src/implementation.py:161-187
+  method_name: _calculate_confidence_interval
+  requirement: AC-001
+  test: test__calculate_confidence_interval
+  test_file: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-04_correlation_dashboard/LAYER_CA_002_04_04_Leaderboard/tests/test_generated_20251031_125410.py
+  verified: true
+- implementation_location: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-04_correlation_dashboard/LAYER_CA_002_04_04_Leaderboard/src/implementation.py:188-245
+  method_name: generate_leaderboard
+  requirement: AC-001
+  test: test_generate_leaderboard
+  test_file: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-04_correlation_dashboard/LAYER_CA_002_04_04_Leaderboard/tests/test_generated_20251031_125410.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 10
+  requirements_traced: 10
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

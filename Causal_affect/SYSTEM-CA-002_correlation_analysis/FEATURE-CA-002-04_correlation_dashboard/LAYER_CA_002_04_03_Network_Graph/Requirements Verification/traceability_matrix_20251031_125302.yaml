@@ -1,0 +1,241 @@
+matrix_metadata:
+  timestamp: '20251031_125302'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-001
+  requirement: Calculation produces statistically correct results
+  description: Calculation produces statistically correct results
+  test_files: &id001
+  - /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-04_correlation_dashboard/LAYER_CA_002_04_03_Network_Graph/tests/test_generated_20251031_125208.py
+  test_methods:
+  - test_ac_001
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-002
+  requirement: Handles missing data gracefully
+  description: Handles missing data gracefully
+  test_files: *id001
+  test_methods:
+  - test_ac_002
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-003
+  requirement: Returns results in expected format
+  description: Returns results in expected format
+  test_files: *id001
+  test_methods:
+  - test_ac_003
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-004
+  requirement: Integrates with feature orchestrator
+  description: Integrates with feature orchestrator
+  test_files: *id001
+  test_methods:
+  - test_ac_004
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-005
+  requirement: Completes calculation in <5 seconds for 10K data points
+  description: Completes calculation in <5 seconds for 10K data points
+  test_files: *id001
+  test_methods:
+  - test_ac_005
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-006
+  requirement: Supports concurrent execution
+  description: Supports concurrent execution
+  test_files: *id001
+  test_methods:
+  - test_ac_006
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-007
+  requirement: Unit test coverage >90%
+  description: Unit test coverage >90%
+  test_files: *id001
+  test_methods:
+  - test_ac_007
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-008
+  requirement: Passes integration tests
+  description: Passes integration tests
+  test_files: *id001
+  test_methods:
+  - test_ac_008
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-009
+  requirement: Code follows project style guide
+  description: Code follows project style guide
+  test_files: *id001
+  test_methods:
+  - test_ac_009
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-010
+  requirement: Documentation complete
+  description: Documentation complete
+  test_files: *id001
+  test_methods:
+  - test_ac_010
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-04_correlation_dashboard/LAYER_CA_002_04_03_Network_Graph/src/implementation.py
+  lines: 404
+  methods:
+  - name: __init__
+    lines: 35-48
+  - name: add_node
+    lines: 49-69
+  - name: add_edge
+    lines: 70-95
+  - name: build_from_correlation_matrix
+    lines: 96-134
+  - name: _add_edge_if_significant
+    lines: 135-139
+  - name: get_neighbors
+    lines: 140-159
+  - name: get_degree
+    lines: 160-171
+  - name: get_edge_weight
+    lines: 172-189
+  - name: to_dict
+    lines: 190-202
+  - name: to_json
+    lines: 203-211
+  - name: filter_by_correlation
+    lines: 212-244
+  - name: get_clusters
+    lines: 245-273
+  - name: dfs
+    lines: 255-273
+  - name: get_centrality_measures
+    lines: 274-304
+  - name: integrate_with_orchestrator
+    lines: 305-346
+  - name: __repr__
+    lines: 347-351
+  - name: __str__
+    lines: 352-357
+  - name: calculate_correlation_matrix
+    lines: 358-381
+  - name: create_network_from_data
+    lines: 382-392
+  classes:
+  - name: NetworkGraph
+    type: class
+    lines: 24-404
+  implements_requirements:
+  - AC-001
+  - AC-002
+  - AC-003
+  - AC-004
+  - AC-005
+  - AC-006
+  - AC-007
+  - AC-008
+  - AC-009
+  - AC-010
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-04_correlation_dashboard/LAYER_CA_002_04_03_Network_Graph/tests/test_generated_20251031_125208.py
+  test_count: 0
+  implementation_files:
+  - /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-04_correlation_dashboard/LAYER_CA_002_04_03_Network_Graph/src/implementation.py
+  methods_tested:
+  - __init__
+  - add_node
+  - add_edge
+  - build_from_correlation_matrix
+  - _add_edge_if_significant
+  - get_neighbors
+  - get_degree
+  - get_edge_weight
+  - to_dict
+  - to_json
+  - filter_by_correlation
+  - get_clusters
+  - dfs
+  - get_centrality_measures
+  - integrate_with_orchestrator
+  - __repr__
+  - __str__
+  - calculate_correlation_matrix
+  - create_network_from_data
+  classes_tested:
+  - NetworkGraph
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-04_correlation_dashboard/LAYER_CA_002_04_03_Network_Graph/src/implementation.py:35-48
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-04_correlation_dashboard/LAYER_CA_002_04_03_Network_Graph/tests/test_generated_20251031_125208.py
+  verified: true
+- implementation_location: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-04_correlation_dashboard/LAYER_CA_002_04_03_Network_Graph/src/implementation.py:49-69
+  method_name: add_node
+  requirement: AC-001
+  test: test_add_node
+  test_file: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-04_correlation_dashboard/LAYER_CA_002_04_03_Network_Graph/tests/test_generated_20251031_125208.py
+  verified: true
+- implementation_location: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-04_correlation_dashboard/LAYER_CA_002_04_03_Network_Graph/src/implementation.py:70-95
+  method_name: add_edge
+  requirement: AC-001
+  test: test_add_edge
+  test_file: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-04_correlation_dashboard/LAYER_CA_002_04_03_Network_Graph/tests/test_generated_20251031_125208.py
+  verified: true
+- implementation_location: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-04_correlation_dashboard/LAYER_CA_002_04_03_Network_Graph/src/implementation.py:96-134
+  method_name: build_from_correlation_matrix
+  requirement: AC-001
+  test: test_build_from_correlation_matrix
+  test_file: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-04_correlation_dashboard/LAYER_CA_002_04_03_Network_Graph/tests/test_generated_20251031_125208.py
+  verified: true
+- implementation_location: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-04_correlation_dashboard/LAYER_CA_002_04_03_Network_Graph/src/implementation.py:135-139
+  method_name: _add_edge_if_significant
+  requirement: AC-001
+  test: test__add_edge_if_significant
+  test_file: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-04_correlation_dashboard/LAYER_CA_002_04_03_Network_Graph/tests/test_generated_20251031_125208.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 10
+  requirements_traced: 10
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%
