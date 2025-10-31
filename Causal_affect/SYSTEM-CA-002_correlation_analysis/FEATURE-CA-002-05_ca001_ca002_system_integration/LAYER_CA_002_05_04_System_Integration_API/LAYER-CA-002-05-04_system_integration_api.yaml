@@ -1,0 +1,248 @@
+# ====================================================================================
+# LAYER REQUIREMENTS: System Integration API
+# ====================================================================================
+# LAYER ID: LAYER-CA-002-05-04
+# FEATURE: FEATURE-CA-002-05 (CA-001 ↔ CA-002 System Integration)
+# ====================================================================================
+
+metadata:
+  layer_id: "LAYER-CA-002-05-04"
+  layer_name: "System Integration API"
+  feature_id: "FEATURE-CA-002-05"
+  version: "1.0.0"
+  created_date: "2025-10-31"
+  owner: "Causal Affect Team"
+
+# ====================================================================================
+# LAYER OVERVIEW
+# ====================================================================================
+
+overview:
+  description: |
+    FastAPI REST endpoints that provide external access to the integrated CA-001 ↔ CA-002 
+    correlation analysis system. Handles HTTP requests, parameter validation, and response 
+    formatting for correlation analysis with live data.
+  
+  responsibility: |
+    - Provide REST API endpoints for correlation analysis requests
+    - Validate HTTP request parameters and data formats
+    - Coordinate with Feature Integration Controller for processing
+    - Format responses with proper HTTP status codes and error handling
+    - Implement API documentation and OpenAPI specification
+
+  input: "HTTP requests with correlation parameters (symbols, timeframes, etc.)"
+  output: "JSON responses with correlation matrices and dashboard data"
+  technology: "FastAPI, pydantic, uvicorn"
+
+# ====================================================================================
+# FUNCTIONAL REQUIREMENTS
+# ====================================================================================
+
+requirements:
+  - id: "LAYER-CA-002-05-04-REQ-001"
+    title: "Correlation Analysis Endpoint"
+    description: "Main endpoint for correlation analysis requests"
+    acceptance_criteria:
+      - "POST /api/correlations accepts correlation requests"
+      - "Validates symbols, timeframes, and correlation types"
+      - "Returns correlation matrices and dashboard data"
+      - "Supports async processing for concurrent requests"
+
+  - id: "LAYER-CA-002-05-04-REQ-002"
+    title: "Metadata Endpoints"
+    description: "Endpoints for system metadata and discovery"
+    acceptance_criteria:
+      - "GET /api/symbols returns available symbols from CA-001"
+      - "GET /api/symbols/{symbol}/coverage returns data availability"
+      - "GET /health provides system health and CA-001 connectivity"
+      - "GET /api/correlation-types lists supported correlation methods"
+
+  - id: "LAYER-CA-002-05-04-REQ-003"
+    title: "Request Validation"
+    description: "Comprehensive request parameter validation"
+    acceptance_criteria:
+      - "Validate symbol lists (non-empty, valid format)"
+      - "Validate date ranges (start < end, reasonable limits)"
+      - "Validate timeframes (supported values only)"
+      - "Return clear error messages for invalid requests"
+
+  - id: "LAYER-CA-002-05-04-REQ-004"
+    title: "Response Formatting"
+    description: "Standardized API response formats"
+    acceptance_criteria:
+      - "JSON responses with consistent structure"
+      - "HTTP status codes following REST conventions"
+      - "Error responses include details and guidance"
+      - "Success responses include execution metadata"
+
+# ====================================================================================
+# TECHNICAL SPECIFICATIONS
+# ====================================================================================
+
+technical_specs:
+  endpoints:
+    - endpoint: "POST /api/correlations"
+      description: "Execute correlation analysis with live data"
+      request_body: |
+        {
+          "symbols": ["SPY", "VIX", "GOLD"],
+          "timeframe": "30d",
+          "correlation_types": ["pearson", "spearman"],
+          "start_date": "2024-01-01T00:00:00Z",
+          "end_date": "2024-01-31T23:59:59Z",
+          "include_dashboard": true
+        }
+      response_body: |
+        {
+          "correlation_matrices": {
+            "pearson": [[1.0, -0.72, 0.31], [-0.72, 1.0, -0.15], [0.31, -0.15, 1.0]]
+          },
+          "dashboard_data": {...},
+          "metadata": {...},
+          "execution_time": 1.23,
+          "data_quality_score": 0.95
+        }
+
+    - endpoint: "GET /api/symbols"
+      description: "List available symbols from CA-001"
+      response_body: |
+        {
+          "symbols": ["SPY", "VIX", "GOLD", "BTC", "ETH"],
+          "total_count": 5,
+          "last_updated": "2024-01-31T12:00:00Z"
+        }
+
+    - endpoint: "GET /health"
+      description: "System health check"
+      response_body: |
+        {
+          "status": "healthy",
+          "ca001_connected": true,
+          "ca002_features_available": ["CA-002-01", "CA-002-04"],
+          "uptime_seconds": 3600
+        }
+
+  pydantic_models:
+    request_models: |
+      class CorrelationRequest(BaseModel):
+          symbols: List[str] = Field(..., min_items=2, max_items=20)
+          timeframe: TimeFrame
+          correlation_types: List[str] = ['pearson', 'spearman']
+          start_date: Optional[datetime] = None
+          end_date: Optional[datetime] = None
+          include_dashboard: bool = True
+
+    response_models: |
+      class CorrelationResponse(BaseModel):
+          correlation_matrices: Dict[str, List[List[float]]]
+          dashboard_data: Optional[Dict] = None
+          metadata: Dict
+          execution_time: float
+          data_quality_score: float
+
+  http_status_codes:
+    - "200: Successful correlation analysis"
+    - "400: Invalid request parameters"
+    - "503: CA-001 system unavailable"
+    - "500: Internal server error"
+    - "422: Request validation error"
+
+# ====================================================================================
+# TESTING REQUIREMENTS
+# ====================================================================================
+
+testing:
+  unit_tests:
+    - "test_correlation_endpoint_valid_request"
+    - "test_correlation_endpoint_invalid_symbols"
+    - "test_symbols_endpoint"
+    - "test_health_endpoint"
+    - "test_request_validation_errors"
+    - "test_response_formatting"
+
+  integration_tests:
+    - "test_end_to_end_correlation_request"
+    - "test_ca001_integration_through_api"
+    - "test_concurrent_api_requests"
+    - "test_error_propagation_from_features"
+
+  api_tests:
+    - "test_openapi_specification_generation"
+    - "test_swagger_ui_accessibility"
+    - "test_cors_configuration"
+    - "test_request_rate_limiting"
+
+# ====================================================================================
+# SECURITY & VALIDATION
+# ====================================================================================
+
+security:
+  input_validation:
+    - "SQL injection prevention (parameterized queries)"
+    - "XSS prevention (JSON response sanitization)"
+    - "Request size limits (max symbols, date ranges)"
+    - "Rate limiting per IP address"
+
+  error_handling:
+    - "Sanitize error messages (no internal details)"
+    - "Log security events and suspicious requests"
+    - "Return generic errors for system failures"
+    - "Implement request timeout protection"
+
+# ====================================================================================
+# PERFORMANCE REQUIREMENTS
+# ====================================================================================
+
+performance:
+  response_times:
+    - "Simple correlation (2-5 symbols): < 2 seconds"
+    - "Complex correlation (10-20 symbols): < 10 seconds"
+    - "Health check: < 100ms"
+    - "Symbols listing: < 500ms"
+
+  concurrency:
+    - "Support 50 concurrent requests"
+    - "Queue requests during high load"
+    - "Graceful degradation when overloaded"
+    - "Connection pooling for database access"
+
+# ====================================================================================
+# DOCUMENTATION
+# ====================================================================================
+
+documentation:
+  openapi_spec:
+    - "Complete OpenAPI 3.0 specification"
+    - "Request/response schema definitions"
+    - "Example requests and responses"
+    - "Error code documentation"
+
+  swagger_ui:
+    - "Interactive API documentation"
+    - "Try-it-out functionality"
+    - "Authentication examples"
+    - "Rate limiting information"
+
+# ====================================================================================
+# IMPLEMENTATION NOTES
+# ====================================================================================
+
+implementation:
+  patterns:
+    - "Dependency injection for feature controllers"
+    - "Middleware for request logging and metrics"
+    - "Exception handlers for consistent error responses"
+    - "Background tasks for long-running operations"
+
+  dependencies:
+    - "fastapi>=0.104.0"
+    - "pydantic>=2.0.0"
+    - "uvicorn>=0.24.0"
+    - "python-multipart (for form data)"
+
+  configuration:
+    - "API_HOST: Server host address"
+    - "API_PORT: Server port number"
+    - "MAX_REQUEST_SIZE: Maximum request body size"
+    - "RATE_LIMIT_PER_MINUTE: Request rate limiting"
+    - "CORS_ORIGINS: Allowed CORS origins"

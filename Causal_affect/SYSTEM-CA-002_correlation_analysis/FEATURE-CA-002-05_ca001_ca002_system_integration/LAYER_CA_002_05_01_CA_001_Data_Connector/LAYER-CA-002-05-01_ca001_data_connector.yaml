@@ -1,0 +1,157 @@
+# ====================================================================================
+# LAYER REQUIREMENTS: CA-001 Data Connector
+# ====================================================================================
+# LAYER ID: LAYER-CA-002-05-01
+# FEATURE: FEATURE-CA-002-05 (CA-001 ↔ CA-002 System Integration)
+# ====================================================================================
+
+metadata:
+  layer_id: "LAYER-CA-002-05-01"
+  layer_name: "CA-001 Data Connector"
+  feature_id: "FEATURE-CA-002-05"
+  version: "1.0.0"
+  created_date: "2025-10-31"
+  owner: "Causal Affect Team"
+
+# ====================================================================================
+# LAYER OVERVIEW
+# ====================================================================================
+
+overview:
+  description: |
+    HTTP client layer for communicating with CA-001 Data Ingestion System API.
+    Handles TimescaleDB data retrieval, connection management, and error recovery.
+  
+  responsibility: |
+    - Establish HTTP connections to CA-001 API endpoints
+    - Retrieve time-series data from TimescaleDB via REST API
+    - Handle authentication, rate limiting, and connection pooling
+    - Provide fallback to mock data when CA-001 unavailable
+    - Format raw API responses for downstream processing
+
+  input: "Symbol lists, date ranges, timeframe specifications"
+  output: "Raw JSON time-series data from CA-001 TimescaleDB"
+  technology: "aiohttp, asyncio, typing"
+
+# ====================================================================================
+# FUNCTIONAL REQUIREMENTS
+# ====================================================================================
+
+requirements:
+  - id: "LAYER-CA-002-05-01-REQ-001"
+    title: "HTTP Client Implementation"
+    description: "Async HTTP client for CA-001 API"
+    acceptance_criteria:
+      - "aiohttp ClientSession with connection pooling"
+      - "Configurable base URL and timeout settings"
+      - "Request retry logic with exponential backoff"
+      - "Proper session lifecycle management"
+
+  - id: "LAYER-CA-002-05-01-REQ-002"
+    title: "Data Retrieval Methods"
+    description: "Methods to fetch timeseries data from CA-001"
+    acceptance_criteria:
+      - "fetch_timeseries_data(symbols, start_date, end_date, timeframe)"
+      - "get_available_symbols() returns symbol list"
+      - "get_data_coverage(symbol) returns availability info"
+      - "health_check() verifies CA-001 connectivity"
+
+  - id: "LAYER-CA-002-05-01-REQ-003"
+    title: "Error Handling"
+    description: "Robust error handling and recovery"
+    acceptance_criteria:
+      - "HTTP error codes mapped to appropriate exceptions"
+      - "Connection timeout handling with retry"
+      - "CA-001 unavailable fallback to mock connector"
+      - "Detailed error logging with context"
+
+  - id: "LAYER-CA-002-05-01-REQ-004"
+    title: "Mock Data Connector"
+    description: "Mock implementation for testing and development"
+    acceptance_criteria:
+      - "MockCA001DataConnector class with same interface"
+      - "Generates realistic time-series data"
+      - "Reproducible results for testing"
+      - "Factory function for easy switching"
+
+# ====================================================================================
+# TECHNICAL SPECIFICATIONS
+# ====================================================================================
+
+technical_specs:
+  class_design:
+    - "CA001DataConnector: Main connector class"
+    - "MockCA001DataConnector: Mock implementation"
+    - "create_data_connector(): Factory function"
+
+  api_endpoints:
+    - "GET /api/timeseries-data: Retrieve time-series data"
+    - "GET /api/symbols: List available symbols"
+    - "GET /api/symbols/{symbol}/coverage: Data coverage info"
+    - "GET /health: Health check endpoint"
+
+  data_formats:
+    expected_ca001_response: |
+      {
+        "data": [
+          {
+            "timestamp": "2024-01-01T00:00:00Z",
+            "symbol": "SPY", 
+            "value": 450.23,
+            "volume": 1000000
+          }
+        ]
+      }
+
+  error_handling:
+    - "aiohttp.ClientError: Connection issues"
+    - "asyncio.TimeoutError: Request timeout"
+    - "HTTPException: API error responses"
+    - "ValueError: Invalid response format"
+
+# ====================================================================================
+# TESTING REQUIREMENTS
+# ====================================================================================
+
+testing:
+  unit_tests:
+    - "test_connection_establishment"
+    - "test_timeseries_data_retrieval"
+    - "test_symbol_listing"
+    - "test_error_handling_scenarios"
+    - "test_mock_connector_functionality"
+    - "test_factory_function_behavior"
+
+  integration_tests:
+    - "test_real_ca001_api_integration"
+    - "test_fallback_to_mock_connector"
+    - "test_concurrent_request_handling"
+
+  performance_tests:
+    - "test_connection_pool_efficiency"
+    - "test_large_dataset_retrieval"
+    - "test_timeout_and_retry_behavior"
+
+# ====================================================================================
+# IMPLEMENTATION NOTES
+# ====================================================================================
+
+implementation:
+  patterns:
+    - "Async/await for non-blocking I/O"
+    - "Context manager for session lifecycle"
+    - "Factory pattern for connector selection"
+    - "Strategy pattern for mock vs real implementation"
+
+  dependencies:
+    - "aiohttp>=3.8.0"
+    - "asyncio (built-in)"
+    - "typing (built-in)"
+    - "logging (built-in)"
+    - "datetime (built-in)"
+
+  configuration:
+    - "CA001_BASE_URL: CA-001 API endpoint"
+    - "REQUEST_TIMEOUT: HTTP request timeout"
+    - "MAX_RETRIES: Maximum retry attempts"
+    - "USE_MOCK: Enable mock connector for testing"

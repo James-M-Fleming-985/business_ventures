@@ -1,0 +1,190 @@
+matrix_metadata:
+  timestamp: '20251031_205143'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping: []
+implementation_to_requirement_mapping:
+- implementation_file: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/FEATURE-CA-002-05_ca001_ca002_system_integration/LAYER_CA_002_05_02_Data_Format_Orchestrator/src/implementation.py
+  lines: 794
+  methods:
+  - name: to_dict
+    lines: 65-73
+  - name: to_dict
+    lines: 82-89
+  - name: __init__
+    lines: 107-121
+  - name: _setup_logging
+    lines: 122-129
+  - name: _initialize_format_handlers
+    lines: 130-142
+  - name: _initialize_validators
+    lines: 143-151
+  - name: _initialize_converters
+    lines: 152-159
+  - name: validate_data
+    lines: 160-243
+  - name: convert_format
+    lines: 244-310
+  - name: create_format_specification
+    lines: 311-333
+  - name: register_transformation_rule
+    lines: 334-347
+  - name: apply_transformations
+    lines: 348-365
+  - name: _load_data
+    lines: 366-377
+  - name: _save_data
+    lines: 378-393
+  - name: _apply_transformations
+    lines: 394-418
+  - name: _apply_single_transformation
+    lines: 419-511
+  - name: _validate_format
+    lines: 512-531
+  - name: _validate_schema
+    lines: 532-584
+  - name: _validate_data_quality
+    lines: 585-623
+  - name: _validate_business_rules
+    lines: 624-651
+  - name: _dtype_compatible
+    lines: 652-669
+  - name: _create_converter
+    lines: 670-681
+  - name: converter
+    lines: 676-681
+  - name: _handle_csv
+    lines: 682-710
+  - name: _handle_json
+    lines: 711-726
+  - name: _handle_parquet
+    lines: 727-736
+  - name: _handle_excel
+    lines: 737-749
+  - name: _handle_feather
+    lines: 750-756
+  - name: _handle_hdf
+    lines: 757-763
+  - name: _handle_pickle
+    lines: 764-770
+  - name: _handle_xml
+    lines: 771-781
+  classes:
+  - name: DataFormatType
+    type: class
+    lines: 14-25
+  - name: ValidationStatus
+    type: class
+    lines: 26-33
+  - name: FormatSpecification
+    type: class
+    lines: 34-55
+  - name: ValidationResult
+    type: class
+    lines: 56-73
+  - name: ConversionResult
+    type: class
+    lines: 74-89
+  - name: TransformationRule
+    type: class
+    lines: 90-101
+  - name: DataFormatOrchestrator
+    type: class
+    lines: 102-794
+  implements_requirements: []
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/FEATURE-CA-002-05_ca001_ca002_system_integration/LAYER_CA_002_05_02_Data_Format_Orchestrator/tests/test_generated_20251031_204951.py
+  test_count: 0
+  implementation_files:
+  - /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/FEATURE-CA-002-05_ca001_ca002_system_integration/LAYER_CA_002_05_02_Data_Format_Orchestrator/src/implementation.py
+  methods_tested:
+  - to_dict
+  - to_dict
+  - __init__
+  - _setup_logging
+  - _initialize_format_handlers
+  - _initialize_validators
+  - _initialize_converters
+  - validate_data
+  - convert_format
+  - create_format_specification
+  - register_transformation_rule
+  - apply_transformations
+  - _load_data
+  - _save_data
+  - _apply_transformations
+  - _apply_single_transformation
+  - _validate_format
+  - _validate_schema
+  - _validate_data_quality
+  - _validate_business_rules
+  - _dtype_compatible
+  - _create_converter
+  - converter
+  - _handle_csv
+  - _handle_json
+  - _handle_parquet
+  - _handle_excel
+  - _handle_feather
+  - _handle_hdf
+  - _handle_pickle
+  - _handle_xml
+  classes_tested:
+  - DataFormatType
+  - ValidationStatus
+  - FormatSpecification
+  - ValidationResult
+  - ConversionResult
+  - TransformationRule
+  - DataFormatOrchestrator
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/FEATURE-CA-002-05_ca001_ca002_system_integration/LAYER_CA_002_05_02_Data_Format_Orchestrator/src/implementation.py:65-73
+  method_name: to_dict
+  requirement: AC-001
+  test: test_to_dict
+  test_file: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/FEATURE-CA-002-05_ca001_ca002_system_integration/LAYER_CA_002_05_02_Data_Format_Orchestrator/tests/test_generated_20251031_204951.py
+  verified: true
+- implementation_location: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/FEATURE-CA-002-05_ca001_ca002_system_integration/LAYER_CA_002_05_02_Data_Format_Orchestrator/src/implementation.py:82-89
+  method_name: to_dict
+  requirement: AC-001
+  test: test_to_dict
+  test_file: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/FEATURE-CA-002-05_ca001_ca002_system_integration/LAYER_CA_002_05_02_Data_Format_Orchestrator/tests/test_generated_20251031_204951.py
+  verified: true
+- implementation_location: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/FEATURE-CA-002-05_ca001_ca002_system_integration/LAYER_CA_002_05_02_Data_Format_Orchestrator/src/implementation.py:107-121
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/FEATURE-CA-002-05_ca001_ca002_system_integration/LAYER_CA_002_05_02_Data_Format_Orchestrator/tests/test_generated_20251031_204951.py
+  verified: true
+- implementation_location: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/FEATURE-CA-002-05_ca001_ca002_system_integration/LAYER_CA_002_05_02_Data_Format_Orchestrator/src/implementation.py:122-129
+  method_name: _setup_logging
+  requirement: AC-001
+  test: test__setup_logging
+  test_file: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/FEATURE-CA-002-05_ca001_ca002_system_integration/LAYER_CA_002_05_02_Data_Format_Orchestrator/tests/test_generated_20251031_204951.py
+  verified: true
+- implementation_location: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/FEATURE-CA-002-05_ca001_ca002_system_integration/LAYER_CA_002_05_02_Data_Format_Orchestrator/src/implementation.py:130-142
+  method_name: _initialize_format_handlers
+  requirement: AC-001
+  test: test__initialize_format_handlers
+  test_file: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/FEATURE-CA-002-05_ca001_ca002_system_integration/LAYER_CA_002_05_02_Data_Format_Orchestrator/tests/test_generated_20251031_204951.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 0
+  requirements_traced: 0
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

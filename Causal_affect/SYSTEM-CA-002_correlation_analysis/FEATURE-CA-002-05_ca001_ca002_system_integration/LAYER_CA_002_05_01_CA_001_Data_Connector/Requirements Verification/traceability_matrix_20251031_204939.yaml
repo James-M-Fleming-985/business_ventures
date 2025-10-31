@@ -1,0 +1,135 @@
+matrix_metadata:
+  timestamp: '20251031_204939'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping: []
+implementation_to_requirement_mapping:
+- implementation_file: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/FEATURE-CA-002-05_ca001_ca002_system_integration/LAYER_CA_002_05_01_CA_001_Data_Connector/src/implementation.py
+  lines: 442
+  methods:
+  - name: __init__
+    lines: 21-33
+  - name: connect
+    lines: 34-72
+  - name: disconnect
+    lines: 73-106
+  - name: fetch_data
+    lines: 107-142
+  - name: get_connection_status
+    lines: 143-162
+  - name: validate_connection
+    lines: 163-184
+  - name: get_supported_sources
+    lines: 185-193
+  - name: save_configuration
+    lines: 194-223
+  - name: load_configuration
+    lines: 224-258
+  - name: __init__
+    lines: 262-266
+  - name: register_transformation
+    lines: 267-290
+  - name: transform
+    lines: 291-319
+  - name: _normalize_data
+    lines: 320-330
+  - name: _aggregate_data
+    lines: 331-342
+  - name: __init__
+    lines: 346-350
+  - name: register_schema
+    lines: 351-374
+  - name: validate
+    lines: 375-419
+  - name: _validate_record
+    lines: 420-430
+  classes:
+  - name: DataConnector
+    type: class
+    lines: 18-258
+  - name: DataTransformer
+    type: class
+    lines: 259-342
+  - name: DataValidator
+    type: class
+    lines: 343-442
+  implements_requirements: []
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/FEATURE-CA-002-05_ca001_ca002_system_integration/LAYER_CA_002_05_01_CA_001_Data_Connector/tests/test_generated_20251031_204843.py
+  test_count: 0
+  implementation_files:
+  - /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/FEATURE-CA-002-05_ca001_ca002_system_integration/LAYER_CA_002_05_01_CA_001_Data_Connector/src/implementation.py
+  methods_tested:
+  - __init__
+  - connect
+  - disconnect
+  - fetch_data
+  - get_connection_status
+  - validate_connection
+  - get_supported_sources
+  - save_configuration
+  - load_configuration
+  - __init__
+  - register_transformation
+  - transform
+  - _normalize_data
+  - _aggregate_data
+  - __init__
+  - register_schema
+  - validate
+  - _validate_record
+  classes_tested:
+  - DataConnector
+  - DataTransformer
+  - DataValidator
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/FEATURE-CA-002-05_ca001_ca002_system_integration/LAYER_CA_002_05_01_CA_001_Data_Connector/src/implementation.py:21-33
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/FEATURE-CA-002-05_ca001_ca002_system_integration/LAYER_CA_002_05_01_CA_001_Data_Connector/tests/test_generated_20251031_204843.py
+  verified: true
+- implementation_location: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/FEATURE-CA-002-05_ca001_ca002_system_integration/LAYER_CA_002_05_01_CA_001_Data_Connector/src/implementation.py:34-72
+  method_name: connect
+  requirement: AC-001
+  test: test_connect
+  test_file: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/FEATURE-CA-002-05_ca001_ca002_system_integration/LAYER_CA_002_05_01_CA_001_Data_Connector/tests/test_generated_20251031_204843.py
+  verified: true
+- implementation_location: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/FEATURE-CA-002-05_ca001_ca002_system_integration/LAYER_CA_002_05_01_CA_001_Data_Connector/src/implementation.py:73-106
+  method_name: disconnect
+  requirement: AC-001
+  test: test_disconnect
+  test_file: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/FEATURE-CA-002-05_ca001_ca002_system_integration/LAYER_CA_002_05_01_CA_001_Data_Connector/tests/test_generated_20251031_204843.py
+  verified: true
+- implementation_location: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/FEATURE-CA-002-05_ca001_ca002_system_integration/LAYER_CA_002_05_01_CA_001_Data_Connector/src/implementation.py:107-142
+  method_name: fetch_data
+  requirement: AC-001
+  test: test_fetch_data
+  test_file: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/FEATURE-CA-002-05_ca001_ca002_system_integration/LAYER_CA_002_05_01_CA_001_Data_Connector/tests/test_generated_20251031_204843.py
+  verified: true
+- implementation_location: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/FEATURE-CA-002-05_ca001_ca002_system_integration/LAYER_CA_002_05_01_CA_001_Data_Connector/src/implementation.py:143-162
+  method_name: get_connection_status
+  requirement: AC-001
+  test: test_get_connection_status
+  test_file: /workspaces/control_tower/cloned_repos/business_ventures/Causal_affect/FEATURE-CA-002-05_ca001_ca002_system_integration/LAYER_CA_002_05_01_CA_001_Data_Connector/tests/test_generated_20251031_204843.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 0
+  requirements_traced: 0
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

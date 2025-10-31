@@ -1,0 +1,225 @@
+# ====================================================================================
+# FEATURE REQUIREMENTS: CA-001 ↔ CA-002 System Integration
+# ====================================================================================
+# FEATURE ID: FEATURE-CA-002-05
+# VERSION: 1.0.0
+# LAST UPDATED: 2025-10-31
+# SYSTEM: CA-002 Correlation Analysis Engine
+# ====================================================================================
+
+metadata:
+  feature_id: "FEATURE-CA-002-05"
+  requirement_id: "FEATURE-CA-002-05"
+  feature_name: "CA-001 CA-002 System Integration"
+  requirement_name: "CA-001 CA-002 System Integration"
+  feature_code: "CA-002-05"
+  version: "1.0.0"
+  status: "Active"
+  created_date: "2025-10-31"
+  last_modified: "2025-10-31"
+  owner: "Causal Affect Team"
+  priority: "MUST HAVE"
+  target_date: "2025-11-01"
+
+# ====================================================================================
+# FEATURE OVERVIEW
+# ====================================================================================
+
+overview:
+  description: |
+    System-level integration layer that connects CA-001 Data Ingestion System with 
+    CA-002 Correlation Analysis Features. Orchestrates live data flow from TimescaleDB 
+    through correlation calculations to interactive dashboards for real-time market 
+    relationship analysis.
+  
+  business_value:
+    - "Enables live correlation analysis with 15-20 concurrent data sources"
+    - "Connects existing CA-001 TimescaleDB infrastructure to CA-002 features"
+    - "Provides scalable architecture for disparate correlation discovery"
+    - "Delivers real-time market relationship insights via dashboard"
+  
+  user_story: |
+    As a market analyst, I want live data from CA-001 to automatically feed into 
+    CA-002 correlation calculations and dashboard visualization, so that I can 
+    identify exploitable relationships in real-time market data.
+  
+  acceptance_criteria:
+    - "All layer implementations complete and passing tests"
+    - "CA-001 TimescaleDB data successfully feeds CA-002 features"
+    - "Real-time correlation matrix updates in dashboard"
+    - "API endpoints functional for external integration"
+    - "Performance handles 15-20 concurrent data sources"
+    - "Documentation complete with integration examples"
+
+# ====================================================================================
+# LAYER ARCHITECTURE
+# ====================================================================================
+
+layers:
+  - layer_id: "LAYER-CA-002-05-01"
+    name: "CA-001 Data Connector"
+    responsibility: "HTTP client for CA-001 TimescaleDB API with data formatting and error handling"
+    technology: "aiohttp, pandas"
+    requirement_file: "LAYER-CA-002-05-01_ca001_data_connector.yaml"
+    requirements:
+      - "LAYER-CA-002-05-01"
+  
+  - layer_id: "LAYER-CA-002-05-02"
+    name: "Data Format Orchestrator"
+    responsibility: "Converts TimescaleDB time-series to correlation-ready pandas DataFrames"
+    technology: "pandas, numpy"
+    requirement_file: "LAYER-CA-002-05-02_data_format_orchestrator.yaml"
+    requirements:
+      - "LAYER-CA-002-05-02"
+  
+  - layer_id: "LAYER-CA-002-05-03"
+    name: "Feature Integration Controller"
+    responsibility: "Orchestrates CA-002-01 correlation calculations and CA-002-04 dashboard generation"
+    technology: "asyncio, typing"
+    requirement_file: "LAYER-CA-002-05-03_feature_integration_controller.yaml"
+    requirements:
+      - "LAYER-CA-002-05-03"
+  
+  - layer_id: "LAYER-CA-002-05-04"
+    name: "System Integration API"
+    responsibility: "FastAPI endpoints for correlation requests with live data integration"
+    technology: "FastAPI, pydantic"
+    requirement_file: "LAYER-CA-002-05-04_system_integration_api.yaml"
+    requirements:
+      - "LAYER-CA-002-05-04"
+
+# ====================================================================================
+# FEATURE REQUIREMENTS
+# ====================================================================================
+
+requirements:
+  - id: "FEAT-CA-002-05-REQ-001"
+    title: "Core Integration"
+    description: "Connect CA-001 data to CA-002 features"
+    priority: "MUST HAVE"
+    acceptance_criteria:
+      - "CA-001 TimescaleDB data successfully retrieved via HTTP API"
+      - "Time-series data formatted for correlation analysis"
+      - "CA-002-01 feature receives properly formatted data"
+      - "CA-002-04 dashboard displays live correlation matrix"
+
+  - id: "FEAT-CA-002-05-REQ-002"
+    title: "API Endpoints"
+    description: "REST API for external correlation requests"
+    priority: "MUST HAVE"
+    acceptance_criteria:
+      - "POST /api/correlations accepts symbol lists and timeframes"
+      - "GET /api/symbols returns available symbols from CA-001"
+      - "GET /health provides system health status"
+      - "Response format matches CA-002 feature expectations"
+
+  - id: "FEAT-CA-002-05-REQ-003"
+    title: "Performance Requirements"
+    description: "Handle concurrent data sources efficiently"
+    priority: "MUST HAVE"
+    acceptance_criteria:
+      - "Support 15-20 concurrent symbol requests"
+      - "Response time under 2 seconds for correlation matrix"
+      - "Memory usage scales linearly with data volume"
+      - "Connection pooling for CA-001 API calls"
+
+  - id: "FEAT-CA-002-05-REQ-004"
+    title: "Error Handling"
+    description: "Robust error handling and recovery"
+    priority: "SHOULD HAVE"
+    acceptance_criteria:
+      - "CA-001 unavailable fallback to mock data"
+      - "Partial data availability still produces results"
+      - "Clear error messages for invalid requests"
+      - "Retry logic for transient failures"
+
+# ====================================================================================
+# TECHNICAL ARCHITECTURE
+# ====================================================================================
+
+architecture:
+  pattern: "Service Integration Layer"
+  integration_approach: "API-Based"
+  data_flow: |
+    1. External Request → System Integration API (Layer 04)
+    2. API → Feature Integration Controller (Layer 03) 
+    3. Controller → CA-001 Data Connector (Layer 01)
+    4. Connector → TimescaleDB via CA-001 HTTP API
+    5. Raw Data → Data Format Orchestrator (Layer 02)
+    6. Formatted Data → CA-002-01 Statistical Correlation
+    7. Correlation Results → CA-002-04 Dashboard Generation
+    8. Dashboard Data → API Response
+
+  dependencies:
+    external_systems:
+      - "CA-001 Data Ingestion System (TimescaleDB API)"
+      - "CA-002-01 Statistical Correlation Feature"
+      - "CA-002-04 Dashboard Visualization Feature"
+    
+    libraries:
+      - "aiohttp>=3.8.0"
+      - "pandas>=2.0.0" 
+      - "numpy>=1.24.0"
+      - "fastapi>=0.104.0"
+      - "pydantic>=2.0.0"
+
+# ====================================================================================
+# TESTING REQUIREMENTS
+# ====================================================================================
+
+testing:
+  unit_tests:
+    coverage_minimum: 90
+    layers:
+      - "LAYER-CA-002-05-01: CA-001 connection, data retrieval, error handling"
+      - "LAYER-CA-002-05-02: Data format conversion, DataFrame creation"
+      - "LAYER-CA-002-05-03: Feature orchestration, async coordination"
+      - "LAYER-CA-002-05-04: API endpoints, request validation"
+  
+  integration_tests:
+    - "CA-001 to CA-002-01 data pipeline"
+    - "CA-002-01 to CA-002-04 dashboard pipeline" 
+    - "End-to-end correlation request workflow"
+    - "Mock CA-001 fallback functionality"
+  
+  performance_tests:
+    - "15-20 concurrent symbol correlation requests"
+    - "Large dataset handling (10K+ data points)"
+    - "Memory usage under sustained load"
+
+# ====================================================================================
+# DEPLOYMENT REQUIREMENTS 
+# ====================================================================================
+
+deployment:
+  environment: "Railway/Docker"
+  configuration:
+    - "CA001_API_URL: CA-001 system endpoint"
+    - "CA002_FEATURES_PATH: Path to CA-002 feature implementations"
+    - "MAX_CONCURRENT_REQUESTS: Concurrency limit"
+    - "CACHE_TTL: Data caching time-to-live"
+  
+  health_checks:
+    - "CA-001 system connectivity"
+    - "CA-002 feature availability"
+    - "Memory and CPU usage"
+
+# ====================================================================================
+# DOCUMENTATION REQUIREMENTS
+# ====================================================================================
+
+documentation:
+  api_docs:
+    - "OpenAPI/Swagger specification"
+    - "Request/response examples"
+    - "Error code reference"
+  
+  integration_guide:
+    - "CA-001 setup requirements"
+    - "CA-002 feature dependencies"
+    - "Configuration examples"
+  
+  developer_docs:
+    - "Architecture overview"
+    - "Data flow diagrams"
+    - "Extension points for new features"

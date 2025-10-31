@@ -1,0 +1,183 @@
+# ====================================================================================
+# LAYER REQUIREMENTS: Data Format Orchestrator
+# ====================================================================================
+# LAYER ID: LAYER-CA-002-05-02
+# FEATURE: FEATURE-CA-002-05 (CA-001 ↔ CA-002 System Integration)
+# ====================================================================================
+
+metadata:
+  layer_id: "LAYER-CA-002-05-02"
+  layer_name: "Data Format Orchestrator"
+  feature_id: "FEATURE-CA-002-05"
+  version: "1.0.0"
+  created_date: "2025-10-31"
+  owner: "Causal Affect Team"
+
+# ====================================================================================
+# LAYER OVERVIEW
+# ====================================================================================
+
+overview:
+  description: |
+    Data transformation layer that converts CA-001 TimescaleDB JSON responses into 
+    correlation-ready pandas DataFrames. Handles data cleaning, normalization, and 
+    quality assessment for reliable correlation calculations.
+  
+  responsibility: |
+    - Parse CA-001 JSON time-series data into structured format
+    - Create pandas DataFrames with proper datetime indexing
+    - Pivot data from long to wide format (timestamps × symbols)
+    - Handle missing values and data quality issues
+    - Provide data quality scoring for correlation reliability
+
+  input: "Raw JSON time-series data from CA-001 API"
+  output: "pandas DataFrame ready for CA-002-01 correlation calculations"
+  technology: "pandas, numpy, datetime"
+
+# ====================================================================================
+# FUNCTIONAL REQUIREMENTS
+# ====================================================================================
+
+requirements:
+  - id: "LAYER-CA-002-05-02-REQ-001"
+    title: "JSON to DataFrame Conversion"
+    description: "Convert CA-001 JSON to correlation-ready DataFrame"
+    acceptance_criteria:
+      - "Parse nested JSON structure from CA-001 API"
+      - "Convert timestamp strings to datetime index"
+      - "Pivot data: rows=timestamps, columns=symbols, values=prices"
+      - "Preserve numeric precision for calculations"
+
+  - id: "LAYER-CA-002-05-02-REQ-002"
+    title: "Data Cleaning and Normalization"
+    description: "Clean and normalize data for correlation analysis"
+    acceptance_criteria:
+      - "Handle multiple value columns (close, value, price)"
+      - "Forward fill missing values appropriately"
+      - "Remove duplicate timestamps per symbol"
+      - "Sort data by timestamp chronologically"
+
+  - id: "LAYER-CA-002-05-02-REQ-003"
+    title: "Data Quality Assessment"
+    description: "Assess data quality for correlation reliability"
+    acceptance_criteria:
+      - "Calculate completeness score (non-null percentage)"
+      - "Calculate consistency score (duplicate percentage)"
+      - "Assess minimum data points requirement"
+      - "Return overall quality score (0.0 to 1.0)"
+
+  - id: "LAYER-CA-002-05-02-REQ-004"
+    title: "Format Validation"
+    description: "Validate data format meets CA-002-01 expectations"
+    acceptance_criteria:
+      - "Ensure DataFrame has datetime index"
+      - "Verify numeric columns for each symbol"
+      - "Check minimum rows for correlation calculation"
+      - "Validate symbol names are strings"
+
+# ====================================================================================
+# TECHNICAL SPECIFICATIONS
+# ====================================================================================
+
+technical_specs:
+  class_design:
+    - "DataFormatOrchestrator: Main formatting class"
+    - "DataQualityAssessor: Quality assessment utilities"
+    - "FormatValidator: Validation methods"
+
+  methods:
+    - "format_timeseries_data(raw_json): JSON → DataFrame"
+    - "assess_data_quality(dataframe): Quality scoring"
+    - "validate_correlation_format(dataframe): Format validation"
+    - "clean_and_normalize(dataframe): Data cleaning"
+
+  data_transformations:
+    input_format: |
+      {
+        "data": [
+          {
+            "timestamp": "2024-01-01T00:00:00Z",
+            "symbol": "SPY",
+            "value": 450.23,
+            "volume": 1000000
+          }
+        ]
+      }
+    
+    output_format: |
+      DataFrame(
+        index=DatetimeIndex(['2024-01-01', '2024-01-02', ...]),
+        columns=['SPY', 'VIX', 'GOLD', ...],
+        data=[[450.23, 18.45, 1950.00], ...]
+      )
+
+  quality_metrics:
+    - "completeness: 1.0 - (null_count / total_cells)"
+    - "consistency: 1.0 - (duplicate_count / total_rows)"
+    - "coverage: min(row_count / 100, 1.0)"
+    - "overall: weighted_average(completeness, consistency, coverage)"
+
+# ====================================================================================
+# TESTING REQUIREMENTS
+# ====================================================================================
+
+testing:
+  unit_tests:
+    - "test_json_parsing_valid_data"
+    - "test_datetime_conversion"
+    - "test_pivot_transformation"
+    - "test_missing_value_handling"
+    - "test_data_quality_assessment"
+    - "test_format_validation"
+    - "test_edge_cases_empty_data"
+
+  integration_tests:
+    - "test_ca001_response_processing"
+    - "test_ca002_feature_compatibility"
+    - "test_large_dataset_performance"
+
+  edge_cases:
+    - "Empty JSON response"
+    - "Single symbol data"
+    - "Missing timestamp fields"
+    - "Invalid numeric values"
+    - "Inconsistent data schemas"
+
+# ====================================================================================
+# ERROR HANDLING
+# ====================================================================================
+
+error_handling:
+  exceptions:
+    - "DataFormatError: Invalid JSON structure"
+    - "InsufficientDataError: Not enough data points"
+    - "TimestampError: Invalid timestamp format"
+    - "SchemaError: Unexpected data schema"
+
+  recovery_strategies:
+    - "Skip invalid records and continue processing"
+    - "Use fallback value columns if primary missing"
+    - "Return empty DataFrame with warning for empty data"
+    - "Log warnings for data quality issues"
+
+# ====================================================================================
+# IMPLEMENTATION NOTES
+# ====================================================================================
+
+implementation:
+  patterns:
+    - "Strategy pattern for different data schemas"
+    - "Builder pattern for DataFrame construction"
+    - "Validation chain for data quality checks"
+
+  dependencies:
+    - "pandas>=2.0.0"
+    - "numpy>=1.24.0"
+    - "datetime (built-in)"
+    - "logging (built-in)"
+
+  performance_considerations:
+    - "Use vectorized pandas operations"
+    - "Minimize memory copying during pivot"
+    - "Efficient datetime parsing with pd.to_datetime"
+    - "Lazy evaluation for large datasets"
