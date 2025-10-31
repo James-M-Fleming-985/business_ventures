@@ -1,0 +1,577 @@
+# ====================================================================================
+# SYSTEM REQUIREMENTS TEMPLATE
+# ====================================================================================
+# SYSTEM-IMMERSIVE-03: Content Management System
+# ====================================================================================
+# This template defines system-level requirements that are decomposed into features.
+# ALL features in this system must follow the naming conventions and response
+# structures defined here to ensure consistency and integration compatibility.
+# ====================================================================================
+
+metadata:
+  system_id: SYSTEM-IMMERSIVE-03
+  system_name: "Content Management System"
+  parent_project: PROJECT-IMMERSIVE-DISPLAYS
+  created_date: 2025-10-31
+  status: "planned"
+  priority: "high"
+  
+  purpose: |
+    Manages the creation, curation, distribution, and lifecycle of lighting content
+    for immersive displays. Provides AI-generated seasonal content, user-created
+    custom shows, and premium content libraries with intelligent categorization
+    and recommendation systems.
+    
+    Core capabilities include AI content generation, content library management,
+    version control, CDN distribution, and analytics-driven content optimization
+    for maximum user engagement and retention.
+  
+  business_value: |
+    - Primary differentiator through AI-generated personalized content
+    - Recurring revenue stream via premium content subscriptions
+    - Reduced operational costs through automated content generation
+    - Data insights for content strategy and user behavior optimization
+    - Scalable content delivery supporting global user base
+  
+  traceability:
+    parent_project_requirements:
+      - "PROJECT-AC-003: AI generates acceptable quality themed content in <2 minutes"
+      - "PROJECT-AC-007: System scales to 100+ lights per installation"
+    
+    project_requirements_file: "../requirements/project_requirements.yaml"
+    
+    derivation_rationale: |
+      Content is the core value proposition of the immersive displays platform.
+      Users purchase hardware to access unique, high-quality lighting experiences
+      that cannot be created manually. AI-generated content enables scalable
+      personalization while premium libraries provide professional-quality shows.
+      
+      This system implements the content strategy outlined in the project
+      requirements, ensuring users have continuous access to fresh, engaging
+      content that drives subscription revenue and platform stickiness.
+
+deployment:
+  platform: Railway + AWS S3 + CloudFront CDN
+  service_type: FastAPI Backend + AI Generation Service + Content CDN
+  scaling: 1 API + 1 AI service (Phase 1) → 3 API + 2 AI services (Phase 2)
+  estimated_cost: "$40/month Railway + $30/month AWS (Phase 1) → $120/month total (Phase 2)"
+  
+  railway_config_backend:
+    builder: NIXPACKS
+    build_command: "pip install -r requirements.txt"
+    start_command: "uvicorn content_api.main:app --host 0.0.0.0 --port $PORT"
+    health_check: "/health"
+    restart_policy: ON_FAILURE
+    
+  railway_config_ai_service:
+    builder: NIXPACKS
+    build_command: "pip install -r ai_requirements.txt"
+    start_command: "python ai_generator/main.py"
+    health_check: "/ai/health"
+    restart_policy: ON_FAILURE
+    
+  aws_config:
+    s3_bucket: "immersive-displays-content"
+    cloudfront_distribution: "Global CDN for content delivery"
+    lambda_functions: "Content processing and optimization"
+
+# ====================================================================================
+# SYSTEM ARCHITECTURE
+# ====================================================================================
+
+system_architecture:
+  components:
+    content_management_api:
+      technology: "FastAPI + PostgreSQL + Redis"
+      description: "Central content management and distribution API"
+      responsibilities:
+        - "Content metadata management and versioning"
+        - "User access control and subscription validation"
+        - "Content discovery and recommendation engine"
+        - "Analytics collection and reporting"
+      
+    ai_content_generator:
+      technology: "Python + OpenAI GPT-4 + Custom ML Models"
+      description: "AI-powered content generation service"
+      responsibilities:
+        - "Seasonal theme generation (Halloween, Christmas, etc.)"
+        - "Custom content creation from user prompts"
+        - "Content quality validation and filtering"
+        - "Generation optimization and caching"
+      
+    content_delivery_network:
+      technology: "AWS CloudFront + S3"
+      description: "Global content distribution and caching"
+      responsibilities:
+        - "Fast global content delivery"
+        - "Bandwidth optimization and compression"
+        - "Content caching and invalidation"
+        - "Analytics and usage tracking"
+    
+    content_processing_pipeline:
+      technology: "AWS Lambda + FFmpeg"
+      description: "Content format conversion and optimization"
+      responsibilities:
+        - "Multi-format content generation"
+        - "Content compression and optimization"
+        - "Thumbnail and preview generation"
+        - "Quality validation and testing"
+
+  data_flow:
+    content_creation: "AI Generator → Processing Pipeline → CDN → Mobile Apps"
+    user_requests: "Mobile Apps → Content API → CDN → Content Files"
+    analytics: "Mobile Apps → Content API → Analytics Database"
+    
+  integration_points:
+    mobile_applications: "Serves content to SYSTEM-IMMERSIVE-02 mobile apps"
+    hardware_integration: "Provides content to SYSTEM-IMMERSIVE-01 for device rendering"
+    ecommerce_platform: "Integrates with SYSTEM-IMMERSIVE-04 for subscription validation"
+
+# ====================================================================================
+# SYSTEM-LEVEL REQUIREMENTS
+# ====================================================================================
+
+functional_requirements:
+  
+  # FR-001: AI Content Generation
+  FR_001_ai_content_generation:
+    requirement_id: "SYS-IMMERSIVE-03-FR-001"
+    title: "AI Content Generation"
+    description: |
+      Generate high-quality, personalized lighting content using AI models.
+      Support seasonal themes, custom user prompts, and style variations
+      with quality validation and optimization.
+    
+    acceptance_criteria:
+      - "AI generates themed content within 2 minutes"
+      - "Generated content passes quality validation 95% of the time"
+      - "System supports 10+ seasonal themes"
+      - "Custom prompts generate relevant content 90% accuracy"
+  
+  # FR-002: Content Library Management
+  FR_002_content_library:
+    requirement_id: "SYS-IMMERSIVE-03-FR-002"
+    title: "Content Library Management"
+    description: |
+      Organize, categorize, and manage extensive content libraries with
+      version control, metadata management, and intelligent discovery
+      features for both free and premium content.
+    
+    acceptance_criteria:
+      - "Library supports 10,000+ content items"
+      - "Content search returns relevant results within 1 second"
+      - "Version control tracks all content modifications"
+      - "Metadata extraction is 99% accurate"
+  
+  # FR-003: Content Distribution & CDN
+  FR_003_content_distribution:
+    requirement_id: "SYS-IMMERSIVE-03-FR-003"
+    title: "Content Distribution & CDN"
+    description: |
+      Deliver content globally with optimal performance through CDN
+      integration, compression, caching, and bandwidth optimization
+      for mobile and hardware endpoints.
+    
+    acceptance_criteria:
+      - "Global content delivery <3 seconds average"
+      - "CDN cache hit ratio >90%"
+      - "Bandwidth usage optimized by 70% through compression"
+      - "99.9% content availability globally"
+
+# ====================================================================================
+# NON-FUNCTIONAL REQUIREMENTS
+# ====================================================================================
+
+non_functional_requirements:
+  
+  performance:
+    response_time:
+      ai_generation: "<2 minutes for themed content"
+      content_search: "<1 second for library queries"
+      content_delivery: "<3 seconds global average"
+      metadata_updates: "<500ms for content modifications"
+    
+    throughput:
+      ai_generations: "50+ concurrent content generations"
+      content_requests: "10,000+ concurrent downloads"
+      api_requests: "1,000+ requests per second"
+    
+    scalability:
+      content_storage: "Unlimited storage via cloud infrastructure"
+      concurrent_users: "100,000+ simultaneous users"
+      generation_queue: "1,000+ queued AI generation requests"
+  
+  reliability:
+    availability: "99.9% uptime for content delivery"
+    data_durability: "99.999999999% (11 9's) content durability"
+    ai_generation_success: "95% successful generation rate"
+    content_integrity: "100% content integrity validation"
+  
+  security:
+    content_protection: "DRM protection for premium content"
+    access_control: "Role-based content access with subscription validation"
+    data_encryption: "AES-256 encryption for content at rest"
+    api_security: "OAuth 2.0 + rate limiting + input validation"
+  
+  compliance:
+    content_safety: "AI safety filters prevent inappropriate content"
+    copyright_protection: "Automated copyright detection and filtering"
+    data_privacy: "GDPR/CCPA compliance for user-generated content"
+    content_moderation: "Human review process for user-submitted content"
+
+# ====================================================================================
+# SHARED INTERFACES AND DATA STRUCTURES
+# ====================================================================================
+
+shared_interfaces:
+  
+  # Content Management Response Structure
+  ContentResponse:
+    description: "Standardized response format for all content API endpoints"
+    structure:
+      success: "boolean - Operation success indicator"
+      data: "object|null - Response payload or null on error"
+      error: "string|null - Error message or null on success"
+      metadata: "object - Additional context (pagination, timestamps, etc.)"
+    
+    examples:
+      success_response: |
+        {
+          "success": true,
+          "data": { 
+            "content_id": "halloween_2025_spooky",
+            "title": "Spooky Halloween Lights",
+            "status": "ready",
+            "download_url": "https://cdn.example.com/content/..."
+          },
+          "error": null,
+          "metadata": { 
+            "timestamp": "2025-10-31T10:00:00Z",
+            "generation_time": "87s",
+            "quality_score": 0.94
+          }
+        }
+  
+  # Content Item Structure
+  ContentItem:
+    description: "Comprehensive content metadata structure"
+    structure:
+      content_id: "string - Unique content identifier"
+      title: "string - Human-readable content title"
+      description: "string - Content description and usage notes"
+      category: "enum - seasonal|event|ambient|music_sync|custom"
+      theme: "string - Specific theme (halloween, christmas, etc.)"
+      premium: "boolean - Requires subscription access"
+      ai_generated: "boolean - Generated by AI vs. human-created"
+      
+      technical_specs:
+        duration: "integer - Content duration in seconds"
+        light_count: "integer - Recommended number of lights"
+        complexity: "enum - simple|moderate|complex|professional"
+        file_size: "integer - Content file size in bytes"
+        format_version: "string - Content format version"
+      
+      media_assets:
+        content_file_url: "string - Primary content file URL"
+        preview_video_url: "string - Preview video URL"
+        thumbnail_url: "string - Content thumbnail image URL"
+        music_file_url: "string|null - Associated music file URL"
+      
+      metadata:
+        created_date: "datetime - Content creation timestamp"
+        updated_date: "datetime - Last modification timestamp"
+        version: "string - Content version identifier"
+        creator: "string - Creator name (AI|username)"
+        download_count: "integer - Total download count"
+        rating: "float - User rating (1.0-5.0)"
+        
+      generation_info:
+        prompt: "string|null - Original AI generation prompt"
+        generation_time: "integer|null - AI generation time in seconds"
+        quality_score: "float|null - Automated quality assessment"
+        model_version: "string|null - AI model used for generation"
+  
+  # AI Generation Request Structure
+  GenerationRequest:
+    description: "Structure for AI content generation requests"
+    structure:
+      request_id: "string - Unique generation request identifier"
+      user_id: "string - Requesting user identifier"
+      prompt: "string - Content generation prompt"
+      theme: "enum - seasonal theme or custom"
+      parameters:
+        light_count: "integer - Target number of lights"
+        duration: "integer - Desired duration in seconds"
+        complexity: "enum - simple|moderate|complex"
+        style: "enum - elegant|dramatic|playful|professional"
+        music_sync: "boolean - Include music synchronization"
+      
+      priority: "enum - normal|high|premium"
+      callback_url: "string|null - Webhook for completion notification"
+
+# ====================================================================================
+# INTEGRATION REQUIREMENTS
+# ====================================================================================
+
+integration_requirements:
+  
+  mobile_app_integration:
+    system: "SYSTEM-IMMERSIVE-02 (Mobile Applications)"
+    interface: "Content Discovery and Delivery API"
+    data_exchange:
+      outbound: "Content metadata, files, previews, recommendations"
+      inbound: "Content requests, user preferences, usage analytics"
+    
+    communication_protocol: "HTTP REST API + CDN for content delivery"
+    caching_strategy: "Multi-tier caching (CDN, API, mobile app)"
+    offline_support: "Content metadata cached, files downloaded on-demand"
+  
+  hardware_integration:
+    system: "SYSTEM-IMMERSIVE-01 (Hardware Integration)"
+    interface: "Content Rendering API"
+    data_exchange:
+      outbound: "Optimized content files, device-specific formats"
+      inbound: "Device capabilities, rendering feedback, performance metrics"
+    
+    communication_protocol: "HTTP REST API + WebSocket for real-time updates"
+    format_optimization: "Device-specific content format conversion"
+    streaming_support: "Real-time content streaming for live shows"
+  
+  ecommerce_integration:
+    system: "SYSTEM-IMMERSIVE-04 (E-commerce Platform)"
+    interface: "Subscription Validation API"
+    data_exchange:
+      outbound: "Content access requests, usage tracking"
+      inbound: "Subscription status, access permissions, billing events"
+    
+    communication_protocol: "HTTP REST API with real-time webhooks"
+    access_control: "Real-time subscription validation for premium content"
+    billing_integration: "Usage-based billing for AI generation services"
+
+# ====================================================================================
+# SYSTEM ACCEPTANCE CRITERIA
+# ====================================================================================
+
+system_acceptance_criteria:
+  
+  - criterion_id: "SYS-IMMERSIVE-03-AC-001"
+    criterion: "AI generates themed content within 2 minutes"
+    test_method: "Automated generation testing with timing instrumentation"
+    pass_criteria: "95% of themed content generations complete within 2 minutes"
+    
+  - criterion_id: "SYS-IMMERSIVE-03-AC-002"
+    criterion: "Content library supports 10,000+ items with sub-second search"
+    test_method: "Load testing with full content database and search queries"
+    pass_criteria: "Search performance <1 second with 10,000+ content items"
+    
+  - criterion_id: "SYS-IMMERSIVE-03-AC-003"
+    criterion: "Global content delivery averages <3 seconds"
+    test_method: "Performance testing from multiple global locations"
+    pass_criteria: "Average global download time <3 seconds for typical content"
+    
+  - criterion_id: "SYS-IMMERSIVE-03-AC-004"
+    criterion: "AI-generated content passes quality validation 95% of the time"
+    test_method: "Automated quality assessment of generated content samples"
+    pass_criteria: "Quality score >0.8 for 95% of AI-generated content"
+    
+  - criterion_id: "SYS-IMMERSIVE-03-AC-005"
+    criterion: "System handles 50+ concurrent AI generations"
+    test_method: "Load testing with concurrent generation requests"
+    pass_criteria: "System maintains performance with 50+ concurrent generations"
+
+# ====================================================================================
+# FEATURE DECOMPOSITION
+# ====================================================================================
+
+features:
+  
+  - feature_id: "FEATURE-IMMERSIVE-03-001"
+    feature_name: "AI Content Generation Engine"
+    feature_directory: "FEATURE-IMMERSIVE-03-001_ai_content_generation"
+    description: "AI-powered content generation with theme and customization support"
+    priority: "critical"
+    
+    layer_count: 3
+    estimated_effort: "50 hours"
+    dependencies: ["OpenAI API", "Custom ML Models"]
+    
+  - feature_id: "FEATURE-IMMERSIVE-03-002"
+    feature_name: "Content Library Management"
+    feature_directory: "FEATURE-IMMERSIVE-03-002_content_library_management"
+    description: "Content organization, search, and metadata management"
+    priority: "high"
+    
+    layer_count: 3
+    estimated_effort: "40 hours"
+    dependencies: ["PostgreSQL", "Elasticsearch"]
+    
+  - feature_id: "FEATURE-IMMERSIVE-03-003"
+    feature_name: "Content Distribution Network"
+    feature_directory: "FEATURE-IMMERSIVE-03-003_content_distribution"
+    description: "Global content delivery with CDN integration and optimization"
+    priority: "high"
+    
+    layer_count: 3
+    estimated_effort: "45 hours"
+    dependencies: ["AWS CloudFront", "Content Processing Pipeline"]
+
+# ====================================================================================
+# IMPLEMENTATION CONSTRAINTS
+# ====================================================================================
+
+implementation_constraints:
+  
+  technology_requirements:
+    ai_framework: "OpenAI GPT-4 API + Custom PyTorch models for optimization"
+    backend_framework: "FastAPI 0.104+ for high-performance content API"
+    database: "PostgreSQL for metadata, Redis for caching, S3 for content files"
+    cdn: "AWS CloudFront for global content distribution"
+    
+  content_requirements:
+    supported_formats: "JSON lighting sequences, MP4 previews, MP3 audio files"
+    quality_standards: "Automated quality scoring >0.8 for AI content"
+    content_safety: "AI safety filters prevent inappropriate content generation"
+    
+  performance_requirements:
+    ai_generation_time: "Themed content <2 minutes, custom content <5 minutes"
+    content_delivery_speed: "Global average <3 seconds for typical content files"
+    search_performance: "Content search results <1 second for any library size"
+    
+  security_requirements:
+    content_protection: "DRM for premium content, watermarking for AI content"
+    api_security: "OAuth 2.0 + rate limiting + input sanitization"
+    copyright_compliance: "Automated detection and prevention of copyrighted content"
+    
+  scalability_requirements:
+    content_storage: "Unlimited scalability via cloud storage (S3)"
+    concurrent_users: "Support 100,000+ simultaneous content consumers"
+    ai_generation_queue: "Handle 1,000+ queued generation requests"
+
+# ====================================================================================
+# QUALITY GATES AND VERIFICATION
+# ====================================================================================
+
+quality_gates:
+  
+  development_gates:
+    ai_quality_gates:
+      - "AI generation success rate >95% for themed content"
+      - "Quality assessment scores >0.8 for generated content"
+      - "Content safety filters block 100% of inappropriate content"
+    
+    performance_gates:
+      - "API response time <500ms for 95% of requests"
+      - "Content search completes <1 second for any library size"
+      - "CDN cache hit ratio >90% for content delivery"
+    
+    security_gates:
+      - "All content protected with appropriate DRM/watermarking"
+      - "API endpoints secured with OAuth 2.0 and rate limiting"
+      - "Content validation prevents malicious file uploads"
+  
+  release_gates:
+    functionality_gates:
+      - "AI generates acceptable themed content for all supported themes"
+      - "Content library search and discovery function correctly"
+      - "Global content delivery performs within SLA requirements"
+    
+    integration_gates:
+      - "Mobile app integration delivers content seamlessly"
+      - "Hardware integration supports all content formats"
+      - "E-commerce integration enforces subscription access correctly"
+    
+    quality_gates:
+      - "Generated content meets quality standards in user testing"
+      - "Content library organization supports efficient discovery"
+      - "CDN delivers content with optimal performance globally"
+
+# ====================================================================================
+# MONITORING AND METRICS
+# ====================================================================================
+
+monitoring_requirements:
+  
+  ai_generation_metrics:
+    performance_metrics:
+      - "AI generation success rate by theme type"
+      - "Generation time distribution and percentiles"
+      - "Quality score distribution for generated content"
+      - "Queue depth and processing throughput"
+    
+    quality_metrics:
+      - "User rating distribution for AI-generated content"
+      - "Content rejection rate by safety filters"
+      - "Custom prompt interpretation accuracy"
+      - "Content uniqueness and creativity scores"
+  
+  content_delivery_metrics:
+    performance_metrics:
+      - "Global content delivery time percentiles"
+      - "CDN cache hit ratios by region"
+      - "Bandwidth usage and cost optimization"
+      - "Content download success rates"
+    
+    usage_metrics:
+      - "Content popularity and download rankings"
+      - "User content discovery patterns"
+      - "Premium vs. free content engagement"
+      - "Content lifecycle and refresh rates"
+  
+  business_metrics:
+    revenue_metrics:
+      - "AI generation usage by subscription tier"
+      - "Premium content conversion rates"
+      - "Content-driven subscription upgrades"
+      - "Cost per AI generation and optimization opportunities"
+
+# ====================================================================================
+# RISK MANAGEMENT
+# ====================================================================================
+
+risk_assessment:
+  
+  technical_risks:
+    - risk: "AI generation quality consistency"
+      impact: "High - Poor content quality affects user satisfaction and retention"
+      mitigation: "Multi-model approach, quality validation, human review process"
+      
+    - risk: "CDN performance and cost scaling"
+      impact: "Medium - Could affect delivery speed or increase operational costs"
+      mitigation: "Multi-CDN strategy, intelligent caching, cost monitoring"
+      
+    - risk: "Content copyright and safety issues"
+      impact: "High - Legal liability and platform reputation risk"
+      mitigation: "Automated detection systems, legal review, user reporting"
+  
+  business_risks:
+    - risk: "AI generation costs exceed revenue"
+      impact: "Medium - Could affect profitability of content generation features"
+      mitigation: "Usage-based pricing, cost optimization, efficiency improvements"
+      
+    - risk: "User-generated content moderation complexity"
+      impact: "Medium - Could create operational overhead and legal concerns"
+      mitigation: "Automated moderation tools, clear content policies, human oversight"
+
+# ====================================================================================
+# SUCCESS CRITERIA AND VALIDATION
+# ====================================================================================
+
+success_criteria:
+  
+  mvp_success:
+    - "AI generates 10+ seasonal themes with 90% user acceptance rate"
+    - "Content library supports 1,000+ items with efficient search"
+    - "Global content delivery averages <5 seconds initially"
+    - "Premium content access control functions correctly"
+  
+  production_success:
+    - "10,000+ pieces of AI-generated content created monthly"
+    - "Content library grows to 50,000+ items with high engagement"
+    - "Global delivery performance <3 seconds average"
+    - "Premium content drives 25%+ subscription revenue"
+  
+  scale_success:
+    - "1M+ AI content generations processed successfully"
+    - "Content library exceeds 500,000 items with intelligent organization"
+    - "CDN delivers content to 100+ countries with consistent performance"
+    - "Content system drives 50%+ of overall platform engagement"

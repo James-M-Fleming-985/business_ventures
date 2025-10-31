@@ -1,0 +1,523 @@
+# ====================================================================================
+# SYSTEM REQUIREMENTS TEMPLATE
+# ====================================================================================
+# SYSTEM-IMMERSIVE-02: Mobile Application System
+# ====================================================================================
+# This template defines system-level requirements that are decomposed into features.
+# ALL features in this system must follow the naming conventions and response
+# structures defined here to ensure consistency and integration compatibility.
+# ====================================================================================
+
+metadata:
+  system_id: SYSTEM-IMMERSIVE-02
+  system_name: "Mobile Application System"
+  parent_project: PROJECT-IMMERSIVE-DISPLAYS
+  created_date: 2025-10-31
+  status: "planned"
+  priority: "critical"
+  
+  purpose: |
+    Provides intuitive mobile interfaces for controlling immersive lighting displays,
+    managing content libraries, and handling user accounts. Enables both manual
+    control and automated show orchestration from iOS and Android devices.
+    
+    Core capabilities include device discovery and pairing, real-time lighting
+    control, content browsing and download, show scheduling, and user profile
+    management with subscription billing integration.
+  
+  business_value: |
+    - Primary user touchpoint driving adoption and engagement
+    - Enables premium subscription revenue through content access
+    - Reduces support costs through intuitive self-service interface
+    - Enables social sharing features to drive viral growth
+    - Provides data collection for user behavior analytics
+  
+  traceability:
+    parent_project_requirements:
+      - "PROJECT-AC-001: Hardware responds to mobile app commands within 1 second"
+      - "PROJECT-AC-005: Mobile app works on iOS 14.0+ and Android 8.0+"
+      - "PROJECT-AC-007: System scales to 100+ lights per installation"
+    
+    project_requirements_file: "../requirements/project_requirements.yaml"
+    
+    derivation_rationale: |
+      Mobile applications are the primary user interface for the immersive displays
+      system. Users need intuitive control over their lighting installations,
+      access to AI-generated content, and seamless account management.
+      
+      This system directly implements the user-facing requirements from the project
+      specification, ensuring mobile compatibility and responsive control interfaces.
+
+deployment:
+  platform: App Stores + Railway Backend API
+  service_type: React Native Apps + FastAPI Backend
+  scaling: 1 API instance (Phase 1) → 3 instances + CDN (Phase 2)
+  estimated_cost: "$25/month backend + App Store fees ($99/year)"
+  
+  railway_config_backend:
+    builder: NIXPACKS
+    build_command: "pip install -r requirements.txt"
+    start_command: "uvicorn mobile_api.main:app --host 0.0.0.0 --port $PORT"
+    health_check: "/health"
+    restart_policy: ON_FAILURE
+    
+  app_store_config:
+    ios_deployment: "App Store Connect + TestFlight"
+    android_deployment: "Google Play Console + Internal Testing"
+    minimum_versions: "iOS 14.0+, Android 8.0 (API 26)+"
+
+# ====================================================================================
+# SYSTEM ARCHITECTURE
+# ====================================================================================
+
+system_architecture:
+  components:
+    mobile_app_frontend:
+      technology: "React Native + TypeScript"
+      description: "Cross-platform mobile app for iOS and Android"
+      responsibilities:
+        - "Device discovery and connection management"
+        - "Real-time lighting control interface"
+        - "Content library browsing and downloads"
+        - "User account and subscription management"
+      
+    mobile_api_backend:
+      technology: "FastAPI + PostgreSQL"
+      description: "Backend API serving mobile app requests"
+      responsibilities:
+        - "User authentication and session management" 
+        - "Device state synchronization"
+        - "Content delivery and caching"
+        - "Subscription billing integration"
+      
+    push_notification_service:
+      technology: "Firebase Cloud Messaging"
+      description: "Push notifications for device alerts and updates"
+      responsibilities:
+        - "Device status alerts"
+        - "Content update notifications"
+        - "Subscription renewal reminders"
+
+  data_flow:
+    user_interaction: "Mobile App → Mobile API → Device Control System"
+    device_status: "Hardware System → Mobile API → Mobile App"
+    content_delivery: "Content System → Mobile API → Mobile App"
+    
+  integration_points:
+    hardware_integration: "Communicates with SYSTEM-IMMERSIVE-01 for device control"
+    content_management: "Integrates with SYSTEM-IMMERSIVE-03 for content access"
+    ecommerce_platform: "Connects to SYSTEM-IMMERSIVE-04 for subscriptions"
+
+# ====================================================================================
+# SYSTEM-LEVEL REQUIREMENTS
+# ====================================================================================
+
+functional_requirements:
+  
+  # FR-001: Device Control Interface
+  FR_001_device_control:
+    requirement_id: "SYS-IMMERSIVE-02-FR-001"
+    title: "Device Control Interface"
+    description: |
+      Provide intuitive mobile interface for discovering, connecting to, and
+      controlling immersive lighting devices. Support both manual control
+      and automated show execution.
+    
+    acceptance_criteria:
+      - "App discovers devices on local network within 10 seconds"
+      - "Device control commands execute within 1 second"
+      - "Interface supports 100+ lights with responsive performance"
+      - "Offline mode caches last 5 device states"
+  
+  # FR-002: Content Library Management  
+  FR_002_content_library:
+    requirement_id: "SYS-IMMERSIVE-02-FR-002"
+    title: "Content Library Management"
+    description: |
+      Enable users to browse, preview, download, and manage lighting content
+      libraries. Support both free and premium content with subscription
+      access controls.
+    
+    acceptance_criteria:
+      - "Content library loads within 3 seconds"
+      - "Content previews stream smoothly with <2s start time"
+      - "Downloads complete in background with progress tracking"
+      - "Offline content access for downloaded shows"
+  
+  # FR-003: User Account System
+  FR_003_user_accounts:
+    requirement_id: "SYS-IMMERSIVE-02-FR-003"
+    title: "User Account System"
+    description: |
+      Manage user registration, authentication, profile settings, and
+      subscription status. Integrate with payment systems for billing
+      and subscription management.
+    
+    acceptance_criteria:
+      - "Account creation completes within 30 seconds"
+      - "Login/logout operations complete within 5 seconds"
+      - "Subscription status updates in real-time"
+      - "Profile data syncs across multiple devices"
+
+# ====================================================================================
+# NON-FUNCTIONAL REQUIREMENTS
+# ====================================================================================
+
+non_functional_requirements:
+  
+  performance:
+    response_time:
+      device_discovery: "<10 seconds for local network scan"
+      device_commands: "<1 second command execution"
+      content_loading: "<3 seconds for library view"
+      app_startup: "<5 seconds cold start time"
+    
+    scalability:
+      concurrent_users: "10,000+ active users simultaneously"
+      devices_per_user: "100+ lights per installation"
+      content_downloads: "1,000+ concurrent downloads"
+    
+    resource_usage:
+      battery_impact: "Minimal battery drain during normal usage"
+      storage_footprint: "App size <100MB, content cache configurable"
+      memory_usage: "RAM usage <200MB during normal operation"
+  
+  reliability:
+    availability: "99.9% uptime for backend API services"
+    offline_capability: "Core functions work offline for 24+ hours"
+    crash_rate: "<0.1% crash rate across all app sessions"
+    data_recovery: "Automatic recovery from network interruptions"
+  
+  usability:
+    platform_consistency: "Native look/feel on iOS and Android"
+    accessibility: "WCAG 2.1 AA compliance for accessibility"
+    internationalization: "Support for 5+ languages initially"
+    onboarding: "New users complete setup within 10 minutes"
+  
+  security:
+    authentication: "OAuth 2.0 + biometric authentication support"
+    data_encryption: "TLS 1.3 for all API communication"
+    local_storage: "Encrypted storage for sensitive user data"
+    privacy_compliance: "GDPR and CCPA compliance for user data"
+
+# ====================================================================================
+# SHARED INTERFACES AND DATA STRUCTURES
+# ====================================================================================
+
+shared_interfaces:
+  
+  # Mobile App Response Structure (Standardized across all features)
+  MobileResponse:
+    description: "Standardized response format for all mobile API endpoints"
+    structure:
+      success: "boolean - Operation success indicator"
+      data: "object|null - Response payload or null on error"
+      error: "string|null - Error message or null on success"
+      metadata: "object - Additional context (timestamps, pagination, etc.)"
+    
+    examples:
+      success_response: |
+        {
+          "success": true,
+          "data": { "device_id": "light_001", "status": "connected" },
+          "error": null,
+          "metadata": { "timestamp": "2025-10-31T10:00:00Z", "api_version": "v1" }
+        }
+      
+      error_response: |
+        {
+          "success": false,
+          "data": null,
+          "error": "Device connection timeout",
+          "metadata": { "timestamp": "2025-10-31T10:00:00Z", "error_code": "DEVICE_TIMEOUT" }
+        }
+  
+  # Device State Structure
+  DeviceState:
+    description: "Standardized device state representation"
+    structure:
+      device_id: "string - Unique device identifier"
+      device_name: "string - User-friendly device name"
+      status: "enum - connected|disconnected|error|updating"
+      capabilities: "array - Supported device features"
+      current_settings: "object - Current device configuration"
+      last_seen: "datetime - Last communication timestamp"
+    
+  # Content Item Structure  
+  ContentItem:
+    description: "Standardized content library item"
+    structure:
+      content_id: "string - Unique content identifier"
+      title: "string - Content display name"
+      description: "string - Content description"
+      category: "enum - seasonal|event|ambient|custom"
+      premium: "boolean - Requires subscription access"
+      file_size: "integer - Content file size in bytes"
+      preview_url: "string - Preview video/image URL"
+      download_url: "string - Full content download URL"
+
+# ====================================================================================
+# INTEGRATION REQUIREMENTS
+# ====================================================================================
+
+integration_requirements:
+  
+  hardware_system_integration:
+    system: "SYSTEM-IMMERSIVE-01 (Hardware Integration)"
+    interface: "Device Control API"
+    data_exchange:
+      outbound: "Device commands, configuration updates"
+      inbound: "Device status, health metrics, capabilities"
+    
+    communication_protocol: "HTTP REST API + WebSocket for real-time updates"
+    error_handling: "Retry logic with exponential backoff"
+    timeout_configuration: "5s connection, 30s operation timeouts"
+  
+  content_system_integration:
+    system: "SYSTEM-IMMERSIVE-03 (Content Management)"
+    interface: "Content Delivery API"
+    data_exchange:
+      outbound: "Content requests, download progress"
+      inbound: "Content metadata, files, preview media"
+    
+    communication_protocol: "HTTP REST API + CDN for content delivery"
+    caching_strategy: "Local content cache with background refresh"
+    offline_support: "Downloaded content available offline"
+  
+  ecommerce_integration:
+    system: "SYSTEM-IMMERSIVE-04 (E-commerce Platform)"
+    interface: "Subscription Management API"
+    data_exchange:
+      outbound: "Subscription queries, billing events"
+      inbound: "Subscription status, payment confirmations"
+    
+    communication_protocol: "HTTP REST API with webhook callbacks"
+    security_requirements: "PCI DSS compliance for payment data"
+    real_time_updates: "WebSocket for subscription status changes"
+
+# ====================================================================================
+# SYSTEM ACCEPTANCE CRITERIA
+# ====================================================================================
+
+system_acceptance_criteria:
+  
+  - criterion_id: "SYS-IMMERSIVE-02-AC-001"
+    criterion: "Mobile app discovers and connects to devices within 10 seconds"
+    test_method: "Automated device discovery testing in controlled network"
+    pass_criteria: "95% of discovery attempts succeed within 10 seconds"
+    
+  - criterion_id: "SYS-IMMERSIVE-02-AC-002"  
+    criterion: "Device control commands execute within 1 second"
+    test_method: "Automated command latency testing with timing instrumentation"
+    pass_criteria: "99% of commands execute within 1 second under normal load"
+    
+  - criterion_id: "SYS-IMMERSIVE-02-AC-003"
+    criterion: "Content library loads within 3 seconds"
+    test_method: "Performance testing with various network conditions"
+    pass_criteria: "95% of library loads complete within 3 seconds"
+    
+  - criterion_id: "SYS-IMMERSIVE-02-AC-004"
+    criterion: "App supports 100+ lights per installation"
+    test_method: "Load testing with simulated device connections"
+    pass_criteria: "App maintains responsive performance with 100+ devices"
+    
+  - criterion_id: "SYS-IMMERSIVE-02-AC-005"
+    criterion: "Offline mode provides core functionality"
+    test_method: "Network disconnection testing with functionality validation"
+    pass_criteria: "Device control and downloaded content work offline"
+
+# ====================================================================================
+# FEATURE DECOMPOSITION
+# ====================================================================================
+
+features:
+  
+  - feature_id: "FEATURE-IMMERSIVE-02-001"
+    feature_name: "Device Control Interface"
+    feature_directory: "FEATURE-IMMERSIVE-02-001_device_control_interface"
+    description: "Mobile interface for device discovery, connection, and control"
+    priority: "critical"
+    
+    layer_count: 3
+    estimated_effort: "40 hours"
+    dependencies: ["SYSTEM-IMMERSIVE-01"]
+    
+  - feature_id: "FEATURE-IMMERSIVE-02-002"
+    feature_name: "Content Library Management"
+    feature_directory: "FEATURE-IMMERSIVE-02-002_content_library_management"
+    description: "Content browsing, preview, download, and management interface"
+    priority: "high"
+    
+    layer_count: 3
+    estimated_effort: "35 hours"
+    dependencies: ["SYSTEM-IMMERSIVE-03"]
+    
+  - feature_id: "FEATURE-IMMERSIVE-02-003"
+    feature_name: "User Account System"
+    feature_directory: "FEATURE-IMMERSIVE-02-003_user_account_system"
+    description: "User registration, authentication, profiles, and subscription management"
+    priority: "critical"
+    
+    layer_count: 3
+    estimated_effort: "45 hours"
+    dependencies: ["SYSTEM-IMMERSIVE-04"]
+
+# ====================================================================================
+# IMPLEMENTATION CONSTRAINTS
+# ====================================================================================
+
+implementation_constraints:
+  
+  technology_requirements:
+    mobile_framework: "React Native 0.72+ for cross-platform development"
+    backend_framework: "FastAPI 0.104+ for high-performance API"
+    database: "PostgreSQL for user data, Redis for caching"
+    authentication: "OAuth 2.0 + JWT tokens"
+    
+  platform_requirements:
+    ios_support: "iOS 14.0+ (iPhone 6s and newer)"
+    android_support: "Android 8.0+ (API level 26+)"
+    app_store_compliance: "Apple App Store and Google Play guidelines"
+    
+  security_requirements:
+    data_protection: "End-to-end encryption for sensitive user data"
+    api_security: "OAuth 2.0 + rate limiting + CORS protection"
+    local_storage: "Encrypted local storage using device keychain/keystore"
+    
+  performance_requirements:
+    startup_time: "Cold start <5 seconds, warm start <2 seconds"
+    memory_usage: "Peak memory usage <200MB under normal operation"
+    battery_optimization: "Minimal background processing to preserve battery"
+    
+  development_constraints:
+    code_quality: "TypeScript for type safety, ESLint for consistency"
+    testing: "Jest unit tests, Detox E2E tests, minimum 85% coverage"
+    deployment: "CI/CD pipeline with automated testing and app store deployment"
+
+# ====================================================================================
+# QUALITY GATES AND VERIFICATION
+# ====================================================================================
+
+quality_gates:
+  
+  development_gates:
+    code_quality:
+      - "TypeScript strict mode enabled with no type errors"
+      - "ESLint rules passing with zero violations"
+      - "Unit test coverage >85% for all features"
+    
+    performance_gates:
+      - "App startup time <5 seconds on mid-range devices"
+      - "Memory usage remains <200MB during normal use"
+      - "UI animations maintain 60fps on target devices"
+    
+    security_gates:
+      - "All API communications use HTTPS/TLS 1.3"
+      - "Sensitive data encrypted in local storage"
+      - "OAuth 2.0 implementation passes security review"
+  
+  release_gates:
+    functionality_gates:
+      - "All critical user journeys complete end-to-end"
+      - "Device discovery works on target network configurations"
+      - "Content download and offline access function correctly"
+    
+    platform_gates:
+      - "iOS app passes App Store review guidelines"
+      - "Android app passes Google Play requirements"
+      - "Apps function correctly on minimum supported OS versions"
+    
+    integration_gates:
+      - "Hardware integration tests pass with real devices"
+      - "Content system integration delivers expected performance"
+      - "E-commerce integration handles subscription flows correctly"
+
+# ====================================================================================
+# MONITORING AND METRICS
+# ====================================================================================
+
+monitoring_requirements:
+  
+  application_metrics:
+    performance_metrics:
+      - "App startup time distribution"
+      - "API response time percentiles"
+      - "Device discovery success rates"
+      - "Content download completion rates"
+    
+    usage_metrics:
+      - "Daily/monthly active users"
+      - "Feature adoption rates"
+      - "Session duration and frequency"
+      - "Content engagement metrics"
+    
+    error_metrics:
+      - "Crash rates by device type and OS version"
+      - "API error rates by endpoint"
+      - "Device connection failure rates"
+      - "Content download failure rates"
+  
+  business_metrics:
+    conversion_metrics:
+      - "User registration completion rates"
+      - "Free-to-premium conversion rates"
+      - "Subscription renewal rates"
+      - "Feature usage correlation with retention"
+    
+    support_metrics:
+      - "Help documentation access patterns"
+      - "Support ticket volume by feature"
+      - "User satisfaction scores"
+      - "Time to resolution for common issues"
+
+# ====================================================================================
+# RISK MANAGEMENT
+# ====================================================================================
+
+risk_assessment:
+  
+  technical_risks:
+    - risk: "React Native version compatibility across iOS/Android"
+      impact: "Medium - Could delay release or limit device support"
+      mitigation: "Early testing on target devices, version pinning strategy"
+      
+    - risk: "App Store approval delays or rejections"
+      impact: "High - Could significantly delay launch timeline"
+      mitigation: "Early submission to review teams, compliance review process"
+      
+    - risk: "Device discovery reliability on various network configurations"
+      impact: "High - Core functionality failure affects user experience"
+      mitigation: "Extensive network testing, fallback discovery methods"
+  
+  business_risks:
+    - risk: "User adoption slower than expected"
+      impact: "Medium - Affects revenue projections and growth targets"
+      mitigation: "User testing during development, onboarding optimization"
+      
+    - risk: "Subscription billing integration complexity"
+      impact: "Medium - Could complicate revenue collection and user management"
+      mitigation: "Use established payment providers, thorough integration testing"
+
+# ====================================================================================
+# SUCCESS CRITERIA AND VALIDATION
+# ====================================================================================
+
+success_criteria:
+  
+  mvp_success:
+    - "App successfully controls hardware devices in 95% of test scenarios"
+    - "Content library loads and functions correctly on target devices"
+    - "User account creation and authentication work reliably"
+    - "App passes App Store and Google Play review processes"
+  
+  production_success:
+    - "10,000+ app downloads within first month of launch"
+    - "User retention rate >60% after 30 days"
+    - "Average session duration >10 minutes"
+    - "App store rating >4.0 stars with 100+ reviews"
+  
+  scale_success:
+    - "100,000+ monthly active users"
+    - "Premium subscription conversion rate >15%"
+    - "Support ticket volume <5% of monthly active users"
+    - "99.9% API uptime with <2 second response times"

@@ -1,0 +1,432 @@
+# ====================================================================================
+# SYSTEM REQUIREMENTS TEMPLATE
+# ====================================================================================
+# SYSTEM-IMMERSIVE-01: Hardware Integration System
+# ====================================================================================
+# This template defines system-level requirements that are decomposed into features.
+# ALL features in this system must follow the naming conventions and response
+# structures defined here to ensure consistency and integration compatibility.
+# ====================================================================================
+
+metadata:
+  system_id: SYSTEM-IMMERSIVE-01
+  system_name: "Hardware Integration System"
+  parent_project: PROJECT-IMMERSIVE-DISPLAYS
+  created_date: 2025-10-31
+  status: "planned"
+  priority: "critical"
+  
+  purpose: |
+    Develop and manage IoT-enabled lighting hardware with weather resistance, internet
+    connectivity, and modular expansion capabilities. This system handles all physical
+    hardware components including LED lights, speakers, control hubs, and effect modules.
+    
+    Provides the core infrastructure for transforming buildings into immersive displays
+    through intelligent lighting control, audio synchronization, and environmental sensing.
+  
+  business_value: |
+    - Enables core product offering through reliable hardware platform
+    - Generates primary revenue stream from hardware sales (60% of initial revenue)
+    - Provides competitive differentiation through weather durability and performance
+    - Supports scalable installations from residential to commercial markets
+    - Creates platform for future hardware expansion and upgrades
+  
+  traceability:
+    parent_project_requirements:
+      - "PROJECT-AC-001: Hardware responds to mobile app commands within 1 second"
+      - "PROJECT-AC-002: System operates outdoors for 12+ months without failure" 
+      - "PROJECT-AC-007: System scales to 100+ lights per installation"
+    
+    project_requirements_file: "../requirements/project_requirements.yaml"
+    
+    derivation_rationale: |
+      This system directly implements the core hardware acceptance criteria from the project
+      level requirements. The project vision of transforming buildings into immersive
+      experiences requires reliable, weatherproof, networked hardware that can be controlled
+      in real-time and scaled to large installations.
+
+deployment:
+  platform: Railway
+  service_type: Backend API + Hardware Management Dashboard
+  scaling: 1 backend + 1 dashboard (Phase 1) → 3 replicas (Phase 2)
+  estimated_cost: "$30/month (Phase 1) → $90/month (Phase 2)"
+  
+  railway_config_backend:
+    builder: NIXPACKS
+    build_command: "pip install -r requirements.txt"
+    start_command: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    health_check: "/health"
+    restart_policy: ON_FAILURE
+  
+  railway_config_frontend:
+    builder: NIXPACKS
+    build_command: "npm install && npm run build"
+    start_command: "npm run preview -- --host 0.0.0.0 --port $PORT"
+    health_check: "/"
+    restart_policy: ON_FAILURE
+
+# ====================================================================================
+# SHARED INTERFACES - CRITICAL FOR FEATURE CONSISTENCY
+# ====================================================================================
+# ALL features in this system MUST use these standardized interfaces.
+# This ensures consistent communication between features and system orchestrators.
+# Choose the appropriate response_structure based on your deployment_model.
+# ====================================================================================
+
+shared_interfaces:
+  # ---------------------------------------------------------------------------------
+  # FOR API/WEB APPLICATIONS
+  # ---------------------------------------------------------------------------------
+  # Use this structure when deployment_model is "FastAPI Backend" or similar
+  # ---------------------------------------------------------------------------------
+  api_response_structure:
+    standard: "Pydantic BaseModel with HTTP semantics"
+    deployment_models:
+      - "FastAPI Backend"
+      - "REST API"
+      - "Web Service"
+    
+    required_fields:
+      - name: "success"
+        type: "bool"
+        description: "Whether operation succeeded (true/false)"
+        required: true
+      
+      - name: "data"
+        type: "Optional[Any]"
+        description: "Successful result payload (None if error)"
+        required: true
+      
+      - name: "error"
+        type: "Optional[str]"
+        description: "Error message if failed (None if success)"
+        required: true
+      
+      - name: "metadata"
+        type: "Optional[Dict[str, Any]]"
+        description: "Additional context (timestamps, trace IDs, hardware status)"
+        required: true
+    
+    http_status_mapping:
+      - "200 OK: Success with data (success=true)"
+      - "201 Created: Device registered successfully (success=true)"
+      - "400 Bad Request: Invalid device command (success=false, error=message)"
+      - "404 Not Found: Device not found (success=false, error=message)"
+      - "408 Request Timeout: Device not responding (success=false, error=message)"
+      - "500 Internal Server Error: Hardware failure (success=false, error=message)"
+    
+    implementation_example: |
+      ```python
+      from pydantic import BaseModel, Field
+      from typing import Optional, Any, Dict
+      from datetime import datetime
+      
+      class HardwareResponse(BaseModel):
+          success: bool
+          data: Optional[Any] = None
+          error: Optional[str] = None
+          metadata: Optional[Dict[str, Any]] = Field(default_factory=dict)
+          
+          class Config:
+              json_encoders = {
+                  datetime: lambda v: v.isoformat()
+              }
+      ```
+    
+    usage_note: |
+      Hardware API routers depend on this exact structure to:
+      1. Map to HTTP status codes for device operations
+      2. Return consistent JSON responses for mobile app
+      3. Support error handling middleware for device failures
+      4. Enable hardware health monitoring and tracing
+      
+      CRITICAL: All features must use identical HardwareResponse structure.
+      Define once in app/schemas/hardware_response.py and import everywhere.
+
+# ====================================================================================
+# NAMING CONVENTIONS - CRITICAL FOR BUILD AUTOMATION
+# ====================================================================================
+# These conventions are ENFORCED by build_feature.py and REQUIRED for Python imports.
+# The --init-layers flag uses these rules to auto-generate folder structures.
+# ====================================================================================
+
+naming_conventions:
+  # ---------------------------------------------------------------------------------
+  # FOLDER AND FILE NAMING RULES
+  # ---------------------------------------------------------------------------------
+  rules:
+    system_folder:
+      format: "SYSTEM-IMMERSIVE-{XX}_{system_name_with_underscores}"
+      example: "SYSTEM-IMMERSIVE-01_hardware_integration"
+      rationale: "Python import compatibility, clear identification"
+    
+    feature_folder:
+      format: "FEATURE-IMMERSIVE-{SYSTEM_ID}-{FEATURE_NUM}_{feature_name_with_underscores}"
+      example: "FEATURE-IMMERSIVE-01-001_device_communication"
+      rationale: "Unique identification, sortable, Python import compatible"
+    
+    layer_folder:
+      format: "LAYER_{layer_id_underscores}_{layer_name_with_underscores}"
+      example: "LAYER_IMMERSIVE_01_001_001_MQTT_Device_Controller"
+      conversion: "LAYER-IMMERSIVE-01-001-001 + 'MQTT Device Controller' → LAYER_IMMERSIVE_01_001_001_MQTT_Device_Controller"
+      rationale: "Python cannot import modules with hyphens or spaces"
+      critical_note: |
+        This is the PRIMARY LESSON from SYSTEM-003 migration:
+        - Layer folders MUST use underscores (not spaces or hyphens)
+        - Layer IDs: Convert hyphens to underscores (LAYER-IMMERSIVE-01-001-001 → LAYER_IMMERSIVE_01_001_001)
+        - Layer Names: Convert spaces to underscores (MQTT Device Controller → MQTT_Device_Controller)
+        - build_feature.py enforces this via standardize_layer_folder_name()
+        - No fallback logic exists - violations cause import errors
+    
+    yaml_files:
+      system_file: "SYSTEM-IMMERSIVE-01.yaml"
+      feature_file: "FEATURE-IMMERSIVE-01-{FEATURE_NUM}.yaml"
+      layer_file: "REQ-IMMERSIVE-01-{FEATURE_NUM}-{LAYER_NUM}.yaml"
+      location: "Always at the root of the corresponding folder"
+
+# ====================================================================================
+# SYSTEM FEATURES DECOMPOSITION
+# ====================================================================================
+
+features:
+  - feature_id: FEATURE-IMMERSIVE-01-001
+    feature_name: "Device Communication Management"
+    priority: critical
+    description: "Core IoT device communication, registration, and status monitoring"
+    
+    business_rationale: |
+      Essential foundation for all hardware operations. Without reliable device
+      communication, no other system features can function.
+    
+    layers:
+      - layer_id: LAYER-IMMERSIVE-01-001-001
+        name: "MQTT Device Controller"
+        responsibility: "Handle MQTT protocol communication with IoT devices"
+      
+      - layer_id: LAYER-IMMERSIVE-01-001-002
+        name: "Device Registration Service"
+        responsibility: "Register new devices and manage device lifecycle"
+      
+      - layer_id: LAYER-IMMERSIVE-01-001-003
+        name: "Health Monitor Service"
+        responsibility: "Monitor device health, connectivity, and performance metrics"
+  
+  - feature_id: FEATURE-IMMERSIVE-01-002
+    feature_name: "Lighting Control System"
+    priority: critical
+    description: "Real-time lighting control, color management, and effect coordination"
+    
+    business_rationale: |
+      Core product functionality that enables immersive display experiences.
+      Direct impact on customer satisfaction and system performance.
+    
+    layers:
+      - layer_id: LAYER-IMMERSIVE-01-002-001
+        name: "LED Strip Controller"
+        responsibility: "Direct control of individual LED strips and color management"
+      
+      - layer_id: LAYER-IMMERSIVE-01-002-002
+        name: "Effect Sequencer"
+        responsibility: "Coordinate complex lighting effects across multiple devices"
+      
+      - layer_id: LAYER-IMMERSIVE-01-002-003
+        name: "Performance Optimizer"
+        responsibility: "Optimize lighting commands for minimal latency and bandwidth"
+  
+  - feature_id: FEATURE-IMMERSIVE-01-003
+    feature_name: "Hardware Management Dashboard"
+    priority: high
+    description: "Administrative interface for hardware monitoring and configuration"
+    
+    business_rationale: |
+      Enables technical support and system administration. Critical for
+      troubleshooting customer installations and maintaining system reliability.
+    
+    layers:
+      - layer_id: LAYER-IMMERSIVE-01-003-001
+        name: "Device Inventory Manager"
+        responsibility: "Track all devices, their configurations, and installation details"
+      
+      - layer_id: LAYER-IMMERSIVE-01-003-002
+        name: "Configuration Interface"
+        responsibility: "Web interface for device configuration and bulk operations"
+      
+      - layer_id: LAYER-IMMERSIVE-01-003-003
+        name: "Analytics Dashboard"
+        responsibility: "Hardware performance analytics and usage reporting"
+
+# ====================================================================================
+# TECHNICAL REQUIREMENTS
+# ====================================================================================
+
+technical_requirements:
+  hardware_specifications:
+    led_strips:
+      type: "WS2812B RGB+W individually addressable LEDs"
+      voltage: "12V DC"
+      weather_rating: "IP67 minimum"
+      control_protocol: "SPI over WiFi"
+      
+    control_hub:
+      processor: "ESP32-S3 with WiFi 6 support"
+      memory: "8MB PSRAM, 16MB Flash"
+      connectivity: "WiFi 6, Bluetooth 5.0, Ethernet"
+      protocols: "MQTT, HTTP, WebSocket"
+      
+    audio_system:
+      speakers: "Full-range drivers, 20Hz-20kHz response"
+      weather_rating: "IP65 minimum"
+      audio_codec: "High-quality DAC with wireless streaming"
+      latency: "<50ms audio-to-light synchronization"
+  
+  performance_requirements:
+    response_time: "<1 second from command to hardware response"
+    reliability: "99.5% uptime for connected devices"
+    scalability: "Support 100+ lights per installation"
+    network_range: "100m outdoor WiFi range with mesh support"
+    
+  environmental_requirements:
+    operating_temperature: "-20°C to +50°C"
+    humidity: "0% to 95% non-condensing"
+    wind_resistance: "Up to 100 km/h sustained winds"
+    waterproof_rating: "IP67 for outdoor components"
+
+# ====================================================================================
+# INTEGRATION REQUIREMENTS
+# ====================================================================================
+
+integration_requirements:
+  external_systems:
+    - system: "SYSTEM-IMMERSIVE-02 (Mobile Application)"
+      interface: "REST API for device control commands"
+      data_flow: "Bidirectional - commands in, status out"
+      
+    - system: "SYSTEM-IMMERSIVE-03 (Content Management)"
+      interface: "WebSocket for real-time content delivery"
+      data_flow: "Unidirectional - content lighting data in"
+      
+    - system: "SYSTEM-IMMERSIVE-05 (Audio Synchronization)"
+      interface: "UDP for low-latency audio synchronization signals"
+      data_flow: "Unidirectional - audio timing signals in"
+  
+  data_formats:
+    device_commands:
+      format: "JSON over MQTT"
+      example: '{"device_id": "led_001", "action": "set_color", "rgb": [255, 0, 0]}'
+      
+    status_reports:
+      format: "JSON over MQTT"
+      example: '{"device_id": "led_001", "status": "online", "battery": 85}'
+      
+    lighting_data:
+      format: "Binary protocol for performance"
+      description: "Compressed RGB data for synchronized lighting effects"
+
+# ====================================================================================
+# QUALITY REQUIREMENTS
+# ====================================================================================
+
+quality_requirements:
+  reliability:
+    availability: "99.5% uptime"
+    mtbf: "2000 hours minimum"
+    failure_recovery: "Automatic restart within 30 seconds"
+    
+  performance:
+    latency: "<1 second command response"
+    throughput: "1000 commands per second"
+    concurrent_devices: "100+ per hub"
+    
+  maintainability:
+    diagnostic_capabilities: "Remote diagnostics and troubleshooting"
+    update_mechanism: "OTA firmware updates"
+    configuration_backup: "Automatic configuration backup and restore"
+    
+  security:
+    encryption: "AES-256 for all communications"
+    authentication: "Device certificates and secure pairing"
+    network_security: "WPA3 WiFi security minimum"
+
+# ====================================================================================
+# ACCEPTANCE CRITERIA
+# ====================================================================================
+
+acceptance_criteria:
+  - criterion_id: "SYS-IMMERSIVE-01-AC-001"
+    criterion: "Devices respond to control commands within 1 second"
+    priority: "critical"
+    test_method: "Automated latency testing"
+    
+  - criterion_id: "SYS-IMMERSIVE-01-AC-002"
+    criterion: "System maintains 99.5% uptime over 30-day period"
+    priority: "critical"
+    test_method: "Continuous monitoring and availability measurement"
+    
+  - criterion_id: "SYS-IMMERSIVE-01-AC-003"
+    criterion: "Hardware operates in weather conditions for 12+ months"
+    priority: "critical"
+    test_method: "Environmental chamber testing and field validation"
+    
+  - criterion_id: "SYS-IMMERSIVE-01-AC-004"
+    criterion: "System scales to 100+ lights without performance degradation"
+    priority: "high"
+    test_method: "Load testing with scaled hardware configurations"
+    
+  - criterion_id: "SYS-IMMERSIVE-01-AC-005"
+    criterion: "Devices automatically reconnect after network interruption"
+    priority: "high"
+    test_method: "Network interruption simulation testing"
+
+# ====================================================================================
+# RISK MANAGEMENT
+# ====================================================================================
+
+risks:
+  - risk_id: "SYS-IMMERSIVE-01-RISK-001"
+    description: "Component supply chain disruption"
+    impact: "High - delays product launch and increases costs"
+    probability: "Medium"
+    mitigation: "Establish relationships with multiple suppliers, maintain 3-month buffer inventory"
+    
+  - risk_id: "SYS-IMMERSIVE-01-RISK-002"
+    description: "Weather resistance failure in field conditions"
+    impact: "Critical - customer satisfaction and warranty claims"
+    probability: "Low"
+    mitigation: "Extensive environmental testing, premium component selection, comprehensive warranty"
+    
+  - risk_id: "SYS-IMMERSIVE-01-RISK-003"
+    description: "WiFi interference in dense installations"
+    impact: "Medium - performance degradation in some environments"
+    probability: "Medium"
+    mitigation: "Mesh networking support, multiple frequency bands, interference detection"
+
+# ====================================================================================
+# SUCCESS METRICS
+# ====================================================================================
+
+success_metrics:
+  technical_metrics:
+    - metric: "Device Response Time"
+      target: "<1 second average"
+      measurement: "Automated monitoring"
+      
+    - metric: "System Uptime"
+      target: "99.5%"
+      measurement: "24/7 health monitoring"
+      
+    - metric: "Installation Scale"
+      target: "100+ devices per installation"
+      measurement: "Load testing validation"
+  
+  business_metrics:
+    - metric: "Customer Satisfaction"
+      target: "4.5+ stars average rating"
+      measurement: "Customer reviews and feedback"
+      
+    - metric: "Warranty Claims"
+      target: "<2% of units sold"
+      measurement: "Customer support tracking"
+      
+    - metric: "Installation Success Rate"
+      target: ">95% successful first-time setup"
+      measurement: "Installation support metrics"

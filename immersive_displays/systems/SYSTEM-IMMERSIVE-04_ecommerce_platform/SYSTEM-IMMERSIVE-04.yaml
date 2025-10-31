@@ -1,0 +1,606 @@
+# ====================================================================================
+# SYSTEM REQUIREMENTS TEMPLATE
+# ====================================================================================
+# SYSTEM-IMMERSIVE-04: E-commerce Platform System
+# ====================================================================================
+# This template defines system-level requirements that are decomposed into features.
+# ALL features in this system must follow the naming conventions and response
+# structures defined here to ensure consistency and integration compatibility.
+# ====================================================================================
+
+metadata:
+  system_id: SYSTEM-IMMERSIVE-04
+  system_name: "E-commerce Platform System"
+  parent_project: PROJECT-IMMERSIVE-DISPLAYS
+  created_date: 2025-10-31
+  status: "planned"
+  priority: "critical"
+  
+  purpose: |
+    Provides comprehensive e-commerce capabilities for hardware sales, subscription
+    management, and digital content purchases. Handles secure payment processing,
+    inventory management, order fulfillment, and subscription billing with full
+    PCI DSS compliance and international payment support.
+    
+    Core capabilities include product catalog management, shopping cart and checkout,
+    payment processing, subscription billing, order management, and customer
+    relationship management with analytics and reporting.
+  
+  business_value: |
+    - Primary revenue generation through hardware and subscription sales
+    - Scalable subscription model enabling recurring revenue growth
+    - Reduced operational overhead through automated billing and fulfillment
+    - Global market reach through international payment and shipping support
+    - Customer data collection enabling targeted marketing and retention
+  
+  traceability:
+    parent_project_requirements:
+      - "PROJECT-AC-004: E-commerce platform processes payments securely (PCI DSS)"
+      - "PROJECT-AC-007: System scales to 100+ lights per installation"
+    
+    project_requirements_file: "../requirements/project_requirements.yaml"
+    
+    derivation_rationale: |
+      The e-commerce platform is essential for monetizing the immersive displays
+      ecosystem. It enables hardware sales to drive initial customer acquisition
+      and subscription sales for ongoing revenue. PCI compliance is mandatory
+      for payment processing, and international support is required for global scaling.
+      
+      This system implements the business model outlined in the project requirements,
+      ensuring secure, scalable commerce capabilities that support both one-time
+      purchases and recurring subscription revenue.
+
+deployment:
+  platform: Railway + Stripe + ShipStation
+  service_type: FastAPI Backend + Stripe Integration + Fulfillment APIs
+  scaling: 1 API instance (Phase 1) → 3 instances + load balancer (Phase 2)
+  estimated_cost: "$25/month Railway + 2.9% Stripe fees + $50/month fulfillment"
+  
+  railway_config_backend:
+    builder: NIXPACKS
+    build_command: "pip install -r requirements.txt"
+    start_command: "uvicorn ecommerce_api.main:app --host 0.0.0.0 --port $PORT"
+    health_check: "/health"
+    restart_policy: ON_FAILURE
+    
+  payment_processing:
+    primary_provider: "Stripe (cards, digital wallets, international)"
+    backup_provider: "PayPal (alternative payment methods)"
+    pci_compliance: "Stripe handles PCI DSS compliance"
+    
+  fulfillment_integration:
+    inventory_management: "ShipStation for order processing and tracking"
+    shipping_carriers: "UPS, FedEx, USPS, DHL for global shipping"
+    warehouse_integration: "3PL provider for inventory and fulfillment"
+
+# ====================================================================================
+# SYSTEM ARCHITECTURE
+# ====================================================================================
+
+system_architecture:
+  components:
+    ecommerce_api:
+      technology: "FastAPI + PostgreSQL + Redis"
+      description: "Central e-commerce API handling orders, products, and customers"
+      responsibilities:
+        - "Product catalog and inventory management"
+        - "Shopping cart and checkout processing"
+        - "Order management and fulfillment tracking"
+        - "Customer account and subscription management"
+      
+    payment_processor:
+      technology: "Stripe API + PayPal SDK"
+      description: "Secure payment processing with PCI compliance"
+      responsibilities:
+        - "Credit card and digital wallet processing"
+        - "Subscription billing and recurring payments"
+        - "Fraud detection and risk management"
+        - "International payment method support"
+      
+    subscription_manager:
+      technology: "Stripe Billing + Custom Logic"
+      description: "Subscription lifecycle and billing management"
+      responsibilities:
+        - "Subscription plan management and pricing"
+        - "Billing cycle processing and invoicing"
+        - "Subscription upgrades, downgrades, and cancellations"
+        - "Usage tracking and metered billing"
+    
+    fulfillment_coordinator:
+      technology: "ShipStation API + 3PL Integration"
+      description: "Order fulfillment and shipping coordination"
+      responsibilities:
+        - "Inventory tracking and availability management"
+        - "Order routing to fulfillment centers"
+        - "Shipping calculation and carrier selection"
+        - "Tracking and delivery confirmation"
+
+  data_flow:
+    order_processing: "Mobile/Web → E-commerce API → Payment Processor → Fulfillment"
+    subscription_billing: "Billing Scheduler → Subscription Manager → Payment Processor"
+    inventory_updates: "Fulfillment Centers → E-commerce API → Product Availability"
+    
+  integration_points:
+    mobile_applications: "Integrates with SYSTEM-IMMERSIVE-02 for mobile commerce"
+    content_management: "Validates content access via SYSTEM-IMMERSIVE-03"
+    hardware_integration: "Provides device activation via SYSTEM-IMMERSIVE-01"
+
+# ====================================================================================
+# SYSTEM-LEVEL REQUIREMENTS
+# ====================================================================================
+
+functional_requirements:
+  
+  # FR-001: Product & Order Management
+  FR_001_product_order_management:
+    requirement_id: "SYS-IMMERSIVE-04-FR-001"
+    title: "Product & Order Management"
+    description: |
+      Manage product catalog, inventory levels, shopping cart functionality,
+      and complete order processing from cart to fulfillment with real-time
+      inventory tracking and order status updates.
+    
+    acceptance_criteria:
+      - "Product catalog supports 100+ SKUs with variants"
+      - "Shopping cart maintains state across sessions"
+      - "Order processing completes within 30 seconds"
+      - "Inventory updates reflect in real-time across all channels"
+  
+  # FR-002: Payment Processing & Security
+  FR_002_payment_processing:
+    requirement_id: "SYS-IMMERSIVE-04-FR-002"
+    title: "Payment Processing & Security"
+    description: |
+      Process payments securely with PCI DSS compliance, supporting multiple
+      payment methods, currencies, and fraud protection with real-time
+      authorization and settlement.
+    
+    acceptance_criteria:
+      - "Payment processing achieves PCI DSS Level 1 compliance"
+      - "Supports 10+ payment methods (cards, wallets, BNPL)"
+      - "Fraud detection blocks 99.5%+ of fraudulent transactions"
+      - "Payment authorization completes within 3 seconds"
+  
+  # FR-003: Subscription Billing Management
+  FR_003_subscription_billing:
+    requirement_id: "SYS-IMMERSIVE-04-FR-003"
+    title: "Subscription Billing Management"
+    description: |
+      Manage subscription lifecycles including plan selection, billing cycles,
+      usage tracking, plan changes, and automated renewal processing with
+      dunning management for failed payments.
+    
+    acceptance_criteria:
+      - "Subscription billing processes 99.9% of renewals successfully"
+      - "Plan upgrades/downgrades process immediately"
+      - "Failed payment retry logic recovers 60%+ of failed charges"
+      - "Usage-based billing calculates accurately within 1 hour"
+
+# ====================================================================================
+# NON-FUNCTIONAL REQUIREMENTS
+# ====================================================================================
+
+non_functional_requirements:
+  
+  performance:
+    response_time:
+      product_catalog: "<2 seconds for catalog page loads"
+      checkout_process: "<30 seconds for complete checkout flow"
+      payment_authorization: "<3 seconds for payment processing"
+      subscription_operations: "<5 seconds for plan changes"
+    
+    throughput:
+      concurrent_checkouts: "1,000+ simultaneous checkout processes"
+      payment_transactions: "10,000+ transactions per day"
+      subscription_renewals: "50,000+ monthly billing cycles"
+    
+    scalability:
+      product_catalog: "Unlimited products via database scaling"
+      customer_accounts: "1M+ customer records with efficient queries"
+      transaction_volume: "Auto-scaling based on transaction volume"
+  
+  reliability:
+    availability: "99.99% uptime for payment processing (4 9's SLA)"
+    data_durability: "99.999999999% financial data durability"
+    payment_success_rate: "99.9% successful payment authorization rate"
+    billing_accuracy: "100% accurate subscription billing calculations"
+  
+  security:
+    pci_compliance: "PCI DSS Level 1 compliance for payment processing"
+    data_encryption: "AES-256 encryption for all financial data"
+    fraud_protection: "Real-time fraud detection and prevention"
+    access_control: "Role-based access control for admin functions"
+  
+  compliance:
+    financial_regulations: "SOX compliance for financial reporting"
+    international_commerce: "GDPR, CCPA compliance for customer data"
+    tax_compliance: "Automated tax calculation for global sales"
+    audit_requirements: "Complete audit trail for all financial transactions"
+
+# ====================================================================================
+# SHARED INTERFACES AND DATA STRUCTURES
+# ====================================================================================
+
+shared_interfaces:
+  
+  # E-commerce Response Structure
+  EcommerceResponse:
+    description: "Standardized response format for all e-commerce API endpoints"
+    structure:
+      success: "boolean - Operation success indicator"
+      data: "object|null - Response payload or null on error"
+      error: "string|null - Error message or null on success"
+      metadata: "object - Additional context (transaction IDs, timestamps, etc.)"
+    
+    examples:
+      success_response: |
+        {
+          "success": true,
+          "data": { 
+            "order_id": "order_12345",
+            "status": "confirmed",
+            "total": 299.99,
+            "currency": "USD"
+          },
+          "error": null,
+          "metadata": { 
+            "timestamp": "2025-10-31T10:00:00Z",
+            "transaction_id": "txn_abc123",
+            "payment_method": "card_visa"
+          }
+        }
+  
+  # Product Structure
+  Product:
+    description: "Comprehensive product catalog structure"
+    structure:
+      product_id: "string - Unique product identifier"
+      sku: "string - Stock keeping unit identifier"
+      name: "string - Product name"
+      description: "string - Product description"
+      category: "enum - hardware|subscription|accessory|bundle"
+      
+      pricing:
+        price: "float - Base price in primary currency"
+        currency: "string - Currency code (USD, EUR, etc.)"
+        sale_price: "float|null - Sale price if on discount"
+        tax_class: "string - Tax classification for calculations"
+      
+      inventory:
+        stock_quantity: "integer - Available inventory count"
+        stock_status: "enum - in_stock|out_of_stock|backorder|discontinued"
+        warehouse_locations: "array - Available warehouse locations"
+        reorder_level: "integer - Minimum stock level for reordering"
+      
+      specifications:
+        weight: "float - Product weight for shipping calculation"
+        dimensions: "object - Length, width, height for shipping"
+        variants: "array - Product variants (color, size, etc.)"
+        compatibility: "array - Compatible device types"
+      
+      media:
+        images: "array - Product image URLs"
+        videos: "array - Product video URLs"
+        documents: "array - User manuals, spec sheets, etc."
+  
+  # Order Structure
+  Order:
+    description: "Complete order information structure"
+    structure:
+      order_id: "string - Unique order identifier"
+      customer_id: "string - Customer account identifier"
+      order_status: "enum - pending|confirmed|processing|shipped|delivered|cancelled"
+      
+      items:
+        - product_id: "string - Product identifier"
+          quantity: "integer - Quantity ordered"
+          unit_price: "float - Price per unit at time of order"
+          total_price: "float - Line item total (quantity × unit_price)"
+      
+      pricing:
+        subtotal: "float - Sum of all line item totals"
+        tax_amount: "float - Total tax amount"
+        shipping_cost: "float - Shipping and handling cost"
+        discount_amount: "float - Total discount amount"
+        total_amount: "float - Final order total"
+      
+      payment:
+        payment_method: "string - Payment method used"
+        payment_status: "enum - pending|authorized|captured|failed|refunded"
+        transaction_id: "string - Payment processor transaction ID"
+      
+      shipping:
+        shipping_address: "object - Delivery address"
+        shipping_method: "string - Selected shipping option"
+        tracking_number: "string|null - Carrier tracking number"
+        estimated_delivery: "datetime - Estimated delivery date"
+  
+  # Subscription Structure
+  Subscription:
+    description: "Subscription account and billing information"
+    structure:
+      subscription_id: "string - Unique subscription identifier"
+      customer_id: "string - Customer account identifier"
+      plan_id: "string - Subscription plan identifier"
+      status: "enum - active|paused|cancelled|past_due|expired"
+      
+      billing:
+        billing_cycle: "enum - monthly|quarterly|annual"
+        current_period_start: "datetime - Current billing period start"
+        current_period_end: "datetime - Current billing period end"
+        next_billing_date: "datetime - Next scheduled billing date"
+        
+      usage:
+        included_allowances: "object - Included usage limits"
+        current_usage: "object - Current period usage"
+        overage_charges: "float - Additional charges for usage overages"
+        
+      payment:
+        default_payment_method: "string - Default payment method ID"
+        last_payment_date: "datetime - Last successful payment"
+        last_payment_amount: "float - Last payment amount"
+        payment_failures: "integer - Consecutive payment failure count"
+
+# ====================================================================================
+# INTEGRATION REQUIREMENTS
+# ====================================================================================
+
+integration_requirements:
+  
+  mobile_app_integration:
+    system: "SYSTEM-IMMERSIVE-02 (Mobile Applications)"
+    interface: "Mobile Commerce API"
+    data_exchange:
+      outbound: "Product catalog, cart state, order status, subscription info"
+      inbound: "Purchase requests, cart updates, subscription changes"
+    
+    communication_protocol: "HTTP REST API with WebSocket for real-time updates"
+    security_requirements: "OAuth 2.0 authentication + payment tokenization"
+    offline_support: "Cart state cached locally, sync on reconnection"
+  
+  content_management_integration:
+    system: "SYSTEM-IMMERSIVE-03 (Content Management)"
+    interface: "Subscription Validation API"
+    data_exchange:
+      outbound: "Subscription status, access permissions, billing events"
+      inbound: "Content access requests, usage tracking"
+    
+    communication_protocol: "HTTP REST API with real-time webhook notifications"
+    access_control: "Real-time subscription validation for premium content"
+    billing_integration: "Usage-based billing for AI generation and premium content"
+  
+  hardware_integration:
+    system: "SYSTEM-IMMERSIVE-01 (Hardware Integration)"
+    interface: "Device Activation API"
+    data_exchange:
+      outbound: "Device activation codes, warranty information"
+      inbound: "Device registration, warranty claims"
+    
+    communication_protocol: "HTTP REST API with device authentication"
+    activation_process: "Automatic device activation on hardware purchase"
+    warranty_tracking: "Integration with support system for warranty management"
+
+# ====================================================================================
+# SYSTEM ACCEPTANCE CRITERIA
+# ====================================================================================
+
+system_acceptance_criteria:
+  
+  - criterion_id: "SYS-IMMERSIVE-04-AC-001"
+    criterion: "E-commerce platform processes payments securely with PCI DSS compliance"
+    test_method: "PCI compliance audit and penetration testing"
+    pass_criteria: "PCI DSS Level 1 compliance certification achieved"
+    
+  - criterion_id: "SYS-IMMERSIVE-04-AC-002"
+    criterion: "Order processing completes within 30 seconds"
+    test_method: "Automated checkout flow testing with timing instrumentation"
+    pass_criteria: "95% of orders process from cart to confirmation within 30 seconds"
+    
+  - criterion_id: "SYS-IMMERSIVE-04-AC-003"
+    criterion: "Payment authorization completes within 3 seconds"
+    test_method: "Payment processing latency testing across multiple payment methods"
+    pass_criteria: "99% of payment authorizations complete within 3 seconds"
+    
+  - criterion_id: "SYS-IMMERSIVE-04-AC-004"
+    criterion: "Subscription billing processes 99.9% of renewals successfully"
+    test_method: "Billing cycle testing with various subscription scenarios"
+    pass_criteria: "Billing success rate >99.9% over 90-day testing period"
+    
+  - criterion_id: "SYS-IMMERSIVE-04-AC-005"
+    criterion: "System handles 1,000+ concurrent checkout processes"
+    test_method: "Load testing with simulated concurrent users and transactions"
+    pass_criteria: "System maintains performance with 1,000+ concurrent checkouts"
+
+# ====================================================================================
+# FEATURE DECOMPOSITION
+# ====================================================================================
+
+features:
+  
+  - feature_id: "FEATURE-IMMERSIVE-04-001"
+    feature_name: "Product Catalog & Order Management"
+    feature_directory: "FEATURE-IMMERSIVE-04-001_product_order_management"
+    description: "Product catalog, shopping cart, and order processing system"
+    priority: "critical"
+    
+    layer_count: 3
+    estimated_effort: "55 hours"
+    dependencies: ["PostgreSQL", "Inventory Management System"]
+    
+  - feature_id: "FEATURE-IMMERSIVE-04-002"
+    feature_name: "Payment Processing System"
+    feature_directory: "FEATURE-IMMERSIVE-04-002_payment_processing"
+    description: "Secure payment processing with multiple payment methods and PCI compliance"
+    priority: "critical"
+    
+    layer_count: 3
+    estimated_effort: "60 hours"
+    dependencies: ["Stripe API", "PayPal SDK", "Fraud Detection"]
+    
+  - feature_id: "FEATURE-IMMERSIVE-04-003"
+    feature_name: "Subscription Billing Management"
+    feature_directory: "FEATURE-IMMERSIVE-04-003_subscription_billing"
+    description: "Subscription lifecycle management with automated billing and usage tracking"
+    priority: "high"
+    
+    layer_count: 3
+    estimated_effort: "50 hours"
+    dependencies: ["Stripe Billing", "Usage Tracking", "Dunning Management"]
+
+# ====================================================================================
+# IMPLEMENTATION CONSTRAINTS
+# ====================================================================================
+
+implementation_constraints:
+  
+  technology_requirements:
+    backend_framework: "FastAPI 0.104+ for high-performance e-commerce API"
+    database: "PostgreSQL for transactional data, Redis for session/cart caching"
+    payment_processing: "Stripe for primary payment processing + PCI compliance"
+    queue_system: "Celery + Redis for background payment and billing processing"
+    
+  security_requirements:
+    pci_compliance: "PCI DSS Level 1 compliance for payment card processing"
+    data_encryption: "AES-256 encryption for sensitive financial data"
+    fraud_protection: "Real-time fraud detection and machine learning models"
+    audit_logging: "Complete audit trail for all financial transactions"
+    
+  financial_requirements:
+    currency_support: "Multi-currency support for international sales"
+    tax_calculation: "Automated tax calculation for global compliance"
+    financial_reporting: "SOX-compliant financial reporting and reconciliation"
+    chargeback_protection: "Automated chargeback prevention and management"
+    
+  compliance_requirements:
+    regulatory_compliance: "GDPR, CCPA compliance for customer financial data"
+    international_commerce: "Support for international shipping and customs"
+    subscription_regulations: "Compliance with subscription billing regulations"
+    consumer_protection: "Compliance with consumer protection laws globally"
+
+# ====================================================================================
+# QUALITY GATES AND VERIFICATION
+# ====================================================================================
+
+quality_gates:
+  
+  development_gates:
+    security_gates:
+      - "PCI DSS compliance validation passes all requirements"
+      - "Payment data encryption meets industry standards"
+      - "Fraud detection algorithms achieve >99.5% accuracy"
+    
+    performance_gates:
+      - "Payment processing latency <3 seconds for 99% of transactions"
+      - "Order processing completes <30 seconds for 95% of orders"
+      - "Subscription billing processes 1,000+ renewals per minute"
+    
+    financial_accuracy_gates:
+      - "Billing calculations are 100% accurate in all test scenarios"
+      - "Tax calculations comply with jurisdictional requirements"
+      - "Financial reporting reconciles perfectly with payment processor"
+  
+  release_gates:
+    compliance_gates:
+      - "PCI compliance audit passes with no findings"
+      - "Financial audit confirms accurate transaction processing"
+      - "Regulatory compliance review passes for target markets"
+    
+    integration_gates:
+      - "Mobile app integration supports complete purchase flows"
+      - "Content system integration validates subscriptions correctly"
+      - "Hardware activation works seamlessly with purchases"
+    
+    business_gates:
+      - "Payment success rates meet business requirements (>99%)"
+      - "Subscription churn due to billing issues <2%"
+      - "Customer support tickets related to billing <1% of transactions"
+
+# ====================================================================================
+# MONITORING AND METRICS
+# ====================================================================================
+
+monitoring_requirements:
+  
+  financial_metrics:
+    transaction_metrics:
+      - "Payment success/failure rates by payment method"
+      - "Transaction volume and revenue by product category"
+      - "Chargeback and refund rates by transaction type"
+      - "Payment processing latency percentiles"
+    
+    subscription_metrics:
+      - "Subscription renewal success rates by billing cycle"
+      - "Monthly recurring revenue (MRR) and growth rates"
+      - "Churn rates by subscription plan and customer segment"
+      - "Payment failure recovery rates by retry attempt"
+    
+    business_metrics:
+      - "Average order value and conversion rates"
+      - "Customer lifetime value by acquisition channel"
+      - "Revenue per user and monetization efficiency"
+      - "Cart abandonment rates by checkout stage"
+  
+  operational_metrics:
+    performance_metrics:
+      - "API response times by endpoint and operation type"
+      - "Database query performance for high-volume operations"
+      - "Payment processor integration latency and reliability"
+      - "Order fulfillment processing times and accuracy"
+    
+    security_metrics:
+      - "Fraud detection accuracy and false positive rates"
+      - "Security incident frequency and resolution times"
+      - "PCI compliance audit results and remediation progress"
+      - "Authentication failure rates and suspicious activity patterns"
+
+# ====================================================================================
+# RISK MANAGEMENT
+# ====================================================================================
+
+risk_assessment:
+  
+  financial_risks:
+    - risk: "Payment processor downtime or service disruption"
+      impact: "High - Could halt all revenue generation and customer transactions"
+      mitigation: "Multi-processor setup, automatic failover, real-time monitoring"
+      
+    - risk: "PCI compliance violation or security breach"
+      impact: "Critical - Could result in fines, legal liability, and business closure"
+      mitigation: "Regular audits, security monitoring, incident response plan"
+      
+    - risk: "Subscription billing calculation errors"
+      impact: "Medium - Could affect customer satisfaction and revenue accuracy"
+      mitigation: "Comprehensive testing, financial reconciliation, audit trails"
+  
+  operational_risks:
+    - risk: "High transaction volumes overwhelming system capacity"
+      impact: "Medium - Could affect payment processing performance during peak periods"
+      mitigation: "Auto-scaling infrastructure, load testing, capacity planning"
+      
+    - risk: "International payment and shipping complexity"
+      impact: "Medium - Could complicate global expansion and compliance"
+      mitigation: "Phased international rollout, legal compliance review, local partnerships"
+
+# ====================================================================================
+# SUCCESS CRITERIA AND VALIDATION
+# ====================================================================================
+
+success_criteria:
+  
+  mvp_success:
+    - "Complete hardware purchase flow functions correctly end-to-end"
+    - "Subscription billing processes test renewals successfully"
+    - "PCI compliance achieved for payment processing"
+    - "Order fulfillment integrates with shipping providers"
+  
+  production_success:
+    - "$100K+ monthly transaction volume processed successfully"
+    - "Payment success rate >99% across all payment methods"
+    - "Subscription churn rate <5% monthly"
+    - "Customer satisfaction score >4.5/5 for purchase experience"
+  
+  scale_success:
+    - "$1M+ annual recurring revenue from subscriptions"
+    - "10,000+ hardware units sold with automated fulfillment"
+    - "International sales to 10+ countries with local payment methods"
+    - "99.99% payment processing uptime with multi-region deployment"
