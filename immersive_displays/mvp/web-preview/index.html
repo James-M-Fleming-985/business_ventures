@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Immersive Displays - Seasonal LED Preview</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <h1>🎃 Immersive Displays</h1>
+            <p class="tagline">AI-Powered Seasonal LED Curtains</p>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Left Panel: Controls -->
+            <aside class="control-panel">
+                <section class="panel-section">
+                    <h2>🎨 Scene Selection</h2>
+                    <div class="scene-buttons">
+                        <button class="scene-btn" data-scene="halloween">
+                            🎃 Halloween
+                        </button>
+                        <button class="scene-btn" data-scene="christmas">
+                            🎄 Christmas
+                        </button>
+                        <button class="scene-btn" data-scene="easter">
+                            🐰 Easter
+                        </button>
+                    </div>
+                </section>
+
+                <section class="panel-section">
+                    <h2>🤖 AI Scene Generator</h2>
+                    <textarea 
+                        id="ai-prompt" 
+                        placeholder="Describe your scene... e.g., 'Spooky graveyard with purple fog and bats flying across'"
+                        rows="4"
+                    ></textarea>
+                    <button id="generate-btn" class="primary-btn">Generate Scene</button>
+                    <p class="hint">✨ Use natural language to create custom scenes</p>
+                </section>
+
+                <section class="panel-section">
+                    <h2>🎵 Audio Controls</h2>
+                    <div class="audio-controls">
+                        <button id="play-audio-btn" class="control-btn">▶️ Play</button>
+                        <button id="stop-audio-btn" class="control-btn">⏹️ Stop</button>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="beat-sync-toggle" checked>
+                            Beat Reactive Lighting
+                        </label>
+                    </div>
+                    <div class="volume-control">
+                        <label for="volume-slider">🔊 Volume</label>
+                        <input type="range" id="volume-slider" min="0" max="100" value="70">
+                        <span id="volume-value">70%</span>
+                    </div>
+                </section>
+
+                <section class="panel-section">
+                    <h2>⚙️ Display Settings</h2>
+                    <div class="settings-group">
+                        <label>
+                            LED Density
+                            <select id="led-density">
+                                <option value="60">60 LEDs/meter</option>
+                                <option value="100" selected>100 LEDs/meter</option>
+                                <option value="144">144 LEDs/meter</option>
+                            </select>
+                        </label>
+                        <label>
+                            Curtain Size
+                            <select id="curtain-size">
+                                <option value="2x1">2m × 1m (Small)</option>
+                                <option value="3x2" selected>3m × 2m (Medium)</option>
+                                <option value="4x3">4m × 3m (Large)</option>
+                            </select>
+                        </label>
+                        <label>
+                            Brightness
+                            <input type="range" id="brightness-slider" min="10" max="100" value="80">
+                            <span id="brightness-value">80%</span>
+                        </label>
+                    </div>
+                </section>
+
+                <section class="panel-section">
+                    <h2>📊 Stats</h2>
+                    <div class="stats-display">
+                        <div class="stat">
+                            <span class="stat-label">Total LEDs:</span>
+                            <span id="total-leds" class="stat-value">600</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">FPS:</span>
+                            <span id="fps" class="stat-value">60</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">Layers:</span>
+                            <span id="layers" class="stat-value">3</span>
+                        </div>
+                    </div>
+                </section>
+            </aside>
+
+            <!-- Center: LED Canvas Display -->
+            <main class="display-area">
+                <div class="canvas-container">
+                    <canvas id="led-canvas"></canvas>
+                    <div class="canvas-overlay">
+                        <div id="scene-info" class="scene-info">
+                            <h3 id="scene-title">Select a scene to begin</h3>
+                            <p id="scene-description">Choose a seasonal theme or generate your own with AI</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Audio Visualizer -->
+                <div class="audio-visualizer">
+                    <canvas id="waveform-canvas"></canvas>
+                    <div class="visualizer-label">Audio Waveform</div>
+                </div>
+            </main>
+
+            <!-- Right Panel: Layer Inspector -->
+            <aside class="layer-panel">
+                <h2>🎬 Scene Layers</h2>
+                <div id="layer-list" class="layer-list">
+                    <div class="layer-item" data-layer="background">
+                        <div class="layer-header">
+                            <span class="layer-icon">🌌</span>
+                            <span class="layer-name">Background</span>
+                            <button class="toggle-btn">👁️</button>
+                        </div>
+                        <div class="layer-controls">
+                            <label>Opacity: <span class="opacity-value">100%</span></label>
+                            <input type="range" class="opacity-slider" min="0" max="100" value="100">
+                        </div>
+                    </div>
+                    <div class="layer-item" data-layer="midground">
+                        <div class="layer-header">
+                            <span class="layer-icon">🎃</span>
+                            <span class="layer-name">Midground</span>
+                            <button class="toggle-btn">👁️</button>
+                        </div>
+                        <div class="layer-controls">
+                            <label>Opacity: <span class="opacity-value">100%</span></label>
+                            <input type="range" class="opacity-slider" min="0" max="100" value="100">
+                        </div>
+                    </div>
+                    <div class="layer-item" data-layer="foreground">
+                        <div class="layer-header">
+                            <span class="layer-icon">✨</span>
+                            <span class="layer-name">Foreground</span>
+                            <button class="toggle-btn">👁️</button>
+                        </div>
+                        <div class="layer-controls">
+                            <label>Opacity: <span class="opacity-value">100%</span></label>
+                            <input type="range" class="opacity-slider" min="0" max="100" value="100">
+                        </div>
+                    </div>
+                </div>
+
+                <section class="panel-section">
+                    <h2>💡 Features</h2>
+                    <ul class="feature-list">
+                        <li>✅ 6x LED density vs competitors</li>
+                        <li>✅ AI scene generation</li>
+                        <li>✅ Multi-layer depth effects</li>
+                        <li>✅ Beat-reactive lighting</li>
+                        <li>✅ Mobile & web control</li>
+                        <li>✅ Seasonal scene library</li>
+                    </ul>
+                </section>
+
+                <section class="panel-section">
+                    <h2>📱 Next Steps</h2>
+                    <div class="next-steps">
+                        <p>Like what you see?</p>
+                        <button class="primary-btn" id="hardware-info-btn">
+                            🔌 View Hardware Setup
+                        </button>
+                        <button class="secondary-btn" id="export-scene-btn">
+                            💾 Export Scene Config
+                        </button>
+                    </div>
+                </section>
+            </aside>
+        </div>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <p>
+                <strong>Immersive Displays MVP</strong> | 
+                Web Preview System | 
+                Phase 1: Concept Validation
+            </p>
+            <p class="footer-note">
+                This is a simulation. LED patterns and audio sync will be identical on physical hardware.
+            </p>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="src/led-renderer.js"></script>
+    <script src="src/scene-engine.js"></script>
+    <script src="src/audio-sync.js"></script>
+    <script src="src/ai-interface.js"></script>
+    <script src="src/scenes/halloween.js"></script>
+    <script src="src/scenes/christmas.js"></script>
+    <script src="src/scenes/easter.js"></script>
+    <script src="src/app.js"></script>
+</body>
+</html>
