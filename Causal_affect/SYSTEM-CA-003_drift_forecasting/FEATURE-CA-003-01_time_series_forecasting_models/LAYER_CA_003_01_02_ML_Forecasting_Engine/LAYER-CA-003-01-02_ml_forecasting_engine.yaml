@@ -1,0 +1,243 @@
+# ====================================================================================
+# LAYER REQUIREMENTS: ML Forecasting Engine
+# ====================================================================================
+# LAYER ID: LAYER-CA-003-01-02
+# FEATURE: FEATURE-CA-003-01 (Time-Series Forecasting Models)
+# ====================================================================================
+
+metadata:
+  layer_id: "LAYER-CA-003-01-02"
+  layer_name: "ML Forecasting Engine"
+  feature_id: "FEATURE-CA-003-01"
+  version: "1.0.0"
+  created_date: "2025-11-01"
+  owner: "Causal Affect Team"
+
+# ====================================================================================
+# LAYER OVERVIEW
+# ====================================================================================
+
+overview:
+  description: |
+    Machine learning forecasting engine implementing LSTM neural networks and XGBoost 
+    for complex non-linear correlation drift patterns. Handles multi-variate features, 
+    long-term dependencies, and provides high-accuracy forecasts for challenging series.
+  
+  responsibility: |
+    - LSTM recurrent neural network for sequence modeling
+    - XGBoost gradient boosting for multi-variate forecasting
+    - Feature engineering from correlation time-series
+    - Hyperparameter tuning with cross-validation
+    - Model training with early stopping
+    - GPU acceleration support (optional)
+
+  input: "Correlation time-series and engineered features (numpy arrays)"
+  output: "ML forecasts with prediction intervals (MLForecastResult)"
+  technology: "tensorflow/keras, xgboost, scikit-learn, numpy"
+
+# ====================================================================================
+# FUNCTIONAL REQUIREMENTS
+# ====================================================================================
+
+requirements:
+  - id: "LAYER-CA-003-01-02-REQ-001"
+    title: "LSTM Implementation"
+    description: "Long Short-Term Memory network for sequence forecasting"
+    acceptance_criteria:
+      - "Multi-layer LSTM architecture (2-3 layers)"
+      - "Sequence length optimization (14-90 days)"
+      - "Dropout regularization to prevent overfitting"
+      - "Early stopping with validation loss monitoring"
+      - "Prediction intervals via Monte Carlo dropout"
+
+  - id: "LAYER-CA-003-01-02-REQ-002"
+    title: "XGBoost Implementation"
+    description: "Gradient boosting for multi-variate drift forecasting"
+    acceptance_criteria:
+      - "Lag features: t-1, t-7, t-30 correlation values"
+      - "Rolling statistics: mean, std, trend over windows"
+      - "Time features: day_of_week, day_of_month, month"
+      - "Hyperparameter tuning: n_estimators, max_depth, learning_rate"
+      - "Quantile regression for prediction intervals"
+
+  - id: "LAYER-CA-003-01-02-REQ-003"
+    title: "Feature Engineering"
+    description: "Transform raw correlation data into ML features"
+    acceptance_criteria:
+      - "Lag features (1, 7, 14, 30 day lags)"
+      - "Rolling statistics (7, 30, 90 day windows)"
+      - "Trend indicators (linear regression slope)"
+      - "Volatility measures (rolling std, ATR)"
+      - "Temporal features (cyclical encoding of time)"
+
+  - id: "LAYER-CA-003-01-02-REQ-004"
+    title: "Model Training Pipeline"
+    description: "End-to-end training with validation"
+    acceptance_criteria:
+      - "Train/validation/test split (70/15/15)"
+      - "Time-series cross-validation"
+      - "Hyperparameter optimization (Optuna or grid search)"
+      - "Model checkpointing (save best weights)"
+      - "Training history logging"
+
+  - id: "LAYER-CA-003-01-02-REQ-005"
+    title: "Prediction Interval Estimation"
+    description: "Uncertainty quantification for ML models"
+    acceptance_criteria:
+      - "LSTM: Monte Carlo dropout for uncertainty"
+      - "XGBoost: Quantile regression (5th, 95th percentiles)"
+      - "Calibrated intervals on validation set"
+      - "Confidence level reporting"
+      - "Prediction interval width analysis"
+
+# ====================================================================================
+# TECHNICAL SPECIFICATIONS
+# ====================================================================================
+
+technical_specs:
+  class_design:
+    - "MLForecaster: Main ML forecasting class"
+    - "LSTMModel: LSTM neural network wrapper"
+    - "XGBoostModel: XGBoost wrapper with feature engineering"
+    - "FeatureEngineer: Feature transformation pipeline"
+    - "MLForecastResult: Output dataclass"
+
+  data_structures:
+    ml_forecast_result:
+      fields:
+        - "model_type: str  # 'LSTM' or 'XGBoost'"
+        - "forecast_7day: float"
+        - "forecast_30day: float"
+        - "forecast_90day: float"
+        - "prediction_interval_lower_7day: float"
+        - "prediction_interval_upper_7day: float"
+        - "prediction_interval_lower_30day: float"
+        - "prediction_interval_upper_30day: float"
+        - "prediction_interval_lower_90day: float"
+        - "prediction_interval_upper_90day: float"
+        - "feature_importance: Dict[str, float]  # for XGBoost"
+        - "training_metrics: Dict[str, float]  # RMSE, MAE, R²"
+        - "model_config: Dict[str, Any]"
+
+  lstm_architecture: |
+    Input Layer (sequence_length, n_features)
+      ↓
+    LSTM Layer 1 (64 units, return_sequences=True)
+      ↓
+    Dropout (0.2)
+      ↓
+    LSTM Layer 2 (32 units)
+      ↓
+    Dropout (0.2)
+      ↓
+    Dense Layer (16 units, relu)
+      ↓
+    Output Layer (forecast_horizons units, linear)
+
+  xgboost_features:
+    lag_features:
+      - "lag_1, lag_7, lag_14, lag_30 days"
+    rolling_features:
+      - "rolling_mean_7, rolling_mean_30"
+      - "rolling_std_7, rolling_std_30"
+      - "rolling_min_7, rolling_max_7"
+    trend_features:
+      - "trend_7day, trend_30day (linear regression slope)"
+    temporal_features:
+      - "day_of_week_sin, day_of_week_cos"
+      - "day_of_month"
+      - "month_of_year"
+
+  algorithms:
+    lstm_training: |
+      1. Normalize data (MinMaxScaler)
+      2. Create sequences (X: past 30 days, y: next 7/30/90 days)
+      3. Split train/val/test
+      4. Build LSTM architecture
+      5. Compile (optimizer=Adam, loss=MSE)
+      6. Train with early stopping (patience=10, monitor=val_loss)
+      7. Save best model weights
+    
+    xgboost_training: |
+      1. Engineer features (lags, rolling stats, time features)
+      2. Create target variables (drift at 7, 30, 90 days)
+      3. Split train/val/test (time-based)
+      4. Hyperparameter tuning (Optuna: 50 trials)
+      5. Train final model with best params
+      6. Quantile regression for intervals (alpha=0.05, 0.95)
+      7. Feature importance analysis
+    
+    prediction_intervals: |
+      LSTM: Run 100 forward passes with dropout enabled (MC dropout)
+             Compute mean and 5th/95th percentiles
+      XGBoost: Train separate models for 5th, 50th, 95th quantiles
+               Return quantile predictions as intervals
+
+# ====================================================================================
+# TESTING REQUIREMENTS
+# ====================================================================================
+
+testing:
+  unit_tests:
+    - "test_feature_engineering_lag_features"
+    - "test_feature_engineering_rolling_features"
+    - "test_lstm_architecture_build"
+    - "test_lstm_sequence_creation"
+    - "test_lstm_prediction_shape"
+    - "test_xgboost_feature_matrix"
+    - "test_xgboost_training_pipeline"
+    - "test_prediction_intervals_lstm"
+    - "test_prediction_intervals_xgboost"
+  
+  integration_tests:
+    - "test_lstm_end_to_end_training"
+    - "test_xgboost_end_to_end_training"
+    - "test_real_correlation_data_lstm"
+    - "test_real_correlation_data_xgboost"
+
+# ====================================================================================
+# DEPENDENCIES
+# ====================================================================================
+
+dependencies:
+  external:
+    - "tensorflow>=2.12.0  # or tensorflow-cpu"
+    - "keras>=2.12.0"
+    - "xgboost>=1.7.0"
+    - "scikit-learn>=1.3.0"
+    - "numpy>=1.24.0"
+    - "pandas>=2.0.0"
+    - "optuna>=3.0.0  # for hyperparameter tuning"
+
+# ====================================================================================
+# PERFORMANCE REQUIREMENTS
+# ====================================================================================
+
+performance:
+  - "LSTM training: <5 minutes for 365-day series (CPU)"
+  - "LSTM training: <1 minute with GPU acceleration"
+  - "XGBoost training: <30 seconds"
+  - "Prediction generation: <1 second"
+  - "Feature engineering: <2 seconds"
+
+# ====================================================================================
+# CONFIGURATION
+# ====================================================================================
+
+configuration:
+  lstm:
+    sequence_length: 30
+    lstm_units_layer1: 64
+    lstm_units_layer2: 32
+    dropout_rate: 0.2
+    batch_size: 32
+    epochs: 100
+    early_stopping_patience: 10
+  
+  xgboost:
+    n_estimators: 100
+    max_depth: 6
+    learning_rate: 0.1
+    subsample: 0.8
+    colsample_bytree: 0.8
+    quantile_alpha: [0.05, 0.95]

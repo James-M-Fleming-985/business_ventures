@@ -1,0 +1,237 @@
+# ====================================================================================
+# LAYER REQUIREMENTS: Ensemble Orchestrator
+# ====================================================================================
+# LAYER ID: LAYER-CA-003-01-03
+# FEATURE: FEATURE-CA-003-01 (Time-Series Forecasting Models)
+# ====================================================================================
+
+metadata:
+  layer_id: "LAYER-CA-003-01-03"
+  layer_name: "Ensemble Orchestrator"
+  feature_id: "FEATURE-CA-003-01"
+  version: "1.0.0"
+  created_date: "2025-11-01"
+  owner: "Causal Affect Team"
+
+# ====================================================================================
+# LAYER OVERVIEW
+# ====================================================================================
+
+overview:
+  description: |
+    Ensemble orchestration layer that combines forecasts from statistical models 
+    (ARIMA, SARIMA, Prophet) and ML models (LSTM, XGBoost) using weighted averaging 
+    with dynamic accuracy-based weight adjustment. Targets 70%+ forecast accuracy 
+    by leveraging strengths of different model types.
+  
+  responsibility: |
+    - Collect forecasts from all individual models
+    - Calculate dynamic weights based on recent accuracy
+    - Combine forecasts using weighted averaging
+    - Generate ensemble confidence intervals
+    - Track model performance over time
+    - Implement model selection strategies
+
+  input: "Individual forecasts from Layers 01 and 02"
+  output: "Ensemble forecast with confidence intervals (EnsembleForecastResult)"
+  technology: "numpy, scikit-learn, mlflow"
+
+# ====================================================================================
+# FUNCTIONAL REQUIREMENTS
+# ====================================================================================
+
+requirements:
+  - id: "LAYER-CA-003-01-03-REQ-001"
+    title: "Weighted Ensemble Combination"
+    description: "Combine individual model forecasts with dynamic weights"
+    acceptance_criteria:
+      - "Weighted average: ensemble = Σ(weight_i * forecast_i)"
+      - "Weights sum to 1.0"
+      - "Weights based on recent forecast accuracy (last 30 days)"
+      - "Minimum weight threshold: 0.05 (prevent model exclusion)"
+      - "Weight update frequency: daily or after each forecast"
+
+  - id: "LAYER-CA-003-01-03-REQ-002"
+    title: "Dynamic Weight Adjustment"
+    description: "Adjust model weights based on performance"
+    acceptance_criteria:
+      - "Accuracy metric: inverse RMSE on rolling validation window"
+      - "Weight formula: weight_i = (1/RMSE_i) / Σ(1/RMSE_j)"
+      - "Fallback: equal weights if insufficient validation data"
+      - "Exponential decay for older performance data"
+      - "Weight bounds: [0.05, 0.5] to prevent dominance"
+
+  - id: "LAYER-CA-003-01-03-REQ-003"
+    title: "Ensemble Confidence Intervals"
+    description: "Generate uncertainty bounds for ensemble forecasts"
+    acceptance_criteria:
+      - "Weighted combination of individual confidence intervals"
+      - "Variance pooling across models"
+      - "Ensemble variance = Σ(weight_i² * variance_i)"
+      - "95% confidence intervals"
+      - "Calibration check on validation data"
+
+  - id: "LAYER-CA-003-01-03-REQ-004"
+    title: "Model Performance Tracking"
+    description: "Track and log individual model performance"
+    acceptance_criteria:
+      - "Store forecast accuracy metrics per model"
+      - "Track RMSE, MAE, MAPE for each model"
+      - "Performance history for weight calculation"
+      - "MLflow integration for experiment tracking"
+      - "Performance dashboard data export"
+
+  - id: "LAYER-CA-003-01-03-REQ-005"
+    title: "Ensemble Strategy Selection"
+    description: "Support multiple ensemble strategies"
+    acceptance_criteria:
+      - "WEIGHTED_AVERAGE: Dynamic accuracy-based weights (default)"
+      - "SIMPLE_AVERAGE: Equal weights for all models"
+      - "BEST_MODEL: Select single best-performing model"
+      - "MEDIAN: Median of all forecasts (robust to outliers)"
+      - "Strategy selection via configuration"
+
+# ====================================================================================
+# TECHNICAL SPECIFICATIONS
+# ====================================================================================
+
+technical_specs:
+  class_design:
+    - "EnsembleOrchestrator: Main ensemble coordinator"
+    - "WeightCalculator: Dynamic weight computation"
+    - "EnsembleForecastResult: Output dataclass"
+    - "PerformanceTracker: Model performance history"
+    - "EnsembleStrategy: Enum (WEIGHTED_AVG, SIMPLE_AVG, BEST, MEDIAN)"
+
+  data_structures:
+    ensemble_forecast_result:
+      fields:
+        - "ensemble_forecast_7day: float"
+        - "ensemble_forecast_30day: float"
+        - "ensemble_forecast_90day: float"
+        - "confidence_lower_7day: float"
+        - "confidence_upper_7day: float"
+        - "confidence_lower_30day: float"
+        - "confidence_upper_30day: float"
+        - "confidence_lower_90day: float"
+        - "confidence_upper_90day: float"
+        - "model_weights: Dict[str, float]  # model_name -> weight"
+        - "individual_forecasts: Dict[str, float]  # model_name -> forecast"
+        - "ensemble_strategy: str"
+        - "ensemble_variance: float"
+        - "prediction_metadata: Dict[str, Any]"
+    
+    model_performance:
+      fields:
+        - "model_name: str"
+        - "rmse: float"
+        - "mae: float"
+        - "mape: float"
+        - "accuracy: float"
+        - "forecast_count: int"
+        - "last_updated: datetime"
+
+  algorithms:
+    weight_calculation: |
+      1. Retrieve recent forecast errors for each model (last 30 days)
+      2. Calculate RMSE for each model
+      3. Compute inverse RMSE scores
+      4. Normalize to weights: weight_i = (1/RMSE_i) / Σ(1/RMSE_j)
+      5. Apply bounds: clip to [0.05, 0.5]
+      6. Re-normalize after clipping
+      7. Return weight dictionary
+    
+    weighted_forecast: |
+      1. Collect forecasts from all available models
+      2. Get current weights for models
+      3. Compute weighted sum: forecast = Σ(weight_i * forecast_i)
+      4. Return ensemble forecast
+    
+    ensemble_confidence_interval: |
+      1. Collect confidence intervals from individual models
+      2. Extract variances from intervals
+      3. Compute weighted variance: var = Σ(weight_i² * var_i)
+      4. Calculate standard error: SE = √var
+      5. Generate 95% CI: [forecast - 1.96*SE, forecast + 1.96*SE]
+      6. Return confidence bounds
+
+  ensemble_strategies:
+    weighted_average: |
+      weights = calculate_dynamic_weights(models, performance_history)
+      forecast = Σ(weights[i] * models[i].forecast)
+    
+    simple_average: |
+      forecast = mean([model.forecast for model in models])
+    
+    best_model: |
+      best = argmin(RMSE for model in models)
+      forecast = models[best].forecast
+    
+    median_ensemble: |
+      forecast = median([model.forecast for model in models])
+
+# ====================================================================================
+# TESTING REQUIREMENTS
+# ====================================================================================
+
+testing:
+  unit_tests:
+    - "test_weight_calculation_accuracy_based"
+    - "test_weight_normalization_sum_to_one"
+    - "test_weight_bounds_enforcement"
+    - "test_weighted_forecast_combination"
+    - "test_simple_average_strategy"
+    - "test_best_model_strategy"
+    - "test_median_strategy"
+    - "test_ensemble_confidence_intervals"
+    - "test_performance_tracking"
+  
+  integration_tests:
+    - "test_ensemble_with_all_models"
+    - "test_ensemble_outperforms_individuals"
+    - "test_weight_adjustment_over_time"
+    - "test_mlflow_logging_integration"
+
+# ====================================================================================
+# DEPENDENCIES
+# ====================================================================================
+
+dependencies:
+  internal:
+    - "LAYER-CA-003-01-01: Statistical forecasts"
+    - "LAYER-CA-003-01-02: ML forecasts"
+  
+  external:
+    - "numpy>=1.24.0"
+    - "scikit-learn>=1.3.0"
+    - "mlflow>=2.6.0"
+    - "pandas>=2.0.0"
+
+# ====================================================================================
+# PERFORMANCE REQUIREMENTS
+# ====================================================================================
+
+performance:
+  - "Ensemble combination: <100ms"
+  - "Weight calculation: <200ms"
+  - "Confidence interval generation: <100ms"
+  - "Total ensemble overhead: <500ms"
+
+# ====================================================================================
+# CONFIGURATION
+# ====================================================================================
+
+configuration:
+  ensemble:
+    default_strategy: "WEIGHTED_AVERAGE"
+    weight_update_frequency: "daily"
+    performance_window_days: 30
+    min_weight: 0.05
+    max_weight: 0.5
+    confidence_level: 0.95
+  
+  mlflow:
+    tracking_uri: "http://mlflow:5000"  # or from environment
+    experiment_name: "ca-003-01-drift-forecasting"
+    log_models: true
+    log_metrics: true

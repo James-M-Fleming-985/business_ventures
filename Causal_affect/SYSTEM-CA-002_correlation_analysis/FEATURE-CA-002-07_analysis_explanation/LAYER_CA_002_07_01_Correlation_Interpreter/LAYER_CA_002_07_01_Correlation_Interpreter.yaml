@@ -1,0 +1,176 @@
+# ====================================================================================
+# LAYER REQUIREMENTS: Correlation Interpreter
+# ====================================================================================
+# LAYER ID: LAYER-CA-002-07-01
+# FEATURE: FEATURE-CA-002-07 (Analysis Explanation & Natural Language Insights)
+# ====================================================================================
+
+metadata:
+  layer_id: "LAYER-CA-002-07-01"
+  layer_name: "Correlation Interpreter"
+  feature_id: "FEATURE-CA-002-07"
+  version: "1.0.0"
+  created_date: "2025-11-01"
+  owner: "Causal Affect Team"
+
+# ====================================================================================
+# LAYER OVERVIEW
+# ====================================================================================
+
+overview:
+  description: |
+    Interprets raw correlation statistics from CA-002-01 and translates them into 
+    structured assessments of relationship strength, direction, significance, and 
+    stability. Provides the analytical foundation for natural language generation.
+  
+  responsibility: |
+    - Classify correlation strength (weak/moderate/strong/very strong)
+    - Interpret correlation direction and pattern type
+    - Assess statistical significance with confidence levels
+    - Calculate temporal stability from historical correlation data
+    - Determine exploitability scores based on statistical properties
+
+  input: "Correlation statistics from CA-002-01 (coefficient, p-value, time-series)"
+  output: "Structured interpretation (CorrelationInterpretation dataclass)"
+  technology: "pandas, numpy, typing, dataclasses"
+
+# ====================================================================================
+# FUNCTIONAL REQUIREMENTS
+# ====================================================================================
+
+requirements:
+  - id: "LAYER-CA-002-07-01-REQ-001"
+    title: "Strength Classification"
+    description: "Classify correlation strength from coefficient values"
+    acceptance_criteria:
+      - "|r| < 0.3: Weak"
+      - "0.3 <= |r| < 0.5: Moderate"
+      - "0.5 <= |r| < 0.7: Strong"
+      - "|r| >= 0.7: Very Strong"
+      - "Handle edge cases (r=0, r=1, r=-1)"
+
+  - id: "LAYER-CA-002-07-01-REQ-002"
+    title: "Direction Interpretation"
+    description: "Interpret correlation direction and pattern"
+    acceptance_criteria:
+      - "Positive: r > 0.1 (co-movement)"
+      - "Negative: r < -0.1 (inverse movement)"
+      - "Neutral: -0.1 <= r <= 0.1 (no clear relationship)"
+      - "Pattern detection: linear vs non-linear tendencies"
+
+  - id: "LAYER-CA-002-07-01-REQ-003"
+    title: "Statistical Significance Assessment"
+    description: "Interpret p-values and confidence levels"
+    acceptance_criteria:
+      - "Highly significant: p < 0.01 (99% confidence)"
+      - "Significant: p < 0.05 (95% confidence)"
+      - "Marginally significant: p < 0.10 (90% confidence)"
+      - "Not significant: p >= 0.10"
+      - "Effect size consideration (Cohen's d or equivalent)"
+
+  - id: "LAYER-CA-002-07-01-REQ-004"
+    title: "Temporal Stability Assessment"
+    description: "Calculate stability from historical correlation time-series"
+    acceptance_criteria:
+      - "Rolling correlation variance over time windows"
+      - "Stability score: 0.0 (highly unstable) to 1.0 (perfectly stable)"
+      - "Trend detection (stable/strengthening/weakening)"
+      - "Recent vs historical stability comparison"
+
+  - id: "LAYER-CA-002-07-01-REQ-005"
+    title: "Exploitability Scoring"
+    description: "Composite score for MVP opportunity potential"
+    acceptance_criteria:
+      - "Weighted combination: strength + significance + stability"
+      - "Score range: 0.0 to 1.0"
+      - "Threshold classifications: Low/Medium/High/Very High"
+      - "Adjust weights based on use-case priorities"
+
+# ====================================================================================
+# TECHNICAL SPECIFICATIONS
+# ====================================================================================
+
+technical_specs:
+  class_design:
+    - "CorrelationInterpreter: Main interpreter class"
+    - "CorrelationInterpretation: Output dataclass"
+    - "StrengthLevel: Enum (WEAK, MODERATE, STRONG, VERY_STRONG)"
+    - "DirectionType: Enum (POSITIVE, NEGATIVE, NEUTRAL)"
+    - "SignificanceLevel: Enum (HIGH, MODERATE, MARGINAL, NONE)"
+
+  data_structures:
+    correlation_interpretation:
+      fields:
+        - "strength: StrengthLevel"
+        - "strength_score: float  # |r|"
+        - "direction: DirectionType"
+        - "coefficient: float  # raw r value"
+        - "significance: SignificanceLevel"
+        - "p_value: float"
+        - "confidence_percent: float"
+        - "stability_score: float  # 0.0 to 1.0"
+        - "stability_trend: str  # stable/strengthening/weakening"
+        - "exploitability_score: float  # 0.0 to 1.0"
+        - "exploitability_level: str  # Low/Medium/High/Very High"
+        - "sample_size: int"
+        - "time_period: str"
+
+  algorithms:
+    stability_calculation: |
+      1. Calculate rolling correlation over time windows (e.g., 30-day windows)
+      2. Compute coefficient of variation (CV) of rolling correlations
+      3. Stability score = 1 - min(CV, 1.0)
+      4. Detect trend using linear regression on rolling correlation values
+    
+    exploitability_scoring: |
+      score = (
+        0.4 * strength_score +      # |r| value
+        0.3 * stability_score +      # temporal stability
+        0.2 * significance_bonus +   # 1.0 if p<0.01, 0.5 if p<0.05, else 0.0
+        0.1 * sample_size_bonus      # bonus for larger samples
+      )
+
+# ====================================================================================
+# TESTING REQUIREMENTS
+# ====================================================================================
+
+testing:
+  unit_tests:
+    - "test_strength_classification_boundaries"
+    - "test_direction_interpretation_positive"
+    - "test_direction_interpretation_negative"
+    - "test_direction_interpretation_neutral"
+    - "test_significance_levels_p_values"
+    - "test_stability_calculation_stable_series"
+    - "test_stability_calculation_volatile_series"
+    - "test_exploitability_scoring_high"
+    - "test_exploitability_scoring_low"
+    - "test_edge_cases_perfect_correlation"
+    - "test_edge_cases_no_correlation"
+  
+  integration_tests:
+    - "test_real_correlation_data_from_ca002_01"
+    - "test_historical_timeseries_stability"
+    - "test_multiple_correlation_types_pearson_spearman"
+
+# ====================================================================================
+# DEPENDENCIES
+# ====================================================================================
+
+dependencies:
+  internal:
+    - "FEATURE-CA-002-01: Correlation statistics source"
+  
+  external:
+    - "pandas>=2.0.0"
+    - "numpy>=1.24.0"
+    - "scipy>=1.10.0  # for additional statistical tests"
+
+# ====================================================================================
+# PERFORMANCE REQUIREMENTS
+# ====================================================================================
+
+performance:
+  - "Single interpretation: <100ms"
+  - "Batch interpretation (10 correlations): <500ms"
+  - "Stability calculation with 365-day history: <200ms"

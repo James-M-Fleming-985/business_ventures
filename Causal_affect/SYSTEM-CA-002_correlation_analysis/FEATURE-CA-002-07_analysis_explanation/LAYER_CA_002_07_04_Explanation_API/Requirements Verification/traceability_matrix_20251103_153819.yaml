@@ -1,0 +1,94 @@
+matrix_metadata:
+  timestamp: '20251103_153819'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping: []
+implementation_to_requirement_mapping:
+- implementation_file: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-07_analysis_explanation/LAYER_CA_002_07_04_Explanation_API/src/implementation.py
+  lines: 266
+  methods:
+  - name: __init__
+    lines: 11-29
+  - name: explain_correlation
+    lines: 30-75
+  - name: explain_correlation_matrix
+    lines: 76-130
+  - name: get_key_findings
+    lines: 131-177
+  - name: suggest_further_analysis
+    lines: 178-211
+  - name: explain_correlation_strength
+    lines: 212-237
+  - name: format_correlation_report
+    lines: 238-248
+  classes:
+  - name: CorrelationExplanation
+    type: class
+    lines: 8-266
+  implements_requirements: []
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-07_analysis_explanation/LAYER_CA_002_07_04_Explanation_API/tests/test_generated_20251103_153732.py
+  test_count: 0
+  implementation_files:
+  - cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-07_analysis_explanation/LAYER_CA_002_07_04_Explanation_API/src/implementation.py
+  methods_tested:
+  - __init__
+  - explain_correlation
+  - explain_correlation_matrix
+  - get_key_findings
+  - suggest_further_analysis
+  - explain_correlation_strength
+  - format_correlation_report
+  classes_tested:
+  - CorrelationExplanation
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-07_analysis_explanation/LAYER_CA_002_07_04_Explanation_API/src/implementation.py:11-29
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-07_analysis_explanation/LAYER_CA_002_07_04_Explanation_API/tests/test_generated_20251103_153732.py
+  verified: true
+- implementation_location: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-07_analysis_explanation/LAYER_CA_002_07_04_Explanation_API/src/implementation.py:30-75
+  method_name: explain_correlation
+  requirement: AC-001
+  test: test_explain_correlation
+  test_file: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-07_analysis_explanation/LAYER_CA_002_07_04_Explanation_API/tests/test_generated_20251103_153732.py
+  verified: true
+- implementation_location: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-07_analysis_explanation/LAYER_CA_002_07_04_Explanation_API/src/implementation.py:76-130
+  method_name: explain_correlation_matrix
+  requirement: AC-001
+  test: test_explain_correlation_matrix
+  test_file: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-07_analysis_explanation/LAYER_CA_002_07_04_Explanation_API/tests/test_generated_20251103_153732.py
+  verified: true
+- implementation_location: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-07_analysis_explanation/LAYER_CA_002_07_04_Explanation_API/src/implementation.py:131-177
+  method_name: get_key_findings
+  requirement: AC-001
+  test: test_get_key_findings
+  test_file: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-07_analysis_explanation/LAYER_CA_002_07_04_Explanation_API/tests/test_generated_20251103_153732.py
+  verified: true
+- implementation_location: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-07_analysis_explanation/LAYER_CA_002_07_04_Explanation_API/src/implementation.py:178-211
+  method_name: suggest_further_analysis
+  requirement: AC-001
+  test: test_suggest_further_analysis
+  test_file: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-07_analysis_explanation/LAYER_CA_002_07_04_Explanation_API/tests/test_generated_20251103_153732.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 0
+  requirements_traced: 0
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

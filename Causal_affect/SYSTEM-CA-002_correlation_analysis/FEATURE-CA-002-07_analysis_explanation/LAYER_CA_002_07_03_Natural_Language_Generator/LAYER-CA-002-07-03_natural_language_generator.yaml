@@ -1,0 +1,317 @@
+# ====================================================================================
+# LAYER REQUIREMENTS: Natural Language Generator
+# ====================================================================================
+# LAYER ID: LAYER-CA-002-07-03
+# FEATURE: FEATURE-CA-002-07 (Analysis Explanation & Natural Language Insights)
+# ====================================================================================
+
+metadata:
+  layer_id: "LAYER-CA-002-07-03"
+  layer_name: "Natural Language Generator"
+  feature_id: "FEATURE-CA-002-07"
+  version: "1.0.0"
+  created_date: "2025-11-01"
+  owner: "Causal Affect Team"
+
+# ====================================================================================
+# LAYER OVERVIEW
+# ====================================================================================
+
+overview:
+  description: |
+    Template-based natural language generation system that transforms structured 
+    correlation interpretations and drift analyses into human-readable explanations 
+    with actionable business insights and timing recommendations.
+  
+  responsibility: |
+    - Generate natural language from CorrelationInterpretation data
+    - Incorporate drift analysis into narrative explanations
+    - Create context-aware recommendations for MVP deployment
+    - Provide professional business-appropriate tone
+    - Support multiple explanation formats (summary, detailed, technical)
+    - Template management and customization
+
+  input: "CorrelationInterpretation, DriftAnalysis, ExplanationRequest"
+  output: "Natural language explanation text (ExplanationResult)"
+  technology: "jinja2, typing, dataclasses"
+
+# ====================================================================================
+# FUNCTIONAL REQUIREMENTS
+# ====================================================================================
+
+requirements:
+  - id: "LAYER-CA-002-07-03-REQ-001"
+    title: "Template Management"
+    description: "Manage and render Jinja2 templates for explanations"
+    acceptance_criteria:
+      - "Load templates from templates/ directory"
+      - "Support template inheritance and includes"
+      - "Custom filters for formatting (e.g., format_correlation, format_pvalue)"
+      - "Template caching for performance"
+      - "Hot-reload templates in development mode"
+
+  - id: "LAYER-CA-002-07-03-REQ-002"
+    title: "Relationship Summary Generation"
+    description: "High-level summary of correlation relationship"
+    acceptance_criteria:
+      - "Symbol pair and timeframe identification"
+      - "Strength and direction in natural language"
+      - "Statistical significance statement"
+      - "Summary generated in 2-3 sentences"
+      - "Clear, non-technical language"
+
+  - id: "LAYER-CA-002-07-03-REQ-002B"
+    title: "Relationship Narrative Generation"
+    description: "Contextual story explaining what the relationship means"
+    acceptance_criteria:
+      - "Real-world interpretation of correlation pattern"
+      - "Business context: why variables might move together"
+      - "Historical examples or analogies for communication"
+      - "Layperson explanation for non-technical stakeholders"
+      - "Market dynamics or causal mechanisms when identifiable"
+      - "Comparative context to similar relationships"
+
+  - id: "LAYER-CA-002-07-03-REQ-003"
+    title: "Statistical Details Explanation"
+    description: "Detailed statistical interpretation for technical users"
+    acceptance_criteria:
+      - "Correlation coefficient with interpretation"
+      - "P-value and confidence level explanation"
+      - "Sample size and data coverage"
+      - "Effect size and practical significance"
+      - "Balanced technical accuracy and readability"
+
+  - id: "LAYER-CA-002-07-03-REQ-004"
+    title: "Stability Assessment Narrative"
+    description: "Temporal stability and drift explanation"
+    acceptance_criteria:
+      - "Historical stability rating in context"
+      - "Recent drift trend narrative"
+      - "Forecast incorporation (when available)"
+      - "Timing window identification"
+      - "Confidence level communication"
+
+  - id: "LAYER-CA-002-07-03-REQ-004B"
+    title: "Exploitation Narrative Generation"
+    description: "Story of how relationship could be monetized"
+    acceptance_criteria:
+      - "Concrete MVP examples exploiting this pattern"
+      - "Target audience identification"
+      - "Revenue model possibilities"
+      - "Competitive landscape context"
+      - "Success scenarios and potential outcomes"
+      - "Analogous successful products or businesses"
+
+  - id: "LAYER-CA-002-07-03-REQ-005"
+    title: "Actionable Insights Generation"
+    description: "Business recommendations and next steps"
+    acceptance_criteria:
+      - "Exploitability assessment with reasoning"
+      - "Timing recommendation with rationale"
+      - "Risk factors to consider"
+      - "Confidence in recommendation"
+      - "Clear call-to-action when appropriate"
+
+  - id: "LAYER-CA-002-07-03-REQ-005B"
+    title: "Communication Package Generation"
+    description: "Ready-to-share narrative for stakeholder communication"
+    acceptance_criteria:
+      - "Executive summary (2-3 sentences)"
+      - "Elevator pitch version"
+      - "Detailed explanation with context"
+      - "Key stats formatted for presentation"
+      - "Talking points for pitches or discussions"
+
+  - id: "LAYER-CA-002-07-03-REQ-006"
+    title: "Multi-Format Support"
+    description: "Generate explanations in different formats"
+    acceptance_criteria:
+      - "summary: 3-4 sentence overview"
+      - "detailed: Full multi-section analysis"
+      - "technical: Statistical details emphasized"
+      - "markdown: Formatted for display in UI"
+      - "plain: Clean text without markup"
+
+# ====================================================================================
+# TECHNICAL SPECIFICATIONS
+# ====================================================================================
+
+technical_specs:
+  class_design:
+    - "NaturalLanguageGenerator: Main generator class"
+    - "ExplanationResult: Output dataclass"
+    - "TemplateManager: Template loading and caching"
+    - "ExplanationFormat: Enum (SUMMARY, DETAILED, TECHNICAL)"
+
+  data_structures:
+    explanation_result:
+      fields:
+        - "summary: str  # 3-4 sentence overview"
+        - "relationship_summary: str  # symbol pair and strength"
+        - "statistical_details: str  # detailed stats explanation"
+        - "stability_assessment: str  # drift and timing narrative"
+        - "actionable_insights: str  # recommendations and next steps"
+        - "full_explanation: str  # complete formatted explanation"
+        - "format: ExplanationFormat"
+        - "generated_at: datetime"
+        - "template_version: str"
+
+  template_structure:
+    base_template: |
+      # templates/base_explanation.jinja2
+      
+      **{{ relationship_type }} Relationship Detected**
+      
+      {{ summary }}
+      
+      {% if detailed %}
+      ## Statistical Details
+      {{ statistical_details }}
+      
+      ## Stability Assessment
+      {{ stability_assessment }}
+      
+      ## Actionable Insights
+      {{ actionable_insights }}
+      {% endif %}
+    
+    summary_template: |
+      # templates/summary_explanation.jinja2
+      
+      {{ symbol_a }} and {{ symbol_b }} show a {{ strength_text }} 
+      {{ direction_text }} correlation (r={{ coefficient|format_correlation }}, 
+      {{ significance_text }}). {{ stability_statement }} 
+      {{ timing_recommendation }}
+
+  custom_filters:
+    - "format_correlation: Format r value with sign and 2 decimals"
+    - "format_pvalue: Convert p-value to readable text"
+    - "strength_text: Convert strength enum to adjective"
+    - "direction_text: Convert direction to 'positive'/'negative'/'neutral'"
+    - "confidence_text: Convert confidence to percentage text"
+
+# ====================================================================================
+# TEMPLATE EXAMPLES
+# ====================================================================================
+
+template_examples:
+  strong_stable_positive:
+    template_context:
+      symbol_a: "SPY"
+      symbol_b: "QQQ"
+      strength: "VERY_STRONG"
+      direction: "POSITIVE"
+      coefficient: 0.85
+      p_value: 0.001
+      stability_score: 0.92
+      drift_forecast_30day: 0.02
+      timing_recommendation: "DEPLOY_NOW"
+      confidence: 0.95
+    
+    rendered_output: |
+      **Very Strong Positive Relationship Detected**
+      
+      SPY and QQQ show a very strong positive correlation (r=0.85, p<0.001), 
+      meaning they tend to move together in the same direction with high 
+      consistency. This relationship has been highly stable (stability score: 
+      0.92/1.0) and is forecasted to remain stable with 95% confidence.
+      
+      **Timing Recommendation**: DEPLOY NOW - This is an excellent window for 
+      MVP deployment. The combination of very strong correlation and high 
+      stability suggests minimal risk of relationship breakdown.
+      
+      **Exploitability**: VERY HIGH - Consider products that leverage the 
+      predictable co-movement of these assets.
+
+  moderate_drifting_negative:
+    template_context:
+      symbol_a: "GLD"
+      symbol_b: "USD"
+      strength: "MODERATE"
+      direction: "NEGATIVE"
+      coefficient: -0.48
+      p_value: 0.03
+      stability_score: 0.65
+      drift_forecast_30day: -0.12
+      timing_recommendation: "WAIT"
+      confidence: 0.70
+    
+    rendered_output: |
+      **Moderate Negative Relationship with Drift Warning**
+      
+      GLD and USD show a moderate negative correlation (r=-0.48, p=0.03), 
+      meaning they tend to move in opposite directions. However, this 
+      relationship is showing moderate stability (stability score: 0.65/1.0) 
+      with concerning drift patterns.
+      
+      **Drift Analysis**: The correlation is forecasted to weaken by 
+      approximately 0.12 points over the next 30 days (70% confidence). This 
+      drift suggests the relationship is becoming less reliable.
+      
+      **Timing Recommendation**: WAIT - The current drift pattern suggests 
+      delaying exploitation until the relationship stabilizes. Monitor for 
+      signs of drift reversal before proceeding.
+      
+      **Exploitability**: MODERATE with CAUTION - Can be exploited but 
+      requires careful monitoring and contingency planning due to drift.
+
+# ====================================================================================
+# TESTING REQUIREMENTS
+# ====================================================================================
+
+testing:
+  unit_tests:
+    - "test_template_loading_and_caching"
+    - "test_custom_filter_format_correlation"
+    - "test_custom_filter_format_pvalue"
+    - "test_strength_text_conversion"
+    - "test_direction_text_conversion"
+    - "test_summary_format_generation"
+    - "test_detailed_format_generation"
+    - "test_technical_format_generation"
+    - "test_markdown_formatting"
+    - "test_plain_text_output"
+  
+  integration_tests:
+    - "test_full_explanation_strong_stable"
+    - "test_full_explanation_weak_unstable"
+    - "test_full_explanation_with_drift_forecast"
+    - "test_full_explanation_without_drift_forecast"
+    - "test_explanation_with_all_formats"
+
+# ====================================================================================
+# DEPENDENCIES
+# ====================================================================================
+
+dependencies:
+  external:
+    - "jinja2>=3.1.0"
+    - "markupsafe>=2.1.0  # for safe HTML escaping"
+
+# ====================================================================================
+# PERFORMANCE REQUIREMENTS
+# ====================================================================================
+
+performance:
+  - "Template rendering: <50ms per explanation"
+  - "Template cache hit rate: >90%"
+  - "Memory overhead: <10MB for template cache"
+
+# ====================================================================================
+# TEMPLATE DIRECTORY STRUCTURE
+# ====================================================================================
+
+template_directory:
+  structure: |
+    templates/
+    ├── base_explanation.jinja2
+    ├── summary_explanation.jinja2
+    ├── detailed_explanation.jinja2
+    ├── technical_explanation.jinja2
+    ├── components/
+    │   ├── relationship_summary.jinja2
+    │   ├── statistical_details.jinja2
+    │   ├── stability_assessment.jinja2
+    │   └── actionable_insights.jinja2
+    └── filters/
+        └── custom_filters.py

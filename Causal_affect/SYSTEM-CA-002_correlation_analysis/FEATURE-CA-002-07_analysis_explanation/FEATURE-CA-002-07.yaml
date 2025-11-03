@@ -1,0 +1,393 @@
+# ====================================================================================
+# FEATURE REQUIREMENTS: Analysis Explanation & Natural Language Insights
+# ====================================================================================
+# FEATURE ID: FEATURE-CA-002-07
+# VERSION: 1.0.0
+# LAST UPDATED: 2025-11-01
+# SYSTEM: CA-002 Correlation Analysis Engine
+# ====================================================================================
+
+metadata:
+  feature_id: "FEATURE-CA-002-07"
+  requirement_id: "FEATURE-CA-002-07"
+  feature_name: "Analysis Explanation Natural Language Insights"
+  requirement_name: "Analysis Explanation Natural Language Insights"
+  feature_code: "CA-002-07"
+  version: "1.0.0"
+  status: "Active"
+  created_date: "2025-11-01"
+  last_modified: "2025-11-01"
+  owner: "Causal Affect Team"
+  priority: "MUST HAVE"
+  target_date: "2025-11-01"
+
+  traceability:
+    parent_system: "SYSTEM-CA-002"
+    parent_system_file: "../SYSTEM-CA-002.yaml"
+    parent_system_requirements:
+      - "SYS-REQ-002-01: Interactive dashboard for correlation exploration"
+      - "SYS-REQ-002-02: Real-time correlation analysis with live data"
+      - "SYS-REQ-002-03: Support 15-20 concurrent data sources"
+    
+    derivation_rationale: |
+      This feature transforms raw correlation statistics and drift forecasts into 
+      actionable natural language insights. It provides the "analysis pop-out" that 
+      explains what relationships mean, why they matter, how stable they are, and 
+      what timing implications exist for MVP deployment decisions.
+
+# ====================================================================================
+# FEATURE OVERVIEW
+# ====================================================================================
+
+overview:
+  description: |
+    Natural language analysis system that generates human-readable explanations of 
+    correlation patterns, drift forecasts, and timing implications. Transforms 
+    statistical outputs from CA-002-01, CA-002-05, and CA-003-01 into actionable 
+    insights with context-aware explanations for market relationship exploitation.
+  
+  business_value:
+    - "Translates complex statistics into actionable business insights"
+    - "Explains correlation strength, direction, and stability in plain language"
+    - "Provides drift forecasts with temporal context for timing decisions"
+    - "Identifies exploitable relationship patterns with confidence assessments"
+    - "Reduces analysis time from hours to seconds with automated explanations"
+  
+  user_story: |
+    As a market analyst, I want clear natural language explanations of what 
+    correlations mean, why drift matters, and when to exploit relationships, so 
+    that I can make informed MVP deployment decisions without deep statistical 
+    expertise.
+  
+  acceptance_criteria:
+    - "All layer implementations complete and passing tests"
+    - "Natural language explanations generated within 2 seconds"
+    - "Integrates CA-002-01 correlation statistics seamlessly"
+    - "Incorporates CA-003-01 drift forecasts when available"
+    - "Provides actionable timing recommendations"
+    - "Explanation quality validated by domain experts"
+    - "API endpoints functional for dashboard integration"
+
+# ====================================================================================
+# LAYER ARCHITECTURE
+# ====================================================================================
+
+layers:
+  - layer_id: "LAYER-CA-002-07-01"
+    name: "Correlation Interpreter"
+    responsibility: "Analyzes correlation statistics and translates to strength/direction/significance assessments"
+    technology: "pandas, numpy, typing"
+    requirement_file: "LAYER-CA-002-07-01_correlation_interpreter.yaml"
+    requirements:
+      - "LAYER-CA-002-07-01"
+  
+  - layer_id: "LAYER-CA-002-07-02"
+    name: "Drift Analyzer"
+    responsibility: "Analyzes drift forecasts for stability assessment and timing window identification"
+    technology: "pandas, numpy, datetime"
+    requirement_file: "LAYER-CA-002-07-02_drift_analyzer.yaml"
+    requirements:
+      - "LAYER-CA-002-07-02"
+  
+  - layer_id: "LAYER-CA-002-07-03"
+    name: "Natural Language Generator"
+    responsibility: "Template-based natural language generation with context-aware explanations"
+    technology: "jinja2, typing, dataclasses"
+    requirement_file: "LAYER-CA-002-07-03_natural_language_generator.yaml"
+    requirements:
+      - "LAYER-CA-002-07-03"
+  
+  - layer_id: "LAYER-CA-002-07-04"
+    name: "Explanation API"
+    responsibility: "FastAPI endpoints for explanation requests with CA-002 and CA-003 integration"
+    technology: "FastAPI, pydantic, asyncio"
+    requirement_file: "LAYER-CA-002-07-04_explanation_api.yaml"
+    requirements:
+      - "LAYER-CA-002-07-04"
+
+# ====================================================================================
+# FEATURE REQUIREMENTS
+# ====================================================================================
+
+requirements:
+  - id: "FEAT-CA-002-07-REQ-001"
+    title: "Correlation Interpretation"
+    description: "Translate correlation statistics to actionable insights"
+    priority: "MUST HAVE"
+    acceptance_criteria:
+      - "Strength assessment: weak/moderate/strong/very strong"
+      - "Direction explanation: positive/negative/complex patterns"
+      - "Statistical significance interpretation"
+      - "Temporal stability assessment from historical data"
+      - "Confidence level reporting"
+
+  - id: "FEAT-CA-002-07-REQ-002"
+    title: "Drift Analysis Integration"
+    description: "Incorporate drift forecasts into explanations"
+    priority: "MUST HAVE"
+    acceptance_criteria:
+      - "Graceful handling when CA-003-01 unavailable"
+      - "Simple rolling drift when CA-003 forecasts absent"
+      - "Full ensemble forecast integration when available"
+      - "Timing window identification (stable/unstable periods)"
+      - "Confidence intervals for drift predictions"
+
+  - id: "FEAT-CA-002-07-REQ-003"
+    title: "Natural Language Generation"
+    description: "Human-readable explanations with business context"
+    priority: "MUST HAVE"
+    acceptance_criteria:
+      - "Template-based generation for consistency"
+      - "Context-aware explanations (strength + drift + timing)"
+      - "Actionable recommendations for MVP deployment"
+      - "Explanation generated within 2 seconds"
+      - "Professional tone suitable for business decisions"
+
+  - id: "FEAT-CA-002-07-REQ-004"
+    title: "API Integration"
+    description: "REST API for dashboard and external integration"
+    priority: "MUST HAVE"
+    acceptance_criteria:
+      - "POST /api/explain accepts correlation pair and timeframe"
+      - "GET /api/explain/{correlation_id} retrieves stored explanation"
+      - "Response includes all explanation components"
+      - "Error handling for missing data gracefully handled"
+
+  - id: "FEAT-CA-002-07-REQ-005"
+    title: "Performance Requirements"
+    description: "Fast explanation generation for real-time use"
+    priority: "MUST HAVE"
+    acceptance_criteria:
+      - "Single explanation: <2 seconds"
+      - "Batch explanations (10 pairs): <10 seconds"
+      - "Caching for frequently requested pairs"
+      - "Async processing for non-blocking operation"
+
+# ====================================================================================
+# TECHNICAL ARCHITECTURE
+# ====================================================================================
+
+architecture:
+  pattern: "Interpreter Pipeline"
+  generation_approach: "Template-Based Natural Language"
+  data_flow: |
+    1. Request → Explanation API (Layer 04)
+    2. Fetch CA-002-01 Correlation Statistics → Correlation Interpreter (Layer 01)
+    3. Fetch CA-003-01 Drift Forecasts (if available) → Drift Analyzer (Layer 02)
+    4. Statistical Assessments → Natural Language Generator (Layer 03)
+    5. Generated Explanation → API Response
+
+  dependencies:
+    internal_features:
+      - "FEATURE-CA-002-01: Statistical correlation results"
+      - "FEATURE-CA-002-05: System integration for data access"
+      - "FEATURE-CA-003-01: Drift forecasts (optional, graceful degradation)"
+    
+    libraries:
+      - "jinja2>=3.1.0"
+      - "pydantic>=2.0.0"
+      - "fastapi>=0.104.0"
+      - "pandas>=2.0.0"
+      - "numpy>=1.24.0"
+
+# ====================================================================================
+# EXPLANATION COMPONENTS SPECIFICATION
+# ====================================================================================
+
+explanation_components:
+  relationship_summary:
+    description: "High-level summary of correlation relationship"
+    includes:
+      - "Symbol pair identification"
+      - "Correlation strength classification"
+      - "Direction and pattern type"
+      - "Statistical significance"
+    
+  relationship_narrative:
+    description: "Contextual story explaining what the relationship means"
+    includes:
+      - "Real-world interpretation of the correlation pattern"
+      - "Business context: why these variables might move together"
+      - "Historical examples or analogies for communication"
+      - "Layperson explanation suitable for non-technical stakeholders"
+      - "Market dynamics or causal mechanisms (when identifiable)"
+      - "Comparative context: how this relates to similar relationships"
+    
+  statistical_details:
+    description: "Detailed statistical interpretation"
+    includes:
+      - "Correlation coefficient with interpretation"
+      - "P-value and confidence level"
+      - "Effect size assessment"
+      - "Sample size and time period"
+  
+  stability_assessment:
+    description: "Temporal stability and drift analysis"
+    includes:
+      - "Historical stability rating"
+      - "Recent drift trend (if CA-003 available)"
+      - "Forecast confidence (if CA-003 available)"
+      - "Timing window recommendation"
+  
+  exploitation_narrative:
+    description: "Story of how this relationship could be monetized"
+    includes:
+      - "Concrete MVP examples that could exploit this pattern"
+      - "Target audience who would benefit from this insight"
+      - "Revenue model possibilities"
+      - "Competitive landscape context"
+      - "Success scenarios and potential outcomes"
+      - "Analogous successful products or businesses"
+  
+  actionable_insights:
+    description: "Business recommendations for exploitation"
+    includes:
+      - "Exploitability assessment"
+      - "Optimal timing recommendation"
+      - "Risk factors to consider"
+      - "Confidence in recommendation"
+  
+  communication_package:
+    description: "Ready-to-share narrative for stakeholder communication"
+    includes:
+      - "Executive summary (2-3 sentences)"
+      - "Elevator pitch version"
+      - "Detailed explanation with context"
+      - "Key stats formatted for presentation"
+      - "Talking points for pitches or discussions"
+
+# ====================================================================================
+# TEMPLATE EXAMPLES
+# ====================================================================================
+
+template_examples:
+  strong_stable_positive:
+    input:
+      correlation_coefficient: 0.82
+      p_value: 0.001
+      drift_trend: "stable"
+      forecast_stability: "95% confidence stable for 30 days"
+    
+    output: |
+      **Strong Positive Relationship Detected**
+      
+      {symbol_a} and {symbol_b} show a strong positive correlation (r=0.82, 
+      p<0.001), meaning they tend to move together in the same direction. 
+      This relationship has been stable over the past {time_period} and is 
+      forecasted to remain stable with 95% confidence for the next 30 days.
+      
+      **What This Means**: When {symbol_a} rises, {symbol_b} typically follows 
+      suit with high consistency. This co-movement suggests {possible_mechanism}, 
+      making it a predictable pattern that could be exploited for profit.
+      
+      **Real-World Context**: Similar to how {analogy_example}, this relationship 
+      represents a market dynamic where {business_explanation}. Historically, 
+      investors have capitalized on such patterns through {historical_example}.
+      
+      **Exploitation Opportunity**: An MVP could offer {concrete_product_idea} 
+      targeting {target_audience}. For example, a service that {specific_use_case}, 
+      generating revenue through {revenue_model}. Success would look like 
+      {success_metric}.
+      
+      **Timing Recommendation**: This is an excellent window for MVP deployment. 
+      The relationship strength combined with high stability suggests low risk 
+      of the correlation breaking down in the near term.
+      
+      **Talking Points**:
+      - Strong correlation (82%) with high statistical confidence
+      - Pattern has remained stable for {time_period}
+      - MVP opportunity: {elevator_pitch}
+      - Target market: {target_description}
+      - Expected ROI: {roi_estimate}
+      
+      **Exploitability**: HIGH - Consider products that leverage the predictable 
+      co-movement of these variables.
+  
+  moderate_drifting_negative:
+    input:
+      correlation_coefficient: -0.55
+      p_value: 0.03
+      drift_trend: "weakening"
+      forecast_stability: "60% confidence of 0.1 point drift in 30 days"
+    
+    output: |
+      **Moderate Negative Relationship with Drift Warning**
+      
+      {symbol_a} and {symbol_b} show a moderate negative correlation (r=-0.55, 
+      p=0.03), meaning they tend to move in opposite directions. However, this 
+      relationship is showing signs of weakening drift.
+      
+      **What This Means**: When {symbol_a} increases, {symbol_b} typically 
+      decreases, though not with perfect consistency. This inverse relationship 
+      suggests {possible_mechanism}, but the pattern is evolving.
+      
+      **Real-World Context**: This mirrors patterns seen in {analogy_example}. 
+      The weakening correlation could indicate {market_shift_explanation}, 
+      similar to when {historical_parallel}.
+      
+      **Drift Analysis**: The correlation strength is forecasted to weaken by 
+      approximately 0.1 points over the next 30 days (60% confidence). This 
+      suggests the relationship is becoming less reliable. Possible causes: 
+      {drift_drivers}.
+      
+      **Exploitation Opportunity**: While weaker, this could still support 
+      {adjusted_product_idea} with built-in hedging. For example, {concrete_example} 
+      that {value_proposition}. Revenue model: {revenue_approach}.
+      
+      **Timing Recommendation**: CAUTION - If exploiting this relationship, 
+      plan for shorter deployment windows or build in hedging mechanisms. The 
+      drift pattern suggests this opportunity may not be stable long-term. 
+      Consider {mitigation_strategy}.
+      
+      **Talking Points**:
+      - Moderate inverse relationship (55%) 
+      - Weakening trend detected - relationship evolving
+      - Short-term opportunity with proper risk management
+      - Best suited for {appropriate_use_case}
+      - Requires active monitoring and contingency planning
+      
+      **Exploitability**: MODERATE - Can be exploited but requires careful 
+      monitoring and contingency planning. Consider {specific_recommendation}.
+
+# ====================================================================================
+# TESTING REQUIREMENTS
+# ====================================================================================
+
+testing:
+  unit_tests:
+    - "test_correlation_strength_classification"
+    - "test_statistical_significance_interpretation"
+    - "test_drift_analysis_with_forecasts"
+    - "test_drift_analysis_without_forecasts"
+    - "test_natural_language_template_rendering"
+    - "test_explanation_generation_complete"
+    - "test_api_endpoint_responses"
+    - "test_error_handling_missing_data"
+  
+  integration_tests:
+    - "test_ca002_01_integration_real_correlations"
+    - "test_ca003_01_integration_with_forecasts"
+    - "test_graceful_degradation_no_forecasts"
+    - "test_end_to_end_explanation_pipeline"
+  
+  performance_tests:
+    - "test_single_explanation_under_2_seconds"
+    - "test_batch_explanation_performance"
+    - "test_caching_effectiveness"
+
+# ====================================================================================
+# VALIDATION CRITERIA
+# ====================================================================================
+
+validation:
+  explanation_quality:
+    - "Domain expert review of 20 sample explanations"
+    - "Accuracy of strength/direction/stability assessments"
+    - "Clarity and actionability of recommendations"
+    - "Consistency across different correlation types"
+  
+  performance:
+    - "99th percentile response time <2 seconds"
+    - "Successful integration with CA-002-01 (100% success)"
+    - "Graceful degradation when CA-003-01 unavailable"
+    - "Cache hit rate >70% for repeated requests"

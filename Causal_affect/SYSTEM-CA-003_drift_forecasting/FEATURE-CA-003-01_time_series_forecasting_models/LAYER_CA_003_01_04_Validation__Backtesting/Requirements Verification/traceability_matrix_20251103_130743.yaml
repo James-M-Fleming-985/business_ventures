@@ -1,0 +1,156 @@
+matrix_metadata:
+  timestamp: '20251103_130743'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping: []
+implementation_to_requirement_mapping:
+- implementation_file: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-003_drift_forecasting/FEATURE-CA-003-01_time_series_forecasting_models/LAYER_CA_003_01_04_Validation__Backtesting/src/implementation.py
+  lines: 515
+  methods:
+  - name: __init__
+    lines: 22-26
+  - name: validate_data
+    lines: 27-83
+  - name: backtest
+    lines: 84-180
+  - name: cross_validate
+    lines: 181-263
+  - name: __init__
+    lines: 267-272
+  - name: add_model
+    lines: 273-285
+  - name: fit_models
+    lines: 286-303
+  - name: forecast
+    lines: 304-333
+  - name: ensemble_forecast
+    lines: 334-374
+  - name: __init__
+    lines: 378-381
+  - name: detect_drift
+    lines: 382-421
+  - name: plot_drift
+    lines: 422-451
+  - name: __init__
+    lines: 455-460
+  - name: fit
+    lines: 461-466
+  - name: forecast
+    lines: 467-471
+  - name: __init__
+    lines: 475-481
+  - name: fit
+    lines: 482-487
+  - name: forecast
+    lines: 488-492
+  - name: __init__
+    lines: 496-503
+  - name: fit
+    lines: 504-511
+  - name: forecast
+    lines: 512-522
+  classes:
+  - name: TimeSeriesValidator
+    type: class
+    lines: 19-263
+  - name: TimeSeriesForecaster
+    type: class
+    lines: 264-374
+  - name: DriftDetector
+    type: class
+    lines: 375-451
+  - name: ARIMAModel
+    type: class
+    lines: 452-471
+  - name: SARIMAXModel
+    type: class
+    lines: 472-492
+  - name: ExponentialSmoothingModel
+    type: class
+    lines: 493-515
+  implements_requirements: []
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-003_drift_forecasting/FEATURE-CA-003-01_time_series_forecasting_models/LAYER_CA_003_01_04_Validation__Backtesting/tests/test_generated_20251103_130636.py
+  test_count: 0
+  implementation_files:
+  - cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-003_drift_forecasting/FEATURE-CA-003-01_time_series_forecasting_models/LAYER_CA_003_01_04_Validation__Backtesting/src/implementation.py
+  methods_tested:
+  - __init__
+  - validate_data
+  - backtest
+  - cross_validate
+  - __init__
+  - add_model
+  - fit_models
+  - forecast
+  - ensemble_forecast
+  - __init__
+  - detect_drift
+  - plot_drift
+  - __init__
+  - fit
+  - forecast
+  - __init__
+  - fit
+  - forecast
+  - __init__
+  - fit
+  - forecast
+  classes_tested:
+  - TimeSeriesValidator
+  - TimeSeriesForecaster
+  - DriftDetector
+  - ARIMAModel
+  - SARIMAXModel
+  - ExponentialSmoothingModel
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-003_drift_forecasting/FEATURE-CA-003-01_time_series_forecasting_models/LAYER_CA_003_01_04_Validation__Backtesting/src/implementation.py:22-26
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-003_drift_forecasting/FEATURE-CA-003-01_time_series_forecasting_models/LAYER_CA_003_01_04_Validation__Backtesting/tests/test_generated_20251103_130636.py
+  verified: true
+- implementation_location: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-003_drift_forecasting/FEATURE-CA-003-01_time_series_forecasting_models/LAYER_CA_003_01_04_Validation__Backtesting/src/implementation.py:27-83
+  method_name: validate_data
+  requirement: AC-001
+  test: test_validate_data
+  test_file: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-003_drift_forecasting/FEATURE-CA-003-01_time_series_forecasting_models/LAYER_CA_003_01_04_Validation__Backtesting/tests/test_generated_20251103_130636.py
+  verified: true
+- implementation_location: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-003_drift_forecasting/FEATURE-CA-003-01_time_series_forecasting_models/LAYER_CA_003_01_04_Validation__Backtesting/src/implementation.py:84-180
+  method_name: backtest
+  requirement: AC-001
+  test: test_backtest
+  test_file: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-003_drift_forecasting/FEATURE-CA-003-01_time_series_forecasting_models/LAYER_CA_003_01_04_Validation__Backtesting/tests/test_generated_20251103_130636.py
+  verified: true
+- implementation_location: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-003_drift_forecasting/FEATURE-CA-003-01_time_series_forecasting_models/LAYER_CA_003_01_04_Validation__Backtesting/src/implementation.py:181-263
+  method_name: cross_validate
+  requirement: AC-001
+  test: test_cross_validate
+  test_file: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-003_drift_forecasting/FEATURE-CA-003-01_time_series_forecasting_models/LAYER_CA_003_01_04_Validation__Backtesting/tests/test_generated_20251103_130636.py
+  verified: true
+- implementation_location: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-003_drift_forecasting/FEATURE-CA-003-01_time_series_forecasting_models/LAYER_CA_003_01_04_Validation__Backtesting/src/implementation.py:267-272
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-003_drift_forecasting/FEATURE-CA-003-01_time_series_forecasting_models/LAYER_CA_003_01_04_Validation__Backtesting/tests/test_generated_20251103_130636.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 0
+  requirements_traced: 0
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

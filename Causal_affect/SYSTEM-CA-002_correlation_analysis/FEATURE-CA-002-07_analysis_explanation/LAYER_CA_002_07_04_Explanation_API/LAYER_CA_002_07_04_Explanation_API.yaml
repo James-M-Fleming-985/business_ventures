@@ -1,0 +1,295 @@
+# ====================================================================================
+# LAYER REQUIREMENTS: Explanation API
+# ====================================================================================
+# LAYER ID: LAYER-CA-002-07-04
+# FEATURE: FEATURE-CA-002-07 (Analysis Explanation & Natural Language Insights)
+# ====================================================================================
+
+metadata:
+  layer_id: "LAYER-CA-002-07-04"
+  layer_name: "Explanation API"
+  feature_id: "FEATURE-CA-002-07"
+  version: "1.0.0"
+  created_date: "2025-11-01"
+  owner: "Causal Affect Team"
+
+# ====================================================================================
+# LAYER OVERVIEW
+# ====================================================================================
+
+overview:
+  description: |
+    FastAPI REST endpoints that orchestrate the complete explanation generation 
+    pipeline. Integrates CA-002-01 correlation data, CA-003-01 drift forecasts 
+    (when available), and generates natural language explanations via the NLG layer.
+  
+  responsibility: |
+    - Provide REST API endpoints for explanation requests
+    - Orchestrate data fetching from CA-002-01 and CA-003-01
+    - Coordinate interpretation, drift analysis, and NLG layers
+    - Handle caching for frequently requested explanations
+    - Provide error handling and graceful degradation
+    - Serve explanation results to CA-002-04 dashboard
+
+  input: "HTTP requests with correlation pairs, timeframes, format preferences"
+  output: "JSON responses with natural language explanations and metadata"
+  technology: "FastAPI, pydantic, asyncio, aiohttp"
+
+# ====================================================================================
+# FUNCTIONAL REQUIREMENTS
+# ====================================================================================
+
+requirements:
+  - id: "LAYER-CA-002-07-04-REQ-001"
+    title: "Explanation Request Endpoint"
+    description: "POST endpoint for generating explanations"
+    acceptance_criteria:
+      - "POST /api/explain accepts correlation pair and parameters"
+      - "Request validation with pydantic models"
+      - "Async processing for non-blocking operation"
+      - "Response within 2 seconds for single explanation"
+      - "Support multiple explanation formats (summary/detailed/technical)"
+
+  - id: "LAYER-CA-002-07-04-REQ-002"
+    title: "Batch Explanation Endpoint"
+    description: "POST endpoint for batch explanation generation"
+    acceptance_criteria:
+      - "POST /api/explain/batch accepts list of correlation pairs"
+      - "Maximum batch size: 20 pairs"
+      - "Concurrent processing with asyncio.gather"
+      - "Response within 10 seconds for 10 pairs"
+      - "Partial success handling (return available explanations)"
+
+  - id: "LAYER-CA-002-07-04-REQ-003"
+    title: "Cached Explanation Retrieval"
+    description: "GET endpoint for retrieving cached explanations"
+    acceptance_criteria:
+      - "GET /api/explain/{explanation_id} retrieves stored explanation"
+      - "Cache key based on: symbol_pair + timeframe + format"
+      - "TTL: 1 hour for real-time data, 24 hours for historical"
+      - "Return 404 if not cached or expired"
+      - "Include cache metadata in response"
+
+  - id: "LAYER-CA-002-07-04-REQ-004"
+    title: "CA-002-01 Integration"
+    description: "Fetch correlation statistics from CA-002-01 feature"
+    acceptance_criteria:
+      - "Async call to CA-002-01 feature_integration.py"
+      - "Retrieve Pearson, Spearman, Kendall correlations"
+      - "Handle correlation calculation failures gracefully"
+      - "Timeout: 5 seconds for correlation fetch"
+      - "Return appropriate error if correlation unavailable"
+
+  - id: "LAYER-CA-002-07-04-REQ-005"
+    title: "CA-003-01 Integration (Optional)"
+    description: "Fetch drift forecasts when CA-003-01 available"
+    acceptance_criteria:
+      - "Check CA-003-01 API health before requesting"
+      - "Async call with 2-second timeout"
+      - "Graceful degradation: use simple drift if CA-003 unavailable"
+      - "Log CA-003 availability status"
+      - "Include forecast_source in response metadata"
+
+  - id: "LAYER-CA-002-07-04-REQ-006"
+    title: "Dashboard Integration Endpoint"
+    description: "Specialized endpoint for CA-002-04 dashboard pop-ups"
+    acceptance_criteria:
+      - "GET /api/dashboard/explain?symbols=X,Y&timeframe=30d"
+      - "Returns formatted explanation for dashboard display"
+      - "Includes visualization-ready metadata"
+      - "Optimized for low latency (<1.5 seconds)"
+      - "CORS enabled for frontend access"
+
+  - id: "LAYER-CA-002-07-04-REQ-007"
+    title: "Health and Status Endpoints"
+    description: "Service health and dependency status"
+    acceptance_criteria:
+      - "GET /health returns service status"
+      - "GET /api/explain/status returns dependency status"
+      - "Include CA-002-01 and CA-003-01 connectivity status"
+      - "Cache hit rate statistics"
+      - "Average explanation generation time"
+
+# ====================================================================================
+# TECHNICAL SPECIFICATIONS
+# ====================================================================================
+
+technical_specs:
+  api_endpoints:
+    - endpoint: "POST /api/explain"
+      description: "Generate explanation for correlation pair"
+      request_body:
+        symbol_a: "str"
+        symbol_b: "str"
+        timeframe: "str  # e.g., '30d', '90d', '1y'"
+        format: "str  # 'summary', 'detailed', 'technical'"
+        include_drift: "bool  # default: true"
+      response:
+        explanation_id: "str"
+        symbol_a: "str"
+        symbol_b: "str"
+        summary: "str"
+        full_explanation: "str"
+        metadata: "ExplanationMetadata"
+    
+    - endpoint: "POST /api/explain/batch"
+      description: "Generate explanations for multiple pairs"
+      request_body:
+        pairs: "List[CorrelationPair]"
+        format: "str"
+      response:
+        explanations: "List[ExplanationResponse]"
+        failed: "List[str]  # pairs that failed"
+        processing_time: "float"
+    
+    - endpoint: "GET /api/explain/{explanation_id}"
+      description: "Retrieve cached explanation"
+      response:
+        cached: true
+        explanation: "ExplanationResponse"
+        cached_at: "datetime"
+        expires_at: "datetime"
+    
+    - endpoint: "GET /api/dashboard/explain"
+      description: "Dashboard-optimized explanation"
+      query_params:
+        symbols: "str  # comma-separated"
+        timeframe: "str"
+      response:
+        markdown: "str  # markdown-formatted explanation"
+        metadata: "DashboardMetadata"
+
+  data_models:
+    correlation_pair:
+      fields:
+        - "symbol_a: str"
+        - "symbol_b: str"
+        - "timeframe: str = '30d'"
+    
+    explanation_request:
+      fields:
+        - "symbol_a: str"
+        - "symbol_b: str"
+        - "timeframe: str = '30d'"
+        - "format: ExplanationFormat = ExplanationFormat.SUMMARY"
+        - "include_drift: bool = True"
+    
+    explanation_response:
+      fields:
+        - "explanation_id: str"
+        - "symbol_a: str"
+        - "symbol_b: str"
+        - "summary: str"
+        - "relationship_summary: str"
+        - "statistical_details: str"
+        - "stability_assessment: str"
+        - "actionable_insights: str"
+        - "full_explanation: str"
+        - "metadata: ExplanationMetadata"
+    
+    explanation_metadata:
+      fields:
+        - "correlation_coefficient: float"
+        - "p_value: float"
+        - "strength: str"
+        - "direction: str"
+        - "stability_score: float"
+        - "drift_forecast_30day: Optional[float]"
+        - "forecast_source: str  # 'CA-003-01' or 'simple_rolling'"
+        - "timing_recommendation: str"
+        - "confidence: float"
+        - "generated_at: datetime"
+        - "processing_time_ms: float"
+
+  orchestration_flow:
+    pipeline: |
+      1. Receive API request → Validate with pydantic
+      2. Check cache → Return if fresh and available
+      3. Fetch CA-002-01 correlation stats (async)
+      4. Attempt CA-003-01 drift forecast (async, with fallback)
+      5. Pass to Layer 01: Correlation Interpreter
+      6. Pass to Layer 02: Drift Analyzer
+      7. Pass to Layer 03: Natural Language Generator
+      8. Build response with metadata
+      9. Cache result with TTL
+      10. Return to client
+
+# ====================================================================================
+# TESTING REQUIREMENTS
+# ====================================================================================
+
+testing:
+  unit_tests:
+    - "test_request_validation_valid"
+    - "test_request_validation_invalid"
+    - "test_cache_key_generation"
+    - "test_cache_hit_return"
+    - "test_cache_miss_pipeline"
+    - "test_ca002_integration_success"
+    - "test_ca002_integration_failure"
+    - "test_ca003_integration_success"
+    - "test_ca003_integration_fallback"
+    - "test_error_handling_missing_data"
+  
+  integration_tests:
+    - "test_end_to_end_explanation_generation"
+    - "test_batch_explanation_processing"
+    - "test_dashboard_endpoint_integration"
+    - "test_real_ca002_01_data_fetch"
+    - "test_graceful_degradation_ca003_down"
+  
+  performance_tests:
+    - "test_single_explanation_under_2_seconds"
+    - "test_batch_10_explanations_under_10_seconds"
+    - "test_cache_hit_under_100ms"
+    - "test_concurrent_requests_scalability"
+
+# ====================================================================================
+# DEPENDENCIES
+# ====================================================================================
+
+dependencies:
+  internal:
+    - "LAYER-CA-002-07-01: Correlation Interpreter"
+    - "LAYER-CA-002-07-02: Drift Analyzer"
+    - "LAYER-CA-002-07-03: Natural Language Generator"
+    - "FEATURE-CA-002-01: Correlation statistics source"
+    - "FEATURE-CA-003-01: Drift forecasts (optional)"
+  
+  external:
+    - "fastapi>=0.104.0"
+    - "pydantic>=2.0.0"
+    - "aiohttp>=3.8.0"
+    - "redis>=4.5.0  # for caching"
+    - "python-dotenv>=1.0.0  # for configuration"
+
+# ====================================================================================
+# PERFORMANCE REQUIREMENTS
+# ====================================================================================
+
+performance:
+  - "Single explanation (cache miss): <2 seconds"
+  - "Single explanation (cache hit): <100ms"
+  - "Batch 10 explanations: <10 seconds"
+  - "Concurrent requests: 50 RPS (requests per second)"
+  - "Cache hit rate: >70% in production"
+
+# ====================================================================================
+# CONFIGURATION
+# ====================================================================================
+
+configuration:
+  environment_variables:
+    - "CA_002_01_API_URL: URL for CA-002-01 correlation feature"
+    - "CA_003_01_API_URL: URL for CA-003-01 drift forecasting"
+    - "REDIS_URL: Redis connection for caching"
+    - "CACHE_TTL_REALTIME: Cache TTL for real-time data (seconds)"
+    - "CACHE_TTL_HISTORICAL: Cache TTL for historical data (seconds)"
+    - "CA_003_TIMEOUT: Timeout for CA-003 requests (seconds)"
+    - "MAX_BATCH_SIZE: Maximum batch explanation size"
+  
+  defaults:
+    cache_ttl_realtime: 3600  # 1 hour
+    cache_ttl_historical: 86400  # 24 hours
+    ca003_timeout: 2  # seconds
+    max_batch_size: 20

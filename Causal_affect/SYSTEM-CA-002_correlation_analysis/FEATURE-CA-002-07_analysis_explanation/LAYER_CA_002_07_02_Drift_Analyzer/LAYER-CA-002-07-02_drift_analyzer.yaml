@@ -1,0 +1,223 @@
+# ====================================================================================
+# LAYER REQUIREMENTS: Drift Analyzer
+# ====================================================================================
+# LAYER ID: LAYER-CA-002-07-02
+# FEATURE: FEATURE-CA-002-07 (Analysis Explanation & Natural Language Insights)
+# ====================================================================================
+
+metadata:
+  layer_id: "LAYER-CA-002-07-02"
+  layer_name: "Drift Analyzer"
+  feature_id: "FEATURE-CA-002-07"
+  version: "1.0.0"
+  created_date: "2025-11-01"
+  owner: "Causal Affect Team"
+
+# ====================================================================================
+# LAYER OVERVIEW
+# ====================================================================================
+
+overview:
+  description: |
+    Analyzes correlation drift patterns and forecasts to assess temporal stability 
+    and identify optimal timing windows for MVP deployment. Supports both simple 
+    rolling drift calculations and integration with CA-003-01 ensemble forecasts.
+  
+  responsibility: |
+    - Calculate simple rolling correlation drift when CA-003 unavailable
+    - Integrate CA-003-01 ensemble forecasts when available
+    - Identify stable and unstable time periods
+    - Assess drift magnitude and direction
+    - Generate timing window recommendations
+    - Provide confidence intervals for predictions
+
+  input: "Correlation time-series, optional CA-003-01 forecasts"
+  output: "Structured drift analysis (DriftAnalysis dataclass)"
+  technology: "pandas, numpy, datetime, typing, dataclasses"
+
+# ====================================================================================
+# FUNCTIONAL REQUIREMENTS
+# ====================================================================================
+
+requirements:
+  - id: "LAYER-CA-002-07-02-REQ-001"
+    title: "Simple Rolling Drift Calculation"
+    description: "Fallback drift analysis when CA-003-01 unavailable"
+    acceptance_criteria:
+      - "Calculate 7-day, 30-day, 90-day rolling correlation windows"
+      - "Compute drift magnitude: difference from current correlation"
+      - "Detect drift direction: strengthening/weakening/stable"
+      - "Estimate simple linear trend for near-term forecast"
+      - "Provide basic confidence based on historical variance"
+
+  - id: "LAYER-CA-002-07-02-REQ-002"
+    title: "CA-003-01 Forecast Integration"
+    description: "Use ensemble forecasts when available"
+    acceptance_criteria:
+      - "Fetch forecasts from FEATURE-CA-003-01 API"
+      - "Extract drift predictions for multiple time horizons"
+      - "Parse confidence intervals from ensemble models"
+      - "Gracefully fallback to simple drift if CA-003 fails"
+      - "Log CA-003 availability status"
+
+  - id: "LAYER-CA-002-07-02-REQ-003"
+    title: "Stability Window Identification"
+    description: "Identify optimal timing windows for exploitation"
+    acceptance_criteria:
+      - "Stable window: drift < 0.05 points over 30 days"
+      - "Unstable window: drift >= 0.15 points over 30 days"
+      - "Moderate stability: between stable and unstable thresholds"
+      - "Return window start/end dates with confidence"
+      - "Rank multiple windows by stability and duration"
+
+  - id: "LAYER-CA-002-07-02-REQ-004"
+    title: "Drift Magnitude Assessment"
+    description: "Quantify and categorize drift severity"
+    acceptance_criteria:
+      - "Negligible: |drift| < 0.05"
+      - "Minor: 0.05 <= |drift| < 0.10"
+      - "Moderate: 0.10 <= |drift| < 0.15"
+      - "Significant: |drift| >= 0.15"
+      - "Provide historical context for drift magnitude"
+
+  - id: "LAYER-CA-002-07-02-REQ-005"
+    title: "Timing Recommendation Generation"
+    description: "Actionable timing guidance for MVP deployment"
+    acceptance_criteria:
+      - "DEPLOY_NOW: stable with high confidence"
+      - "DEPLOY_SOON: stable window closing"
+      - "WAIT: entering unstable period"
+      - "MONITOR: insufficient data for recommendation"
+      - "Include confidence level and reasoning"
+
+# ====================================================================================
+# TECHNICAL SPECIFICATIONS
+# ====================================================================================
+
+technical_specs:
+  class_design:
+    - "DriftAnalyzer: Main analyzer class"
+    - "DriftAnalysis: Output dataclass"
+    - "DriftMagnitude: Enum (NEGLIGIBLE, MINOR, MODERATE, SIGNIFICANT)"
+    - "TimingRecommendation: Enum (DEPLOY_NOW, DEPLOY_SOON, WAIT, MONITOR)"
+    - "StabilityWindow: Dataclass for time windows"
+
+  data_structures:
+    drift_analysis:
+      fields:
+        - "current_drift: float  # current rate of change"
+        - "drift_magnitude: DriftMagnitude"
+        - "drift_direction: str  # strengthening/weakening/stable"
+        - "forecast_7day: Optional[float]"
+        - "forecast_30day: Optional[float]"
+        - "forecast_90day: Optional[float]"
+        - "forecast_confidence: Optional[float]  # 0.0 to 1.0"
+        - "forecast_source: str  # 'CA-003-01' or 'simple_rolling'"
+        - "stable_windows: List[StabilityWindow]"
+        - "timing_recommendation: TimingRecommendation"
+        - "recommendation_confidence: float"
+        - "recommendation_reasoning: str"
+    
+    stability_window:
+      fields:
+        - "start_date: datetime"
+        - "end_date: datetime"
+        - "duration_days: int"
+        - "stability_score: float"
+        - "average_correlation: float"
+        - "max_drift: float"
+
+  algorithms:
+    simple_rolling_drift: |
+      1. Calculate rolling correlations (7, 30, 90 day windows)
+      2. Compute first derivative (rate of change) for each window
+      3. Average derivatives across windows for overall drift
+      4. Linear extrapolation for simple forecasts
+      5. Standard deviation of rolling corr for confidence bounds
+    
+    ca003_integration: |
+      1. Check CA-003-01 API availability
+      2. Request ensemble forecasts for correlation pair
+      3. Parse ARIMA, Prophet, LSTM, XGBoost predictions
+      4. Extract weighted ensemble forecast
+      5. Capture confidence intervals from ensemble
+      6. On failure: log error and fallback to simple rolling
+    
+    timing_recommendation_logic: |
+      IF current_drift < 0.05 AND forecast_30day_drift < 0.05 AND confidence > 0.7:
+        DEPLOY_NOW
+      ELIF stable_window_exists_next_60_days AND window_duration > 30_days:
+        DEPLOY_SOON
+      ELIF forecast_30day_drift > 0.15:
+        WAIT
+      ELSE:
+        MONITOR
+
+# ====================================================================================
+# TESTING REQUIREMENTS
+# ====================================================================================
+
+testing:
+  unit_tests:
+    - "test_simple_rolling_drift_stable_series"
+    - "test_simple_rolling_drift_trending_series"
+    - "test_drift_magnitude_classification"
+    - "test_drift_direction_detection"
+    - "test_stability_window_identification"
+    - "test_timing_recommendation_deploy_now"
+    - "test_timing_recommendation_wait"
+    - "test_timing_recommendation_monitor"
+    - "test_ca003_integration_success"
+    - "test_ca003_integration_fallback"
+  
+  integration_tests:
+    - "test_real_correlation_timeseries_drift"
+    - "test_ca003_api_integration_live"
+    - "test_graceful_degradation_ca003_down"
+
+# ====================================================================================
+# DEPENDENCIES
+# ====================================================================================
+
+dependencies:
+  internal:
+    - "FEATURE-CA-003-01: Drift forecasts (optional, graceful degradation)"
+  
+  external:
+    - "pandas>=2.0.0"
+    - "numpy>=1.24.0"
+    - "aiohttp>=3.8.0  # for CA-003 API calls"
+
+# ====================================================================================
+# PERFORMANCE REQUIREMENTS
+# ====================================================================================
+
+performance:
+  - "Simple rolling drift calculation: <200ms"
+  - "CA-003-01 forecast fetch: <2 seconds (with timeout)"
+  - "Stability window identification: <300ms"
+  - "Complete drift analysis: <2.5 seconds (including CA-003 integration)"
+
+# ====================================================================================
+# CONFIGURATION
+# ====================================================================================
+
+configuration:
+  drift_thresholds:
+    negligible: 0.05
+    minor: 0.10
+    moderate: 0.15
+  
+  stability_thresholds:
+    stable_drift_max: 0.05
+    unstable_drift_min: 0.15
+  
+  rolling_windows:
+    short_term: 7  # days
+    medium_term: 30  # days
+    long_term: 90  # days
+  
+  ca003_api:
+    base_url: "http://ca-003-api:8000"  # or from environment
+    timeout_seconds: 2
+    retry_attempts: 2

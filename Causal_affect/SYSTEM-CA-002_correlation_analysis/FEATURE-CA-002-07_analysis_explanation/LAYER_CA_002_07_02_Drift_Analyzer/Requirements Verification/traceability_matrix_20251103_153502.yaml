@@ -1,0 +1,136 @@
+matrix_metadata:
+  timestamp: '20251103_153502'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping: []
+implementation_to_requirement_mapping:
+- implementation_file: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-07_analysis_explanation/LAYER_CA_002_07_02_Drift_Analyzer/src/implementation.py
+  lines: 480
+  methods:
+  - name: __post_init__
+    lines: 22-26
+  - name: __init__
+    lines: 30-43
+  - name: fit
+    lines: 44-59
+  - name: detect_drift
+    lines: 60-99
+  - name: _ks_test
+    lines: 100-138
+  - name: _chi2_test
+    lines: 139-186
+  - name: _psi_test
+    lines: 187-237
+  - name: _wasserstein_test
+    lines: 238-277
+  - name: get_drift_report
+    lines: 278-304
+  - name: _calculate_drift_trend
+    lines: 305-326
+  - name: __init__
+    lines: 330-343
+  - name: update
+    lines: 344-376
+  - name: get_drift_info
+    lines: 377-402
+  - name: __init__
+    lines: 406-410
+  - name: add_drift_result
+    lines: 411-420
+  - name: plot_drift_timeline
+    lines: 421-445
+  - name: plot_feature_drift
+    lines: 446-456
+  classes:
+  - name: DriftResult
+    type: class
+    lines: 14-26
+  - name: DriftAnalyzer
+    type: class
+    lines: 27-326
+  - name: ConceptDriftDetector
+    type: class
+    lines: 327-402
+  - name: DataDriftVisualizer
+    type: class
+    lines: 403-480
+  implements_requirements: []
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-07_analysis_explanation/LAYER_CA_002_07_02_Drift_Analyzer/tests/test_generated_20251103_153352.py
+  test_count: 0
+  implementation_files:
+  - cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-07_analysis_explanation/LAYER_CA_002_07_02_Drift_Analyzer/src/implementation.py
+  methods_tested:
+  - __post_init__
+  - __init__
+  - fit
+  - detect_drift
+  - _ks_test
+  - _chi2_test
+  - _psi_test
+  - _wasserstein_test
+  - get_drift_report
+  - _calculate_drift_trend
+  - __init__
+  - update
+  - get_drift_info
+  - __init__
+  - add_drift_result
+  - plot_drift_timeline
+  - plot_feature_drift
+  classes_tested:
+  - DriftResult
+  - DriftAnalyzer
+  - ConceptDriftDetector
+  - DataDriftVisualizer
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-07_analysis_explanation/LAYER_CA_002_07_02_Drift_Analyzer/src/implementation.py:22-26
+  method_name: __post_init__
+  requirement: AC-001
+  test: test___post_init__
+  test_file: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-07_analysis_explanation/LAYER_CA_002_07_02_Drift_Analyzer/tests/test_generated_20251103_153352.py
+  verified: true
+- implementation_location: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-07_analysis_explanation/LAYER_CA_002_07_02_Drift_Analyzer/src/implementation.py:30-43
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-07_analysis_explanation/LAYER_CA_002_07_02_Drift_Analyzer/tests/test_generated_20251103_153352.py
+  verified: true
+- implementation_location: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-07_analysis_explanation/LAYER_CA_002_07_02_Drift_Analyzer/src/implementation.py:44-59
+  method_name: fit
+  requirement: AC-001
+  test: test_fit
+  test_file: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-07_analysis_explanation/LAYER_CA_002_07_02_Drift_Analyzer/tests/test_generated_20251103_153352.py
+  verified: true
+- implementation_location: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-07_analysis_explanation/LAYER_CA_002_07_02_Drift_Analyzer/src/implementation.py:60-99
+  method_name: detect_drift
+  requirement: AC-001
+  test: test_detect_drift
+  test_file: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-07_analysis_explanation/LAYER_CA_002_07_02_Drift_Analyzer/tests/test_generated_20251103_153352.py
+  verified: true
+- implementation_location: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-07_analysis_explanation/LAYER_CA_002_07_02_Drift_Analyzer/src/implementation.py:100-138
+  method_name: _ks_test
+  requirement: AC-001
+  test: test__ks_test
+  test_file: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-07_analysis_explanation/LAYER_CA_002_07_02_Drift_Analyzer/tests/test_generated_20251103_153352.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 0
+  requirements_traced: 0
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

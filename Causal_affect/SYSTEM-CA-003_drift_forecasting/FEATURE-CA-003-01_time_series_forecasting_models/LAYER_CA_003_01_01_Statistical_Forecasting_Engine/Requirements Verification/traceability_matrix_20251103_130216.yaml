@@ -1,0 +1,144 @@
+matrix_metadata:
+  timestamp: '20251103_130216'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping: []
+implementation_to_requirement_mapping:
+- implementation_file: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-003_drift_forecasting/FEATURE-CA-003-01_time_series_forecasting_models/LAYER_CA_003_01_01_Statistical_Forecasting_Engine/src/implementation.py
+  lines: 484
+  methods:
+  - name: __init__
+    lines: 50-62
+  - name: fit
+    lines: 63-101
+  - name: predict
+    lines: 102-129
+  - name: _auto_select_model
+    lines: 130-149
+  - name: _fit_arima
+    lines: 150-157
+  - name: _fit_sarima
+    lines: 158-170
+  - name: _fit_exponential_smoothing
+    lines: 171-187
+  - name: _auto_arima_order
+    lines: 188-192
+  - name: _generate_forecast
+    lines: 193-223
+  - name: _get_fitted_values
+    lines: 224-230
+  - name: _get_residuals
+    lines: 231-237
+  - name: _calculate_metrics
+    lines: 238-263
+  - name: plot_diagnostics
+    lines: 264-300
+  - name: get_model_summary
+    lines: 301-312
+  - name: __init__
+    lines: 316-320
+  - name: load_data
+    lines: 321-343
+  - name: forecast
+    lines: 344-366
+  - name: compare_models
+    lines: 367-393
+  - name: plot_forecast
+    lines: 394-440
+  - name: check_stationarity
+    lines: 441-468
+  - name: difference_series
+    lines: 469-479
+  classes:
+  - name: ForecastResult
+    type: class
+    lines: 33-42
+  - name: StatisticalForecastingEngine
+    type: class
+    lines: 43-312
+  - name: TimeSeriesForecaster
+    type: class
+    lines: 313-484
+  implements_requirements: []
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-003_drift_forecasting/FEATURE-CA-003-01_time_series_forecasting_models/LAYER_CA_003_01_01_Statistical_Forecasting_Engine/tests/test_generated_20251103_130057.py
+  test_count: 0
+  implementation_files:
+  - cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-003_drift_forecasting/FEATURE-CA-003-01_time_series_forecasting_models/LAYER_CA_003_01_01_Statistical_Forecasting_Engine/src/implementation.py
+  methods_tested:
+  - __init__
+  - fit
+  - predict
+  - _auto_select_model
+  - _fit_arima
+  - _fit_sarima
+  - _fit_exponential_smoothing
+  - _auto_arima_order
+  - _generate_forecast
+  - _get_fitted_values
+  - _get_residuals
+  - _calculate_metrics
+  - plot_diagnostics
+  - get_model_summary
+  - __init__
+  - load_data
+  - forecast
+  - compare_models
+  - plot_forecast
+  - check_stationarity
+  - difference_series
+  classes_tested:
+  - ForecastResult
+  - StatisticalForecastingEngine
+  - TimeSeriesForecaster
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-003_drift_forecasting/FEATURE-CA-003-01_time_series_forecasting_models/LAYER_CA_003_01_01_Statistical_Forecasting_Engine/src/implementation.py:50-62
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-003_drift_forecasting/FEATURE-CA-003-01_time_series_forecasting_models/LAYER_CA_003_01_01_Statistical_Forecasting_Engine/tests/test_generated_20251103_130057.py
+  verified: true
+- implementation_location: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-003_drift_forecasting/FEATURE-CA-003-01_time_series_forecasting_models/LAYER_CA_003_01_01_Statistical_Forecasting_Engine/src/implementation.py:63-101
+  method_name: fit
+  requirement: AC-001
+  test: test_fit
+  test_file: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-003_drift_forecasting/FEATURE-CA-003-01_time_series_forecasting_models/LAYER_CA_003_01_01_Statistical_Forecasting_Engine/tests/test_generated_20251103_130057.py
+  verified: true
+- implementation_location: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-003_drift_forecasting/FEATURE-CA-003-01_time_series_forecasting_models/LAYER_CA_003_01_01_Statistical_Forecasting_Engine/src/implementation.py:102-129
+  method_name: predict
+  requirement: AC-001
+  test: test_predict
+  test_file: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-003_drift_forecasting/FEATURE-CA-003-01_time_series_forecasting_models/LAYER_CA_003_01_01_Statistical_Forecasting_Engine/tests/test_generated_20251103_130057.py
+  verified: true
+- implementation_location: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-003_drift_forecasting/FEATURE-CA-003-01_time_series_forecasting_models/LAYER_CA_003_01_01_Statistical_Forecasting_Engine/src/implementation.py:130-149
+  method_name: _auto_select_model
+  requirement: AC-001
+  test: test__auto_select_model
+  test_file: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-003_drift_forecasting/FEATURE-CA-003-01_time_series_forecasting_models/LAYER_CA_003_01_01_Statistical_Forecasting_Engine/tests/test_generated_20251103_130057.py
+  verified: true
+- implementation_location: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-003_drift_forecasting/FEATURE-CA-003-01_time_series_forecasting_models/LAYER_CA_003_01_01_Statistical_Forecasting_Engine/src/implementation.py:150-157
+  method_name: _fit_arima
+  requirement: AC-001
+  test: test__fit_arima
+  test_file: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-003_drift_forecasting/FEATURE-CA-003-01_time_series_forecasting_models/LAYER_CA_003_01_01_Statistical_Forecasting_Engine/tests/test_generated_20251103_130057.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 0
+  requirements_traced: 0
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

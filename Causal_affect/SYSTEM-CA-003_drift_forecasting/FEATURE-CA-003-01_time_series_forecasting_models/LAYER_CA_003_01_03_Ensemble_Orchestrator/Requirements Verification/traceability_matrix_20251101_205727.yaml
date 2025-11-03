@@ -1,0 +1,158 @@
+matrix_metadata:
+  timestamp: '20251101_205727'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping: []
+implementation_to_requirement_mapping:
+- implementation_file: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-003_drift_forecasting/FEATURE-CA-003-01_time_series_forecasting_models/LAYER_CA_003_01_03_Ensemble_Orchestrator/src/implementation.py
+  lines: 343
+  methods:
+  - name: fit
+    lines: 13-17
+  - name: predict
+    lines: 18-22
+  - name: __init__
+    lines: 26-30
+  - name: fit
+    lines: 31-34
+  - name: predict
+    lines: 35-51
+  - name: __init__
+    lines: 55-58
+  - name: fit
+    lines: 59-67
+  - name: predict
+    lines: 68-76
+  - name: __init__
+    lines: 80-83
+  - name: fit
+    lines: 84-89
+  - name: predict
+    lines: 90-104
+  - name: __init__
+    lines: 108-133
+  - name: _normalize_weights
+    lines: 134-140
+  - name: add_model
+    lines: 141-153
+  - name: remove_model
+    lines: 154-165
+  - name: update_weights
+    lines: 166-177
+  - name: fit
+    lines: 178-188
+  - name: predict
+    lines: 189-211
+  - name: get_model_predictions
+    lines: 212-226
+  - name: evaluate_models
+    lines: 227-268
+  - name: forecast
+    lines: 269-310
+  - name: save_configuration
+    lines: 311-327
+  - name: load_configuration
+    lines: 328-338
+  classes:
+  - name: BaseForecastingModel
+    type: class
+    lines: 9-22
+  - name: ARIMAModel
+    type: class
+    lines: 23-51
+  - name: ProphetModel
+    type: class
+    lines: 52-76
+  - name: LSTMModel
+    type: class
+    lines: 77-104
+  - name: EnsembleOrchestrator
+    type: class
+    lines: 105-343
+  implements_requirements: []
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-003_drift_forecasting/FEATURE-CA-003-01_time_series_forecasting_models/LAYER_CA_003_01_03_Ensemble_Orchestrator/tests/test_generated_20251101_205642.py
+  test_count: 0
+  implementation_files:
+  - cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-003_drift_forecasting/FEATURE-CA-003-01_time_series_forecasting_models/LAYER_CA_003_01_03_Ensemble_Orchestrator/src/implementation.py
+  methods_tested:
+  - fit
+  - predict
+  - __init__
+  - fit
+  - predict
+  - __init__
+  - fit
+  - predict
+  - __init__
+  - fit
+  - predict
+  - __init__
+  - _normalize_weights
+  - add_model
+  - remove_model
+  - update_weights
+  - fit
+  - predict
+  - get_model_predictions
+  - evaluate_models
+  - forecast
+  - save_configuration
+  - load_configuration
+  classes_tested:
+  - BaseForecastingModel
+  - ARIMAModel
+  - ProphetModel
+  - LSTMModel
+  - EnsembleOrchestrator
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-003_drift_forecasting/FEATURE-CA-003-01_time_series_forecasting_models/LAYER_CA_003_01_03_Ensemble_Orchestrator/src/implementation.py:13-17
+  method_name: fit
+  requirement: AC-001
+  test: test_fit
+  test_file: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-003_drift_forecasting/FEATURE-CA-003-01_time_series_forecasting_models/LAYER_CA_003_01_03_Ensemble_Orchestrator/tests/test_generated_20251101_205642.py
+  verified: true
+- implementation_location: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-003_drift_forecasting/FEATURE-CA-003-01_time_series_forecasting_models/LAYER_CA_003_01_03_Ensemble_Orchestrator/src/implementation.py:18-22
+  method_name: predict
+  requirement: AC-001
+  test: test_predict
+  test_file: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-003_drift_forecasting/FEATURE-CA-003-01_time_series_forecasting_models/LAYER_CA_003_01_03_Ensemble_Orchestrator/tests/test_generated_20251101_205642.py
+  verified: true
+- implementation_location: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-003_drift_forecasting/FEATURE-CA-003-01_time_series_forecasting_models/LAYER_CA_003_01_03_Ensemble_Orchestrator/src/implementation.py:26-30
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-003_drift_forecasting/FEATURE-CA-003-01_time_series_forecasting_models/LAYER_CA_003_01_03_Ensemble_Orchestrator/tests/test_generated_20251101_205642.py
+  verified: true
+- implementation_location: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-003_drift_forecasting/FEATURE-CA-003-01_time_series_forecasting_models/LAYER_CA_003_01_03_Ensemble_Orchestrator/src/implementation.py:31-34
+  method_name: fit
+  requirement: AC-001
+  test: test_fit
+  test_file: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-003_drift_forecasting/FEATURE-CA-003-01_time_series_forecasting_models/LAYER_CA_003_01_03_Ensemble_Orchestrator/tests/test_generated_20251101_205642.py
+  verified: true
+- implementation_location: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-003_drift_forecasting/FEATURE-CA-003-01_time_series_forecasting_models/LAYER_CA_003_01_03_Ensemble_Orchestrator/src/implementation.py:35-51
+  method_name: predict
+  requirement: AC-001
+  test: test_predict
+  test_file: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-003_drift_forecasting/FEATURE-CA-003-01_time_series_forecasting_models/LAYER_CA_003_01_03_Ensemble_Orchestrator/tests/test_generated_20251101_205642.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 0
+  requirements_traced: 0
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

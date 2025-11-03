@@ -1,0 +1,127 @@
+matrix_metadata:
+  timestamp: '20251103_153703'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping: []
+implementation_to_requirement_mapping:
+- implementation_file: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-07_analysis_explanation/LAYER_CA_002_07_03_Natural_Language_Generator/src/implementation.py
+  lines: 486
+  methods:
+  - name: strength
+    lines: 41-57
+  - name: direction
+    lines: 58-67
+  - name: is_significant
+    lines: 68-72
+  - name: __init__
+    lines: 76-87
+  - name: _load_templates
+    lines: 88-116
+  - name: generate_explanation
+    lines: 117-194
+  - name: generate_batch_summary
+    lines: 195-285
+  - name: explain_correlation_meaning
+    lines: 286-362
+  - name: _get_interpretation
+    lines: 363-380
+  - name: _get_strength_interpretation
+    lines: 381-392
+  - name: _get_method_explanation
+    lines: 393-401
+  - name: _get_contextual_interpretation
+    lines: 402-416
+  - name: format_correlation_matrix
+    lines: 417-450
+  - name: create_correlation_report
+    lines: 451-461
+  classes:
+  - name: CorrelationStrength
+    type: class
+    lines: 12-21
+  - name: CorrelationDirection
+    type: class
+    lines: 22-29
+  - name: CorrelationResult
+    type: class
+    lines: 30-72
+  - name: NaturalLanguageGenerator
+    type: class
+    lines: 73-486
+  implements_requirements: []
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-07_analysis_explanation/LAYER_CA_002_07_03_Natural_Language_Generator/tests/test_generated_20251103_153532.py
+  test_count: 0
+  implementation_files:
+  - cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-07_analysis_explanation/LAYER_CA_002_07_03_Natural_Language_Generator/src/implementation.py
+  methods_tested:
+  - strength
+  - direction
+  - is_significant
+  - __init__
+  - _load_templates
+  - generate_explanation
+  - generate_batch_summary
+  - explain_correlation_meaning
+  - _get_interpretation
+  - _get_strength_interpretation
+  - _get_method_explanation
+  - _get_contextual_interpretation
+  - format_correlation_matrix
+  - create_correlation_report
+  classes_tested:
+  - CorrelationStrength
+  - CorrelationDirection
+  - CorrelationResult
+  - NaturalLanguageGenerator
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-07_analysis_explanation/LAYER_CA_002_07_03_Natural_Language_Generator/src/implementation.py:41-57
+  method_name: strength
+  requirement: AC-001
+  test: test_strength
+  test_file: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-07_analysis_explanation/LAYER_CA_002_07_03_Natural_Language_Generator/tests/test_generated_20251103_153532.py
+  verified: true
+- implementation_location: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-07_analysis_explanation/LAYER_CA_002_07_03_Natural_Language_Generator/src/implementation.py:58-67
+  method_name: direction
+  requirement: AC-001
+  test: test_direction
+  test_file: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-07_analysis_explanation/LAYER_CA_002_07_03_Natural_Language_Generator/tests/test_generated_20251103_153532.py
+  verified: true
+- implementation_location: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-07_analysis_explanation/LAYER_CA_002_07_03_Natural_Language_Generator/src/implementation.py:68-72
+  method_name: is_significant
+  requirement: AC-001
+  test: test_is_significant
+  test_file: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-07_analysis_explanation/LAYER_CA_002_07_03_Natural_Language_Generator/tests/test_generated_20251103_153532.py
+  verified: true
+- implementation_location: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-07_analysis_explanation/LAYER_CA_002_07_03_Natural_Language_Generator/src/implementation.py:76-87
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-07_analysis_explanation/LAYER_CA_002_07_03_Natural_Language_Generator/tests/test_generated_20251103_153532.py
+  verified: true
+- implementation_location: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-07_analysis_explanation/LAYER_CA_002_07_03_Natural_Language_Generator/src/implementation.py:88-116
+  method_name: _load_templates
+  requirement: AC-001
+  test: test__load_templates
+  test_file: cloned_repos/business_ventures/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-07_analysis_explanation/LAYER_CA_002_07_03_Natural_Language_Generator/tests/test_generated_20251103_153532.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 0
+  requirements_traced: 0
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

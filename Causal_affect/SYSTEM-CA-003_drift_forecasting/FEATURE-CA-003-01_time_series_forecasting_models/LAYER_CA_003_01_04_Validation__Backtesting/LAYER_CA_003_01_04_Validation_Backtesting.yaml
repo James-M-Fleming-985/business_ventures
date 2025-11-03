@@ -1,0 +1,258 @@
+# ====================================================================================
+# LAYER REQUIREMENTS: Validation & Backtesting
+# ====================================================================================
+# LAYER ID: LAYER-CA-003-01-04
+# FEATURE: FEATURE-CA-003-01 (Time-Series Forecasting Models)
+# ====================================================================================
+
+metadata:
+  layer_id: "LAYER-CA-003-01-04"
+  layer_name: "Validation & Backtesting"
+  feature_id: "FEATURE-CA-003-01"
+  version: "1.0.0"
+  created_date: "2025-11-01"
+  owner: "Causal Affect Team"
+
+# ====================================================================================
+# LAYER OVERVIEW
+# ====================================================================================
+
+overview:
+  description: |
+    Continuous validation and backtesting framework that ensures forecast accuracy 
+    meets 70%+ target through historical performance validation, rolling window 
+    testing, and real-time accuracy monitoring. Provides diagnostic reports and 
+    model performance visualization.
+  
+  responsibility: |
+    - Historical backtesting on 12+ months of data
+    - Rolling window cross-validation
+    - Forecast accuracy metrics calculation (RMSE, MAE, MAPE)
+    - Model diagnostics and residual analysis
+    - Accuracy reporting and visualization
+    - Performance degradation detection
+
+  input: "Historical correlation data, forecasts, actuals"
+  output: "Validation reports with accuracy metrics (ValidationReport)"
+  technology: "pandas, numpy, matplotlib, scikit-learn"
+
+# ====================================================================================
+# FUNCTIONAL REQUIREMENTS
+# ====================================================================================
+
+requirements:
+  - id: "LAYER-CA-003-01-04-REQ-001"
+    title: "Historical Backtesting"
+    description: "Validate forecast accuracy on historical data"
+    acceptance_criteria:
+      - "Backtest on 12+ months historical correlation data"
+      - "Walk-forward validation: train on past, test on future"
+      - "Calculate accuracy for 7, 30, 90 day forecasts"
+      - "Verify ensemble accuracy > 70% on 30-day forecasts"
+      - "Generate backtest summary report"
+
+  - id: "LAYER-CA-003-01-04-REQ-002"
+    title: "Rolling Window Cross-Validation"
+    description: "Time-series cross-validation for model robustness"
+    acceptance_criteria:
+      - "Rolling window: train_size=180 days, test_size=30 days"
+      - "Step size: 30 days (monthly rolling)"
+      - "Calculate metrics for each window"
+      - "Aggregate results across all windows"
+      - "Detect performance consistency over time"
+
+  - id: "LAYER-CA-003-01-04-REQ-003"
+    title: "Accuracy Metrics Calculation"
+    description: "Comprehensive forecast accuracy measurement"
+    acceptance_criteria:
+      - "RMSE: Root Mean Squared Error"
+      - "MAE: Mean Absolute Error"
+      - "MAPE: Mean Absolute Percentage Error"
+      - "Accuracy: 1 - (MAE / mean(actuals))"
+      - "Directional accuracy: % correct trend predictions"
+
+  - id: "LAYER-CA-003-01-04-REQ-004"
+    title: "Model Diagnostics"
+    description: "Residual analysis and model health checks"
+    acceptance_criteria:
+      - "Residual distribution analysis (normality test)"
+      - "Autocorrelation in residuals (Ljung-Box test)"
+      - "Heteroscedasticity test (constant variance)"
+      - "Bias detection (mean residual near zero)"
+      - "Outlier identification and reporting"
+
+  - id: "LAYER-CA-003-01-04-REQ-005"
+    title: "Visualization Generation"
+    description: "Generate diagnostic plots and charts"
+    acceptance_criteria:
+      - "Actual vs Predicted scatter plot"
+      - "Residual plot over time"
+      - "Forecast vs Actual time series"
+      - "Accuracy metrics bar chart by model"
+      - "Confidence interval coverage plot"
+
+  - id: "LAYER-CA-003-01-04-REQ-006"
+    title: "Performance Degradation Detection"
+    description: "Alert when forecast quality declines"
+    acceptance_criteria:
+      - "Monitor rolling 30-day accuracy"
+      - "Alert if accuracy < 70% for 7+ consecutive days"
+      - "Detect accuracy drops > 10 percentage points"
+      - "Trigger model retraining recommendations"
+      - "Log degradation events"
+
+# ====================================================================================
+# TECHNICAL SPECIFICATIONS
+# ====================================================================================
+
+technical_specs:
+  class_design:
+    - "ValidationEngine: Main validation orchestrator"
+    - "BacktestRunner: Historical backtesting logic"
+    - "CrossValidator: Rolling window cross-validation"
+    - "MetricsCalculator: Accuracy metrics computation"
+    - "DiagnosticAnalyzer: Residual and model diagnostics"
+    - "ValidationReport: Output dataclass"
+
+  data_structures:
+    validation_report:
+      fields:
+        - "model_name: str"
+        - "backtest_period: Tuple[datetime, datetime]"
+        - "rmse: float"
+        - "mae: float"
+        - "mape: float"
+        - "accuracy: float"
+        - "directional_accuracy: float"
+        - "forecast_horizon: str  # '7day', '30day', '90day'"
+        - "num_forecasts: int"
+        - "residual_stats: Dict[str, float]"
+        - "diagnostics: Dict[str, Any]"
+        - "visualization_paths: List[str]"
+        - "generated_at: datetime"
+    
+    backtest_result:
+      fields:
+        - "forecast_date: datetime"
+        - "actual_value: float"
+        - "predicted_value: float"
+        - "confidence_lower: float"
+        - "confidence_upper: float"
+        - "error: float"
+        - "absolute_error: float"
+        - "percentage_error: float"
+        - "in_confidence_interval: bool"
+
+  algorithms:
+    walk_forward_validation: |
+      1. Start with initial training window (180 days)
+      2. Train models on training data
+      3. Generate forecast for next 30 days
+      4. Compare forecast to actual values
+      5. Calculate error metrics
+      6. Slide window forward by 30 days
+      7. Repeat until end of historical data
+      8. Aggregate metrics across all windows
+    
+    accuracy_calculation: |
+      RMSE = sqrt(mean((predicted - actual)²))
+      MAE = mean(|predicted - actual|)
+      MAPE = mean(|predicted - actual| / |actual|) * 100
+      Accuracy = 1 - (MAE / mean(actual))
+      Directional = count(sign(pred_diff) == sign(actual_diff)) / n
+    
+    residual_diagnostics: |
+      1. Calculate residuals = actual - predicted
+      2. Normality: Shapiro-Wilk test (p > 0.05 = normal)
+      3. Autocorrelation: Ljung-Box test (p > 0.05 = no autocorr)
+      4. Mean residual (should be ~0 for unbiased)
+      5. Std residual (constant variance check)
+      6. Plot histogram, Q-Q plot, ACF plot
+
+# ====================================================================================
+# TESTING REQUIREMENTS
+# ====================================================================================
+
+testing:
+  unit_tests:
+    - "test_backtest_runner_single_window"
+    - "test_rolling_window_cross_validation"
+    - "test_rmse_calculation"
+    - "test_mae_calculation"
+    - "test_mape_calculation"
+    - "test_directional_accuracy"
+    - "test_residual_normality_test"
+    - "test_autocorrelation_detection"
+    - "test_performance_degradation_alert"
+    - "test_visualization_generation"
+  
+  integration_tests:
+    - "test_full_backtest_pipeline"
+    - "test_real_historical_data_validation"
+    - "test_ensemble_meets_70_percent_target"
+
+# ====================================================================================
+# DEPENDENCIES
+# ====================================================================================
+
+dependencies:
+  external:
+    - "pandas>=2.0.0"
+    - "numpy>=1.24.0"
+    - "scikit-learn>=1.3.0"
+    - "matplotlib>=3.7.0"
+    - "scipy>=1.10.0"
+    - "statsmodels>=0.14.0  # for statistical tests"
+
+# ====================================================================================
+# PERFORMANCE REQUIREMENTS
+# ====================================================================================
+
+performance:
+  - "Single backtest window: <5 seconds"
+  - "12-month rolling validation: <2 minutes"
+  - "Metrics calculation: <1 second"
+  - "Visualization generation: <3 seconds per chart"
+
+# ====================================================================================
+# CONFIGURATION
+# ====================================================================================
+
+configuration:
+  validation:
+    backtest_months: 12
+    train_window_days: 180
+    test_window_days: 30
+    step_size_days: 30
+    accuracy_target: 0.70  # 70%
+    degradation_threshold: 0.60  # alert if < 60%
+    degradation_window_days: 7
+  
+  metrics:
+    - "RMSE"
+    - "MAE"
+    - "MAPE"
+    - "Accuracy"
+    - "DirectionalAccuracy"
+  
+  diagnostics:
+    normality_test: "shapiro"
+    autocorrelation_test: "ljung_box"
+    significance_level: 0.05
+
+# ====================================================================================
+# VALIDATION SUCCESS CRITERIA
+# ====================================================================================
+
+success_criteria:
+  primary:
+    - "Ensemble 30-day forecast accuracy >= 70%"
+    - "Backtesting on 12+ months historical data"
+    - "Residuals pass normality test (p > 0.05)"
+    - "No significant autocorrelation in residuals"
+  
+  secondary:
+    - "Individual model accuracy >= 60%"
+    - "Confidence interval coverage >= 90%"
+    - "Directional accuracy >= 65%"
+    - "MAPE < 15% for ensemble"
