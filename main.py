@@ -24,6 +24,14 @@ logger = logging.getLogger(__name__)
 causal_affect_path = Path(__file__).parent / "Causal_affect"
 sys.path.insert(0, str(causal_affect_path))
 
+# Import real data fetcher and analyzer
+from data_fetcher import DataFetcher
+from correlation_analyzer import CorrelationAnalyzer
+
+# Initialize services
+data_fetcher = DataFetcher()
+correlation_analyzer = CorrelationAnalyzer()
+
 # Initialize FastAPI app
 app = FastAPI(
     title="Causal Affect Platform API",
@@ -137,21 +145,34 @@ class ExplanationRequest(BaseModel):
 @app.post("/api/v1/forecast", tags=["Forecasting"])
 async def create_forecast(request: ForecastRequest):
     """
-    Generate drift forecast using ensemble or individual models.
+    Generate drift forecast using simple linear extrapolation.
     
-    This endpoint uses CA-003-01 (5-layer ensemble forecasting system) to predict
-    correlation drift over the specified horizon.
+    Uses the recent trend in the data to project future values.
     """
     try:
         logger.info(f"Forecast request: horizon={request.horizon}, model={request.model_type}")
         
-        # TODO: Import and use actual CA-003-01 feature orchestrator
-        # from SYSTEM-CA-003_drift_forecasting.FEATURE-CA-003-01_time_series_forecasting_models.src.feature_integration import FeatureOrchestrator
-        # orchestrator = FeatureOrchestrator()
-        # result = await orchestrator.generate_forecast(request.dict())
+        # Calculate simple trend from last 10 points
+        recent_data = request.data[-10:] if len(request.data) >= 10 else request.data
+        if len(recent_data) < 2:
+            raise HTTPException(status_code=400, detail="Insufficient data points for forecasting")
         
-        # Mock response for now
-        forecast_values = [float(request.data[-1] * (1 + 0.01 * i)) for i in range(1, request.horizon + 1)]
+        # Simple linear trend
+        import numpy as np
+        x = np.arange(len(recent_data))
+        y = np.array(recent_data)
+        coeffs = np.polyfit(x, y, 1)  # Linear fit
+        slope, intercept = coeffs
+        
+        # Generate forecast
+        last_x = len(recent_data) - 1
+        forecast_values = []
+        for i in range(1, request.horizon + 1):
+            predicted = slope * (last_x + i) + intercept
+            forecast_values.append(float(predicted))
+        
+        # Add confidence intervals (simple ±5% for now)
+        uncertainty_factor = 1 + (0.05 * np.sqrt(np.arange(1, request.horizon + 1)))
         
         return {
             "success": True,
@@ -161,17 +182,23 @@ async def create_forecast(request: ForecastRequest):
                 "model_type": request.model_type,
                 "confidence_level": request.confidence_level,
                 "confidence_intervals": {
-                    "lower": [v * 0.95 for v in forecast_values],
-                    "upper": [v * 1.05 for v in forecast_values]
+                    "lower": [v / u for v, u in zip(forecast_values, uncertainty_factor)],
+                    "upper": [v * u for v, u in zip(forecast_values, uncertainty_factor)]
+                },
+                "trend": {
+                    "slope": float(slope),
+                    "direction": "increasing" if slope > 0 else "decreasing"
                 }
             },
             "metadata": {
                 "data_points": len(request.data),
                 "generated_at": datetime.utcnow().isoformat(),
-                "accuracy_estimate": 0.72
+                "model": "linear_trend"
             }
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Forecast error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Forecast generation failed: {str(e)}")
@@ -191,35 +218,31 @@ async def get_forecast(forecast_id: str):
 @app.post("/api/v1/correlations", tags=["Correlation Analysis"])
 async def analyze_correlations(request: CorrelationRequest):
     """
-    Analyze correlations between variables.
+    Analyze correlations between variables using real statistical methods.
     
     Returns correlation matrix, p-values, and identifies significant relationships.
     """
     try:
         logger.info(f"Correlation analysis request: {len(request.data)} variables")
         
-        # TODO: Import and use actual CA-002 correlation analysis
-        # Mock response
-        correlations = {}
-        variables = list(request.data.keys())
-        
-        if len(variables) >= 2:
-            # Simple mock correlation
-            correlations[f"{variables[0]}_{variables[1]}"] = {
-                "coefficient": 0.87,
-                "p_value": 0.001,
-                "strength": "strong_positive",
-                "significant": True
-            }
+        # Use real correlation analyzer
+        result = correlation_analyzer.analyze_matrix(
+            data=request.data,
+            method=request.method,
+            min_threshold=request.min_threshold
+        )
         
         return {
             "success": True,
-            "correlations": correlations,
-            "method": request.method,
-            "threshold": request.min_threshold,
+            "correlation_matrix": result["matrix"],
+            "p_values": result["p_values"],
+            "variables": result["variables"],
+            "significant_pairs": result["significant_pairs"],
+            "method": result["method"],
+            "threshold": result["threshold"],
             "metadata": {
-                "variables_analyzed": len(variables),
-                "significant_correlations": len(correlations),
+                "variables_analyzed": len(result["variables"]),
+                "significant_correlations": result["total_pairs"],
                 "generated_at": datetime.utcnow().isoformat()
             }
         }
@@ -238,47 +261,42 @@ async def generate_explanation(request: ExplanationRequest):
     """
     Generate natural language explanation for correlation analysis.
     
-    Uses CA-002-07 Layer 03 (Natural Language Generator) to create human-readable
-    explanations with business context and MVP opportunities.
+    Creates human-readable explanations with business context.
     """
     try:
         logger.info(f"Explanation request: {request.var1} vs {request.var2}, r={request.correlation}")
         
-        # TODO: Import and use actual CA-002-07 NLG
-        # from SYSTEM-CA-002_correlation_analysis.FEATURE-CA-002-07_analysis_explanation.LAYER_CA_002_07_03_Natural_Language_Generator.src.implementation import NaturalLanguageGenerator
-        # nlg = NaturalLanguageGenerator(style=request.style)
-        # explanation = nlg.generate_explanation(...)
+        # Use real correlation analyzer for explanation
+        explanation_text = correlation_analyzer.generate_explanation(
+            correlation=request.correlation,
+            var1=request.var1,
+            var2=request.var2,
+            p_value=request.p_value,
+            style=request.style
+        )
         
-        # Mock explanation
-        if abs(request.correlation) >= 0.7:
+        # Classify strength and direction
+        abs_corr = abs(request.correlation)
+        if abs_corr >= 0.7:
             strength = "strong"
-        elif abs(request.correlation) >= 0.3:
+        elif abs_corr >= 0.3:
             strength = "moderate"
         else:
             strength = "weak"
             
         direction = "positive" if request.correlation > 0 else "negative"
         
-        explanation = f"There is a {strength} {direction} correlation (r={request.correlation:.3f}) between {request.var1} and {request.var2}."
-        
-        if request.p_value and request.p_value < 0.05:
-            explanation += f" This relationship is statistically significant (p={request.p_value:.4f})."
-        
         return {
             "success": True,
             "explanation": {
-                "text": explanation,
+                "text": explanation_text,
                 "strength": strength,
                 "direction": direction,
                 "statistical_significance": request.p_value < 0.05 if request.p_value else None,
-                "style": request.style
-            },
-            "business_insights": {
-                "exploitability": "high" if abs(request.correlation) >= 0.7 else "medium",
-                "mvp_potential": abs(request.correlation) >= 0.6,
-                "recommendation": "Strong candidate for MVP development" if abs(request.correlation) >= 0.7 else "Monitor for opportunity"
+                "correlation_coefficient": request.correlation
             },
             "metadata": {
+                "style": request.style,
                 "generated_at": datetime.utcnow().isoformat()
             }
         }
