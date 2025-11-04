@@ -1,0 +1,22 @@
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+numReplicas = 1
+startCommand = "uvicorn main:app --host 0.0.0.0 --port $PORT"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+
+[[services]]
+name = "causal-affect-api"
+
+[services.healthcheck]
+path = "/health"
+timeout = 100
+interval = 60
+
+[[services.autoscaling]]
+minReplicas = 1
+maxReplicas = 3
+targetCPU = 75
+targetMemory = 85
