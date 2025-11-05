@@ -219,9 +219,12 @@
                     @change="loadDriftForecast()"
                     class="px-3 py-1 bg-slate-700 border border-slate-600 rounded text-sm"
                 >
-                    <option value="Stock Price ↔ GDP">Stock Price ↔ GDP</option>
-                    <option value="Stock Price ↔ Trading Volume">Stock Price ↔ Trading Volume</option>
-                    <option value="Papers ↔ Clinical Trials">Papers ↔ Clinical Trials</option>
+                    <option value="S&P 500 Index ↔ GDP Growth (%)">S&P 500 ↔ GDP Growth</option>
+                    <option value="GDP Growth (%) ↔ Published Papers">GDP ↔ Published Papers</option>
+                    <option value="S&P 500 Index ↔ Clinical Trials">S&P 500 ↔ Clinical Trials</option>
+                    <option value="Published Papers ↔ Clinical Trials">Papers ↔ Clinical Trials</option>
+                    <option value="Global Temp (°C) ↔ GDP Growth (%)">Temperature ↔ GDP</option>
+                    <option value="S&P 500 Index ↔ Global Temp (°C)">S&P 500 ↔ Temperature</option>
                 </select>
                 <button 
                     @click="loadDriftForecast()" 
@@ -238,9 +241,10 @@
                 <div id="driftChart" class="w-full" style="height: 300px;"></div>
                 <div class="mt-2 p-3 bg-slate-900/50 rounded border border-slate-700">
                     <p class="text-slate-300 text-xs">
-                        <strong>Drift Analysis:</strong> Shows historical correlation strength (solid line) and 
-                        predicted future trend (dashed line). Green indicates strengthening correlation, 
-                        red indicates weakening. Shaded area shows confidence interval.
+                        <strong>Correlation Drift:</strong> Tracks correlation coefficient (r) over time. 
+                        Values range from -1 to +1. The solid blue line shows historical correlation strength, 
+                        while the dashed green line predicts future trends based on recent patterns. 
+                        Shaded area represents 95% confidence interval.
                     </p>
                 </div>
             </div>
@@ -249,11 +253,11 @@
             <div class="space-y-4">
                 <div class="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
                     <div class="flex items-center justify-between mb-2">
-                        <span class="text-sm text-slate-400">Current Strength</span>
+                        <span class="text-sm text-slate-400">Current Correlation</span>
                         <i data-lucide="activity" class="w-4 h-4 text-blue-400"></i>
                     </div>
                     <p class="text-2xl font-bold" x-text="driftMetrics.current || '0.85'">0.85</p>
-                    <p class="text-xs text-slate-500 mt-1">r-value</p>
+                    <p class="text-xs text-slate-500 mt-1">Correlation coefficient (r)</p>
                 </div>
                 
                 <div class="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
@@ -261,8 +265,8 @@
                         <span class="text-sm text-slate-400">30-Day Forecast</span>
                         <i data-lucide="trending-up" class="w-4 h-4 text-green-400"></i>
                     </div>
-                    <p class="text-2xl font-bold text-green-400" x-text="driftMetrics.forecast || '0.91'">0.91</p>
-                    <p class="text-xs text-green-500 mt-1">+7.1% increase</p>
+                    <p class="text-2xl font-bold" :class="parseFloat(driftMetrics.forecast) > parseFloat(driftMetrics.current) ? 'text-green-400' : 'text-red-400'" x-text="driftMetrics.forecast || '0.88'">0.88</p>
+                    <p class="text-xs text-slate-500 mt-1">Predicted r-value</p>
                 </div>
                 
                 <div class="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
@@ -271,7 +275,7 @@
                         <i data-lucide="shield" class="w-4 h-4 text-accent-400"></i>
                     </div>
                     <p class="text-2xl font-bold" x-text="driftMetrics.stability || '92'">92</p>
-                    <p class="text-xs text-slate-500 mt-1">High confidence</p>
+                    <p class="text-xs text-slate-500 mt-1">% (lower = more volatile)</p>
                 </div>
                 
                 <div class="bg-accent-500/10 rounded-lg p-3 border border-accent-500/30">

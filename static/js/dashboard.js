@@ -22,12 +22,12 @@ function dashboardData() {
             stability: '',
             explanation: ''
         },
-        selectedDriftMetric: 'Stock Price ↔ GDP',
+        selectedDriftMetric: 'S&P 500 Index ↔ GDP Growth (%)',
         driftMetrics: {
             current: '0.85',
-            forecast: '0.91',
+            forecast: '0.88',
             stability: '92',
-            insight: 'Strong upward trend suggests this correlation will strengthen over the next month.'
+            insight: 'Correlation trend analysis loading...'
         },
         
         async init() {
@@ -153,10 +153,13 @@ function dashboardData() {
                 
                 Plotly.newPlot('heatmap', [trace], layout, config);
                 
-                // Add click handler
-                document.getElementById('heatmap').on('plotly_click', (eventData) => {
+                // Add click handler for opening modal
+                const heatmapDiv = document.getElementById('heatmap');
+                heatmapDiv.removeAllListeners('plotly_click'); // Remove old listeners
+                heatmapDiv.on('plotly_click', (eventData) => {
                     const point = eventData.points[0];
                     if (point.x !== point.y) {
+                        console.log('Heatmap clicked:', point.x, point.y, point.z);
                         this.openModal({ var1: point.x, var2: point.y, r: point.z });
                     }
                 });
@@ -201,10 +204,11 @@ function dashboardData() {
                     },
                     showlegend: true,
                     legend: {
-                        x: 0.02,
-                        y: 0.98,
-                        xanchor: 'left',
+                        x: 0.5,
+                        y: 1.15,
+                        xanchor: 'center',
                         yanchor: 'top',
+                        orientation: 'horizontal',
                         bgcolor: 'rgba(30, 41, 59, 0.9)',
                         bordercolor: '#475569',
                         borderwidth: 1,
@@ -466,11 +470,51 @@ function dashboardData() {
                 const tsResponse = await fetch('/api/dashboard/timeseries');
                 const tsData = await tsResponse.json();
                 
-                // Get the first series for demonstration (could match var1/var2 in production)
-                const series = tsData.series[0];
-                const historical = series.values.slice(-30); // Last 30 days
+                // Find the two series by name
+                const series1 = tsData.series.find(s => s.name === var1);
+                const series2 = tsData.series.find(s => s.name === var2);
                 
-                // Call forecast API with historical data
+                if (!series1 || !series2) {
+                    console.warn('Could not find series for:', var1, var2);
+                    this.loadDemoForecast();
+                    return;
+                }
+                
+                // Calculate rolling correlation (30-day window)
+                const windowSize = 30;
+                const rollingCorrelations = [];
+                const correlationDates = [];
+                
+                for (let i = windowSize; i < series1.values.length; i++) {
+                    const window1 = series1.values.slice(i - windowSize, i);
+                    const window2 = series2.values.slice(i - windowSize, i);
+                    
+                    // Calculate Pearson correlation
+                    const n = window1.length;
+                    const mean1 = window1.reduce((a, b) => a + b) / n;
+                    const mean2 = window2.reduce((a, b) => a + b) / n;
+                    
+                    let numerator = 0;
+                    let sum1Sq = 0;
+                    let sum2Sq = 0;
+                    
+                    for (let j = 0; j < n; j++) {
+                        const diff1 = window1[j] - mean1;
+                        const diff2 = window2[j] - mean2;
+                        numerator += diff1 * diff2;
+                        sum1Sq += diff1 * diff1;
+                        sum2Sq += diff2 * diff2;
+                    }
+                    
+                    const correlation = numerator / Math.sqrt(sum1Sq * sum2Sq);
+                    rollingCorrelations.push(correlation);
+                    correlationDates.push(series1.dates[i]);
+                }
+                
+                // Use last 30 correlation values for forecasting
+                const historical = rollingCorrelations.slice(-30);
+                
+                // Call forecast API with correlation time series
                 const forecastResponse = await fetch('/api/v1/forecast', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -487,15 +531,15 @@ function dashboardData() {
                 const lowerCI = forecastData.forecast.confidence_intervals.lower;
                 const upperCI = forecastData.forecast.confidence_intervals.upper;
                 
-                // Generate dates
-                const historicalDates = Array.from({length: 30}, (_, i) => {
-                    const d = new Date();
-                    d.setDate(d.getDate() - (30 - i));
-                    return d.toISOString().split('T')[0];
-                });
+                // Clamp forecast values to valid correlation range [-1, 1]
+                const clampedForecast = forecast.map(v => Math.max(-1, Math.min(1, v)));
+                const clampedLower = lowerCI.map(v => Math.max(-1, Math.min(1, v)));
+                const clampedUpper = upperCI.map(v => Math.max(-1, Math.min(1, v)));
                 
+                // Generate dates
+                const historicalDates = correlationDates.slice(-30);
                 const forecastDates = Array.from({length: 30}, (_, i) => {
-                    const d = new Date();
+                    const d = new Date(correlationDates[correlationDates.length - 1]);
                     d.setDate(d.getDate() + i + 1);
                     return d.toISOString().split('T')[0];
                 });
@@ -504,7 +548,7 @@ function dashboardData() {
                 const historicalTrace = {
                     type: 'scatter',
                     mode: 'lines',
-                    name: 'Historical',
+                    name: 'Historical r',
                     x: historicalDates,
                     y: historical,
                     line: { color: '#3b82f6', width: 3 }
@@ -514,9 +558,9 @@ function dashboardData() {
                 const forecastTrace = {
                     type: 'scatter',
                     mode: 'lines',
-                    name: 'Forecast',
+                    name: 'Forecast r',
                     x: forecastDates,
-                    y: forecast,
+                    y: clampedForecast,
                     line: { color: '#10b981', width: 3, dash: 'dash' }
                 };
                 
@@ -524,9 +568,9 @@ function dashboardData() {
                 const confidenceTrace = {
                     type: 'scatter',
                     mode: 'none',
-                    name: '95% Confidence',
+                    name: '95% CI',
                     x: [...forecastDates, ...forecastDates.slice().reverse()],
-                    y: [...upperCI, ...lowerCI.slice().reverse()],
+                    y: [...clampedUpper, ...clampedLower.slice().reverse()],
                     fill: 'toself',
                     fillcolor: 'rgba(16, 185, 129, 0.2)',
                     line: { width: 0 }
@@ -543,7 +587,8 @@ function dashboardData() {
                     },
                     yaxis: { 
                         gridcolor: '#475569',
-                        title: 'Value'
+                        title: 'Correlation Coefficient (r)',
+                        range: [-1, 1]
                     },
                     showlegend: true,
                     legend: { 
@@ -561,24 +606,31 @@ function dashboardData() {
                 
                 // Update metrics based on forecast
                 const currentValue = historical[historical.length-1];
-                const forecastValue = forecast[forecast.length-1];
-                const trendChange = ((forecastValue - currentValue) / currentValue * 100).toFixed(1);
+                const forecastValue = clampedForecast[clampedForecast.length-1];
+                const absoluteChange = forecastValue - currentValue;
+                const percentChange = (absoluteChange / Math.abs(currentValue) * 100).toFixed(1);
                 
                 // Calculate stability as inverse of coefficient of variation
                 const historicalMean = historical.reduce((a, b) => a + b) / historical.length;
                 const historicalStd = Math.sqrt(historical.reduce((sum, val) => sum + Math.pow(val - historicalMean, 2), 0) / historical.length);
-                const cv = (historicalStd / historicalMean) * 100;
+                const cv = (historicalStd / Math.abs(historicalMean)) * 100;
                 const stability = Math.max(0, 100 - cv).toFixed(0);
+                
+                // Determine trend direction and message
+                let insight;
+                if (absoluteChange > 0.05) {
+                    insight = `Strengthening trend (+${Math.abs(percentChange)}%). Correlation expected to increase.`;
+                } else if (absoluteChange < -0.05) {
+                    insight = `Weakening trend (${percentChange}%). Correlation expected to decrease.`;
+                } else {
+                    insight = 'Stable trend. Correlation expected to remain relatively constant.';
+                }
                 
                 this.driftMetrics = {
                     current: currentValue.toFixed(2),
                     forecast: forecastValue.toFixed(2),
                     stability: stability,
-                    insight: forecastData.forecast.trend.direction === 'increasing'
-                        ? `Upward trend detected (+${Math.abs(trendChange)}%). Correlation expected to strengthen.`
-                        : forecastData.forecast.trend.direction === 'decreasing'
-                        ? `Downward trend detected (${trendChange}%). Monitor for weakening correlation.`
-                        : 'Stable trend. Correlation expected to remain consistent.'
+                    insight: insight
                 };
                 
             } catch (error) {

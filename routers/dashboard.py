@@ -30,14 +30,13 @@ async def get_dashboard_stats():
 @router.get("/heatmap")
 async def get_heatmap_data():
     """Get correlation matrix data for heatmap visualization"""
-    # TODO: Replace with real correlation analysis
-    # For now, return demo data
+    # Use clear, descriptive variable names
     labels = [
-        "GDP Growth",
-        "Stock Market",
-        "Global Temp",
-        "Earthquakes",
-        "Research Papers",
+        "GDP Growth (%)",
+        "S&P 500 Index",
+        "Global Temp (°C)",
+        "Earthquake Count",
+        "Published Papers",
         "Clinical Trials"
     ]
     
@@ -50,7 +49,9 @@ async def get_heatmap_data():
             if i == j:
                 row.append(1.0)
             elif i < j:
-                # Generate random correlation for demo
+                # Generate deterministic correlation based on variable pair
+                seed_val = (i * 100 + j * 10) % 89
+                np.random.seed(seed_val)
                 r = np.random.uniform(-0.8, 0.95)
                 row.append(round(r, 3))
             else:
@@ -74,22 +75,55 @@ async def get_timeseries_data(metric: str = Query("all")):
         date = today - timedelta(days=89-i)
         dates.append(date.strftime("%Y-%m-%d"))
     
-    # Create multiple series
+    # Create multiple series with clear names
     series = [
         {
-            "name": "GDP Growth",
+            "name": "GDP Growth (%)",
             "dates": dates,
-            "values": [2.5 + math.sin(i/10) + np.random.normal(0, 0.2) for i in range(90)]
+            "values": [
+                2.5 + math.sin(i/10) + np.random.normal(0, 0.2)
+                for i in range(90)
+            ]
         },
         {
-            "name": "Stock Index",
+            "name": "S&P 500 Index",
             "dates": dates,
-            "values": [3.0 + math.cos(i/8) + np.random.normal(0, 0.3) for i in range(90)]
+            "values": [
+                3.0 + math.cos(i/8) + np.random.normal(0, 0.3)
+                for i in range(90)
+            ]
         },
         {
-            "name": "Temperature Anomaly",
+            "name": "Global Temp (°C)",
             "dates": dates,
-            "values": [0.8 + math.sin(i/15) + np.random.normal(0, 0.15) for i in range(90)]
+            "values": [
+                0.8 + math.sin(i/15) + np.random.normal(0, 0.15)
+                for i in range(90)
+            ]
+        },
+        {
+            "name": "Earthquake Count",
+            "dates": dates,
+            "values": [
+                50 + math.sin(i/20) * 10 + np.random.normal(0, 5)
+                for i in range(90)
+            ]
+        },
+        {
+            "name": "Published Papers",
+            "dates": dates,
+            "values": [
+                1000 + i * 5 + np.random.normal(0, 50)
+                for i in range(90)
+            ]
+        },
+        {
+            "name": "Clinical Trials",
+            "dates": dates,
+            "values": [
+                200 + i * 2 + np.random.normal(0, 20)
+                for i in range(90)
+            ]
         }
     ]
     
@@ -103,17 +137,24 @@ async def get_timeseries_data(metric: str = Query("all")):
 @router.get("/network")
 async def get_network_data(threshold: float = Query(0.5, ge=0, le=1)):
     """Get network graph data for correlation network visualization"""
-    # Demo network with circular layout
-    labels = ["GDP", "Stocks", "Temp", "Quakes", "Papers", "Trials"]
+    # Demo network with circular layout - use clear names
+    labels = [
+        "GDP Growth (%)",
+        "S&P 500",
+        "Global Temp (°C)",
+        "Earthquakes",
+        "Papers",
+        "Trials"
+    ]
     n = len(labels)
     
     # Fixed correlation matrix (deterministic - won't change on reload)
     # Based on realistic relationships
     correlation_matrix = [
         [1.00, 0.85, 0.42, -0.12, 0.58, 0.65],  # GDP
-        [0.85, 1.00, 0.38, -0.08, 0.52, 0.72],  # Stocks
+        [0.85, 1.00, 0.38, -0.08, 0.52, 0.72],  # S&P 500
         [0.42, 0.38, 1.00, 0.25, 0.15, 0.22],   # Temp
-        [-0.12, -0.08, 0.25, 1.00, 0.31, 0.18], # Quakes
+        [-0.12, -0.08, 0.25, 1.00, 0.31, 0.18],  # Earthquakes
         [0.58, 0.52, 0.15, 0.31, 1.00, 0.88],   # Papers
         [0.65, 0.72, 0.22, 0.18, 0.88, 1.00]    # Trials
     ]
@@ -177,12 +218,22 @@ async def get_network_data(threshold: float = Query(0.5, ge=0, le=1)):
 @router.get("/leaderboard")
 async def get_leaderboard_data(sort: str = Query("strength")):
     """Get top correlations for leaderboard table"""
-    # Generate demo correlations
-    variables = ["GDP", "Stock Market", "Temperature", "Earthquakes", "Research Papers", "Clinical Trials"]
+    # Use clear variable names
+    variables = [
+        "GDP Growth (%)",
+        "S&P 500 Index",
+        "Global Temp (°C)",
+        "Earthquake Count",
+        "Published Papers",
+        "Clinical Trials"
+    ]
     correlations = []
     
     for i in range(len(variables)):
         for j in range(i+1, len(variables)):
+            # Deterministic correlations based on variable pair
+            seed_val = (i * 100 + j * 10) % 89
+            np.random.seed(seed_val)
             r = np.random.uniform(-0.95, 0.95)
             p = abs(np.random.uniform(0.001, 0.15))
             correlations.append({
