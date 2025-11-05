@@ -3,9 +3,11 @@ Causal Affect Platform - Main FastAPI Application
 Integrates CA-002 (Correlation Analysis) and CA-003 (Drift Forecasting)
 """
 
-from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi import FastAPI, HTTPException, Depends, status, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 from typing import Dict, List, Optional, Any
 from datetime import datetime
@@ -28,9 +30,15 @@ sys.path.insert(0, str(causal_affect_path))
 from data_fetcher import DataFetcher
 from correlation_analyzer import CorrelationAnalyzer
 
+# Import dashboard router
+from routers import dashboard
+
 # Initialize services
 data_fetcher = DataFetcher()
 correlation_analyzer = CorrelationAnalyzer()
+
+# Initialize templates and static files
+templates = Jinja2Templates(directory="templates")
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -40,6 +48,12 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc"
 )
+
+# Mount static files
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Include routers
+app.include_router(dashboard.router)
 
 # CORS Configuration
 app.add_middleware(
@@ -73,8 +87,15 @@ async def root():
         "message": "Causal Affect Platform API",
         "version": "1.0.0",
         "docs": "/docs",
-        "health": "/health"
+        "health": "/health",
+        "dashboard": "/dashboard"
     }
+
+
+@app.get("/dashboard", response_class=HTMLResponse, tags=["Dashboard"])
+async def dashboard_page(request: Request):
+    """Serve the main dashboard UI."""
+    return templates.TemplateResponse("dashboard.html", {"request": request})
 
 
 # ============================================================================

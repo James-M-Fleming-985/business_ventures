@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Causal Affect Platform{% endblock %}
+
+{% block content %}
+<div x-data="dashboardData()" x-init="init()">
+    <!-- Quick Stats Bar -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <!-- Total Data Points -->
+        <div class="bg-slate-800 rounded-lg p-6 border border-slate-700 hover:border-primary-500 transition">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-slate-400 text-sm font-medium">Data Points</p>
+                    <p class="text-3xl font-bold mt-2" x-text="stats.dataPoints">--</p>
+                </div>
+                <div class="w-12 h-12 bg-primary-500/20 rounded-lg flex items-center justify-center">
+                    <i data-lucide="database" class="w-6 h-6 text-primary-400"></i>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Strong Correlations -->
+        <div class="bg-slate-800 rounded-lg p-6 border border-slate-700 hover:border-accent-500 transition">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-slate-400 text-sm font-medium">Strong Correlations</p>
+                    <p class="text-3xl font-bold mt-2" x-text="stats.strongCorrelations">--</p>
+                </div>
+                <div class="w-12 h-12 bg-accent-500/20 rounded-lg flex items-center justify-center">
+                    <i data-lucide="trending-up" class="w-6 h-6 text-accent-400"></i>
+                </div>
+            </div>
+        </div>
+        
+        <!-- API Sources -->
+        <div class="bg-slate-800 rounded-lg p-6 border border-slate-700 hover:border-green-500 transition">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-slate-400 text-sm font-medium">Data Sources</p>
+                    <p class="text-3xl font-bold mt-2" x-text="stats.apiSources">--</p>
+                </div>
+                <div class="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center">
+                    <i data-lucide="globe" class="w-6 h-6 text-green-400"></i>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Last Updated -->
+        <div class="bg-slate-800 rounded-lg p-6 border border-slate-700 hover:border-blue-500 transition">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-slate-400 text-sm font-medium">Last Updated</p>
+                    <p class="text-lg font-bold mt-2" x-text="stats.lastUpdated">--</p>
+                </div>
+                <div class="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                    <i data-lucide="clock" class="w-6 h-6 text-blue-400"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Correlation Heatmap -->
+        <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="grid-3x3" class="w-5 h-5 text-primary-400"></i>
+                    <h2 class="text-xl font-bold">Correlation Heatmap</h2>
+                </div>
+                <button 
+                    @click="loadHeatmap()" 
+                    class="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm transition"
+                >
+                    <i data-lucide="refresh-cw" class="w-4 h-4 inline"></i>
+                </button>
+            </div>
+            <div id="heatmap" class="w-full" style="height: 400px;"></div>
+            <p class="text-slate-400 text-sm mt-2">Click any cell to view detailed relationship analysis</p>
+        </div>
+
+        <!-- Time Series Analysis -->
+        <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="line-chart" class="w-5 h-5 text-accent-400"></i>
+                    <h2 class="text-xl font-bold">Time Series Analysis</h2>
+                </div>
+                <select 
+                    x-model="selectedMetric" 
+                    @change="loadTimeSeries()"
+                    class="px-3 py-1 bg-slate-700 border border-slate-600 rounded text-sm"
+                >
+                    <option value="all">All Metrics</option>
+                    <template x-for="metric in availableMetrics" :key="metric">
+                        <option :value="metric" x-text="metric"></option>
+                    </template>
+                </select>
+            </div>
+            <div id="timeseries" class="w-full" style="height: 400px;"></div>
+            <p class="text-slate-400 text-sm mt-2">Overlay multiple metrics to compare trends</p>
+        </div>
+
+        <!-- Network Graph -->
+        <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="network" class="w-5 h-5 text-green-400"></i>
+                    <h2 class="text-xl font-bold">Correlation Network</h2>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <label class="text-sm text-slate-400">Min |r|:</label>
+                    <input 
+                        type="range" 
+                        x-model="networkThreshold" 
+                        @change="loadNetwork()"
+                        min="0" 
+                        max="1" 
+                        step="0.1"
+                        class="w-24"
+                    >
+                    <span class="text-sm font-mono" x-text="networkThreshold"></span>
+                </div>
+            </div>
+            <div id="network" class="w-full" style="height: 400px;"></div>
+            <p class="text-slate-400 text-sm mt-2">Node size = connection strength | Click node to filter</p>
+        </div>
+
+        <!-- Top Correlations Leaderboard -->
+        <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="award" class="w-5 h-5 text-yellow-400"></i>
+                    <h2 class="text-xl font-bold">Top Correlations</h2>
+                </div>
+                <select 
+                    x-model="sortBy" 
+                    @change="loadLeaderboard()"
+                    class="px-3 py-1 bg-slate-700 border border-slate-600 rounded text-sm"
+                >
+                    <option value="strength">By Strength</option>
+                    <option value="positive">Positive Only</option>
+                    <option value="negative">Negative Only</option>
+                </select>
+            </div>
+            <div class="overflow-y-auto" style="max-height: 400px;">
+                <table class="w-full">
+                    <thead class="sticky top-0 bg-slate-800">
+                        <tr class="border-b border-slate-700">
+                            <th class="text-left py-2 px-3 text-sm font-medium text-slate-400">#</th>
+                            <th class="text-left py-2 px-3 text-sm font-medium text-slate-400">Relationship</th>
+                            <th class="text-right py-2 px-3 text-sm font-medium text-slate-400">r-value</th>
+                            <th class="text-right py-2 px-3 text-sm font-medium text-slate-400">p-value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="(item, idx) in leaderboard" :key="idx">
+                            <tr 
+                                @click="openModal(item)" 
+                                class="border-b border-slate-700/50 hover:bg-slate-700/50 cursor-pointer transition"
+                            >
+                                <td class="py-3 px-3 text-sm" x-text="idx + 1"></td>
+                                <td class="py-3 px-3">
+                                    <div class="flex items-center space-x-2">
+                                        <span class="text-sm font-medium" x-text="item.var1"></span>
+                                        <span class="text-slate-500">↔</span>
+                                        <span class="text-sm font-medium" x-text="item.var2"></span>
+                                    </div>
+                                </td>
+                                <td class="py-3 px-3 text-right">
+                                    <span 
+                                        class="px-2 py-1 rounded text-xs font-mono"
+                                        :class="item.r >= 0 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'"
+                                        x-text="item.r.toFixed(3)"
+                                    ></span>
+                                </td>
+                                <td class="py-3 px-3 text-right">
+                                    <span class="text-xs font-mono text-slate-400" x-text="item.p.toExponential(2)"></span>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Relationship Modal (will be loaded separately) -->
+<div id="relationshipModal"></div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/dashboard.js"></script>
+<script>
+    // Initialize Lucide icons after Alpine loads
+    document.addEventListener('alpine:init', () => {
+        setTimeout(() => lucide.createIcons(), 100);
+    });
+</script>
+{% endblock %}
