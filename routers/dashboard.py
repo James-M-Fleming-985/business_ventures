@@ -75,13 +75,13 @@ async def get_timeseries_data(metric: str = Query("all")):
         date = today - timedelta(days=89-i)
         dates.append(date.strftime("%Y-%m-%d"))
     
-    # Create multiple series with clear names
+    # Create multiple series with clear names and realistic varied patterns
     series = [
         {
             "name": "GDP Growth (%)",
             "dates": dates,
             "values": [
-                2.5 + math.sin(i/10) + np.random.normal(0, 0.2)
+                2.5 + math.sin(i/10) * 0.5 + np.random.normal(0, 0.15)
                 for i in range(90)
             ]
         },
@@ -89,7 +89,7 @@ async def get_timeseries_data(metric: str = Query("all")):
             "name": "S&P 500 Index",
             "dates": dates,
             "values": [
-                3.0 + math.cos(i/8) + np.random.normal(0, 0.3)
+                100 + math.cos(i/8) * 15 - i * 0.2 + np.random.normal(0, 3)
                 for i in range(90)
             ]
         },
@@ -97,7 +97,7 @@ async def get_timeseries_data(metric: str = Query("all")):
             "name": "Global Temp (°C)",
             "dates": dates,
             "values": [
-                0.8 + math.sin(i/15) + np.random.normal(0, 0.15)
+                15.5 + math.sin(i/20) * 0.8 + i * 0.01 + np.random.normal(0, 0.2)
                 for i in range(90)
             ]
         },
@@ -105,7 +105,7 @@ async def get_timeseries_data(metric: str = Query("all")):
             "name": "Earthquake Count",
             "dates": dates,
             "values": [
-                50 + math.sin(i/20) * 10 + np.random.normal(0, 5)
+                50 + math.sin(i/12) * 15 + np.random.normal(0, 8)
                 for i in range(90)
             ]
         },
@@ -113,7 +113,7 @@ async def get_timeseries_data(metric: str = Query("all")):
             "name": "Published Papers",
             "dates": dates,
             "values": [
-                1000 + i * 5 + np.random.normal(0, 50)
+                1000 + i * 8 + math.cos(i/15) * 50 + np.random.normal(0, 30)
                 for i in range(90)
             ]
         },
@@ -121,7 +121,7 @@ async def get_timeseries_data(metric: str = Query("all")):
             "name": "Clinical Trials",
             "dates": dates,
             "values": [
-                200 + i * 2 + np.random.normal(0, 20)
+                500 + i * 3 - math.sin(i/10) * 20 + np.random.normal(0, 15)
                 for i in range(90)
             ]
         }

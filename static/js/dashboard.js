@@ -151,17 +151,18 @@ function dashboardData() {
                     modeBarButtonsToRemove: ['pan2d', 'lasso2d', 'select2d']
                 };
                 
-                Plotly.newPlot('heatmap', [trace], layout, config);
-                
-                // Add click handler for opening modal
-                const heatmapDiv = document.getElementById('heatmap');
-                heatmapDiv.removeAllListeners('plotly_click'); // Remove old listeners
-                heatmapDiv.on('plotly_click', (eventData) => {
-                    const point = eventData.points[0];
-                    if (point.x !== point.y) {
-                        console.log('Heatmap clicked:', point.x, point.y, point.z);
-                        this.openModal({ var1: point.x, var2: point.y, r: point.z });
-                    }
+                Plotly.newPlot('heatmap', [trace], layout, config).then(() => {
+                    // Add click handler after plot is created
+                    const heatmapDiv = document.getElementById('heatmap');
+                    const self = this; // Preserve context
+                    
+                    heatmapDiv.on('plotly_click', function(eventData) {
+                        const point = eventData.points[0];
+                        if (point.x !== point.y) {
+                            console.log('Heatmap clicked:', point.x, point.y, point.z);
+                            self.openModal({ var1: point.x, var2: point.y, r: point.z });
+                        }
+                    });
                 });
                 
             } catch (error) {
@@ -191,7 +192,7 @@ function dashboardData() {
                     paper_bgcolor: '#1e293b',
                     plot_bgcolor: '#1e293b',
                     font: { color: '#cbd5e1' },
-                    margin: { t: 60, r: 20, b: 60, l: 70 },  // Increased top margin
+                    margin: { t: 20, r: 20, b: 60, l: 70 },  // Reduced top margin, legend goes below
                     xaxis: {
                         gridcolor: '#475569',
                         showgrid: true,
@@ -200,12 +201,12 @@ function dashboardData() {
                     yaxis: {
                         gridcolor: '#475569',
                         showgrid: true,
-                        title: { text: 'Normalized Value', font: { size: 11 } }
+                        title: { text: 'Actual Values (various units)', font: { size: 11 } }
                     },
                     showlegend: true,
                     legend: {
                         x: 0.5,
-                        y: 1.15,
+                        y: -0.25,
                         xanchor: 'center',
                         yanchor: 'top',
                         orientation: 'horizontal',
