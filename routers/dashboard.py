@@ -107,6 +107,17 @@ async def get_network_data(threshold: float = Query(0.5, ge=0, le=1)):
     labels = ["GDP", "Stocks", "Temp", "Quakes", "Papers", "Trials"]
     n = len(labels)
     
+    # Fixed correlation matrix (deterministic - won't change on reload)
+    # Based on realistic relationships
+    correlation_matrix = [
+        [1.00, 0.85, 0.42, -0.12, 0.58, 0.65],  # GDP
+        [0.85, 1.00, 0.38, -0.08, 0.52, 0.72],  # Stocks
+        [0.42, 0.38, 1.00, 0.25, 0.15, 0.22],   # Temp
+        [-0.12, -0.08, 0.25, 1.00, 0.31, 0.18], # Quakes
+        [0.58, 0.52, 0.15, 0.31, 1.00, 0.88],   # Papers
+        [0.65, 0.72, 0.22, 0.18, 0.88, 1.00]    # Trials
+    ]
+    
     # Calculate circular positions
     angles = [i * 2 * math.pi / n for i in range(n)]
     node_x = [math.cos(a) for a in angles]
@@ -115,26 +126,37 @@ async def get_network_data(threshold: float = Query(0.5, ge=0, le=1)):
     # Generate edges (connections above threshold)
     edge_x = []
     edge_y = []
+    edge_info = []  # Store edge details for hover
     connections = [0] * n  # Count connections for each node
     
     for i in range(n):
         for j in range(i+1, n):
-            # Random correlation
-            r = abs(np.random.uniform(-1, 1))
+            r = abs(correlation_matrix[i][j])
             if r >= threshold:
                 # Add edge
                 edge_x.extend([node_x[i], node_x[j], None])
                 edge_y.extend([node_y[i], node_y[j], None])
+                edge_info.append({
+                    "source": labels[i],
+                    "target": labels[j],
+                    "r": correlation_matrix[i][j],
+                    "abs_r": r
+                })
                 connections[i] += 1
                 connections[j] += 1
     
     # Node sizes based on connections
     node_sizes = [15 + c * 5 for c in connections]
     
-    # Node colors based on connection count
-    max_conn = max(connections) if connections else 1
-    node_colors = [f'rgba({int(59 + (c/max_conn)*100)}, {int(130 - (c/max_conn)*50)}, {int(246 - (c/max_conn)*100)}, 0.8)' 
-                   for c in connections]
+    # Node colors: blue=positive hub, purple=mixed, gray=isolated
+    node_colors = []
+    for i, c in enumerate(connections):
+        if c >= 4:  # Hub node
+            node_colors.append('#3b82f6')  # Blue
+        elif c >= 2:  # Medium connections
+            node_colors.append('#8b5cf6')  # Purple
+        else:  # Isolated
+            node_colors.append('#64748b')  # Gray
     
     return {
         "nodes": {
@@ -146,7 +168,8 @@ async def get_network_data(threshold: float = Query(0.5, ge=0, le=1)):
         },
         "edges": {
             "x": edge_x,
-            "y": edge_y
+            "y": edge_y,
+            "info": edge_info
         }
     }
 

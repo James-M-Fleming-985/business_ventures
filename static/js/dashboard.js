@@ -177,7 +177,7 @@ function dashboardData() {
                 const response = await fetch(`/api/dashboard/network?threshold=${this.networkThreshold}`);
                 const data = await response.json();
                 
-                // Create network graph using Plotly
+                // Create edge trace (lines connecting nodes)
                 const edgeTrace = {
                     type: 'scatter',
                     mode: 'lines',
@@ -185,12 +185,13 @@ function dashboardData() {
                     y: data.edges.y,
                     line: {
                         color: '#475569',
-                        width: 1
+                        width: 2
                     },
                     hoverinfo: 'none',
-                    showlegend: false
+                    showlegend: false  // Hide from legend
                 };
                 
+                // Create node trace (variables as circles)
                 const nodeTrace = {
                     type: 'scatter',
                     mode: 'markers+text',
@@ -210,7 +211,8 @@ function dashboardData() {
                     textfont: {
                         size: 10,
                         color: '#cbd5e1'
-                    }
+                    },
+                    showlegend: false  // Hide from legend
                 };
                 
                 const layout = {
@@ -221,14 +223,17 @@ function dashboardData() {
                     xaxis: {
                         showgrid: false,
                         zeroline: false,
-                        showticklabels: false
+                        showticklabels: false,
+                        range: [-1.5, 1.5]
                     },
                     yaxis: {
                         showgrid: false,
                         zeroline: false,
-                        showticklabels: false
+                        showticklabels: false,
+                        range: [-1.5, 1.5]
                     },
-                    hovermode: 'closest'
+                    hovermode: 'closest',
+                    showlegend: false
                 };
                 
                 const config = {
@@ -236,7 +241,8 @@ function dashboardData() {
                     displayModeBar: false
                 };
                 
-                Plotly.newPlot('network', [edgeTrace, nodeTrace], layout, config);
+                // Use Plotly.react for smooth updates (no flickering)
+                Plotly.react('network', [edgeTrace, nodeTrace], layout, config);
                 
             } catch (error) {
                 console.error('Failed to load network:', error);
