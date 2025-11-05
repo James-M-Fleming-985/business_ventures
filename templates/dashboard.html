@@ -98,7 +98,14 @@
                 </select>
             </div>
             <div id="timeseries" class="w-full" style="height: 400px;"></div>
-            <p class="text-slate-400 text-sm mt-2">Overlay multiple metrics to compare trends</p>
+            <div class="mt-3 p-3 bg-slate-900/50 rounded border border-slate-700">
+                <p class="text-slate-300 text-sm">
+                    <strong>What this shows:</strong> This chart displays how variables change over time. 
+                    When lines move together (parallel), they're positively correlated. When they move opposite, 
+                    they're negatively correlated. Use this to identify temporal patterns, trends, and 
+                    synchronized movements between different data sources.
+                </p>
+            </div>
         </div>
 
         <!-- Network Graph -->
@@ -175,7 +182,16 @@
                                     ></span>
                                 </td>
                                 <td class="py-3 px-3 text-right">
-                                    <span class="text-xs font-mono text-slate-400" x-text="item.p.toExponential(2)"></span>
+                                    <span 
+                                        class="text-xs px-2 py-1 rounded font-medium"
+                                        :class="{
+                                            'bg-green-500/20 text-green-400': item.p < 0.001,
+                                            'bg-blue-500/20 text-blue-400': item.p >= 0.001 && item.p < 0.01,
+                                            'bg-yellow-500/20 text-yellow-400': item.p >= 0.01 && item.p < 0.05,
+                                            'bg-slate-500/20 text-slate-400': item.p >= 0.05
+                                        }"
+                                        x-text="item.p < 0.001 ? '< 0.001 ***' : item.p < 0.01 ? item.p.toFixed(3) + ' **' : item.p < 0.05 ? item.p.toFixed(3) + ' *' : item.p.toFixed(3)"
+                                    ></span>
                                 </td>
                             </tr>
                         </template>

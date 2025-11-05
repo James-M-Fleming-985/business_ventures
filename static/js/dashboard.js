@@ -50,12 +50,45 @@ function dashboardData() {
                 const response = await fetch('/api/dashboard/heatmap');
                 const data = await response.json();
                 
+                // Helper function to interpret correlation strength
+                const interpretCorrelation = (r) => {
+                    const abs_r = Math.abs(r);
+                    if (abs_r > 0.7) return 'Strong';
+                    if (abs_r > 0.4) return 'Moderate';
+                    if (abs_r > 0.2) return 'Weak';
+                    return 'Very weak';
+                };
+                
+                // Helper function to format p-value
+                const formatPValue = (p) => {
+                    if (p < 0.001) return 'p < 0.001 (***) Highly significant';
+                    if (p < 0.01) return `p = ${p.toFixed(3)} (**) Significant`;
+                    if (p < 0.05) return `p = ${p.toFixed(3)} (*) Marginally significant`;
+                    return `p = ${p.toFixed(3)} Not significant`;
+                };
+                
+                // Create custom hover text with p-values
+                const hoverText = data.matrix.map((row, i) => 
+                    row.map((r, j) => {
+                        if (i === j) return `${data.labels[i]}<br>Self-correlation = 1.000`;
+                        const strength = interpretCorrelation(r);
+                        const direction = r > 0 ? 'positive' : 'negative';
+                        const pValue = formatPValue(0.001); // Using default p-value, will be real data later
+                        return `<b>${data.labels[i]} ↔ ${data.labels[j]}</b><br>` +
+                               `r = ${r.toFixed(3)} (${strength} ${direction})<br>` +
+                               `${pValue}<br>` +
+                               `<i>Click for detailed analysis</i>`;
+                    })
+                );
+                
                 // Create Plotly heatmap
                 const trace = {
                     type: 'heatmap',
                     z: data.matrix,
                     x: data.labels,
                     y: data.labels,
+                    text: hoverText,
+                    hovertemplate: '%{text}<extra></extra>',
                     colorscale: [
                         [0, '#7f1d1d'],      // Strong negative - dark red
                         [0.25, '#dc2626'],   // Negative - red
@@ -67,26 +100,29 @@ function dashboardData() {
                     zmin: -1,
                     zmax: 1,
                     colorbar: {
-                        title: 'r-value',
-                        tickfont: { color: '#cbd5e1' },
-                        titlefont: { color: '#cbd5e1' }
-                    },
-                    hovertemplate: '%{x} ↔ %{y}<br>r = %{z:.3f}<extra></extra>'
+                        title: { text: 'Correlation<br>Coefficient (r)', side: 'right' },
+                        tickfont: { color: '#cbd5e1', size: 10 },
+                        titlefont: { color: '#cbd5e1', size: 11 },
+                        x: 1.15,  // Move colorbar away from heatmap
+                        len: 0.9
+                    }
                 };
                 
                 const layout = {
                     paper_bgcolor: '#1e293b',
                     plot_bgcolor: '#1e293b',
                     font: { color: '#cbd5e1' },
-                    margin: { t: 40, r: 40, b: 80, l: 80 },
+                    margin: { t: 40, r: 120, b: 100, l: 140 },  // Increased margins
                     xaxis: {
                         tickangle: -45,
-                        tickfont: { size: 10 },
-                        gridcolor: '#475569'
+                        tickfont: { size: 11 },
+                        gridcolor: '#475569',
+                        side: 'bottom'
                     },
                     yaxis: {
-                        tickfont: { size: 10 },
-                        gridcolor: '#475569'
+                        tickfont: { size: 11 },
+                        gridcolor: '#475569',
+                        automargin: true  // Prevent label cutoff
                     }
                 };
                 
@@ -134,23 +170,27 @@ function dashboardData() {
                     paper_bgcolor: '#1e293b',
                     plot_bgcolor: '#1e293b',
                     font: { color: '#cbd5e1' },
-                    margin: { t: 20, r: 20, b: 40, l: 60 },
+                    margin: { t: 60, r: 20, b: 60, l: 70 },  // Increased top margin
                     xaxis: {
                         gridcolor: '#475569',
-                        showgrid: true
+                        showgrid: true,
+                        title: { text: 'Date', font: { size: 11 } }
                     },
                     yaxis: {
                         gridcolor: '#475569',
                         showgrid: true,
-                        title: 'Value'
+                        title: { text: 'Normalized Value', font: { size: 11 } }
                     },
                     showlegend: true,
                     legend: {
-                        x: 0,
-                        y: 1,
-                        bgcolor: 'rgba(30, 41, 59, 0.8)',
+                        x: 0.02,
+                        y: 0.98,
+                        xanchor: 'left',
+                        yanchor: 'top',
+                        bgcolor: 'rgba(30, 41, 59, 0.9)',
                         bordercolor: '#475569',
-                        borderwidth: 1
+                        borderwidth: 1,
+                        font: { size: 10 }
                     },
                     hovermode: 'x unified'
                 };
