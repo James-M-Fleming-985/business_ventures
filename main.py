@@ -33,6 +33,10 @@ from correlation_analyzer import CorrelationAnalyzer
 # Import dashboard router
 from routers import dashboard
 
+# Version tracking to prevent Railway cache issues
+BUILD_VERSION = "1.1.0"  # Increment this on each deployment
+DEPLOY_TIMESTAMP = datetime.utcnow().isoformat()
+
 # Initialize services
 data_fetcher = DataFetcher()
 correlation_analyzer = CorrelationAnalyzer()
@@ -44,7 +48,7 @@ templates = Jinja2Templates(directory="templates")
 app = FastAPI(
     title="Causal Affect Platform API",
     description="Correlation Analysis, Drift Forecasting, and MVP Opportunity Detection",
-    version="1.0.0",
+    version=BUILD_VERSION,
     docs_url="/docs",
     redoc_url="/redoc"
 )
@@ -76,7 +80,8 @@ async def health_check():
         "status": "healthy",
         "timestamp": datetime.utcnow().isoformat(),
         "service": "causal-affect-platform",
-        "version": "1.0.0"
+        "version": BUILD_VERSION,
+        "deploy_timestamp": DEPLOY_TIMESTAMP
     }
 
 
@@ -85,7 +90,8 @@ async def root():
     """Root endpoint."""
     return {
         "message": "Causal Affect Platform API",
-        "version": "1.0.0",
+        "version": BUILD_VERSION,
+        "deploy_timestamp": DEPLOY_TIMESTAMP,
         "docs": "/docs",
         "health": "/health",
         "dashboard": "/dashboard"
