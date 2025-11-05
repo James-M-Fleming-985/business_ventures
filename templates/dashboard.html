@@ -200,10 +200,216 @@
             </div>
         </div>
     </div>
+
+    <!-- Drift/Forecast Indicator Panel -->
+    <div class="mt-6 bg-gradient-to-r from-slate-800 to-slate-900 rounded-lg p-6 border border-accent-500/30">
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-accent-500/20 rounded-lg flex items-center justify-center">
+                    <i data-lucide="trending-up" class="w-6 h-6 text-accent-400"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold">Correlation Drift Forecast</h2>
+                    <p class="text-sm text-slate-400">Predict future correlation strength changes</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <select 
+                    x-model="selectedDriftMetric" 
+                    @change="loadDriftForecast()"
+                    class="px-3 py-1 bg-slate-700 border border-slate-600 rounded text-sm"
+                >
+                    <option value="Stock Price ↔ GDP">Stock Price ↔ GDP</option>
+                    <option value="Stock Price ↔ Trading Volume">Stock Price ↔ Trading Volume</option>
+                    <option value="Papers ↔ Clinical Trials">Papers ↔ Clinical Trials</option>
+                </select>
+                <button 
+                    @click="loadDriftForecast()" 
+                    class="px-3 py-1 bg-accent-600 hover:bg-accent-500 rounded text-sm transition"
+                >
+                    <i data-lucide="zap" class="w-4 h-4 inline"></i> Forecast
+                </button>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Drift Chart -->
+            <div class="lg:col-span-2">
+                <div id="driftChart" class="w-full" style="height: 300px;"></div>
+                <div class="mt-2 p-3 bg-slate-900/50 rounded border border-slate-700">
+                    <p class="text-slate-300 text-xs">
+                        <strong>Drift Analysis:</strong> Shows historical correlation strength (solid line) and 
+                        predicted future trend (dashed line). Green indicates strengthening correlation, 
+                        red indicates weakening. Shaded area shows confidence interval.
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Drift Metrics -->
+            <div class="space-y-4">
+                <div class="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm text-slate-400">Current Strength</span>
+                        <i data-lucide="activity" class="w-4 h-4 text-blue-400"></i>
+                    </div>
+                    <p class="text-2xl font-bold" x-text="driftMetrics.current || '0.85'">0.85</p>
+                    <p class="text-xs text-slate-500 mt-1">r-value</p>
+                </div>
+                
+                <div class="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm text-slate-400">30-Day Forecast</span>
+                        <i data-lucide="trending-up" class="w-4 h-4 text-green-400"></i>
+                    </div>
+                    <p class="text-2xl font-bold text-green-400" x-text="driftMetrics.forecast || '0.91'">0.91</p>
+                    <p class="text-xs text-green-500 mt-1">+7.1% increase</p>
+                </div>
+                
+                <div class="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm text-slate-400">Stability Score</span>
+                        <i data-lucide="shield" class="w-4 h-4 text-accent-400"></i>
+                    </div>
+                    <p class="text-2xl font-bold" x-text="driftMetrics.stability || '92'">92</p>
+                    <p class="text-xs text-slate-500 mt-1">High confidence</p>
+                </div>
+                
+                <div class="bg-accent-500/10 rounded-lg p-3 border border-accent-500/30">
+                    <div class="flex items-start space-x-2">
+                        <i data-lucide="lightbulb" class="w-4 h-4 text-accent-400 mt-0.5"></i>
+                        <div>
+                            <p class="text-xs font-medium text-accent-300">Insight</p>
+                            <p class="text-xs text-slate-300 mt-1" x-text="driftMetrics.insight || 'Strong upward trend suggests this correlation will strengthen over the next month.'">
+                                Strong upward trend suggests this correlation will strengthen over the next month.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
-<!-- Relationship Modal (will be loaded separately) -->
-<div id="relationshipModal"></div>
+<!-- Relationship Analysis Modal -->
+<div 
+    x-show="modalOpen" 
+    x-cloak
+    @click.self="modalOpen = false"
+    class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+    style="display: none;"
+>
+    <div 
+        @click.stop
+        class="bg-slate-800 rounded-xl shadow-2xl border border-slate-700 w-full max-w-6xl max-h-[90vh] overflow-y-auto"
+    >
+        <!-- Modal Header -->
+        <div class="sticky top-0 bg-slate-900 border-b border-slate-700 p-6 flex items-center justify-between">
+            <div>
+                <h2 class="text-2xl font-bold" x-text="`${modalData.var1} ↔ ${modalData.var2}`">Relationship Analysis</h2>
+                <p class="text-sm text-slate-400 mt-1">Comprehensive statistical and causal analysis</p>
+            </div>
+            <button 
+                @click="modalOpen = false" 
+                class="w-10 h-10 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center transition"
+            >
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        
+        <!-- Modal Content -->
+        <div class="p-6 space-y-6">
+            <!-- Quick Stats -->
+            <div class="grid grid-cols-4 gap-4">
+                <div class="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
+                    <p class="text-xs text-slate-400 mb-1">Correlation</p>
+                    <p 
+                        class="text-2xl font-bold"
+                        :class="modalData.r >= 0 ? 'text-green-400' : 'text-red-400'"
+                        x-text="modalData.r?.toFixed(3) || 'N/A'"
+                    >0.850</p>
+                </div>
+                <div class="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
+                    <p class="text-xs text-slate-400 mb-1">Significance</p>
+                    <p class="text-2xl font-bold text-green-400" x-text="modalData.p_value || '< 0.001'">< 0.001</p>
+                </div>
+                <div class="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
+                    <p class="text-xs text-slate-400 mb-1">Strength</p>
+                    <p class="text-2xl font-bold text-blue-400" x-text="modalData.strength || 'Strong'">Strong</p>
+                </div>
+                <div class="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
+                    <p class="text-xs text-slate-400 mb-1">Stability</p>
+                    <p class="text-2xl font-bold text-accent-400" x-text="modalData.stability || '92%'">92%</p>
+                </div>
+            </div>
+            
+            <!-- Explanation Section -->
+            <div class="bg-slate-900/50 rounded-lg p-6 border border-slate-700">
+                <div class="flex items-start space-x-3 mb-4">
+                    <i data-lucide="file-text" class="w-5 h-5 text-primary-400 mt-1"></i>
+                    <div>
+                        <h3 class="text-lg font-bold mb-2">Natural Language Explanation</h3>
+                        <p class="text-slate-300" x-text="modalData.explanation || 'Loading detailed analysis...'">
+                            There is a strong positive correlation between Stock Price and GDP. This means that when GDP increases, Stock Price tends to increase as well, and vice versa. The relationship is statistically significant (p < 0.001), indicating this pattern is unlikely to be due to random chance.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Visualizations -->
+            <div class="grid grid-cols-2 gap-6">
+                <div class="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
+                    <h3 class="text-sm font-bold mb-3 flex items-center space-x-2">
+                        <i data-lucide="scatter-chart" class="w-4 h-4 text-green-400"></i>
+                        <span>Scatter Plot</span>
+                    </h3>
+                    <div id="modalScatter" style="height: 250px;"></div>
+                </div>
+                <div class="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
+                    <h3 class="text-sm font-bold mb-3 flex items-center space-x-2">
+                        <i data-lucide="line-chart" class="w-4 h-4 text-blue-400"></i>
+                        <span>Time Series Overlay</span>
+                    </h3>
+                    <div id="modalTimeSeries" style="height: 250px;"></div>
+                </div>
+            </div>
+            
+            <!-- Causality Analysis (Phase 2) -->
+            <div class="bg-amber-500/10 rounded-lg p-6 border border-amber-500/30">
+                <div class="flex items-start space-x-3">
+                    <i data-lucide="alert-circle" class="w-5 h-5 text-amber-400 mt-1"></i>
+                    <div>
+                        <h3 class="text-lg font-bold text-amber-300 mb-2">Causality Analysis</h3>
+                        <p class="text-sm text-slate-300 mb-3">
+                            <strong>Important:</strong> Correlation does not imply causation. Causality testing features coming in Phase 2.
+                        </p>
+                        <div class="space-y-2 text-sm text-slate-400">
+                            <p>• Granger Causality Test - Determines if one variable predicts another</p>
+                            <p>• Vector Autoregression (VAR) - Models interdependencies</p>
+                            <p>• Transfer Entropy - Quantifies information flow direction</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-700">
+                <button 
+                    @click="exportAnalysis()"
+                    class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition"
+                >
+                    <i data-lucide="download" class="w-4 h-4 inline mr-1"></i>
+                    Export Report
+                </button>
+                <button 
+                    @click="modalOpen = false"
+                    class="px-4 py-2 bg-primary-600 hover:bg-primary-500 rounded-lg text-sm transition"
+                >
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 {% endblock %}
 

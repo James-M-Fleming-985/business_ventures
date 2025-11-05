@@ -60,6 +60,9 @@
     {% block extra_head %}{% endblock %}
     
     <style>
+        /* Alpine.js cloak - hide elements until Alpine loads */
+        [x-cloak] { display: none !important; }
+        
         /* Custom scrollbar for dark mode */
         ::-webkit-scrollbar {
             width: 10px;

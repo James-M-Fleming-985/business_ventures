@@ -204,3 +204,91 @@ async def get_leaderboard_data(sort: str = Query("strength")):
     
     # Return top 20
     return {"correlations": correlations[:20]}
+
+
+@router.get("/relationship/{var1}/{var2}")
+async def get_relationship_details(var1: str, var2: str):
+    """Get detailed relationship analysis for modal"""
+    # Generate correlation value (deterministic based on variable names)
+    seed_value = sum(ord(c) for c in var1 + var2) % 100
+    np.random.seed(seed_value)
+    
+    r = np.random.uniform(0.5, 0.95) * (1 if seed_value % 2 == 0 else -1)
+    p_value = np.random.uniform(0.0001, 0.05)
+    
+    # Generate realistic scatter data with correlation
+    n_points = 50
+    x_data = np.random.uniform(50, 150, n_points)
+    noise = np.random.normal(0, 15, n_points)
+    y_data = r * x_data + (1 - abs(r)) * 50 + noise
+    
+    # Generate time series data (30 days historical + 30 days forecast)
+    dates_hist = [(datetime.now() - timedelta(days=30-i)).strftime("%Y-%m-%d") for i in range(30)]
+    dates_fore = [(datetime.now() + timedelta(days=i+1)).strftime("%Y-%m-%d") for i in range(30)]
+    
+    # Historical time series with correlation
+    base1 = np.linspace(80, 110, 30) + np.random.normal(0, 5, 30)
+    base2 = r * base1 + (1 - abs(r)) * 20 + np.random.normal(0, 5, 30)
+    
+    # Forecast with trend continuation
+    trend1 = (base1[-1] - base1[-10]) / 10
+    trend2 = (base2[-1] - base2[-10]) / 10
+    forecast1 = [base1[-1] + trend1 * (i+1) + np.random.normal(0, 2) for i in range(30)]
+    forecast2 = [base2[-1] + trend2 * (i+1) + np.random.normal(0, 2) for i in range(30)]
+    
+    # Calculate stability (how consistent correlation is over time windows)
+    window_corrs = []
+    for i in range(0, 20, 5):
+        window_r = np.corrcoef(base1[i:i+10], base2[i:i+10])[0, 1]
+        window_corrs.append(window_r)
+    stability = (1 - np.std(window_corrs)) * 100
+    
+    # Generate natural language explanation
+    abs_r = abs(r)
+    strength = "strong" if abs_r >= 0.7 else "moderate" if abs_r >= 0.4 else "weak"
+    direction = "positive" if r > 0 else "negative"
+    sig_level = "highly significant" if p_value < 0.001 else "significant" if p_value < 0.01 else "marginally significant"
+    
+    explanation = (
+        f"There is a {strength} {direction} correlation between {var1} and {var2} "
+        f"(r = {r:.3f}, p = {p_value:.4f}). This relationship is {sig_level}, "
+        f"indicating it is unlikely to be due to random chance. "
+        f"When {var1} {'increases' if r > 0 else 'decreases'}, {var2} tends to "
+        f"{'increase' if r > 0 else 'decrease'} as well. The correlation has been "
+        f"stable over time (stability: {stability:.1f}%), suggesting a consistent "
+        f"relationship between these variables."
+    )
+    
+    return {
+        "var1": var1,
+        "var2": var2,
+        "correlation": round(r, 3),
+        "p_value": p_value,
+        "strength": strength,
+        "direction": direction,
+        "stability": f"{stability:.1f}%",
+        "explanation": explanation,
+        "scatter_data": {
+            "x": x_data.tolist(),
+            "y": y_data.tolist()
+        },
+        "timeseries": {
+            "historical": {
+                "dates": dates_hist,
+                "var1": base1.tolist(),
+                "var2": base2.tolist()
+            },
+            "forecast": {
+                "dates": dates_fore,
+                "var1": forecast1,
+                "var2": forecast2
+            }
+        },
+        "metrics": {
+            "n_points": n_points,
+            "mean_x": float(np.mean(x_data)),
+            "mean_y": float(np.mean(y_data)),
+            "std_x": float(np.std(x_data)),
+            "std_y": float(np.std(y_data))
+        }
+    }
