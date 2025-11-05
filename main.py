@@ -34,7 +34,7 @@ from correlation_analyzer import CorrelationAnalyzer
 from routers import dashboard
 
 # Version tracking to prevent Railway cache issues
-BUILD_VERSION = "1.1.0"  # Increment this on each deployment
+BUILD_VERSION = "1.1.1"  # Increment this on each deployment
 DEPLOY_TIMESTAMP = datetime.utcnow().isoformat()
 
 # Initialize services
