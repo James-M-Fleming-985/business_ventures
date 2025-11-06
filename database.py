@@ -13,7 +13,8 @@ logger = logging.getLogger(__name__)
 
 def get_database_url():
     """Get database URL from environment"""
-    database_url = os.getenv('DATABASE_URL')
+    # Check both DATABASE_URL and POSTGRES_DB for Railway compatibility
+    database_url = os.getenv('DATABASE_URL') or os.getenv('POSTGRES_DB')
     
     if not database_url:
         database_url = 'postgresql://localhost:5432/causal_affect_dev'
