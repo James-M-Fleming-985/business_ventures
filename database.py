@@ -13,12 +13,18 @@ logger = logging.getLogger(__name__)
 
 def get_database_url():
     """Get database URL from environment"""
-    # Check both DATABASE_URL and POSTGRES_DB for Railway compatibility
-    database_url = os.getenv('DATABASE_URL') or os.getenv('POSTGRES_DB')
+    # Check multiple possible environment variable names for Railway compatibility
+    database_url = (
+        os.getenv('DATABASE_URL') or 
+        os.getenv('DATABASE_PUBLIC_URL') or 
+        os.getenv('POSTGRES_DB')
+    )
     
     if not database_url:
         database_url = 'postgresql://localhost:5432/causal_affect_dev'
         logger.warning(f"DATABASE_URL not set, using default: {database_url}")
+    else:
+        logger.info(f"Using database: {database_url[:30]}...")
     
     # Railway uses postgres:// but SQLAlchemy needs postgresql://
     if database_url.startswith('postgres://'):

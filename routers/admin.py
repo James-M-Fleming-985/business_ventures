@@ -86,7 +86,9 @@ async def env_check():
     """Check environment variables (for debugging)"""
     return {
         "DATABASE_URL_exists": bool(os.getenv('DATABASE_URL')),
+        "DATABASE_PUBLIC_URL_exists": bool(os.getenv('DATABASE_PUBLIC_URL')),
         "POSTGRES_DB_exists": bool(os.getenv('POSTGRES_DB')),
-        "DATABASE_URL_prefix": os.getenv('DATABASE_URL', '')[:20] if os.getenv('DATABASE_URL') else None,
-        "POSTGRES_DB_prefix": os.getenv('POSTGRES_DB', '')[:20] if os.getenv('POSTGRES_DB') else None
+        "DATABASE_URL_prefix": os.getenv('DATABASE_URL', '')[:30] if os.getenv('DATABASE_URL') else None,
+        "DATABASE_PUBLIC_URL_prefix": os.getenv('DATABASE_PUBLIC_URL', '')[:30] if os.getenv('DATABASE_PUBLIC_URL') else None,
+        "POSTGRES_DB_prefix": os.getenv('POSTGRES_DB', '')[:30] if os.getenv('POSTGRES_DB') else None
     }
