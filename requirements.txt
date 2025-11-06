@@ -30,3 +30,8 @@ python-dotenv==1.0.0
 # Utilities
 python-dateutil==2.8.2
 pytz==2023.3
+
+# Database & ORM (Real Data Integration)
+sqlalchemy==2.0.23
+psycopg2-binary==2.9.9
+alembic==1.12.1

@@ -30,11 +30,11 @@ sys.path.insert(0, str(causal_affect_path))
 from data_fetcher import DataFetcher
 from correlation_analyzer import CorrelationAnalyzer
 
-# Import dashboard router
-from routers import dashboard
+# Import dashboard router - USING REAL DATA VERSION
+from routers import dashboard_real as dashboard  # NO MOCK DATA
 
 # Version tracking to prevent Railway cache issues
-BUILD_VERSION = "1.2.0"  # Increment this on each deployment
+BUILD_VERSION = "2.0.0"  # MAJOR UPDATE: Real data integration
 DEPLOY_TIMESTAMP = datetime.utcnow().isoformat()
 
 # Initialize services

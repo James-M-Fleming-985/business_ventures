@@ -1,0 +1,511 @@
+# ====================================================================================
+# CAUSAL AFFECT - IMPLEMENTATION GOALS PLAN
+# ====================================================================================
+# Date: 2025-10-31
+# Priority: Critical - Daily Target Goals
+# ====================================================================================
+
+metadata:
+  project_name: "Causal Affect - Correlation Discovery Engine"
+  target_date: "2025-11-06"
+  priority: "CRITICAL"
+  owner: "James-M-Fleming-985"
+  status: "ACTIVE"
+  
+  purpose: |
+    Correlation Discovery Engine for MVP development - analyzes ALL variable relationships across
+    real-world data and displays STRONGEST positive and negative correlations ranked by statistical
+    significance. This is NOT a demo dashboard - it's a production tool used to identify data-driven
+    opportunities for MVP creation. Mock data would cause developers to build MVPs on inaccurate
+    information, making real API data integration absolutely critical.
+  
+  use_case_description: |
+    The application performs heavy data analysis across ALL available variables to discover the
+    strongest correlations. Users need to see:
+    1. TOP correlations ranked by absolute strength (not predetermined variable pairs)
+    2. Time series showing SELECTED correlation relationship evolution over time
+    3. Drift forecast predicting SELECTED relationship forward
+    4. Network graph of correlation clusters above configurable threshold
+    5. Leaderboard of strongest correlations with statistical significance
+    
+    Key requirement: NO MOCK DATA - all analysis must use real API data to ensure MVP developers
+    build on accurate, actionable insights.
+
+# ====================================================================================
+# DATA SOURCES AND VARIABLE INVENTORY
+# ====================================================================================
+
+data_sources:
+  total_apis: 6
+  data_quality: "Real-world, live data from public APIs"
+  update_frequency: "Daily (configurable to hourly/realtime)"
+  no_mock_data_policy: |
+    CRITICAL: All data must come from real API sources. Mock or synthetic data causes
+    developers to build MVPs on inaccurate assumptions, wasting time and resources.
+  
+  api_inventory:
+    alpha_vantage_stocks:
+      api: "Alpha Vantage"
+      endpoint: "TIME_SERIES_DAILY"
+      status: "Requires API key"
+      cost: "Free tier: 5 calls/min, 500 calls/day"
+      variables:
+        conservative: 10  # 10 major stocks
+        expanded: 50      # 50 stocks across sectors
+      variable_examples:
+        - "NVDA Stock Price (USD)"
+        - "AAPL Stock Price (USD)"
+        - "MSFT Stock Price (USD)"
+        - "GOOGL Stock Price (USD)"
+        - "AMZN Stock Price (USD)"
+      data_type: "Time series, daily closing prices"
+      units: "USD"
+      historical_range: "100 days (compact), 20+ years (full)"
+    
+    usgs_earthquakes:
+      api: "USGS Earthquake API"
+      endpoint: "earthquake.usgs.gov/earthquakes/feed"
+      status: "Active, no key required"
+      cost: "Free"
+      variables:
+        conservative: 1
+        expanded: 1
+      variable_examples:
+        - "Daily Earthquake Count (count)"
+      data_type: "Time series, daily event counts"
+      units: "count"
+      historical_range: "30 days (month feed)"
+    
+    nasa_eonet_environmental:
+      api: "NASA EONET (Earth Observatory Natural Event Tracker)"
+      endpoint: "eonet.gsfc.nasa.gov/api/v3/events"
+      status: "Active, no key required"
+      cost: "Free"
+      variables:
+        conservative: 10   # Major categories
+        expanded: 15       # All event types
+      variable_examples:
+        - "Wildfire Events (count)"
+        - "Severe Storm Events (count)"
+        - "Volcano Events (count)"
+        - "Sea/Lake Ice Events (count)"
+        - "Flood Events (count)"
+        - "Drought Events (count)"
+        - "Dust/Haze Events (count)"
+        - "Landslide Events (count)"
+        - "Snow Events (count)"
+        - "Water Color Events (count)"
+      data_type: "Event counts by category"
+      units: "count"
+      historical_range: "Active events"
+    
+    worldbank_gdp:
+      api: "World Bank Data API"
+      endpoint: "api.worldbank.org/v2/country/{code}/indicator"
+      status: "Active, no key required"
+      cost: "Free"
+      variables:
+        conservative: 20   # G20 countries
+        expanded: 50       # Major economies
+      variable_examples:
+        - "USA GDP (USD)"
+        - "GBR GDP (USD)"
+        - "CHN GDP (USD)"
+        - "JPN GDP (USD)"
+        - "DEU GDP (USD)"
+        - "FRA GDP (USD)"
+      data_type: "Time series, annual GDP values"
+      units: "USD (current)"
+      historical_range: "2015-2023"
+    
+    arxiv_papers:
+      api: "arXiv API"
+      endpoint: "export.arxiv.org/api/query"
+      status: "Active, no key required"
+      cost: "Free"
+      variables:
+        conservative: 10   # Major research topics
+        expanded: 20       # Expanded topic coverage
+      variable_examples:
+        - "Artificial Intelligence Papers (count)"
+        - "Machine Learning Papers (count)"
+        - "Quantum Physics Papers (count)"
+        - "Astrophysics Papers (count)"
+        - "Biotechnology Papers (count)"
+      data_type: "Paper counts by topic"
+      units: "count"
+      historical_range: "All time, searchable"
+    
+    clinicaltrials_gov:
+      api: "ClinicalTrials.gov API"
+      endpoint: "clinicaltrials.gov/api/v2/studies"
+      status: "Active, no key required"
+      cost: "Free"
+      variables:
+        conservative: 10   # Major conditions
+        expanded: 20       # Expanded conditions
+      variable_examples:
+        - "Cancer Clinical Trials (count)"
+        - "Diabetes Clinical Trials (count)"
+        - "COVID-19 Clinical Trials (count)"
+        - "Alzheimer Clinical Trials (count)"
+        - "Heart Disease Clinical Trials (count)"
+      data_type: "Active trial counts by condition"
+      units: "count"
+      historical_range: "Current active trials"
+
+variable_count_summary:
+  conservative_estimate:
+    stocks: 10
+    earthquakes: 1
+    environmental: 10
+    gdp: 20
+    arxiv: 10
+    clinical_trials: 10
+    total_variables: 61
+    correlation_pairs: 3721  # 61 × 61
+  
+  expanded_estimate:
+    stocks: 50
+    earthquakes: 1
+    environmental: 15
+    gdp: 50
+    arxiv: 20
+    clinical_trials: 20
+    total_variables: 156
+    correlation_pairs: 24336  # 156 × 156
+  
+  future_scalability:
+    description: "System designed to scale to 10TB+ data volume"
+    target_timeframe: "50 years historical data"
+    n_by_n_growth: "Correlation pairs grow exponentially with variable count"
+    storage_optimization: "TimescaleDB with compression and partitioning"
+
+# ====================================================================================
+# GOAL 1: CORRELATION DISCOVERY ENGINE (REAL DATA)
+# ====================================================================================
+
+goal_1_correlation_discovery:
+  title: "Correlation Discovery Engine with Real API Data"
+  priority: "MUST HAVE - CRITICAL"
+  estimated_effort: "2-3 days"
+  
+  business_value:
+    - "Discover strongest correlations across ALL variables (not predetermined pairs)"
+    - "Rank correlations by absolute strength for MVP opportunity identification"
+    - "Provide real data foundation for accurate MVP development"
+    - "Prevent wasted effort on MVPs built with inaccurate mock data assumptions"
+  
+  critical_requirement: |
+    NO MOCK DATA - All dashboard endpoints must query real API data. Mock data causes developers
+    to build MVPs based on false correlations, wasting time and resources. The purpose of this
+    application is to do the heavy lifting of analyzing ALL variable relationships and displaying
+    the STRONGEST correlations, not to show predetermined 6×6 matrices.
+  
+  technical_requirements:
+    data_ingestion:
+      - "Wire data_fetcher.py to scheduled tasks (Celery or cron)"
+      - "Fetch data from all 6 API sources (stocks, earthquakes, environmental, GDP, arXiv, trials)"
+      - "Store time series data in Railway Postgres database"
+      - "Implement retry logic and error handling for API failures"
+      - "Track API rate limits and quota usage"
+    
+    correlation_analysis:
+      - "Calculate N×N correlation matrix for ALL variable pairs (61+ variables)"
+      - "Use correlation_analyzer.py methods (Pearson, Spearman, Kendall)"
+      - "Filter by statistical significance (p < 0.05)"
+      - "Rank correlations by absolute strength |r|"
+      - "Store correlation results with p-values and confidence intervals"
+    
+    backend_api:
+      - "Refactor /api/dashboard/heatmap to query TOP N correlations from database"
+      - "Refactor /api/dashboard/stats to count real data points and correlations"
+      - "Refactor /api/dashboard/timeseries to show SELECTED correlation relationship over time"
+      - "Refactor /api/dashboard/network to query real correlation matrix above threshold"
+      - "Refactor /api/dashboard/leaderboard to rank strongest correlations with p-values"
+      - "Remove ALL mock data generation from routers/dashboard.py"
+    
+    database_schema:
+      - "time_series_data: Store raw API data (variable_id, timestamp, value, source)"
+      - "correlation_results: Store correlation pairs (var1_id, var2_id, r_value, p_value, method, calculated_at)"
+      - "analysis_jobs: Track analysis runs (job_id, status, start_time, end_time, variables_count)"
+      - "variable_metadata: Catalog variables (variable_id, name, unit, source, api_endpoint, update_frequency)"
+    
+    frontend_enhancements:
+      - "Add date range selector (1 year, 5 years, 10 years, 50 years, custom)"
+      - "Add analysis frequency selector (daily, hourly, realtime)"
+      - "Add top-N selector for heatmap (show top 10, 20, 50, 100 correlations)"
+      - "Display total variables analyzed and correlation pairs calculated"
+      - "Show API status indicators (green=active, yellow=degraded, red=failed)"
+  
+  acceptance_criteria:
+    - "Heatmap displays TOP N correlations ranked by |r|, not fixed 6×6 matrix"
+    - "All data comes from real API sources - ZERO mock/synthetic data"
+    - "Time series shows SELECTED correlation relationship evolution, not individual variables"
+    - "Network graph uses real correlation matrix from database"
+    - "Leaderboard ranks correlations with real p-values and significance levels"
+    - "Stats endpoint counts actual data points from database"
+    - "API status indicators show live connection health"
+  
+  dependencies:
+    - "Railway Postgres database (AVAILABLE ✅)"
+    - "data_fetcher.py (WORKING ✅)"
+    - "correlation_analyzer.py (WORKING ✅)"
+    - "routers/dashboard.py (NEEDS REFACTORING ❌)"
+
+# ====================================================================================
+# GOAL 2: DRIFT ANALYSIS (RELATIONSHIP TIME FRAMES)
+# ====================================================================================
+
+goal_2_drift_analysis:
+  title: "Temporal Drift Analysis for Relationship Stability"
+  priority: "MUST HAVE"
+  estimated_effort: "3-4 days"
+  
+  business_value:
+    - "Identify exploitable time windows for correlations"
+    - "Understand relationship stability patterns (1 week vs 6 months)"
+    - "Quantify MVP opportunity duration and urgency"
+    - "Predict when relationships will break down"
+  
+  key_insight: |
+    "How long will this correlation be exploitable?" - If a strong relationship 
+    exists for only 1 month vs 6 months, this dramatically changes MVP viability
+    and investment strategy.
+  
+  technical_requirements:
+    drift_detection_engine:
+      - "Statistical tests for relationship stability over time"
+      - "Rolling correlation windows (1 week, 1 month, 3 month, 6 month)"
+      - "Change point detection algorithms"
+      - "Volatility analysis and trend identification"
+    
+    time_window_analysis:
+      - "Multi-timeframe correlation tracking"
+      - "Stability scoring algorithm"
+      - "Breakpoint identification and prediction"
+      - "Seasonal pattern recognition"
+    
+    temporal_profiling:
+      - "Relationship lifecycle modeling"
+      - "Decay rate calculations"
+      - "Strength persistence analysis"
+      - "Future stability forecasting"
+  
+  output_metrics:
+    - "Relationship half-life (time until 50% strength loss)"
+    - "Stability score (0-100, higher = more persistent)"
+    - "Exploitation window (recommended timeframe for MVPs)"
+    - "Risk assessment (probability of relationship breakdown)"
+  
+  acceptance_criteria:
+    - "Drift detection identifies relationship changes within 1 week"
+    - "Multi-timeframe analysis shows correlation evolution"
+    - "Stability scoring accurately predicts relationship persistence"
+    - "Exploitation window recommendations with confidence intervals"
+    - "Historical pattern recognition for similar relationships"
+  
+  dependencies:
+    - "Goal 1: Correlation matrix implementation (PREREQUISITE)"
+    - "CA-003 drift forecasting system (NEEDS BUILDING)"
+    - "Historical data spanning multiple time periods"
+
+# ====================================================================================
+# GOAL 3: ANALYSIS POP-OUT (ROOT CAUSE EXPLANATIONS)
+# ====================================================================================
+
+goal_3_analysis_popup:
+  title: "Intelligent Analysis Pop-out with Relationship Explanations"
+  priority: "MUST HAVE"
+  estimated_effort: "2-3 days"
+  
+  business_value:
+    - "Understand WHY correlations exist (not just that they do)"
+    - "Identify root causes and driving factors"
+    - "Communicate findings to stakeholders effectively"
+    - "Validate correlation legitimacy vs spurious relationships"
+  
+  technical_requirements:
+    causality_testing:
+      - "Granger causality tests for directional relationships"
+      - "VAR models for multivariate analysis"
+      - "DAG inference for causal structure mapping"
+      - "Transfer entropy for information flow quantification"
+    
+    explanation_engine:
+      - "AI-powered correlation analysis and interpretation"
+      - "Business context integration"
+      - "Root cause hypothesis generation"
+      - "Statistical significance validation"
+    
+    interactive_modal:
+      - "Pop-up interface triggered by correlation cell clicks"
+      - "Tabbed sections: Overview, Causality, Drift Timeline, Recommendations"
+      - "Interactive charts showing relationship evolution"
+      - "Downloadable analysis reports"
+  
+  explanation_components:
+    overview_section:
+      - "Correlation strength and statistical significance"
+      - "Relationship type (linear, monotonic, etc.)"
+      - "Data quality and sample size information"
+    
+    causality_section:
+      - "Directional causality test results"
+      - "Causal pathway visualization"
+      - "Confounding variable identification"
+    
+    drift_timeline:
+      - "Historical relationship strength over time"
+      - "Identified breakpoints and regime changes"
+      - "Future stability predictions"
+    
+    recommendations:
+      - "MVP opportunity assessment"
+      - "Recommended exploitation strategy"
+      - "Risk mitigation suggestions"
+  
+  acceptance_criteria:
+    - "Pop-out loads in < 1 second when correlation cell clicked"
+    - "Causality tests execute and display results clearly"
+    - "Drift timeline shows relationship evolution graphically"
+    - "Recommendations are actionable and business-focused"
+    - "Export functionality for analysis reports"
+  
+  dependencies:
+    - "Goal 1: Correlation matrix (PREREQUISITE)"
+    - "Goal 2: Drift analysis (PREREQUISITE)"
+    - "CA-002 causality testing components (NEEDS BUILDING)"
+
+# ====================================================================================
+# IMPLEMENTATION STRATEGY
+# ====================================================================================
+
+implementation_order:
+  phase_1_database_setup:
+    focus: "Database Schema and Data Ingestion"
+    duration: "1 day"
+    tasks:
+      - "Create database schema on Railway Postgres (time_series_data, correlation_results, analysis_jobs, variable_metadata)"
+      - "Wire data_fetcher.py to scheduled tasks for daily API data collection"
+      - "Implement retry logic and error handling for API failures"
+      - "Test data ingestion from all 6 API sources"
+      - "Populate variable_metadata catalog with all 61+ variables"
+  
+  phase_2_correlation_engine:
+    focus: "Real Correlation Analysis Implementation"
+    duration: "1 day"
+    tasks:
+      - "Build N×N correlation calculation using correlation_analyzer.py"
+      - "Calculate correlations for all variable pairs (3,721+ pairs)"
+      - "Filter by statistical significance (p < 0.05)"
+      - "Rank correlations by absolute strength"
+      - "Store results in correlation_results table"
+      - "Add rolling correlation calculation for time windows"
+  
+  phase_3_api_refactoring:
+    focus: "Dashboard Endpoint Refactoring (Remove Mock Data)"
+    duration: "1 day"
+    tasks:
+      - "Refactor /api/dashboard/stats to query real data counts"
+      - "Refactor /api/dashboard/heatmap to return TOP N correlations"
+      - "Refactor /api/dashboard/timeseries to show correlation relationship over time"
+      - "Refactor /api/dashboard/network to use real correlation matrix"
+      - "Refactor /api/dashboard/leaderboard to rank real correlations"
+      - "Refactor /api/dashboard/relationship to query real scatter/timeseries data"
+      - "Remove ALL np.random, math.sin, math.cos, hardcoded values"
+  
+  phase_4_ui_enhancements:
+    focus: "User Controls and Data Transparency"
+    duration: "0.5 day"
+    tasks:
+      - "Add date range selector to dashboard UI"
+      - "Add analysis frequency selector (daily/hourly/realtime)"
+      - "Add top-N selector for heatmap display"
+      - "Display total variables and correlation pairs analyzed"
+      - "Add API status indicators for data source health"
+  
+  phase_5_testing_deployment:
+    focus: "End-to-End Testing and Production Deployment"
+    duration: "0.5 day"
+    tasks:
+      - "Test all endpoints return real data (no mock data remains)"
+      - "Verify correlation calculations accuracy"
+      - "Test API error handling and retry logic"
+      - "Performance testing with full variable set"
+      - "Deploy to Railway production environment"
+      - "User acceptance testing with real MVP use cases"
+
+critical_dependencies:
+  database: "Railway Postgres database connection configured"
+  apis: "API keys configured (Alpha Vantage for stocks)"
+  real_data_policy: "ZERO tolerance for mock/synthetic data in production"
+  existing_code: "Leverage data_fetcher.py and correlation_analyzer.py implementations"
+
+success_metrics:
+  real_data_coverage: "100% of dashboard endpoints use real API data"
+  correlation_discovery: "System analyzes ALL N×N variable pairs and ranks by strength"
+  statistical_validity: "All correlations include p-values and significance testing"
+  mvp_accuracy: "Developers build MVPs on accurate, real-world data insights"
+  performance: "< 2 seconds load time for correlation analysis results"
+
+# ====================================================================================
+# SCAFFOLDING PATTERNS TO ADD
+# ====================================================================================
+
+new_scaffolding_patterns:
+  correlation_analysis_template:
+    description: "Template for statistical correlation analysis systems"
+    components:
+      - "Correlation calculation engines (multiple algorithms)"
+      - "Interactive heatmap visualization components"
+      - "Real-time data pipeline integration"
+      - "Performance optimization patterns"
+  
+  drift_analysis_template:
+    description: "Template for temporal relationship stability analysis"
+    components:
+      - "Multi-timeframe correlation tracking"
+      - "Stability scoring algorithms"
+      - "Change point detection"
+      - "Exploitation window calculations"
+  
+  analysis_popup_template:
+    description: "Template for intelligent data analysis explanations"
+    components:
+      - "Causality testing integration"
+      - "AI-powered explanation generation"
+      - "Interactive modal interfaces"
+      - "Report export functionality"
+  
+  mvp_opportunity_template:
+    description: "Template for business opportunity assessment systems"
+    components:
+      - "Opportunity scoring algorithms"
+      - "Risk assessment frameworks"
+      - "Recommendation generation"
+      - "Stakeholder communication tools"
+
+# ====================================================================================
+# TOTAL EFFORT ESTIMATE
+# ====================================================================================
+
+total_effort:
+  estimated_time: "3-4 days of focused refactoring and integration"
+  complexity: "Medium (leverage existing implementations, remove mock data, wire real APIs)"
+  risk_level: "Low-Medium (APIs are working, database available, patterns established)"
+  
+  success_probability: "Very High (working code exists, clear requirements, proven APIs)"
+  
+  critical_success_factors:
+    - "Strict no-mock-data policy enforcement"
+    - "Leverage existing data_fetcher.py and correlation_analyzer.py"
+    - "Use Railway Postgres for immediate deployment (postpone TimescaleDB scaling)"
+    - "Focus on accurate correlation discovery over complex infrastructure"
+    - "Validate with real MVP use cases before adding advanced features"
+  
+  postponed_for_later:
+    timescaledb_migration: "Migrate to TimescaleDB when scaling to 10TB+ data"
+    advanced_drift_forecasting: "Integrate CA-003 ARIMA/Prophet ensemble after basic functionality proven"
+    causality_analysis: "Add Granger causality and causal inference in Phase 2"
+    real_time_updates: "Start with daily analysis, add hourly/realtime after validation"

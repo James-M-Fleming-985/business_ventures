@@ -1,0 +1,411 @@
+"""
+Data Ingestion Service
+Fetches data from APIs and stores in database
+"""
+
+from data_fetcher import DataFetcher
+from database import get_db_session
+from models import VariableMetadata, TimeSeriesData, APIStatus, AnalysisJob
+from datetime import datetime, timedelta
+import logging
+import json
+from typing import Optional, List
+
+logger = logging.getLogger(__name__)
+
+
+class DataIngestionService:
+    """Service to fetch API data and store in database"""
+    
+    def __init__(self):
+        self.fetcher = DataFetcher()
+    
+    def fetch_and_store_all_variables(self) -> dict:
+        """
+        Fetch data for all active variables and store in database
+        Returns summary statistics
+        """
+        logger.info("Starting data ingestion for all variables...")
+        
+        stats = {
+            'total_variables': 0,
+            'successful_fetches': 0,
+            'failed_fetches': 0,
+            'data_points_stored': 0,
+            'api_status': {}
+        }
+        
+        # Create analysis job
+        with get_db_session() as session:
+            job = AnalysisJob(
+                job_type='data_fetch',
+                status='running',
+                start_time=datetime.utcnow()
+            )
+            session.add(job)
+            session.commit()
+            job_id = job.id
+        
+        # Fetch data by source
+        stats.update(self._fetch_stock_data())
+        stats.update(self._fetch_earthquake_data())
+        stats.update(self._fetch_environmental_data())
+        stats.update(self._fetch_gdp_data())
+        stats.update(self._fetch_arxiv_data())
+        stats.update(self._fetch_clinical_trials_data())
+        
+        # Update job status
+        with get_db_session() as session:
+            job = session.query(AnalysisJob).get(job_id)
+            job.status = 'completed'
+            job.end_time = datetime.utcnow()
+            job.parameters = json.dumps(stats)
+            session.commit()
+        
+        logger.info(f"Data ingestion complete: {stats}")
+        return stats
+    
+    def _fetch_stock_data(self) -> dict:
+        """Fetch stock data for all stock variables"""
+        logger.info("Fetching stock data...")
+        
+        with get_db_session() as session:
+            stock_vars = session.query(VariableMetadata).filter(
+                VariableMetadata.source == 'alpha_vantage',
+                VariableMetadata.is_active == True
+            ).all()
+            
+            success_count = 0
+            data_points = 0
+            
+            for var in stock_vars:
+                try:
+                    params = json.loads(var.parameters)
+                    symbol = params.get('symbol')
+                    
+                    # Fetch 30 days of data
+                    prices = self.fetcher.fetch_stock_data(symbol, days=30)
+                    
+                    if prices:
+                        # Store data points
+                        base_date = datetime.utcnow() - timedelta(days=len(prices)-1)
+                        for i, price in enumerate(prices):
+                            timestamp = base_date + timedelta(days=i)
+                            
+                            # Check if data point already exists
+                            existing = session.query(TimeSeriesData).filter(
+                                TimeSeriesData.variable_id == var.id,
+                                TimeSeriesData.timestamp == timestamp
+                            ).first()
+                            
+                            if not existing:
+                                data_point = TimeSeriesData(
+                                    variable_id=var.id,
+                                    timestamp=timestamp,
+                                    value=price,
+                                    fetched_at=datetime.utcnow()
+                                )
+                                session.add(data_point)
+                                data_points += 1
+                        
+                        session.commit()
+                        success_count += 1
+                        self._update_api_status(session, 'alpha_vantage', 'active')
+                    else:
+                        logger.warning(f"No data for {symbol}")
+                        
+                except Exception as e:
+                    logger.error(f"Error fetching {var.name}: {e}")
+                    self._update_api_status(session, 'alpha_vantage', 'failed', str(e))
+        
+        logger.info(f"Stock data: {success_count} variables, {data_points} data points")
+        return {'stocks_fetched': success_count, 'stock_data_points': data_points}
+    
+    def _fetch_earthquake_data(self) -> dict:
+        """Fetch earthquake count data"""
+        logger.info("Fetching earthquake data...")
+        
+        with get_db_session() as session:
+            eq_var = session.query(VariableMetadata).filter(
+                VariableMetadata.source == 'usgs',
+                VariableMetadata.is_active == True
+            ).first()
+            
+            if not eq_var:
+                return {'earthquakes_fetched': 0}
+            
+            try:
+                counts = self.fetcher.fetch_earthquake_count(days=30)
+                
+                if counts:
+                    base_date = datetime.utcnow() - timedelta(days=len(counts)-1)
+                    data_points = 0
+                    
+                    for i, count in enumerate(counts):
+                        timestamp = base_date + timedelta(days=i)
+                        
+                        existing = session.query(TimeSeriesData).filter(
+                            TimeSeriesData.variable_id == eq_var.id,
+                            TimeSeriesData.timestamp == timestamp
+                        ).first()
+                        
+                        if not existing:
+                            data_point = TimeSeriesData(
+                                variable_id=eq_var.id,
+                                timestamp=timestamp,
+                                value=float(count),
+                                fetched_at=datetime.utcnow()
+                            )
+                            session.add(data_point)
+                            data_points += 1
+                    
+                    session.commit()
+                    self._update_api_status(session, 'usgs', 'active')
+                    logger.info(f"Earthquake data: {data_points} data points")
+                    return {'earthquakes_fetched': 1, 'earthquake_data_points': data_points}
+                    
+            except Exception as e:
+                logger.error(f"Error fetching earthquake data: {e}")
+                self._update_api_status(session, 'usgs', 'failed', str(e))
+        
+        return {'earthquakes_fetched': 0}
+    
+    def _fetch_environmental_data(self) -> dict:
+        """Fetch environmental event counts"""
+        logger.info("Fetching environmental data...")
+        
+        # Environmental data is event counts, not time series
+        # Store as single data point for "now"
+        try:
+            events = self.fetcher.fetch_environmental_events()
+            
+            if events:
+                with get_db_session() as session:
+                    env_vars = session.query(VariableMetadata).filter(
+                        VariableMetadata.source == 'nasa_eonet',
+                        VariableMetadata.is_active == True
+                    ).all()
+                    
+                    data_points = 0
+                    timestamp = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+                    
+                    for var in env_vars:
+                        params = json.loads(var.parameters)
+                        category = params.get('category', '')
+                        
+                        # Map category name to event count
+                        category_title = category.replace('_', ' ').title()
+                        count = events.get(category_title, 0)
+                        
+                        existing = session.query(TimeSeriesData).filter(
+                            TimeSeriesData.variable_id == var.id,
+                            TimeSeriesData.timestamp == timestamp
+                        ).first()
+                        
+                        if not existing:
+                            data_point = TimeSeriesData(
+                                variable_id=var.id,
+                                timestamp=timestamp,
+                                value=float(count),
+                                fetched_at=datetime.utcnow()
+                            )
+                            session.add(data_point)
+                            data_points += 1
+                    
+                    session.commit()
+                    self._update_api_status(session, 'nasa_eonet', 'active')
+                    logger.info(f"Environmental data: {data_points} data points")
+                    return {'environmental_fetched': len(env_vars), 'environmental_data_points': data_points}
+                    
+        except Exception as e:
+            logger.error(f"Error fetching environmental data: {e}")
+            with get_db_session() as session:
+                self._update_api_status(session, 'nasa_eonet', 'failed', str(e))
+        
+        return {'environmental_fetched': 0}
+    
+    def _fetch_gdp_data(self) -> dict:
+        """Fetch GDP data (annual, less frequent updates needed)"""
+        logger.info("Fetching GDP data...")
+        
+        # GDP is annual data, only fetch if we don't have recent data
+        with get_db_session() as session:
+            gdp_vars = session.query(VariableMetadata).filter(
+                VariableMetadata.source == 'worldbank',
+                VariableMetadata.is_active == True
+            ).all()
+            
+            success_count = 0
+            data_points = 0
+            
+            for var in gdp_vars:
+                try:
+                    # Check if we have data from this year
+                    current_year = datetime.utcnow().year
+                    year_start = datetime(current_year, 1, 1)
+                    
+                    existing = session.query(TimeSeriesData).filter(
+                        TimeSeriesData.variable_id == var.id,
+                        TimeSeriesData.timestamp >= year_start
+                    ).first()
+                    
+                    if existing:
+                        continue  # Already have data for this year
+                    
+                    params = json.loads(var.parameters)
+                    country_code = params.get('country_code')
+                    
+                    values = self.fetcher.fetch_gdp_data(country_code)
+                    
+                    if values:
+                        # Store as annual data points (use Jan 1 of each year)
+                        base_year = 2015
+                        for i, value in enumerate(values):
+                            timestamp = datetime(base_year + i, 1, 1)
+                            
+                            existing = session.query(TimeSeriesData).filter(
+                                TimeSeriesData.variable_id == var.id,
+                                TimeSeriesData.timestamp == timestamp
+                            ).first()
+                            
+                            if not existing:
+                                data_point = TimeSeriesData(
+                                    variable_id=var.id,
+                                    timestamp=timestamp,
+                                    value=value,
+                                    fetched_at=datetime.utcnow()
+                                )
+                                session.add(data_point)
+                                data_points += 1
+                        
+                        session.commit()
+                        success_count += 1
+                        self._update_api_status(session, 'worldbank', 'active')
+                        
+                except Exception as e:
+                    logger.error(f"Error fetching GDP for {var.name}: {e}")
+                    self._update_api_status(session, 'worldbank', 'failed', str(e))
+        
+        logger.info(f"GDP data: {success_count} variables, {data_points} data points")
+        return {'gdp_fetched': success_count, 'gdp_data_points': data_points}
+    
+    def _fetch_arxiv_data(self) -> dict:
+        """Fetch arXiv paper counts"""
+        logger.info("Fetching arXiv data...")
+        
+        with get_db_session() as session:
+            arxiv_vars = session.query(VariableMetadata).filter(
+                VariableMetadata.source == 'arxiv',
+                VariableMetadata.is_active == True
+            ).all()
+            
+            success_count = 0
+            data_points = 0
+            timestamp = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+            
+            for var in arxiv_vars:
+                try:
+                    params = json.loads(var.parameters)
+                    topic = params.get('topic')
+                    
+                    count = self.fetcher.fetch_arxiv_papers(topic, max_results=100)
+                    
+                    if count is not None:
+                        existing = session.query(TimeSeriesData).filter(
+                            TimeSeriesData.variable_id == var.id,
+                            TimeSeriesData.timestamp == timestamp
+                        ).first()
+                        
+                        if not existing:
+                            data_point = TimeSeriesData(
+                                variable_id=var.id,
+                                timestamp=timestamp,
+                                value=float(count),
+                                fetched_at=datetime.utcnow()
+                            )
+                            session.add(data_point)
+                            data_points += 1
+                        
+                        success_count += 1
+                        self._update_api_status(session, 'arxiv', 'active')
+                        
+                except Exception as e:
+                    logger.error(f"Error fetching arXiv {var.name}: {e}")
+                    self._update_api_status(session, 'arxiv', 'failed', str(e))
+            
+            session.commit()
+        
+        logger.info(f"arXiv data: {success_count} variables, {data_points} data points")
+        return {'arxiv_fetched': success_count, 'arxiv_data_points': data_points}
+    
+    def _fetch_clinical_trials_data(self) -> dict:
+        """Fetch clinical trial counts"""
+        logger.info("Fetching clinical trials data...")
+        
+        with get_db_session() as session:
+            trial_vars = session.query(VariableMetadata).filter(
+                VariableMetadata.source == 'clinicaltrials',
+                VariableMetadata.is_active == True
+            ).all()
+            
+            success_count = 0
+            data_points = 0
+            timestamp = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+            
+            for var in trial_vars:
+                try:
+                    params = json.loads(var.parameters)
+                    condition = params.get('condition')
+                    
+                    count = self.fetcher.fetch_clinical_trials(condition)
+                    
+                    if count is not None:
+                        existing = session.query(TimeSeriesData).filter(
+                            TimeSeriesData.variable_id == var.id,
+                            TimeSeriesData.timestamp == timestamp
+                        ).first()
+                        
+                        if not existing:
+                            data_point = TimeSeriesData(
+                                variable_id=var.id,
+                                timestamp=timestamp,
+                                value=float(count),
+                                fetched_at=datetime.utcnow()
+                            )
+                            session.add(data_point)
+                            data_points += 1
+                        
+                        success_count += 1
+                        self._update_api_status(session, 'clinicaltrials', 'active')
+                        
+                except Exception as e:
+                    logger.error(f"Error fetching trials {var.name}: {e}")
+                    self._update_api_status(session, 'clinicaltrials', 'failed', str(e))
+            
+            session.commit()
+        
+        logger.info(f"Clinical trials: {success_count} variables, {data_points} data points")
+        return {'trials_fetched': success_count, 'trials_data_points': data_points}
+    
+    def _update_api_status(self, session, source: str, status: str, error: str = None):
+        """Update API status in database"""
+        api_status = session.query(APIStatus).filter(
+            APIStatus.source == source
+        ).first()
+        
+        if not api_status:
+            api_status = APIStatus(source=source, status=status)
+            session.add(api_status)
+        else:
+            api_status.status = status
+            api_status.checked_at = datetime.utcnow()
+            
+            if status == 'active':
+                api_status.last_success = datetime.utcnow()
+                api_status.success_count = (api_status.success_count or 0) + 1
+            elif status == 'failed':
+                api_status.last_failure = datetime.utcnow()
+                api_status.failure_count = (api_status.failure_count or 0) + 1
+                api_status.error_message = error
+        
+        session.commit()
