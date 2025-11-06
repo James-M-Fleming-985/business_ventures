@@ -75,6 +75,35 @@ async def initialize_database():
         )
 
 
+@router.post("/fetch-data")
+async def fetch_data():
+    """Fetch data from APIs without full initialization"""
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+        from data_ingestion_service import DataIngestionService
+        from database import get_db_session
+        
+        logger.info("Starting data ingestion...")
+        
+        with get_db_session() as db:
+            ingestion_service = DataIngestionService(db)
+            result = ingestion_service.fetch_and_store_all_variables()
+        
+        logger.info("✅ Data ingestion complete!")
+        return JSONResponse({
+            "status": "success",
+            "message": "Data fetched successfully",
+            "result": str(result)
+        })
+        
+    except Exception as e:
+        logger.error(f"Data ingestion failed: {e}", exc_info=True)
+        return JSONResponse({
+            "status": "error",
+            "message": str(e)
+        }, status_code=500)
+
+
 @router.get("/health")
 async def admin_health():
     """Health check for admin endpoints"""
