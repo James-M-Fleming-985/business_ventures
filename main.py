@@ -32,6 +32,7 @@ from correlation_analyzer import CorrelationAnalyzer
 
 # Import dashboard router - USING REAL DATA VERSION
 from routers import dashboard_real as dashboard  # NO MOCK DATA
+from routers import admin  # Database initialization endpoints
 
 # Version tracking to prevent Railway cache issues
 BUILD_VERSION = "2.0.0"  # MAJOR UPDATE: Real data integration
@@ -58,6 +59,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Include routers
 app.include_router(dashboard.router)
+app.include_router(admin.router)  # Admin endpoints for database management
 
 # CORS Configuration
 app.add_middleware(
