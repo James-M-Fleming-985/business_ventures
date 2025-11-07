@@ -63,7 +63,7 @@ class CorrelationAnalysisService:
             # Get all variables with data
             with get_db_session() as session:
                 variables = session.query(VariableMetadata).filter(
-                    VariableMetadata.is_active == True
+                    VariableMetadata.is_active.is_(True)
                 ).all()
                 
                 var_ids = [v.id for v in variables]

@@ -120,7 +120,7 @@ async def calculate_correlations():
         with get_db_session() as db:
             top_correlations = (
                 db.query(CorrelationResult)
-                .filter(CorrelationResult.is_significant == True)
+                .filter(CorrelationResult.is_significant.is_(True))
                 .order_by(CorrelationResult.abs_correlation.desc())
                 .limit(10)
                 .all()

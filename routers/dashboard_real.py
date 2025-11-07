@@ -33,12 +33,12 @@ async def get_dashboard_stats(db: Session = Depends(get_db)):
         
         # Count active variables
         active_vars = db.query(VariableMetadata).filter(
-            VariableMetadata.is_active == True
+            VariableMetadata.is_active.is_(True)
         ).count()
         
         # Count significant correlations
         strong_correlations = db.query(CorrelationResult).filter(
-            CorrelationResult.is_significant == True,
+            CorrelationResult.is_significant.is_(True),
             CorrelationResult.abs_correlation >= 0.5
         ).count()
         
@@ -150,7 +150,7 @@ async def get_timeseries_data(
         if not var1_id or not var2_id:
             # Get top correlation pair if not specified
             top_corr = db.query(CorrelationResult).filter(
-                CorrelationResult.is_significant == True
+                CorrelationResult.is_significant.is_(True)
             ).order_by(CorrelationResult.abs_correlation.desc()).first()
             
             if not top_corr:
@@ -206,7 +206,7 @@ async def get_network_data(
     try:
         # Get all significant correlations above threshold
         correlations = db.query(CorrelationResult).filter(
-            CorrelationResult.is_significant == True,
+            CorrelationResult.is_significant.is_(True),
             CorrelationResult.abs_correlation >= threshold
         ).all()
         
