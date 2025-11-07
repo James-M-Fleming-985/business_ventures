@@ -116,22 +116,22 @@ async def calculate_correlations():
         analysis_service = CorrelationAnalysisService()
         result = analysis_service.calculate_all_correlations()
         
-        # Get top correlations from database
+        # Get top correlations from database with eagerly loaded relationships
+        from sqlalchemy.orm import joinedload
+        
         with get_db_session() as db:
             top_correlations = (
                 db.query(CorrelationResult)
+                .options(joinedload(CorrelationResult.variable1))
+                .options(joinedload(CorrelationResult.variable2))
                 .filter(CorrelationResult.is_significant.is_(True))
                 .order_by(CorrelationResult.abs_correlation.desc())
                 .limit(10)
                 .all()
             )
-        
-        logger.info("✅ Correlation calculation complete!")
-        return JSONResponse({
-            "status": "success",
-            "message": "Correlations calculated successfully",
-            "stats": result,
-            "top_correlations": [
+            
+            # Build result list while still in session
+            top_corr_list = [
                 {
                     "variable1": corr.variable1.display_name,
                     "variable2": corr.variable2.display_name,
@@ -141,6 +141,13 @@ async def calculate_correlations():
                 }
                 for corr in top_correlations
             ]
+        
+        logger.info("✅ Correlation calculation complete!")
+        return JSONResponse({
+            "status": "success",
+            "message": "Correlations calculated successfully",
+            "stats": result,
+            "top_correlations": top_corr_list
         })
         
     except Exception as e:
