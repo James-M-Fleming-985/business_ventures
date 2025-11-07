@@ -76,8 +76,8 @@ async def get_dashboard_stats(db: Session = Depends(get_db)):
 @router.get("/heatmap")
 async def get_heatmap_data(
     top_n: int = Query(12, ge=5, le=30, description="Number of top variable pairs to show"),
-    cross_domain: bool = Query(True, description="Prioritize correlations across different data sources"),
-    min_strength: float = Query(0.5, ge=0.0, le=1.0, description="Minimum absolute correlation strength"),
+    cross_domain: bool = Query(True, description="Only show correlations across different data sources"),
+    min_strength: float = Query(0.3, ge=0.0, le=1.0, description="Minimum absolute correlation strength (0.3 for cross-domain)"),
     db: Session = Depends(get_db)
 ):
     """
@@ -86,11 +86,12 @@ async def get_heatmap_data(
     Returns focused matrix of strongest pairs (not all-vs-all)
     """
     try:
-        # Get correlations from database
+        # Get correlations from database - USE cross_domain parameter!
         service = CorrelationAnalysisService()
         all_correlations = service.get_top_correlations(
             limit=500,  # Get many candidates for filtering
-            min_significance=0.05
+            min_significance=0.05,
+            cross_domain=cross_domain  # Actually use the cross_domain filter!
         )
         
         if not all_correlations:
@@ -100,24 +101,14 @@ async def get_heatmap_data(
                 "message": "No correlations calculated yet. Run data ingestion first."
             }
         
-        # Apply filters
+        # Apply strength filter only (cross-domain already filtered by service)
         filtered = []
         for corr in all_correlations:
             # Strength filter
             if abs(corr['correlation_value']) < min_strength:
                 continue
-                
-            # Cross-domain filter (prioritize, don't require)
-            var1_src = corr['variable1_name'].split()[0] if ' ' in corr['variable1_name'] else corr['variable1_name']
-            var2_src = corr['variable2_name'].split()[0] if ' ' in corr['variable2_name'] else corr['variable2_name']
             
-            is_cross_domain = var1_src != var2_src
-            
-            # If cross_domain requested, prioritize those first
-            if cross_domain and is_cross_domain:
-                filtered.insert(0, corr)  # Add to front
-            else:
-                filtered.append(corr)
+            filtered.append(corr)
         
         # Deduplicate pairs (keep only one of A-B or B-A)
         seen_pairs = set()
