@@ -48,14 +48,11 @@ async def get_dashboard_stats(db: Session = Depends(get_db)):
         ).count()
         
         # Get last update time
-        last_job = db.query(AnalysisJob).filter(
+                try:
             AnalysisJob.status == 'completed'
         ).order_by(AnalysisJob.end_time.desc()).first()
-        
-        last_updated = last_job.end_time.strftime("%H:%M:%S") if last_job else "Never"
-        
-        return {
-            "dataPoints": data_points,
+                    # If cross_domain=True we will filter pairs where the two variables' sources differ
+                    raw_top = service.get_top_correlations(limit=500, min_significance=0.05)
             "strongCorrelations": strong_correlations,
             "apiSources": active_apis,
             "totalVariables": active_vars,
