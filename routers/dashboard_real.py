@@ -75,80 +75,104 @@ async def get_dashboard_stats(db: Session = Depends(get_db)):
 
 @router.get("/heatmap")
 async def get_heatmap_data(
-    top_n: int = Query(20, ge=5, le=100),
-    cross_domain: bool = Query(False, description="Only show cross-domain correlations"),
+    top_n: int = Query(12, ge=5, le=30, description="Number of top variable pairs to show"),
+    cross_domain: bool = Query(True, description="Prioritize correlations across different data sources"),
+    min_strength: float = Query(0.5, ge=0.0, le=1.0, description="Minimum absolute correlation strength"),
     db: Session = Depends(get_db)
 ):
     """
-    Get TOP N correlations for heatmap - REAL DATA ONLY
-    Shows strongest correlations ranked by |r| as a matrix
+    Get heatmap showing TOP N strongest correlation pairs
+    Designed to highlight disparate cross-domain relationships
+    Returns focused matrix of strongest pairs (not all-vs-all)
     """
     try:
-        # Get top N significant correlations
+        # Get correlations from database
         service = CorrelationAnalysisService()
-        top_correlations = service.get_top_correlations(
-            limit=top_n,
-            min_significance=0.05,
-            cross_domain=cross_domain
+        all_correlations = service.get_top_correlations(
+            limit=500,  # Get many candidates for filtering
+            min_significance=0.05
         )
         
-        if not top_correlations:
+        if not all_correlations:
             return {
                 "labels": [],
                 "matrix": [],
                 "message": "No correlations calculated yet. Run data ingestion first."
             }
         
-        # Build variable list from top correlations
-        var_names = set()
-        for corr in top_correlations:
-            var_names.add((corr['variable1_id'], corr['variable1_name']))
-            var_names.add((corr['variable2_id'], corr['variable2_name']))
-        
-        var_list = sorted(list(var_names), key=lambda x: x[0])
-        labels = [name for _, name in var_list]
-        var_id_to_idx = {var_id: idx for idx, (var_id, _) in enumerate(var_list)}
-        
-        # Build correlation matrix (use None for missing pairs instead of 0.0)
-        n = len(labels)
-        matrix = [[None if i != j else 1.0 for j in range(n)] for i in range(n)]
-        
-        # Per-cell details for UI popouts
-        details = {}
-        
-        for corr in top_correlations:
-            idx1 = var_id_to_idx.get(corr['variable1_id'])
-            idx2 = var_id_to_idx.get(corr['variable2_id'])
-            
-            if idx1 is not None and idx2 is not None:
-                r_value = corr['correlation_value']
-                matrix[idx1][idx2] = r_value
-                matrix[idx2][idx1] = r_value  # Symmetric
+        # Apply filters
+        filtered = []
+        for corr in all_correlations:
+            # Strength filter
+            if abs(corr['correlation_value']) < min_strength:
+                continue
                 
-                # Store details for both directions
-                for i, j in [(idx1, idx2), (idx2, idx1)]:
-                    key = f"{i}_{j}"
-                    details[key] = {
-                        "correlation": round(r_value, 4),
-                        "p_value": round(corr['p_value'], 6) if corr['p_value'] else None,
-                        "sample_size": corr['sample_size'],
-                        "method": corr.get('method', 'pearson')
-                    }
+            # Cross-domain filter (prioritize, don't require)
+            var1_src = corr['variable1_name'].split()[0] if ' ' in corr['variable1_name'] else corr['variable1_name']
+            var2_src = corr['variable2_name'].split()[0] if ' ' in corr['variable2_name'] else corr['variable2_name']
+            
+            is_cross_domain = var1_src != var2_src
+            
+            # If cross_domain requested, prioritize those first
+            if cross_domain and is_cross_domain:
+                filtered.insert(0, corr)  # Add to front
+            else:
+                filtered.append(corr)
+        
+        # Deduplicate pairs (keep only one of A-B or B-A)
+        seen_pairs = set()
+        unique_correlations = []
+        for corr in filtered:
+            v1, v2 = corr['variable1_name'], corr['variable2_name']
+            pair = tuple(sorted([v1, v2]))
+            if pair not in seen_pairs:
+                seen_pairs.add(pair)
+                unique_correlations.append(corr)
+        
+        # Take top N unique pairs
+        top_pairs = unique_correlations[:top_n]
+        
+        if not top_pairs:
+            return {
+                "labels": [],
+                "matrix": [],
+                "message": f"No correlations found above strength threshold {min_strength}. Try lowering min_strength."
+            }
+        
+        # Build focused matrix from ONLY the top pairs
+        # Each pair gets one row and one column
+        labels = []
+        var_to_idx = {}
+        
+        # Build variable list preserving pair order
+        for corr in top_pairs:
+            for var_name in [corr['variable1_name'], corr['variable2_name']]:
+                if var_name not in var_to_idx:
+                    var_to_idx[var_name] = len(labels)
+                    labels.append(var_name)
+        
+        # Initialize matrix: None for missing, 1.0 on diagonal
+        n = len(labels)
+        matrix = [[None for _ in range(n)] for _ in range(n)]
+        for i in range(n):
+            matrix[i][i] = 1.0
+        
+        # Fill in correlations (only pairs we have)
+        for corr in top_pairs:
+            i = var_to_idx[corr['variable1_name']]
+            j = var_to_idx[corr['variable2_name']]
+            r = corr['correlation_value']
+            
+            matrix[i][j] = r
+            matrix[j][i] = r
         
         return {
             "labels": labels,
             "matrix": matrix,
-            "details": details,
-            "correlation_count": len(top_correlations),
+            "correlation_count": len(top_pairs),
             "top_n": top_n,
-            "cross_domain": cross_domain
-        }
-    except Exception as e:
-        logger.error(f"Error getting heatmap: {e}")
-        return {
-            "labels": [],
-            "matrix": [],
-            "error": str(e)
+            "cross_domain_filter": cross_domain,
+            "min_strength": min_strength
         }
 
 

@@ -36,7 +36,7 @@ from routers import admin  # Database initialization endpoints
 
 # Build version - INCREMENT THIS BEFORE EACH DEPLOYMENT
 # Format: MAJOR.MINOR.PATCH
-BUILD_VERSION = "2.0.1"  # Real data integration with heatmap matrix fix
+BUILD_VERSION = "2.0.2"  # Real data integration - heatmap cross-domain focus
 DEPLOY_TIMESTAMP = datetime.utcnow().isoformat()
 
 # Initialize services
