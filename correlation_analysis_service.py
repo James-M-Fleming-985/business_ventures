@@ -177,42 +177,68 @@ class CorrelationAnalysisService:
         """Calculate correlation between two variables"""
         try:
             # Align time series (handle different timestamps)
-            aligned_data = pd.DataFrame({
-                'var1': var1_data,
-                'var2': var2_data
-            }).dropna()
-            
-            if len(aligned_data) < 3:
+            try:
+                aligned_data = pd.DataFrame({
+                    'var1': var1_data,
+                    'var2': var2_data
+                })
+                aligned_data = aligned_data.dropna()
+            except Exception as e:
+                logger.error(f"DataFrame alignment error for {var1_id}-{var2_id}: {e}")
                 return None
             
-            x = aligned_data['var1'].values
-            y = aligned_data['var2'].values
+            # Check minimum sample size
+            try:
+                sample_size = int(len(aligned_data))
+                if sample_size < 3:
+                    return None
+            except Exception as e:
+                logger.error(f"Sample size check error for {var1_id}-{var2_id}: {e}")
+                return None
+            
+            # Extract numpy arrays
+            try:
+                x = aligned_data['var1'].values
+                y = aligned_data['var2'].values
+            except Exception as e:
+                logger.error(f"Array extraction error for {var1_id}-{var2_id}: {e}")
+                return None
             
             # Calculate correlation using correlation_analyzer.py
-            if method == 'pearson':
-                r, p = self.analyzer.pearson_correlation(x, y)
-            elif method == 'spearman':
-                r, p = self.analyzer.spearman_correlation(x, y)
-            elif method == 'kendall':
-                r, p = self.analyzer.kendall_correlation(x, y)
-            else:
-                raise ValueError(f"Unknown method: {method}")
+            try:
+                if method == 'pearson':
+                    r, p = self.analyzer.pearson_correlation(x, y)
+                elif method == 'spearman':
+                    r, p = self.analyzer.spearman_correlation(x, y)
+                elif method == 'kendall':
+                    r, p = self.analyzer.kendall_correlation(x, y)
+                else:
+                    raise ValueError(f"Unknown method: {method}")
+            except Exception as e:
+                logger.error(f"Correlation calculation error for {var1_id}-{var2_id}: {e}")
+                return None
             
-            return {
-                'variable1_id': var1_id,
-                'variable2_id': var2_id,
-                'correlation_value': float(r) if r is not None else 0.0,
-                'p_value': float(p) if p is not None else 1.0,
-                'method': method,
-                'sample_size': int(len(aligned_data)),
-                'start_date': pd.Timestamp(aligned_data.index.min()).to_pydatetime(),
-                'end_date': pd.Timestamp(aligned_data.index.max()).to_pydatetime(),
-                'is_significant': bool(p < 0.05) if p is not None else False,
-                'abs_correlation': float(abs(r)) if r is not None else 0.0
-            }
+            # Build result dictionary with explicit type conversions
+            try:
+                result = {
+                    'variable1_id': int(var1_id),
+                    'variable2_id': int(var2_id),
+                    'correlation_value': float(r) if r is not None else 0.0,
+                    'p_value': float(p) if p is not None else 1.0,
+                    'method': str(method),
+                    'sample_size': sample_size,
+                    'start_date': pd.Timestamp(aligned_data.index.min()).to_pydatetime(),
+                    'end_date': pd.Timestamp(aligned_data.index.max()).to_pydatetime(),
+                    'is_significant': bool(float(p) < 0.05) if p is not None else False,
+                    'abs_correlation': float(abs(r)) if r is not None else 0.0
+                }
+                return result
+            except Exception as e:
+                logger.error(f"Result building error for {var1_id}-{var2_id}: {e}")
+                return None
             
         except Exception as e:
-            logger.warning(f"Error calculating correlation {var1_id}-{var2_id}: {e}")
+            logger.error(f"Unexpected error calculating correlation {var1_id}-{var2_id}: {e}", exc_info=True)
             return None
     
     def _store_correlation(self, result: dict, job_id: int):
