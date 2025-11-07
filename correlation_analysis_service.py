@@ -207,8 +207,8 @@ class CorrelationAnalysisService:
                 'sample_size': len(aligned_data),
                 'start_date': aligned_data.index.min(),
                 'end_date': aligned_data.index.max(),
-                'is_significant': p < 0.05,
-                'abs_correlation': abs(r)
+                'is_significant': bool(p < 0.05) if p is not None else False,
+                'abs_correlation': abs(r) if r is not None else 0.0
             }
             
         except Exception as e:
