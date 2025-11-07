@@ -201,14 +201,14 @@ class CorrelationAnalysisService:
             return {
                 'variable1_id': var1_id,
                 'variable2_id': var2_id,
-                'correlation_value': r,
-                'p_value': p,
+                'correlation_value': float(r) if r is not None else 0.0,
+                'p_value': float(p) if p is not None else 1.0,
                 'method': method,
-                'sample_size': len(aligned_data),
-                'start_date': aligned_data.index.min(),
-                'end_date': aligned_data.index.max(),
+                'sample_size': int(len(aligned_data)),
+                'start_date': pd.Timestamp(aligned_data.index.min()).to_pydatetime(),
+                'end_date': pd.Timestamp(aligned_data.index.max()).to_pydatetime(),
                 'is_significant': bool(p < 0.05) if p is not None else False,
-                'abs_correlation': abs(r) if r is not None else 0.0
+                'abs_correlation': float(abs(r)) if r is not None else 0.0
             }
             
         except Exception as e:
