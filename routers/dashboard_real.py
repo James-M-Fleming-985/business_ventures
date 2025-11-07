@@ -174,6 +174,14 @@ async def get_heatmap_data(
             "cross_domain_filter": cross_domain,
             "min_strength": min_strength
         }
+    
+    except Exception as e:
+        logger.error(f"Error getting heatmap: {e}")
+        return {
+            "labels": [],
+            "matrix": [],
+            "error": str(e)
+        }
 
 
 @router.get("/timeseries")
