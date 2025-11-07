@@ -102,6 +102,47 @@ async def fetch_data():
         }, status_code=500)
 
 
+@router.post("/calculate-correlations")
+async def calculate_correlations():
+    """Calculate correlations for all variable pairs"""
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+        from correlation_analysis_service import CorrelationAnalysisService
+        from database import get_db_session
+        
+        logger.info("Starting correlation calculation...")
+        
+        with get_db_session() as db:
+            analysis_service = CorrelationAnalysisService(db)
+            analysis_service.calculate_all_correlations()
+            
+            # Get top correlations
+            top_correlations = analysis_service.get_top_correlations(limit=10)
+        
+        logger.info("✅ Correlation calculation complete!")
+        return JSONResponse({
+            "status": "success",
+            "message": "Correlations calculated successfully",
+            "top_correlations": [
+                {
+                    "variable1": corr.variable1.display_name,
+                    "variable2": corr.variable2.display_name,
+                    "correlation": round(corr.correlation_value, 4),
+                    "p_value": round(corr.p_value, 6) if corr.p_value else None,
+                    "sample_size": corr.sample_size
+                }
+                for corr in top_correlations
+            ]
+        })
+        
+    except Exception as e:
+        logger.error(f"Correlation calculation failed: {e}", exc_info=True)
+        return JSONResponse({
+            "status": "error",
+            "message": str(e)
+        }, status_code=500)
+
+
 @router.get("/health")
 async def admin_health():
     """Health check for admin endpoints"""
