@@ -352,7 +352,8 @@ class CorrelationAnalysisService:
         self,
         limit: int = 20,
         min_significance: float = 0.05,
-        method: str = None
+        method: str = None,
+        cross_domain: bool = False
     ) -> List[dict]:
         """
         Get top N correlations ranked by absolute strength
@@ -361,6 +362,7 @@ class CorrelationAnalysisService:
             limit: Number of top correlations to return
             min_significance: Maximum p-value (0.05 = 95% confidence)
             method: Filter by correlation method (None = all)
+            cross_domain: Only return correlations between different data sources
         
         Returns:
             List of top correlation results
@@ -373,21 +375,40 @@ class CorrelationAnalysisService:
             if method:
                 query = query.filter(CorrelationResult.method == method)
             
-            results = query.order_by(
-                CorrelationResult.abs_correlation.desc()
-            ).limit(limit).all()
+            # Get results with relationships eagerly loaded
+            from sqlalchemy.orm import joinedload
+            results = (
+                query.options(
+                    joinedload(CorrelationResult.variable1),
+                    joinedload(CorrelationResult.variable2)
+                )
+                .order_by(CorrelationResult.abs_correlation.desc())
+                .limit(limit * 3 if cross_domain else limit)  # Get extra if filtering
+                .all()
+            )
             
-            return [
-                {
+            correlations = []
+            for r in results:
+                # If cross_domain, filter out same-source correlations
+                if cross_domain:
+                    if r.variable1.source == r.variable2.source:
+                        continue
+                
+                correlations.append({
                     'variable1_id': r.variable1_id,
                     'variable2_id': r.variable2_id,
                     'variable1_name': r.variable1.display_name,
                     'variable2_name': r.variable2.display_name,
+                    'variable1_source': r.variable1.source,
+                    'variable2_source': r.variable2.source,
                     'correlation_value': r.correlation_value,
                     'p_value': r.p_value,
                     'method': r.method,
                     'sample_size': r.sample_size,
                     'is_significant': r.is_significant
-                }
-                for r in results
-            ]
+                })
+                
+                if len(correlations) >= limit:
+                    break
+            
+            return correlations

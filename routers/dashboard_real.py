@@ -75,64 +75,56 @@ async def get_dashboard_stats(db: Session = Depends(get_db)):
 
 @router.get("/heatmap")
 async def get_heatmap_data(
-    top_n: int = Query(20, ge=5, le=100),
+    top_n: int = Query(20, ge=5, le=50),
+    cross_domain: bool = Query(True, description="Only show correlations across different data sources"),
     db: Session = Depends(get_db)
 ):
     """
-    Get TOP N correlations for heatmap - REAL DATA ONLY
-    Shows strongest correlations ranked by |r|, not fixed matrix
+    Get TOP N correlation PAIRS for heatmap - REAL DATA ONLY
+    Shows actual strongest correlations as pairs, focusing on cross-domain relationships
     """
     try:
-        # Get top N significant correlations
+        # Get top N significant correlations with optional cross-domain filtering
         service = CorrelationAnalysisService()
         top_correlations = service.get_top_correlations(
             limit=top_n,
-            min_significance=0.05
+            min_significance=0.05,
+            cross_domain=cross_domain
         )
         
         if not top_correlations:
             return {
-                "labels": [],
-                "matrix": [],
+                "pairs": [],
                 "message": "No correlations calculated yet. Run data ingestion first."
             }
         
-        # Build variable list from top correlations
-        var_names = set()
+        # Return as correlation pairs (not a matrix)
+        # This shows ACTUAL correlations, not a sparse matrix with mostly zeros
+        pairs = []
         for corr in top_correlations:
-            var_names.add((corr['variable1_id'], corr['variable1_name']))
-            var_names.add((corr['variable2_id'], corr['variable2_name']))
-        
-        var_list = sorted(list(var_names), key=lambda x: x[0])
-        labels = [name for _, name in var_list]
-        var_id_to_idx = {var_id: idx for idx, (var_id, _) in enumerate(var_list)}
-        
-        # Build correlation matrix
-        n = len(labels)
-        matrix = [[0.0 if i != j else 1.0 for j in range(n)] for i in range(n)]
-        
-        for corr in top_correlations:
-            idx1 = var_id_to_idx.get(corr['variable1_id'])
-            idx2 = var_id_to_idx.get(corr['variable2_id'])
+            # Get variable metadata for source information
+            var1 = db.query(VariableMetadata).get(corr['variable1_id'])
+            var2 = db.query(VariableMetadata).get(corr['variable2_id'])
             
-            if idx1 is not None and idx2 is not None:
-                r_value = corr['correlation_value']
-                matrix[idx1][idx2] = r_value
-                matrix[idx2][idx1] = r_value  # Symmetric
+            pairs.append({
+                "variable1": corr['variable1_name'],
+                "variable2": corr['variable2_name'],
+                "variable1_source": var1.source if var1 else "Unknown",
+                "variable2_source": var2.source if var2 else "Unknown",
+                "correlation": round(corr['correlation_value'], 4),
+                "p_value": round(corr['p_value'], 6) if corr['p_value'] else None,
+                "sample_size": corr['sample_size'],
+                "strength": abs(corr['correlation_value'])
+            })
         
         return {
-            "labels": labels,
-            "matrix": matrix,
-            "correlation_count": len(top_correlations),
-            "top_n": top_n
+            "pairs": pairs,
+            "count": len(pairs),
+            "cross_domain_only": cross_domain,
+            "message": f"Top {len(pairs)} {'cross-domain ' if cross_domain else ''}correlations"
         }
     except Exception as e:
         logger.error(f"Error getting heatmap: {e}")
-        return {
-            "labels": [],
-            "matrix": [],
-            "error": str(e)
-        }
 
 
 @router.get("/timeseries")
