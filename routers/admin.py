@@ -109,20 +109,28 @@ async def calculate_correlations():
         sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
         from correlation_analysis_service import CorrelationAnalysisService
         from database import get_db_session
+        from models import CorrelationResult
         
         logger.info("Starting correlation calculation...")
         
+        analysis_service = CorrelationAnalysisService()
+        result = analysis_service.calculate_all_correlations()
+        
+        # Get top correlations from database
         with get_db_session() as db:
-            analysis_service = CorrelationAnalysisService(db)
-            analysis_service.calculate_all_correlations()
-            
-            # Get top correlations
-            top_correlations = analysis_service.get_top_correlations(limit=10)
+            top_correlations = (
+                db.query(CorrelationResult)
+                .filter(CorrelationResult.is_significant == True)
+                .order_by(CorrelationResult.abs_correlation.desc())
+                .limit(10)
+                .all()
+            )
         
         logger.info("✅ Correlation calculation complete!")
         return JSONResponse({
             "status": "success",
             "message": "Correlations calculated successfully",
+            "stats": result,
             "top_correlations": [
                 {
                     "variable1": corr.variable1.display_name,
