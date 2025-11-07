@@ -76,7 +76,7 @@ async def get_dashboard_stats(db: Session = Depends(get_db)):
 @router.get("/heatmap")
 async def get_heatmap_data(
     top_n: int = Query(20, ge=5, le=50),
-    cross_domain: bool = Query(True, description="Only show correlations across different data sources"),
+    cross_domain: bool = Query(False, description="Only show correlations across different data sources"),
     db: Session = Depends(get_db)
 ):
     """
