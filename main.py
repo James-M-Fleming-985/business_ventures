@@ -34,8 +34,9 @@ from correlation_analyzer import CorrelationAnalyzer
 from routers import dashboard_real as dashboard  # NO MOCK DATA
 from routers import admin  # Database initialization endpoints
 
-# Version tracking to prevent Railway cache issues
-BUILD_VERSION = "2.0.0"  # MAJOR UPDATE: Real data integration
+# Build version - INCREMENT THIS BEFORE EACH DEPLOYMENT
+# Format: MAJOR.MINOR.PATCH
+BUILD_VERSION = "2.0.1"  # Real data integration with heatmap matrix fix
 DEPLOY_TIMESTAMP = datetime.utcnow().isoformat()
 
 # Initialize services
