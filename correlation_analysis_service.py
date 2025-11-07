@@ -84,7 +84,7 @@ class CorrelationAnalysisService:
                 
                 # Get data for var1
                 var1_data = self._get_variable_data(var1_id)
-                if not var1_data:
+                if var1_data is None or len(var1_data) == 0:
                     continue
                 
                 # Calculate correlations with all other variables
@@ -97,7 +97,7 @@ class CorrelationAnalysisService:
                     
                     # Get data for var2
                     var2_data = self._get_variable_data(var2_id)
-                    if not var2_data:
+                    if var2_data is None or len(var2_data) == 0:
                         continue
                     
                     # Calculate correlation
