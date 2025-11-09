@@ -1,0 +1,29 @@
+{
+  "name": "CatSanctuary",
+  "tree": {
+    "$className": "DataModel",
+    
+    "ReplicatedStorage": {
+      "Shared": {
+        "$path": "01-SHARED"
+      }
+    },
+    
+    "ServerScriptService": {
+      "MainServer": {
+        "$path": "02-SERVER"
+      }
+    },
+    
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "Controllers": {
+          "$path": "03-CLIENT/Controllers"
+        },
+        "UI": {
+          "$path": "03-CLIENT/UI"
+        }
+      }
+    }
+  }
+}
