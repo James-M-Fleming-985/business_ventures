@@ -66,8 +66,8 @@ class DataIngestionService:
         return stats
     
     def _fetch_stock_data(self) -> dict:
-        """Fetch stock data for all stock variables"""
-        logger.info("Fetching stock data...")
+        """Fetch monthly stock data for all stock variables"""
+        logger.info("Fetching monthly stock data...")
         
         with get_db_session() as session:
             stock_vars = session.query(VariableMetadata).filter(
@@ -83,14 +83,13 @@ class DataIngestionService:
                     params = json.loads(var.parameters)
                     symbol = params.get('symbol')
                     
-                    # Fetch 30 days of data
-                    prices = self.fetcher.fetch_stock_data(symbol, days=30)
+                    # Fetch monthly data (60 months = 5 years)
+                    monthly_prices = self.fetcher.fetch_stock_data_monthly(symbol, months=60)
                     
-                    if prices:
-                        # Store data points
-                        base_date = datetime.utcnow() - timedelta(days=len(prices)-1)
-                        for i, price in enumerate(prices):
-                            timestamp = base_date + timedelta(days=i)
+                    if monthly_prices:
+                        # Store monthly data points
+                        for date_str, price in monthly_prices.items():
+                            timestamp = datetime.strptime(date_str, "%Y-%m-%d")
                             
                             # Check if data point already exists
                             existing = session.query(TimeSeriesData).filter(
@@ -111,6 +110,7 @@ class DataIngestionService:
                         session.commit()
                         success_count += 1
                         self._update_api_status(session, 'alpha_vantage', 'active')
+                        logger.info(f"Stored {len(monthly_prices)} monthly prices for {symbol}")
                     else:
                         logger.warning(f"No data for {symbol}")
                         
@@ -122,8 +122,8 @@ class DataIngestionService:
         return {'stocks_fetched': success_count, 'stock_data_points': data_points}
     
     def _fetch_earthquake_data(self) -> dict:
-        """Fetch earthquake count data"""
-        logger.info("Fetching earthquake data...")
+        """Fetch monthly earthquake count data"""
+        logger.info("Fetching monthly earthquake data...")
         
         with get_db_session() as session:
             eq_var = session.query(VariableMetadata).filter(
@@ -135,14 +135,14 @@ class DataIngestionService:
                 return {'earthquakes_fetched': 0}
             
             try:
-                counts = self.fetcher.fetch_earthquake_count(days=30)
+                # Fetch monthly aggregated earthquake counts
+                monthly_counts = self.fetcher.fetch_earthquake_monthly(months=60)
                 
-                if counts:
-                    base_date = datetime.utcnow() - timedelta(days=len(counts)-1)
+                if monthly_counts:
                     data_points = 0
                     
-                    for i, count in enumerate(counts):
-                        timestamp = base_date + timedelta(days=i)
+                    for date_str, count in monthly_counts.items():
+                        timestamp = datetime.strptime(date_str, "%Y-%m-%d")
                         
                         existing = session.query(TimeSeriesData).filter(
                             TimeSeriesData.variable_id == eq_var.id,
@@ -161,7 +161,7 @@ class DataIngestionService:
                     
                     session.commit()
                     self._update_api_status(session, 'usgs', 'active')
-                    logger.info(f"Earthquake data: {data_points} data points")
+                    logger.info(f"Earthquake data: {len(monthly_counts)} months, {data_points} new data points")
                     return {'earthquakes_fetched': 1, 'earthquake_data_points': data_points}
                     
             except Exception as e:
@@ -225,10 +225,9 @@ class DataIngestionService:
         return {'environmental_fetched': 0}
     
     def _fetch_gdp_data(self) -> dict:
-        """Fetch GDP data (annual, less frequent updates needed)"""
-        logger.info("Fetching GDP data...")
+        """Fetch monthly GDP data (forward-filled from annual)"""
+        logger.info("Fetching monthly GDP data...")
         
-        # GDP is annual data, only fetch if we don't have recent data
         with get_db_session() as session:
             gdp_vars = session.query(VariableMetadata).filter(
                 VariableMetadata.source == 'worldbank',
@@ -240,28 +239,16 @@ class DataIngestionService:
             
             for var in gdp_vars:
                 try:
-                    # Check if we have data from this year
-                    current_year = datetime.utcnow().year
-                    year_start = datetime(current_year, 1, 1)
-                    
-                    existing = session.query(TimeSeriesData).filter(
-                        TimeSeriesData.variable_id == var.id,
-                        TimeSeriesData.timestamp >= year_start
-                    ).first()
-                    
-                    if existing:
-                        continue  # Already have data for this year
-                    
                     params = json.loads(var.parameters)
                     country_code = params.get('country_code')
                     
-                    values = self.fetcher.fetch_gdp_data(country_code)
+                    # Fetch monthly forward-filled GDP data
+                    monthly_gdp = self.fetcher.fetch_gdp_monthly(country_code)
                     
-                    if values:
-                        # Store as annual data points (use Jan 1 of each year)
-                        base_year = 2015
-                        for i, value in enumerate(values):
-                            timestamp = datetime(base_year + i, 1, 1)
+                    if monthly_gdp:
+                        # Store monthly data points
+                        for date_str, value in monthly_gdp.items():
+                            timestamp = datetime.strptime(date_str, "%Y-%m-%d")
                             
                             existing = session.query(TimeSeriesData).filter(
                                 TimeSeriesData.variable_id == var.id,
@@ -281,6 +268,7 @@ class DataIngestionService:
                         session.commit()
                         success_count += 1
                         self._update_api_status(session, 'worldbank', 'active')
+                        logger.info(f"Stored {len(monthly_gdp)} monthly GDP values for {country_code}")
                         
                 except Exception as e:
                     logger.error(f"Error fetching GDP for {var.name}: {e}")
