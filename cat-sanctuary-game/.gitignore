@@ -1,0 +1,8 @@
+# Rojo build artifacts
+*.rbxl
+*.rbxlx
+*.rbxm
+*.rbxmx
+
+# Rojo downloads
+rojo-*.zip
