@@ -1,0 +1,29 @@
+# Ignore other projects in this monorepo
+# Only deploy Causal Affect (root level files)
+
+cat-sanctuary-game/
+financial_optimizer/
+immersive_displays/
+opti_royale/
+Causal_affect/
+
+# Ignore development files
+*.pyc
+__pycache__/
+.pytest_cache/
+.git/
+.env
+*.log
+*.md
+!README.md
+
+# Ignore documentation
+DASHBOARD_*.md
+DEPLOYMENT.md
+API_*.md
+CAUSALITY_*.md
+CURATED_*.md
+REAL_DATA_*.md
+VARIABLE_*.md
+BUILD_*.md
+DATA_NORMALIZATION_STRATEGY.md

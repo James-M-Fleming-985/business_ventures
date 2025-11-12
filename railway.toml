@@ -1,5 +1,19 @@
 [build]
 builder = "NIXPACKS"
+watchPatterns = [
+  "main.py",
+  "routers/**",
+  "templates/**",
+  "static/**",
+  "models.py",
+  "database.py",
+  "data_fetcher.py",
+  "data_ingestion_service.py",
+  "correlation_analysis_service.py",
+  "correlation_analyzer.py",
+  "requirements.txt",
+  "requirements/**"
+]
 
 [deploy]
 numReplicas = 1
