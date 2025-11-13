@@ -96,14 +96,20 @@ function dashboardData() {
                     row.map((val, j) => (i > j) ? val : null)  // Only show below diagonal
                 );
                 
-                // Create user-friendly hover callouts (not x, y, z)ot x, y, z)
+                // Create user-friendly hover callouts (not x, y, z)
                 const hoverText = data.matrix.map((row, i) => 
                     row.map((r, j) => {
+                        if (r === null || r === undefined) {
+                            // Upper triangle or missing data
+                            return `<i>See lower triangle for this correlation</i>`;
+                        }
+                        
                         if (i === j) {
                             return `<b>${data.labels[i]}</b><br>` +
                                    `Self-correlation = 1.000<br>` +
                                    `<i>(Click elsewhere for analysis)</i>`;
                         }
+                        
                         if (i < j) {
                             // Upper triangle - hide duplicate
                             return `<i>See lower triangle</i>`;
