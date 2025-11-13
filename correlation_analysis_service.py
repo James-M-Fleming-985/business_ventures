@@ -244,6 +244,10 @@ class CorrelationAnalysisService:
     def _store_correlation(self, result: dict, job_id: int):
         """Store correlation result in database"""
         with get_db_session() as session:
+            # Fetch source tags from variable metadata
+            var1_meta = session.query(VariableMetadata).filter_by(id=result['variable1_id']).first()
+            var2_meta = session.query(VariableMetadata).filter_by(id=result['variable2_id']).first()
+            
             corr = CorrelationResult(
                 variable1_id=result['variable1_id'],
                 variable2_id=result['variable2_id'],
@@ -256,7 +260,9 @@ class CorrelationAnalysisService:
                 is_significant=result['is_significant'],
                 abs_correlation=result['abs_correlation'],
                 analysis_job_id=job_id,
-                calculated_at=datetime.utcnow()
+                calculated_at=datetime.utcnow(),
+                source1=var1_meta.source if var1_meta else None,
+                source2=var2_meta.source if var2_meta else None
             )
             session.add(corr)
             session.commit()

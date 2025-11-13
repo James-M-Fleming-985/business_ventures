@@ -74,6 +74,11 @@ class CorrelationResult(Base):
     end_date = Column(DateTime)
     is_significant = Column(Boolean)  # p < 0.05
     abs_correlation = Column(Float)  # For ranking by strength
+    
+    # Source tags for cross-domain filtering
+    source1 = Column(String(100))  # Source of variable1 (e.g., 'alphavantage', 'worldbank')
+    source2 = Column(String(100))  # Source of variable2
+    
     calculated_at = Column(DateTime, default=datetime.utcnow)
     analysis_job_id = Column(Integer, ForeignKey('analysis_jobs.id'))
     
@@ -88,6 +93,7 @@ class CorrelationResult(Base):
         Index('ix_correlation_abs_value', 'abs_correlation'),
         Index('ix_correlation_significant', 'is_significant', 'abs_correlation'),
         Index('ix_correlation_job', 'analysis_job_id'),
+        Index('ix_correlation_cross_domain', 'source1', 'source2'),  # For cross-domain filtering
     )
     
     def __repr__(self):
