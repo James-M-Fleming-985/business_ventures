@@ -65,8 +65,14 @@ function dashboardData() {
         
         async loadHeatmap() {
             try {
-                const response = await fetch('/api/dashboard/heatmap');
+                const response = await fetch('/api/dashboard/heatmap?cross_domain=true&top_n=12');
                 const data = await response.json();
+                
+                if (!data.labels || data.labels.length === 0) {
+                    console.warn('No correlation data available');
+                    this.createDemoHeatmap();
+                    return;
+                }
                 
                 // Helper function to interpret correlation strength
                 const interpretCorrelation = (r) => {
@@ -77,32 +83,49 @@ function dashboardData() {
                     return 'Very weak';
                 };
                 
-                // Helper function to format p-value
-                const formatPValue = (p) => {
-                    if (p < 0.001) return 'p < 0.001 (***) Highly significant';
-                    if (p < 0.01) return `p = ${p.toFixed(3)} (**) Significant`;
-                    if (p < 0.05) return `p = ${p.toFixed(3)} (*) Marginally significant`;
-                    return `p = ${p.toFixed(3)} Not significant`;
+                // Helper function to format p-value with user-friendly text
+                const formatSignificance = (p) => {
+                    if (p < 0.001) return 'Highly Significant (p < 0.001)';
+                    if (p < 0.01) return `Significant (p = ${p.toFixed(3)})`;
+                    if (p < 0.05) return `Marginally Significant (p = ${p.toFixed(3)})`;
+                    return `Not Significant (p = ${p.toFixed(3)})`;
                 };
                 
-                // Create custom hover text with p-values
+                // Create LOWER TRIANGLE matrix (eliminate duplicate pairs)
+                const triangleMatrix = data.matrix.map((row, i) =>
+                    row.map((val, j) => (i > j) ? val : null)  // Only show below diagonal
+                );
+                
+                // Create user-friendly hover callouts (not x, y, z)ot x, y, z)
                 const hoverText = data.matrix.map((row, i) => 
                     row.map((r, j) => {
-                        if (i === j) return `${data.labels[i]}<br>Self-correlation = 1.000`;
+                        if (i === j) {
+                            return `<b>${data.labels[i]}</b><br>` +
+                                   `Self-correlation = 1.000<br>` +
+                                   `<i>(Click elsewhere for analysis)</i>`;
+                        }
+                        if (i < j) {
+                            // Upper triangle - hide duplicate
+                            return `<i>See lower triangle</i>`;
+                        }
+                        
+                        // Lower triangle - show full details
                         const strength = interpretCorrelation(r);
                         const direction = r > 0 ? 'positive' : 'negative';
-                        const pValue = formatPValue(0.001); // Using default p-value, will be real data later
-                        return `<b>${data.labels[i]} ↔ ${data.labels[j]}</b><br>` +
-                               `r = ${r.toFixed(3)} (${strength} ${direction})<br>` +
-                               `${pValue}<br>` +
-                               `<i>Click for detailed analysis</i>`;
+                        const significance = formatSignificance(0.001);
+                        
+                        return `<b>Variable Pair:</b><br>` +
+                               `${data.labels[i]} ↔ ${data.labels[j]}<br><br>` +
+                               `<b>Correlation:</b> ${r.toFixed(3)} (${strength} ${direction})<br>` +
+                               `<b>Statistical Significance:</b> ${significance}<br><br>` +
+                               `<i>💡 Click to view detailed analysis with scatter plot</i>`;
                     })
                 );
                 
-                // Create Plotly heatmap
+                // Create Plotly heatmap with triangle display
                 const trace = {
                     type: 'heatmap',
-                    z: data.matrix,
+                    z: triangleMatrix,  // Use triangle matrix instead of full matrix
                     x: data.labels,
                     y: data.labels,
                     text: hoverText,
@@ -127,10 +150,14 @@ function dashboardData() {
                 };
                 
                 const layout = {
+                    title: {
+                        text: 'Top Cross-Domain Correlations (Triangle View)',
+                        font: { color: '#cbd5e1', size: 14 }
+                    },
                     paper_bgcolor: '#1e293b',
                     plot_bgcolor: '#1e293b',
                     font: { color: '#cbd5e1' },
-                    margin: { t: 40, r: 120, b: 100, l: 140 },  // Increased margins
+                    margin: { t: 60, r: 120, b: 100, l: 140 },
                     xaxis: {
                         tickangle: -45,
                         tickfont: { size: 11 },
@@ -158,9 +185,19 @@ function dashboardData() {
                     
                     heatmapDiv.on('plotly_click', function(eventData) {
                         const point = eventData.points[0];
-                        if (point.x !== point.y) {
-                            console.log('Heatmap clicked:', point.x, point.y, point.z);
-                            self.openModal({ var1: point.x, var2: point.y, r: point.z });
+                        console.log('Heatmap clicked:', {
+                            variable1: point.y,
+                            variable2: point.x,
+                            correlation: point.z
+                        });
+                        
+                        // Only open modal for lower triangle (i > j) and not diagonal
+                        if (point.x !== point.y && point.z !== null) {
+                            self.openModal({ 
+                                var1: point.y,  // y-axis variable
+                                var2: point.x,  // x-axis variable
+                                r: point.z 
+                            });
                         }
                     });
                 });
