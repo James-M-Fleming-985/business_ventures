@@ -27,10 +27,19 @@ local TrophyManager = require(CatSanctuary.TrophyManager)
 local LeaderboardManager = require(CatSanctuary.LeaderboardManager)
 local ProfileServer = require(CatSanctuary.ProfileServer)
 local MiniGameManager = require(CatSanctuary.MiniGameManager)
+local WorldGenerator = require(CatSanctuary.WorldGenerator)
 
 print("═══════════════════════════════════════")
+-- Generate world first
+Utils.DebugPrint("Generating world environment...", "Server")
+WorldGenerator:GenerateWorld()
+
 print("🐱 Cat Sanctuary Server Starting...")
 print("═══════════════════════════════════════")
+-- Generate world first
+Utils.DebugPrint("Generating world environment...", "Server")
+WorldGenerator:GenerateWorld()
+
 
 -- Initialize systems in order
 Utils.DebugPrint("Initializing DataStore...", "Server")
@@ -178,6 +187,14 @@ if Config.DEBUG.Enabled then
 end
 
 print("═══════════════════════════════════════")
+-- Generate world first
+Utils.DebugPrint("Generating world environment...", "Server")
+WorldGenerator:GenerateWorld()
+
 print("✅ Cat Sanctuary Server Ready!")
 print(string.format("📊 Game: %s v%s", Config.GAME_NAME, Config.VERSION))
 print("═══════════════════════════════════════")
+-- Generate world first
+Utils.DebugPrint("Generating world environment...", "Server")
+WorldGenerator:GenerateWorld()
+
