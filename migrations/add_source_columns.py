@@ -4,11 +4,26 @@ Database Migration: Add source1 and source2 columns to correlation_results table
 Run this script to update the production database schema.
 """
 
-from database import engine
-from sqlalchemy import text
+import sys
+import os
+
+# Add parent directory to path so we can import database module
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from sqlalchemy import create_engine, text
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def migrate():
     """Add source1 and source2 columns to correlation_results"""
+    
+    database_url = os.getenv('DATABASE_URL')
+    if not database_url:
+        print("ERROR: DATABASE_URL environment variable not set!")
+        return
+    
+    engine = create_engine(database_url)
     
     with engine.connect() as conn:
         # Check if columns already exist
