@@ -5,7 +5,7 @@ Integrates CA-002 (Correlation Analysis) and CA-003 (Drift Forecasting)
 
 from fastapi import FastAPI, HTTPException, Depends, status, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.responses import JSONResponse, HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
@@ -105,6 +105,14 @@ async def root():
 async def dashboard_page(request: Request):
     """Serve the main dashboard UI."""
     return templates.TemplateResponse("dashboard.html", {"request": request})
+
+
+@app.get("/favicon.ico")
+async def favicon():
+    """Serve favicon.ico from static directory"""
+    from pathlib import Path
+    favicon_path = Path("static") / "favicon.ico"
+    return FileResponse(favicon_path)
 
 
 # ============================================================================
