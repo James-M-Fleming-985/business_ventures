@@ -1,6 +1,7 @@
 """
 Causal Affect Platform - Main FastAPI Application
 Integrates CA-002 (Correlation Analysis) and CA-003 (Drift Forecasting)
+Version: 2.0.14
 """
 
 from fastapi import FastAPI, HTTPException, Depends, status, Request
@@ -14,6 +15,10 @@ from datetime import datetime
 import logging
 import sys
 from pathlib import Path
+
+# Read version from VERSION file
+VERSION_FILE = Path(__file__).parent / "VERSION"
+__version__ = VERSION_FILE.read_text().strip() if VERSION_FILE.exists() else "2.0.14"
 
 # Setup logging
 logging.basicConfig(
@@ -34,9 +39,8 @@ from correlation_analyzer import CorrelationAnalyzer
 from routers import dashboard_real as dashboard  # NO MOCK DATA
 from routers import admin  # Database initialization endpoints
 
-# Build version - INCREMENT THIS BEFORE EACH DEPLOYMENT
-# Format: MAJOR.MINOR.PATCH
-BUILD_VERSION = "2.0.3"  # Real data integration - heatmap cross-domain focus
+# Build version - automatically read from VERSION file
+BUILD_VERSION = __version__
 DEPLOY_TIMESTAMP = datetime.utcnow().isoformat()
 
 # Initialize services
@@ -104,7 +108,11 @@ async def root():
 @app.get("/dashboard", response_class=HTMLResponse, tags=["Dashboard"])
 async def dashboard_page(request: Request):
     """Serve the main dashboard UI."""
-    return templates.TemplateResponse("dashboard.html", {"request": request})
+    return templates.TemplateResponse("dashboard.html", {
+        "request": request,
+        "version": BUILD_VERSION,
+        "deploy_timestamp": DEPLOY_TIMESTAMP
+    })
 
 
 @app.get("/favicon.ico")

@@ -415,10 +415,15 @@
     </div>
 </div>
 
+<!-- Footer with version info -->
+<footer class="mt-8 pb-6 text-center text-slate-500 text-sm">
+    <p>Causal Affect Platform v{{ version }} | Last deployed: {{ deploy_timestamp[:10] }}</p>
+</footer>
+
 {% endblock %}
 
 {% block scripts %}
-<script src="/static/js/dashboard.js?v=2.0.14"></script>
+<script src="/static/js/dashboard.js?v=2.0.15"></script>
 <script>
     // Initialize Lucide icons after Alpine loads
     document.addEventListener('alpine:init', () => {
