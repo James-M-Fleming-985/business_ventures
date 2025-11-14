@@ -283,6 +283,13 @@ function dashboardData() {
                 const response = await fetch(`/api/dashboard/network?threshold=${this.networkThreshold}`);
                 const data = await response.json();
                 
+                // Check for errors or empty data
+                if (data.error || !data.edges || !data.nodes) {
+                    console.warn('Network data unavailable:', data.message || data.error);
+                    this.createDemoNetwork();
+                    return;
+                }
+                
                 // Create edge trace (lines connecting nodes)
                 const edgeTrace = {
                     type: 'scatter',
@@ -360,8 +367,16 @@ function dashboardData() {
             try {
                 const response = await fetch(`/api/dashboard/leaderboard?sort=${this.sortBy}`);
                 const data = await response.json();
-                this.leaderboard = data.correlations;
-                console.log('Leaderboard loaded:', data.correlations.length, 'items');
+                
+                // Check for errors or empty data
+                if (data.error || !data.leaderboard || !Array.isArray(data.leaderboard)) {
+                    console.warn('Leaderboard data unavailable:', data.error);
+                    this.createDemoLeaderboard();
+                    return;
+                }
+                
+                this.leaderboard = data.leaderboard;
+                console.log('Leaderboard loaded:', data.leaderboard.length, 'items');
             } catch (error) {
                 console.error('Failed to load leaderboard:', error);
                 this.createDemoLeaderboard();
@@ -373,23 +388,28 @@ function dashboardData() {
             
             try {
                 // Get detailed relationship data from API
-                const var1 = relationship.var1 || relationship.variable_1;
-                const var2 = relationship.var2 || relationship.variable_2;
+                const var1 = relationship.var1 || relationship.variable_1 || relationship.variable1;
+                const var2 = relationship.var2 || relationship.variable_2 || relationship.variable2;
                 
                 const response = await fetch(`/api/dashboard/relationship/${encodeURIComponent(var1)}/${encodeURIComponent(var2)}`);
                 const data = await response.json();
                 
+                // Check for API error
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
                 // Set modal data from API response
                 this.modalData = {
-                    var1: data.var1,
-                    var2: data.var2,
-                    r: data.correlation,
+                    var1: data.var1 || var1,
+                    var2: data.var2 || var2,
+                    r: data.correlation || 0,
                     p_value: data.p_value < 0.001 ? '< 0.001' : data.p_value.toFixed(4),
-                    strength: data.strength.charAt(0).toUpperCase() + data.strength.slice(1),
-                    stability: data.stability,
-                    explanation: data.explanation,
-                    scatterData: data.scatter_data,
-                    timeseriesData: data.timeseries
+                    strength: (data.strength || 'moderate').charAt(0).toUpperCase() + (data.strength || 'moderate').slice(1),
+                    stability: data.stability || 'stable',
+                    explanation: data.explanation || 'Correlation analysis',
+                    scatterData: data.scatter_data || [],
+                    timeseriesData: data.timeseries || null
                 };
                 
                 // Open modal
@@ -404,14 +424,20 @@ function dashboardData() {
                 console.error('Failed to load relationship details:', error);
                 
                 // Fallback to demo data
+                const var1 = relationship.var1 || relationship.variable_1 || relationship.variable1 || 'Variable 1';
+                const var2 = relationship.var2 || relationship.variable_2 || relationship.variable2 || 'Variable 2';
+                const r = relationship.r || relationship.correlation || 0;
+                
                 this.modalData = {
-                    var1: relationship.var1 || relationship.variable_1,
-                    var2: relationship.var2 || relationship.variable_2,
-                    r: relationship.r || relationship.correlation || 0,
+                    var1: var1,
+                    var2: var2,
+                    r: r,
                     p_value: '< 0.001',
-                    strength: Math.abs(relationship.r || 0) > 0.7 ? 'Strong' : Math.abs(relationship.r || 0) > 0.4 ? 'Moderate' : 'Weak',
+                    strength: Math.abs(r) > 0.7 ? 'Strong' : Math.abs(r) > 0.4 ? 'Moderate' : 'Weak',
                     stability: '92%',
-                    explanation: `There is a correlation between ${relationship.var1} and ${relationship.var2}.`
+                    explanation: `There is a correlation between ${var1} and ${var2}.`,
+                    scatterData: null,
+                    timeseriesData: null
                 };
                 
                 this.modalOpen = true;
@@ -422,11 +448,19 @@ function dashboardData() {
         },
         
         createModalCharts() {
-            // Use real scatter data if available, otherwise generate demo data
-            const scatterX = this.modalData.scatterData?.x || Array.from({length: 30}, () => Math.random() * 100 + 50);
-            const scatterY = this.modalData.scatterData?.y || Array.from({length: 30}, (_, i) => (Math.random() * 100 + 50) * 0.85 + Math.random() * 20);
+            // Scatter plot - use real data if available
+            let scatterX, scatterY;
             
-            // Scatter plot
+            if (this.modalData.scatterData && this.modalData.scatterData.length > 0) {
+                // Use real API data
+                scatterX = this.modalData.scatterData.map(d => d.x);
+                scatterY = this.modalData.scatterData.map(d => d.y);
+            } else {
+                // Fallback to demo data
+                scatterX = Array.from({length: 30}, () => Math.random() * 100 + 50);
+                scatterY = scatterX.map(x => x * 0.85 + Math.random() * 20);
+            }
+            
             const scatterData = [{
                 type: 'scatter',
                 mode: 'markers',
@@ -453,14 +487,11 @@ function dashboardData() {
             // Time series overlay - use real data if available
             let dates, series1Data, series2Data;
             
-            if (this.modalData.timeseriesData) {
-                // Use real API data
-                const hist = this.modalData.timeseriesData.historical;
-                const fore = this.modalData.timeseriesData.forecast;
-                
-                dates = [...hist.dates, ...fore.dates];
-                series1Data = [...hist.var1, ...fore.var1];
-                series2Data = [...hist.var2, ...fore.var2];
+            if (this.modalData.timeseriesData && this.modalData.timeseriesData.dates) {
+                // Use real API data (direct structure: dates, var1_values, var2_values)
+                dates = this.modalData.timeseriesData.dates;
+                series1Data = this.modalData.timeseriesData.var1_values;
+                series2Data = this.modalData.timeseriesData.var2_values;
             } else {
                 // Fallback to demo data
                 dates = Array.from({length: 30}, (_, i) => {

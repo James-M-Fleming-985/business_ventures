@@ -252,11 +252,17 @@ async def get_network_data(
         
         if not correlations:
             return {
-                "node_x": [],
-                "node_y": [],
-                "labels": [],
-                "edge_x": [],
-                "edge_y": [],
+                "nodes": {
+                    "x": [],
+                    "y": [],
+                    "sizes": [],
+                    "colors": [],
+                    "labels": []
+                },
+                "edges": {
+                    "x": [],
+                    "y": []
+                },
                 "message": f"No correlations above threshold {threshold}"
             }
         
@@ -309,23 +315,33 @@ async def get_network_data(
                 node_colors.append('#64748b')  # Gray - isolated
         
         return {
-            "node_x": node_x,
-            "node_y": node_y,
-            "node_sizes": node_sizes,
-            "node_colors": node_colors,
-            "labels": labels,
-            "edge_x": edge_x,
-            "edge_y": edge_y,
+            "nodes": {
+                "x": node_x,
+                "y": node_y,
+                "sizes": node_sizes,
+                "colors": node_colors,
+                "labels": labels
+            },
+            "edges": {
+                "x": edge_x,
+                "y": edge_y
+            },
             "correlation_count": len(correlations)
         }
     except Exception as e:
         logger.error(f"Error getting network: {e}")
         return {
-            "node_x": [],
-            "node_y": [],
-            "labels": [],
-            "edge_x": [],
-            "edge_y": [],
+            "nodes": {
+                "x": [],
+                "y": [],
+                "sizes": [],
+                "colors": [],
+                "labels": []
+            },
+            "edges": {
+                "x": [],
+                "y": []
+            },
             "error": str(e)
         }
 
@@ -347,11 +363,11 @@ async def get_leaderboard_data(
         for i, corr in enumerate(top_correlations, 1):
             leaderboard.append({
                 "rank": i,
-                "variable1": corr['variable1_name'],
-                "variable2": corr['variable2_name'],
-                "correlation": corr['correlation_value'],
+                "var1": corr['variable1_name'],
+                "var2": corr['variable2_name'],
+                "r": corr['correlation_value'],
+                "p": corr['p_value'],
                 "abs_correlation": abs(corr['correlation_value']),
-                "p_value": corr['p_value'],
                 "sample_size": corr['sample_size'],
                 "significance": "***" if corr['p_value'] < 0.001 else "**" if corr['p_value'] < 0.01 else "*"
             })
@@ -368,65 +384,158 @@ async def get_relationship_details(
     var2_name: str,
     db: Session = Depends(get_db)
 ):
-    """Get detailed relationship analysis for two variables - REAL DATA ONLY"""
+    """
+    Get detailed relationship analysis for two variables
+    Returns data formatted for modal display
+    """
     try:
-        # Find variables by name
+        # Find variables by display_name (exact match or fuzzy)
         var1 = db.query(VariableMetadata).filter(
-            VariableMetadata.display_name.ilike(f"%{var1_name}%")
+            VariableMetadata.display_name == var1_name
         ).first()
+        
+        if not var1:
+            var1 = db.query(VariableMetadata).filter(
+                VariableMetadata.display_name.ilike(f"%{var1_name}%")
+            ).first()
         
         var2 = db.query(VariableMetadata).filter(
-            VariableMetadata.display_name.ilike(f"%{var2_name}%")
+            VariableMetadata.display_name == var2_name
         ).first()
         
-        if not var1 or not var2:
-            return {"error": "Variables not found"}
+        if not var2:
+            var2 = db.query(VariableMetadata).filter(
+                VariableMetadata.display_name.ilike(f"%{var2_name}%")
+            ).first()
         
-        # Get correlation result
+        if not var1 or not var2:
+            return {
+                "error": "Variables not found",
+                "var1": var1_name,
+                "var2": var2_name
+            }
+        
+        # Get correlation result (check both directions)
         corr = db.query(CorrelationResult).filter(
-            ((CorrelationResult.variable1_id == var1.id) & (CorrelationResult.variable2_id == var2.id)) |
-            ((CorrelationResult.variable1_id == var2.id) & (CorrelationResult.variable2_id == var1.id))
+            ((CorrelationResult.variable1_id == var1.id) &
+             (CorrelationResult.variable2_id == var2.id)) |
+            ((CorrelationResult.variable1_id == var2.id) &
+             (CorrelationResult.variable2_id == var1.id))
         ).first()
         
         if not corr:
-            return {"error": "No correlation calculated for this pair"}
+            return {
+                "error": "No correlation calculated for this pair",
+                "var1": var1_name,
+                "var2": var2_name
+            }
         
-        # Get scatter plot data
+        # Get time series data for scatter plot and overlay
         var1_data = db.query(TimeSeriesData).filter(
             TimeSeriesData.variable_id == var1.id
-        ).order_by(TimeSeriesData.timestamp).limit(100).all()
+        ).order_by(TimeSeriesData.timestamp).all()
         
         var2_data = db.query(TimeSeriesData).filter(
             TimeSeriesData.variable_id == var2.id
-        ).order_by(TimeSeriesData.timestamp).limit(100).all()
+        ).order_by(TimeSeriesData.timestamp).all()
         
-        # Align data by timestamp
+        # Build scatter plot data (aligned timestamps)
         var1_dict = {dp.timestamp: dp.value for dp in var1_data}
         var2_dict = {dp.timestamp: dp.value for dp in var2_data}
+        common_timestamps = sorted(
+            set(var1_dict.keys()) & set(var2_dict.keys())
+        )
         
-        common_timestamps = set(var1_dict.keys()) & set(var2_dict.keys())
+        scatter_data = [
+            {
+                "x": var1_dict[ts],
+                "y": var2_dict[ts],
+                "date": ts.strftime("%Y-%m-%d")
+            }
+            for ts in common_timestamps
+        ]
         
-        x_values = [var1_dict[ts] for ts in sorted(common_timestamps)]
-        y_values = [var2_dict[ts] for ts in sorted(common_timestamps)]
+        # Build time series for overlay
+        timeseries = {
+            "dates": [ts.strftime("%Y-%m-%d") for ts in common_timestamps],
+            "var1_values": [var1_dict[ts] for ts in common_timestamps],
+            "var2_values": [var2_dict[ts] for ts in common_timestamps]
+        }
+        
+        # Determine correlation strength and direction
+        abs_r = abs(corr.correlation_value)
+        if abs_r >= 0.7:
+            strength = "strong"
+        elif abs_r >= 0.4:
+            strength = "moderate"
+        else:
+            strength = "weak"
+        
+        direction = (
+            "positive" if corr.correlation_value > 0 else "negative"
+        )
+        
+        # Generate explanation
+        r_val = corr.correlation_value
+        explanation = (
+            f"This {strength} {direction} correlation (r = {r_val:.3f}) "
+            f"between {var1.display_name} and {var2.display_name} "
+            f"was calculated using {corr.sample_size} data points "
+        )
+        
+        if corr.start_date and corr.end_date:
+            start = corr.start_date.strftime('%Y-%m-%d')
+            end = corr.end_date.strftime('%Y-%m-%d')
+            explanation += f"from {start} to {end}. "
+        else:
+            explanation += "across the available time period. "
+        
+        if corr.p_value < 0.001:
+            explanation += (
+                "The relationship is highly statistically significant "
+                "(p < 0.001), meaning there's less than 0.1% probability "
+                "this correlation occurred by chance."
+            )
+        elif corr.p_value < 0.01:
+            explanation += (
+                "The relationship is very statistically significant "
+                "(p < 0.01)."
+            )
+        elif corr.p_value < 0.05:
+            explanation += (
+                "The relationship is statistically significant (p < 0.05)."
+            )
+        else:
+            explanation += (
+                "Note: This correlation is not statistically significant "
+                f"at the 0.05 level (p = {corr.p_value:.4f})."
+            )
+        
+        # Determine stability (simplified for now)
+        stability = "stable"
         
         return {
-            "variable1": var1.display_name,
-            "variable2": var2.display_name,
+            "var1": var1.display_name,
+            "var2": var2.display_name,
             "correlation": corr.correlation_value,
             "p_value": corr.p_value,
-            "method": corr.method,
+            "strength": strength,
+            "direction": direction,
+            "stability": stability,
             "sample_size": corr.sample_size,
-            "scatter": {
-                "x": x_values,
-                "y": y_values,
-                "x_label": f"{var1.display_name} ({var1.unit})",
-                "y_label": f"{var2.display_name} ({var2.unit})"
-            },
+            "method": corr.method,
+            "explanation": explanation,
+            "scatter_data": scatter_data,
+            "timeseries": timeseries,
             "is_significant": corr.is_significant
         }
     except Exception as e:
         logger.error(f"Error getting relationship: {e}")
-        return {"error": str(e)}
+        return {
+            "error": str(e),
+            "var1": var1_name,
+            "var2": var2_name
+        }
 
 
 @router.get("/api-status")
