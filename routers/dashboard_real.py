@@ -479,7 +479,9 @@ async def get_relationship_details(
             "var1_values": var1_normalized,  # Normalized for chart
             "var2_values": var2_normalized,   # Normalized for chart
             "var1_raw": var1_raw,             # Original values
-            "var2_raw": var2_raw              # Original values
+            "var2_raw": var2_raw,             # Original values
+            "var1_unit": var1.unit,           # Unit for formatting
+            "var2_unit": var2.unit            # Unit for formatting
         }
         
         # Determine correlation strength and direction

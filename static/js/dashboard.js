@@ -447,6 +447,59 @@ function dashboardData() {
             }
         },
         
+        formatValue(value, unit) {
+            // Helper function to format values with proper units and currency
+            
+            // Currency conversion (USD to GBP, approximate rate)
+            const USD_TO_GBP = 0.79;
+            
+            if (!unit) {
+                // No unit, just format number
+                return this.formatLargeNumber(value);
+            }
+            
+            // Handle USD currency - convert to GBP
+            if (unit === 'USD') {
+                const gbpValue = value * USD_TO_GBP;
+                return '£' + this.formatLargeNumber(gbpValue);
+            }
+            
+            // Handle other units
+            const formattedNum = this.formatLargeNumber(value);
+            
+            // Add unit suffix based on type
+            if (unit === 'count') {
+                return formattedNum;  // Just the number
+            } else if (unit === '%') {
+                return formattedNum + '%';
+            } else {
+                return formattedNum + ' ' + unit;
+            }
+        },
+        
+        formatLargeNumber(value) {
+            // Format large numbers with M, Bn, T abbreviations
+            const absValue = Math.abs(value);
+            const sign = value < 0 ? '-' : '';
+            
+            if (absValue >= 1e12) {
+                // Trillions
+                return sign + (absValue / 1e12).toFixed(2) + 'T';
+            } else if (absValue >= 1e9) {
+                // Billions
+                return sign + (absValue / 1e9).toFixed(2) + 'Bn';
+            } else if (absValue >= 1e6) {
+                // Millions
+                return sign + (absValue / 1e6).toFixed(2) + 'M';
+            } else if (absValue >= 1e3) {
+                // Thousands
+                return sign + (absValue / 1e3).toFixed(2) + 'K';
+            } else {
+                // Less than 1000
+                return sign + absValue.toFixed(2);
+            }
+        },
+        
         createModalCharts() {
             // Scatter plot - use real data if available
             let scatterX, scatterY;
@@ -485,7 +538,7 @@ function dashboardData() {
             Plotly.newPlot('modalScatter', scatterData, scatterLayout, {displayModeBar: false, responsive: true});
             
             // Time series overlay - use real data if available
-            let dates, series1Data, series2Data, series1Raw, series2Raw;
+            let dates, series1Data, series2Data, series1Raw, series2Raw, var1Unit, var2Unit;
             
             if (this.modalData.timeseriesData && this.modalData.timeseriesData.dates) {
                 // Use real API data (normalized for chart, raw for hover)
@@ -494,6 +547,8 @@ function dashboardData() {
                 series2Data = this.modalData.timeseriesData.var2_values;  // Normalized 0-1
                 series1Raw = this.modalData.timeseriesData.var1_raw;      // Actual values
                 series2Raw = this.modalData.timeseriesData.var2_raw;      // Actual values
+                var1Unit = this.modalData.timeseriesData.var1_unit;       // Unit (USD, count, etc.)
+                var2Unit = this.modalData.timeseriesData.var2_unit;       // Unit
             } else {
                 // Fallback to demo data
                 dates = Array.from({length: 30}, (_, i) => {
@@ -505,7 +560,13 @@ function dashboardData() {
                 series2Data = Array.from({length: 30}, (_, i) => 100 + Math.sin(i/5) * 20 * 0.8);
                 series1Raw = series1Data;  // Use same for demo
                 series2Raw = series2Data;
+                var1Unit = null;
+                var2Unit = null;
             }
+            
+            // Format the hover text with proper units and abbreviations
+            const series1Formatted = series1Raw.map(val => this.formatValue(val, var1Unit));
+            const series2Formatted = series2Raw.map(val => this.formatValue(val, var2Unit));
             
             const tsData = [
                 {
@@ -514,10 +575,10 @@ function dashboardData() {
                     name: this.modalData.var1,
                     x: dates,
                     y: series1Data,  // Plot normalized values
-                    customdata: series1Raw,  // Store raw values
+                    text: series1Formatted,  // Store formatted text
                     hovertemplate: '<b>%{fullData.name}</b><br>' +
                                    'Date: %{x}<br>' +
-                                   'Value: %{customdata:.2f}<br>' +
+                                   'Value: %{text}<br>' +
                                    '<extra></extra>',
                     line: { color: '#3b82f6', width: 2 }
                 },
@@ -527,10 +588,10 @@ function dashboardData() {
                     name: this.modalData.var2,
                     x: dates,
                     y: series2Data,  // Plot normalized values
-                    customdata: series2Raw,  // Store raw values
+                    text: series2Formatted,  // Store formatted text
                     hovertemplate: '<b>%{fullData.name}</b><br>' +
                                    'Date: %{x}<br>' +
-                                   'Value: %{customdata:.2f}<br>' +
+                                   'Value: %{text}<br>' +
                                    '<extra></extra>',
                     line: { color: '#10b981', width: 2 }
                 }
