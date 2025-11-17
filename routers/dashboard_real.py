@@ -615,11 +615,23 @@ async def get_top_variables_timeseries(
                     dp.timestamp.strftime("%Y-%m-%d")
                     for dp in data_points
                 ]
+                raw_values = [float(dp.value) for dp in data_points]
+                
+                # Normalize to 0-1 range for chart display
+                val_min = min(raw_values)
+                val_max = max(raw_values)
+                normalized = [
+                    (v - val_min) / (val_max - val_min)
+                    if val_max > val_min else 0.5
+                    for v in raw_values
+                ]
+                
                 series.append({
                     "name": var.display_name,
                     "unit": var.unit,
                     "dates": dates,
-                    "values": [float(dp.value) for dp in data_points]
+                    "values": normalized,      # Normalized for display
+                    "raw_values": raw_values   # Raw for tooltips
                 })
         
         return {

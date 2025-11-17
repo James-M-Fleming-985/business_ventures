@@ -224,10 +224,10 @@ function dashboardData() {
                     return;
                 }
                 
-                // Create one trace per variable with raw values
+                // Create one trace per variable with normalized Y-axis
                 const traces = data.series.map(series => {
-                    // Format values for hover text
-                    const formattedValues = series.values.map(val => {
+                    // Format raw values for hover text
+                    const formattedValues = series.raw_values.map(val => {
                         return this.formatValue(val, series.unit);
                     });
                     
@@ -236,8 +236,8 @@ function dashboardData() {
                         mode: 'lines',
                         name: series.name,
                         x: series.dates,
-                        y: series.values,
-                        text: formattedValues,  // Formatted values for hover
+                        y: series.values,  // Normalized 0-1 values
+                        text: formattedValues,  // Raw formatted values for hover
                         line: {
                             width: 2
                         },
@@ -258,7 +258,8 @@ function dashboardData() {
                     yaxis: {
                         gridcolor: '#475569',
                         showgrid: true,
-                        title: { text: 'Actual Values (various units)', font: { size: 11 } }
+                        title: { text: 'Normalized (0-1 scale)', font: { size: 11 } },
+                        range: [0, 1]
                     },
                     showlegend: true,
                     legend: {
