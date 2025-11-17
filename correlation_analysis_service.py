@@ -404,16 +404,28 @@ class CorrelationAnalysisService:
                     joinedload(CorrelationResult.variable2)
                 )
                 .order_by(CorrelationResult.abs_correlation.desc())
-                .limit(limit * 3 if cross_domain else limit)  # Get extra if filtering
+                .limit(limit * 10 if cross_domain else limit)  # Get many more candidates for diversity
                 .all()
             )
             
             correlations = []
+            source_pair_count = {}  # Track how many times each source pair appears
+            
             for r in results:
                 # If cross_domain, filter out same-source correlations
                 if cross_domain:
                     if r.variable1.source == r.variable2.source:
                         continue
+                    
+                    # Enforce diversity: limit same source-pair combinations to avoid GDP dominance
+                    source_pair = tuple(sorted([r.variable1.source, r.variable2.source]))
+                    current_count = source_pair_count.get(source_pair, 0)
+                    
+                    # Allow max 3 pairs from same source combination (e.g., max 3 alphavantage-worldbank)
+                    if current_count >= 3:
+                        continue
+                    
+                    source_pair_count[source_pair] = current_count + 1
                 
                 correlations.append({
                     'variable1_id': r.variable1_id,
@@ -431,5 +443,9 @@ class CorrelationAnalysisService:
                 
                 if len(correlations) >= limit:
                     break
+            
+            logger.info(f"Returned {len(correlations)} cross-domain correlations with source diversity")
+            if cross_domain:
+                logger.info(f"Source pair distribution: {dict(source_pair_count)}")
             
             return correlations
