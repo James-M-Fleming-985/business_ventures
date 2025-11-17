@@ -1,6 +1,21 @@
 """
 Correlation Analysis Service
 Calculates N×N correlation matrix for all variable pairs
+
+CRITICAL: Operates at VARIABLE-LEVEL GRANULARITY, not domain-level aggregates.
+
+This service analyzes individual variables (e.g., "Bitcoin Close Price", "UK Ice Cream Sales")
+across ALL data sources, calculating correlations for every possible pair in the data universe.
+
+Example:
+  ✅ CORRECT: "Bitcoin Close Price" (alphavantage) ↔ "UK Ice Cream Sales" (worldbank)
+  ❌ WRONG:   "Finance" ↔ "Market Data" (meaningless domain aggregates)
+
+The cross_domain filter ensures we only surface non-obvious cross-domain variable relationships
+where source1 ≠ source2, avoiding same-source pairs that everyone already knows about.
+
+Key Insight: With 61 variables across 6 sources, this generates 3,721 unique variable pairs.
+The system ranks by absolute correlation strength to surface the strongest signals.
 """
 
 from database import get_db_session
