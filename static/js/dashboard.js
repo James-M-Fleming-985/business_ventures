@@ -485,13 +485,15 @@ function dashboardData() {
             Plotly.newPlot('modalScatter', scatterData, scatterLayout, {displayModeBar: false, responsive: true});
             
             // Time series overlay - use real data if available
-            let dates, series1Data, series2Data;
+            let dates, series1Data, series2Data, series1Raw, series2Raw;
             
             if (this.modalData.timeseriesData && this.modalData.timeseriesData.dates) {
-                // Use real API data (direct structure: dates, var1_values, var2_values)
+                // Use real API data (normalized for chart, raw for hover)
                 dates = this.modalData.timeseriesData.dates;
-                series1Data = this.modalData.timeseriesData.var1_values;
-                series2Data = this.modalData.timeseriesData.var2_values;
+                series1Data = this.modalData.timeseriesData.var1_values;  // Normalized 0-1
+                series2Data = this.modalData.timeseriesData.var2_values;  // Normalized 0-1
+                series1Raw = this.modalData.timeseriesData.var1_raw;      // Actual values
+                series2Raw = this.modalData.timeseriesData.var2_raw;      // Actual values
             } else {
                 // Fallback to demo data
                 dates = Array.from({length: 30}, (_, i) => {
@@ -501,6 +503,8 @@ function dashboardData() {
                 });
                 series1Data = Array.from({length: 30}, (_, i) => 100 + Math.sin(i/5) * 20);
                 series2Data = Array.from({length: 30}, (_, i) => 100 + Math.sin(i/5) * 20 * 0.8);
+                series1Raw = series1Data;  // Use same for demo
+                series2Raw = series2Data;
             }
             
             const tsData = [
@@ -509,7 +513,12 @@ function dashboardData() {
                     mode: 'lines',
                     name: this.modalData.var1,
                     x: dates,
-                    y: series1Data,
+                    y: series1Data,  // Plot normalized values
+                    customdata: series1Raw,  // Store raw values
+                    hovertemplate: '<b>%{fullData.name}</b><br>' +
+                                   'Date: %{x}<br>' +
+                                   'Value: %{customdata:.2f}<br>' +
+                                   '<extra></extra>',
                     line: { color: '#3b82f6', width: 2 }
                 },
                 {
@@ -517,7 +526,12 @@ function dashboardData() {
                     mode: 'lines',
                     name: this.modalData.var2,
                     x: dates,
-                    y: series2Data,
+                    y: series2Data,  // Plot normalized values
+                    customdata: series2Raw,  // Store raw values
+                    hovertemplate: '<b>%{fullData.name}</b><br>' +
+                                   'Date: %{x}<br>' +
+                                   'Value: %{customdata:.2f}<br>' +
+                                   '<extra></extra>',
                     line: { color: '#10b981', width: 2 }
                 }
             ];
