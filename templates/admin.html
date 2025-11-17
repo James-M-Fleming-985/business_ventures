@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Data Pipeline</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold mb-2">🔧 Causal Affect Admin</h1>
+            <p class="text-slate-400">Data Pipeline Management</p>
+        </div>
+
+        <!-- Status Display -->
+        <div id="status" class="mb-6"></div>
+
+        <!-- Action Buttons -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <button onclick="runFullInit()" 
+                    class="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold py-4 px-6 rounded-lg transition shadow-lg">
+                <i data-lucide="database" class="inline w-5 h-5 mr-2"></i>
+                Full Initialize
+                <p class="text-xs mt-1 opacity-80">DB + Data + Correlations</p>
+            </button>
+
+            <button onclick="runFetchData()" 
+                    class="bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-500 hover:to-teal-500 text-white font-bold py-4 px-6 rounded-lg transition shadow-lg">
+                <i data-lucide="download" class="inline w-5 h-5 mr-2"></i>
+                Fetch Data
+                <p class="text-xs mt-1 opacity-80">From APIs only</p>
+            </button>
+
+            <button onclick="runCalculateCorr()" 
+                    class="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white font-bold py-4 px-6 rounded-lg transition shadow-lg">
+                <i data-lucide="trending-up" class="inline w-5 h-5 mr-2"></i>
+                Calculate
+                <p class="text-xs mt-1 opacity-80">Correlations only</p>
+            </button>
+        </div>
+
+        <!-- Output Log -->
+        <div class="bg-slate-900 rounded-lg border border-slate-700 p-4">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="font-bold flex items-center">
+                    <i data-lucide="terminal" class="w-5 h-5 mr-2"></i>
+                    Execution Log
+                </h2>
+                <button onclick="clearLog()" class="text-sm text-slate-400 hover:text-slate-200">Clear</button>
+            </div>
+            <div id="log" class="font-mono text-sm space-y-1 max-h-96 overflow-y-auto">
+                <p class="text-slate-500">Ready to execute...</p>
+            </div>
+        </div>
+
+        <!-- Info Cards -->
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-slate-900 rounded-lg border border-slate-700 p-4">
+                <h3 class="font-bold mb-2 flex items-center">
+                    <i data-lucide="info" class="w-4 h-4 mr-2 text-blue-400"></i>
+                    What does Full Initialize do?
+                </h3>
+                <ul class="text-sm text-slate-400 space-y-1">
+                    <li>• Creates database tables</li>
+                    <li>• Seeds 61 variables (6 sources)</li>
+                    <li>• Fetches data from APIs</li>
+                    <li>• Calculates 3,721 correlations</li>
+                    <li>• Takes ~2-5 minutes</li>
+                </ul>
+            </div>
+
+            <div class="bg-slate-900 rounded-lg border border-slate-700 p-4">
+                <h3 class="font-bold mb-2 flex items-center">
+                    <i data-lucide="alert-circle" class="w-4 h-4 mr-2 text-amber-400"></i>
+                    When to use each?
+                </h3>
+                <ul class="text-sm text-slate-400 space-y-1">
+                    <li>• <strong>Full Init:</strong> First deployment</li>
+                    <li>• <strong>Fetch Data:</strong> Daily refresh</li>
+                    <li>• <strong>Calculate:</strong> After data changes</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const colors = {
+                'info': 'text-slate-300',
+                'success': 'text-green-400',
+                'error': 'text-red-400',
+                'warning': 'text-amber-400'
+            };
+            
+            const entry = document.createElement('p');
+            entry.className = colors[type] || colors['info'];
+            entry.textContent = `[${timestamp}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '<p class="text-slate-500">Log cleared...</p>';
+        }
+
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            const colors = {
+                'info': 'bg-blue-500/20 border-blue-500 text-blue-300',
+                'success': 'bg-green-500/20 border-green-500 text-green-300',
+                'error': 'bg-red-500/20 border-red-500 text-red-300',
+                'loading': 'bg-amber-500/20 border-amber-500 text-amber-300'
+            };
+            
+            statusDiv.innerHTML = `
+                <div class="border-l-4 p-4 rounded ${colors[type]}">
+                    ${message}
+                </div>
+            `;
+        }
+
+        async function runFullInit() {
+            log('Starting full initialization...', 'info');
+            showStatus('⏳ Running full initialization... This may take 2-5 minutes', 'loading');
+            
+            try {
+                const response = await fetch('/api/admin/initialize-database', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    log('✅ Full initialization complete!', 'success');
+                    log(`Found ${data.top_correlations?.length || 0} top correlations`, 'success');
+                    
+                    if (data.top_correlations) {
+                        data.top_correlations.slice(0, 5).forEach((corr, i) => {
+                            log(`  ${i+1}. ${corr.variable1} ↔ ${corr.variable2}: r=${corr.correlation}`, 'info');
+                        });
+                    }
+                    
+                    showStatus('✅ Full initialization successful! Dashboard is ready with real data.', 'success');
+                } else {
+                    throw new Error(data.detail || data.message || 'Unknown error');
+                }
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+                showStatus(`❌ Initialization failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function runFetchData() {
+            log('Starting data fetch from APIs...', 'info');
+            showStatus('⏳ Fetching data from all API sources...', 'loading');
+            
+            try {
+                const response = await fetch('/api/admin/fetch-data', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    log('✅ Data fetch complete!', 'success');
+                    if (data.stats) {
+                        Object.entries(data.stats).forEach(([key, value]) => {
+                            log(`  ${key}: ${value}`, 'info');
+                        });
+                    }
+                    showStatus('✅ Data fetched successfully! Now run "Calculate" to update correlations.', 'success');
+                } else {
+                    throw new Error(data.message || 'Unknown error');
+                }
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+                showStatus(`❌ Data fetch failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function runCalculateCorr() {
+            log('Starting correlation calculation...', 'info');
+            showStatus('⏳ Calculating correlations for all variable pairs...', 'loading');
+            
+            try {
+                const response = await fetch('/api/admin/calculate-correlations', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    log('✅ Correlation calculation complete!', 'success');
+                    
+                    if (data.stats) {
+                        log(`Variables: ${data.stats.variables_count}`, 'info');
+                        log(`Pairs calculated: ${data.stats.total_pairs_calculated}`, 'info');
+                        log(`Significant: ${data.stats.significant_correlations}`, 'info');
+                    }
+                    
+                    if (data.top_correlations) {
+                        log('Top 5 correlations:', 'success');
+                        data.top_correlations.slice(0, 5).forEach((corr, i) => {
+                            log(`  ${i+1}. ${corr.variable1} ↔ ${corr.variable2}: r=${corr.correlation}`, 'info');
+                        });
+                    }
+                    
+                    showStatus('✅ Correlations calculated! Dashboard is now showing updated data.', 'success');
+                } else {
+                    throw new Error(data.message || 'Unknown error');
+                }
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+                showStatus(`❌ Correlation calculation failed: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

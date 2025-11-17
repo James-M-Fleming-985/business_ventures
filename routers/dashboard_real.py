@@ -560,6 +560,81 @@ async def get_relationship_details(
         }
 
 
+@router.get("/top-variables-timeseries")
+async def get_top_variables_timeseries(
+    limit: int = Query(
+        5, ge=3, le=10,
+        description="Number of top variables to show"
+    ),
+    db: Session = Depends(get_db)
+):
+    """
+    Get time series for top variables from strongest correlations
+    Shows raw values (not normalized) for quick trend overview
+    """
+    try:
+        # Get top correlations to find most interesting variables
+        service = CorrelationAnalysisService()
+        top_correlations = service.get_top_correlations(
+            limit=20,  # Get enough correlations
+            min_significance=0.05,
+            cross_domain=True
+        )
+        
+        if not top_correlations:
+            return {
+                "series": [],
+                "message": "No correlations calculated yet"
+            }
+        
+        # Extract unique variables from top correlations
+        var_names = set()
+        for corr in top_correlations:
+            var_names.add(corr['variable1_name'])
+            var_names.add(corr['variable2_name'])
+            if len(var_names) >= limit:
+                break
+        
+        # Take first N unique variable names
+        selected_vars = list(var_names)[:limit]
+        
+        # Get variable metadata
+        variables = db.query(VariableMetadata).filter(
+            VariableMetadata.display_name.in_(selected_vars)
+        ).all()
+        
+        # Build time series for each variable
+        series = []
+        for var in variables:
+            data_points = db.query(TimeSeriesData).filter(
+                TimeSeriesData.variable_id == var.id
+            ).order_by(TimeSeriesData.timestamp).all()
+            
+            if data_points:
+                dates = [
+                    dp.timestamp.strftime("%Y-%m-%d")
+                    for dp in data_points
+                ]
+                series.append({
+                    "name": var.display_name,
+                    "unit": var.unit,
+                    "dates": dates,
+                    "values": [float(dp.value) for dp in data_points]
+                })
+        
+        return {
+            "series": series,
+            "message": f"Showing {len(series)} variables"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting top variables time series: {e}")
+        return {
+            "series": [],
+            "error": str(e)
+        }
+
+
 @router.get("/api-status")
 async def get_api_status(db: Session = Depends(get_db)):
     """Get real-time API health status"""
@@ -571,8 +646,14 @@ async def get_api_status(db: Session = Depends(get_db)):
                 {
                     "source": api.source,
                     "status": api.status,
-                    "last_success": api.last_success.isoformat() if api.last_success else None,
-                    "last_failure": api.last_failure.isoformat() if api.last_failure else None,
+                    "last_success": (
+                        api.last_success.isoformat()
+                        if api.last_success else None
+                    ),
+                    "last_failure": (
+                        api.last_failure.isoformat()
+                        if api.last_failure else None
+                    ),
                     "success_count": api.success_count,
                     "failure_count": api.failure_count,
                     "error_message": api.error_message

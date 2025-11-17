@@ -84,26 +84,21 @@
             <div class="flex items-center justify-between mb-4">
                 <div class="flex items-center space-x-2">
                     <i data-lucide="line-chart" class="w-5 h-5 text-accent-400"></i>
-                    <h2 class="text-xl font-bold">Time Series Analysis</h2>
+                    <h2 class="text-xl font-bold">Top Variable Trends</h2>
                 </div>
-                <select 
-                    x-model="selectedMetric" 
-                    @change="loadTimeSeries()"
-                    class="px-3 py-1 bg-slate-700 border border-slate-600 rounded text-sm"
+                <button 
+                    @click="loadTimeSeries()" 
+                    class="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm transition"
                 >
-                    <option value="all">All Metrics</option>
-                    <template x-for="metric in availableMetrics" :key="metric">
-                        <option :value="metric" x-text="metric"></option>
-                    </template>
-                </select>
+                    <i data-lucide="refresh-cw" class="w-4 h-4 inline"></i>
+                </button>
             </div>
             <div id="timeseries" class="w-full" style="height: 400px;"></div>
             <div class="mt-3 p-3 bg-slate-900/50 rounded border border-slate-700">
                 <p class="text-slate-300 text-sm">
-                    <strong>What this shows:</strong> Raw time series data for each variable on their original scales. 
-                    Each metric uses different units (GDP in %, S&P 500 as index points, temperature in °C, etc.). 
-                    The patterns show how each variable changes over time. To see correlations between variables, 
-                    use the heatmap or network graph which normalize the relationships.
+                    <strong>What this shows:</strong> Raw values over time for the most interesting variables from top correlations. 
+                    Each line shows actual values (stocks in GBP, GDP in trillions, counts, etc.). 
+                    Click any correlation in the heatmap above to see a detailed comparison of two variables side-by-side.
                 </p>
             </div>
         </div>

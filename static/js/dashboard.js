@@ -216,26 +216,40 @@ function dashboardData() {
         
         async loadTimeSeries() {
             try {
-                const response = await fetch(`/api/dashboard/timeseries?metric=${this.selectedMetric}`);
+                const response = await fetch('/api/dashboard/top-variables-timeseries?limit=5');
                 const data = await response.json();
                 
-                const traces = data.series.map(series => ({
-                    type: 'scatter',
-                    mode: 'lines',
-                    name: series.name,
-                    x: series.dates,
-                    y: series.values,
-                    line: {
-                        width: 2
-                    },
-                    hovertemplate: '%{y:.2f}<br>%{x}<extra></extra>'
-                }));
+                if (!data.series || data.series.length === 0) {
+                    console.warn('No time series data available:', data.message);
+                    return;
+                }
+                
+                // Create one trace per variable with raw values
+                const traces = data.series.map(series => {
+                    // Format values for hover text
+                    const formattedValues = series.values.map(val => {
+                        return this.formatValue(val, series.unit);
+                    });
+                    
+                    return {
+                        type: 'scatter',
+                        mode: 'lines',
+                        name: series.name,
+                        x: series.dates,
+                        y: series.values,
+                        text: formattedValues,  // Formatted values for hover
+                        line: {
+                            width: 2
+                        },
+                        hovertemplate: '%{text}<br>%{x}<extra></extra>'
+                    };
+                });
                 
                 const layout = {
                     paper_bgcolor: '#1e293b',
                     plot_bgcolor: '#1e293b',
                     font: { color: '#cbd5e1' },
-                    margin: { t: 20, r: 20, b: 60, l: 70 },  // Reduced top margin, legend goes below
+                    margin: { t: 20, r: 20, b: 60, l: 70 },
                     xaxis: {
                         gridcolor: '#475569',
                         showgrid: true,
@@ -258,7 +272,7 @@ function dashboardData() {
                         borderwidth: 1,
                         font: { size: 10 }
                     },
-                    hovermode: 'x unified'
+                    hovermode: 'closest'
                 };
                 
                 const config = {
@@ -268,6 +282,11 @@ function dashboardData() {
                 };
                 
                 Plotly.newPlot('timeseries', traces, layout, config);
+                
+            } catch (error) {
+                console.error('Failed to load time series:', error);
+            }
+        },
                 
                 // Update available metrics
                 this.availableMetrics = data.series.map(s => s.name);
