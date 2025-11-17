@@ -156,18 +156,76 @@
         // Version and cache info
         console.log('Dashboard v1.1.0 loaded at', new Date().toISOString());
         
-        // Global refresh function
+        // Global refresh function - triggers full data pipeline
         async function refreshData() {
             const btn = document.getElementById('refreshBtn');
             const icon = btn.querySelector('[data-lucide="refresh-cw"]');
+            const btnText = btn.querySelector('span');
+            const originalText = btnText.textContent;
+            
+            // Start spinner
             icon.classList.add('animate-spin');
+            btnText.textContent = 'Fetching...';
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
             
-            // Trigger custom event that components can listen to
-            window.dispatchEvent(new CustomEvent('dashboard-refresh'));
-            
-            setTimeout(() => {
-                icon.classList.remove('animate-spin');
-            }, 1000);
+            try {
+                // Step 1: Fetch data from all APIs
+                console.log('📥 Step 1/2: Fetching data from APIs...');
+                btnText.textContent = 'Fetching Data...';
+                const fetchResponse = await fetch('/api/admin/fetch-data', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                if (!fetchResponse.ok) {
+                    throw new Error(`Data fetch failed: ${fetchResponse.status}`);
+                }
+                
+                const fetchResult = await fetchResponse.json();
+                console.log('✅ Data fetched:', fetchResult);
+                
+                // Step 2: Calculate correlations
+                console.log('🔄 Step 2/2: Calculating correlations...');
+                btnText.textContent = 'Calculating...';
+                const corrResponse = await fetch('/api/admin/calculate-correlations', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                if (!corrResponse.ok) {
+                    throw new Error(`Correlation calculation failed: ${corrResponse.status}`);
+                }
+                
+                const corrResult = await corrResponse.json();
+                console.log('✅ Correlations calculated:', corrResult);
+                
+                // Step 3: Refresh dashboard UI
+                console.log('🎨 Step 3/3: Refreshing dashboard...');
+                btnText.textContent = 'Refreshing UI...';
+                window.dispatchEvent(new CustomEvent('dashboard-refresh'));
+                
+                // Success
+                btnText.textContent = '✓ Complete!';
+                setTimeout(() => {
+                    btnText.textContent = originalText;
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    icon.classList.remove('animate-spin');
+                }, 2000);
+                
+            } catch (error) {
+                console.error('❌ Refresh failed:', error);
+                btnText.textContent = '✗ Failed';
+                btn.classList.add('bg-red-600');
+                
+                setTimeout(() => {
+                    btnText.textContent = originalText;
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-red-600');
+                    icon.classList.remove('animate-spin');
+                }, 3000);
+            }
         }
     </script>
 
