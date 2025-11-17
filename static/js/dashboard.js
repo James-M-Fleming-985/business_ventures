@@ -527,8 +527,16 @@ function dashboardData() {
                 plot_bgcolor: '#1e293b',
                 font: { color: '#cbd5e1', size: 10 },
                 margin: { t: 20, r: 20, b: 40, l: 50 },
-                xaxis: { gridcolor: '#475569' },
-                yaxis: { gridcolor: '#475569' },
+                xaxis: { 
+                    gridcolor: '#475569',
+                    type: 'date',
+                    range: [dates[0], dates[dates.length - 1]]  // Show full date range
+                },
+                yaxis: { 
+                    gridcolor: '#475569',
+                    title: 'Normalized Values (0-1)',
+                    range: [0, 1]
+                },
                 showlegend: true,
                 legend: { x: 0, y: 1, bgcolor: 'rgba(30, 41, 59, 0.8)' }
             };

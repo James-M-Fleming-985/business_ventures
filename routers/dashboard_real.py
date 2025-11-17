@@ -456,10 +456,30 @@ async def get_relationship_details(
         ]
         
         # Build time series for overlay
+        var1_raw = [var1_dict[ts] for ts in common_timestamps]
+        var2_raw = [var2_dict[ts] for ts in common_timestamps]
+        
+        # Normalize to 0-1 range for visualization (so both series visible)
+        var1_min, var1_max = min(var1_raw), max(var1_raw)
+        var2_min, var2_max = min(var2_raw), max(var2_raw)
+        
+        var1_normalized = [
+            (v - var1_min) / (var1_max - var1_min)
+            if var1_max > var1_min else 0.5
+            for v in var1_raw
+        ]
+        var2_normalized = [
+            (v - var2_min) / (var2_max - var2_min)
+            if var2_max > var2_min else 0.5
+            for v in var2_raw
+        ]
+        
         timeseries = {
             "dates": [ts.strftime("%Y-%m-%d") for ts in common_timestamps],
-            "var1_values": [var1_dict[ts] for ts in common_timestamps],
-            "var2_values": [var2_dict[ts] for ts in common_timestamps]
+            "var1_values": var1_normalized,  # Normalized for chart
+            "var2_values": var2_normalized,   # Normalized for chart
+            "var1_raw": var1_raw,             # Original values
+            "var2_raw": var2_raw              # Original values
         }
         
         # Determine correlation strength and direction
