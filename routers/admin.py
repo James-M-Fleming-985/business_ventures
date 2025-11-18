@@ -175,3 +175,132 @@ async def env_check():
         "DATABASE_PUBLIC_URL_prefix": os.getenv('DATABASE_PUBLIC_URL', '')[:30] if os.getenv('DATABASE_PUBLIC_URL') else None,
         "POSTGRES_DB_prefix": os.getenv('POSTGRES_DB', '')[:30] if os.getenv('POSTGRES_DB') else None
     }
+
+
+@router.get("/data-quality")
+async def data_quality_diagnostic():
+    """Run comprehensive data quality diagnostic"""
+    try:
+        from database import get_db_session
+        from models import VariableMetadata, TimeSeriesData, CorrelationResult
+        from sqlalchemy import and_
+        from datetime import datetime
+        from collections import defaultdict
+        
+        with get_db_session() as session:
+            # Variable inventory
+            variables = session.query(VariableMetadata).filter(
+                VariableMetadata.is_active.is_(True)
+            ).all()
+            
+            source_counts = defaultdict(int)
+            for v in variables:
+                source_counts[v.source] += 1
+            
+            # Data coverage
+            total_data_points = session.query(TimeSeriesData).count()
+            
+            # Per-variable stats
+            var_stats = []
+            for var in variables:
+                data_count = session.query(TimeSeriesData).filter(
+                    TimeSeriesData.variable_id == var.id
+                ).count()
+                
+                if data_count == 0:
+                    var_stats.append({
+                        'name': var.display_name,
+                        'source': var.source,
+                        'points': 0,
+                        'start': None,
+                        'end': None,
+                        'days_old': None
+                    })
+                    continue
+                
+                first = session.query(TimeSeriesData).filter(
+                    TimeSeriesData.variable_id == var.id
+                ).order_by(TimeSeriesData.timestamp.asc()).first()
+                
+                last = session.query(TimeSeriesData).filter(
+                    TimeSeriesData.variable_id == var.id
+                ).order_by(TimeSeriesData.timestamp.desc()).first()
+                
+                days_old = (datetime.utcnow() - last.timestamp).days
+                
+                var_stats.append({
+                    'name': var.display_name,
+                    'source': var.source,
+                    'points': data_count,
+                    'start': first.timestamp.strftime('%Y-%m-%d'),
+                    'end': last.timestamp.strftime('%Y-%m-%d'),
+                    'days_old': days_old
+                })
+            
+            # Correlation quality
+            total_corrs = session.query(CorrelationResult).count()
+            
+            sample_size_bins = {
+                '0-2': session.query(CorrelationResult).filter(
+                    CorrelationResult.sample_size < 3
+                ).count(),
+                '3-9': session.query(CorrelationResult).filter(
+                    and_(
+                        CorrelationResult.sample_size >= 3,
+                        CorrelationResult.sample_size < 10
+                    )
+                ).count(),
+                '10-19': session.query(CorrelationResult).filter(
+                    and_(
+                        CorrelationResult.sample_size >= 10,
+                        CorrelationResult.sample_size < 20
+                    )
+                ).count(),
+                '20-49': session.query(CorrelationResult).filter(
+                    and_(
+                        CorrelationResult.sample_size >= 20,
+                        CorrelationResult.sample_size < 50
+                    )
+                ).count(),
+                '50+': session.query(CorrelationResult).filter(
+                    CorrelationResult.sample_size >= 50
+                ).count()
+            }
+            
+            # Suspicious correlations
+            suspicious = session.query(CorrelationResult).filter(
+                and_(
+                    CorrelationResult.abs_correlation > 0.95,
+                    CorrelationResult.sample_size < 20
+                )
+            ).count()
+            
+            # Summary stats
+            current_vars = len([v for v in var_stats if v['days_old'] and v['days_old'] <= 30])
+            stale_vars = len([v for v in var_stats if v['days_old'] and v['days_old'] > 30])
+            no_data_vars = len([v for v in var_stats if v['points'] == 0])
+            
+            return {
+                "status": "success",
+                "summary": {
+                    "total_variables": len(variables),
+                    "variables_with_data": len([v for v in var_stats if v['points'] > 0]),
+                    "current_variables": current_vars,
+                    "stale_variables": stale_vars,
+                    "no_data_variables": no_data_vars,
+                    "total_data_points": total_data_points,
+                    "total_correlations": total_corrs
+                },
+                "source_distribution": dict(source_counts),
+                "correlation_sample_sizes": sample_size_bins,
+                "suspicious_correlations": suspicious,
+                "variables": var_stats[:20]  # First 20 for preview
+            }
+            
+    except Exception as e:
+        logger.error(f"Data quality diagnostic failed: {e}", exc_info=True)
+        return JSONResponse({
+            "status": "error",
+            "message": str(e)
+        }, status_code=500)
+
