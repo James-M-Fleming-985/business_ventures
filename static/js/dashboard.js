@@ -69,8 +69,8 @@ function dashboardData() {
                 const data = await response.json();
                 
                 if (!data.labels || data.labels.length === 0) {
-                    console.warn('No correlation data available');
-                    this.createDemoHeatmap();
+                    console.warn('No correlation data available:', data);
+                    document.getElementById('heatmap').innerHTML = '<div class="flex items-center justify-center h-full text-slate-400"><p>No correlation data available. Click Refresh to fetch data.</p></div>';
                     return;
                 }
                 
@@ -210,7 +210,7 @@ function dashboardData() {
                 
             } catch (error) {
                 console.error('Failed to load heatmap:', error);
-                this.createDemoHeatmap();
+                document.getElementById('heatmap').innerHTML = '<div class="flex items-center justify-center h-full text-slate-400"><p>Error loading heatmap: ' + error.message + '</p></div>';
             }
         },
         
@@ -221,6 +221,7 @@ function dashboardData() {
                 
                 if (!data.series || data.series.length === 0) {
                     console.warn('No time series data available:', data.message);
+                    document.getElementById('timeseries').innerHTML = '<div class="flex items-center justify-center h-full text-slate-400"><p>No time series data available. ' + (data.message || 'Click Refresh to fetch data.') + '</p></div>';
                     return;
                 }
                 
