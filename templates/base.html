@@ -156,7 +156,7 @@
         // Version and cache info
         console.log('Dashboard v1.1.0 loaded at', new Date().toISOString());
         
-        // Global refresh function - triggers full data pipeline
+        // Global refresh function - triggers full data pipeline with background jobs
         async function refreshData() {
             const btn = document.getElementById('refreshBtn');
             const icon = btn.querySelector('[data-lucide="refresh-cw"]');
@@ -165,14 +165,14 @@
             
             // Start spinner
             icon.classList.add('animate-spin');
-            btnText.textContent = 'Fetching...';
             btn.disabled = true;
             btn.classList.add('opacity-50', 'cursor-not-allowed');
             
             try {
-                // Step 1: Fetch data from all APIs
-                console.log('📥 Step 1/2: Fetching data from APIs...');
+                // Step 1: Start data fetch in background
+                console.log('📥 Step 1/3: Starting data fetch...');
                 btnText.textContent = 'Fetching Data...';
+                
                 const fetchResponse = await fetch('/api/admin/fetch-data', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' }
@@ -182,23 +182,32 @@
                     throw new Error(`Data fetch failed: ${fetchResponse.status}`);
                 }
                 
-                const fetchResult = await fetchResponse.json();
-                console.log('✅ Data fetched:', fetchResult);
+                const fetchJob = await fetchResponse.json();
+                console.log('✅ Data fetch job started:', fetchJob.job_id);
                 
-                // Step 2: Calculate correlations
-                console.log('🔄 Step 2/2: Calculating correlations...');
+                // Poll for fetch completion
+                await pollJobStatus(fetchJob.job_id, 'Fetching Data');
+                console.log('✅ Data fetch complete!');
+                
+                // Step 2: Start correlation calculation in background
+                console.log('🔄 Step 2/3: Starting correlation calculation...');
                 btnText.textContent = 'Calculating...';
+                
                 const corrResponse = await fetch('/api/admin/calculate-correlations', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' }
                 });
                 
                 if (!corrResponse.ok) {
-                    throw new Error(`Correlation calculation failed: ${corrResponse.status}`);
+                    throw new Error(`Correlation calc failed: ${corrResponse.status}`);
                 }
                 
-                const corrResult = await corrResponse.json();
-                console.log('✅ Correlations calculated:', corrResult);
+                const corrJob = await corrResponse.json();
+                console.log('✅ Correlation job started:', corrJob.job_id);
+                
+                // Poll for correlation completion
+                await pollJobStatus(corrJob.job_id, 'Calculating');
+                console.log('✅ Correlations calculated!');
                 
                 // Step 3: Refresh dashboard UI
                 console.log('🎨 Step 3/3: Refreshing dashboard...');
@@ -226,6 +235,36 @@
                     icon.classList.remove('animate-spin');
                 }, 3000);
             }
+        }
+        
+        // Poll job status until completed or failed
+        async function pollJobStatus(jobId, stageName) {
+            const maxAttempts = 180; // 15 minutes max (180 * 5 seconds)
+            let attempts = 0;
+            
+            while (attempts < maxAttempts) {
+                await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+                
+                const statusResponse = await fetch(`/api/admin/job-status/${jobId}`);
+                if (!statusResponse.ok) {
+                    throw new Error(`Job status check failed: ${statusResponse.status}`);
+                }
+                
+                const status = await statusResponse.json();
+                console.log(`${stageName} status:`, status.status, `(${status.stage})`);
+                
+                if (status.status === 'completed') {
+                    return status.result;
+                }
+                
+                if (status.status === 'failed') {
+                    throw new Error(`${stageName} failed: ${status.error}`);
+                }
+                
+                attempts++;
+            }
+            
+            throw new Error(`${stageName} timed out after ${maxAttempts * 5} seconds`);
         }
     </script>
 

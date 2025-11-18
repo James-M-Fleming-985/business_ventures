@@ -2,15 +2,20 @@
 Admin Router for Database Management Operations
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, BackgroundTasks
 from fastapi.responses import JSONResponse
 import logging
 import sys
 import os
+from datetime import datetime
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
+
+# In-memory job tracking (use Redis/DB for production)
+_active_jobs = {}
 
 
 @router.post("/initialize-database")
@@ -75,31 +80,171 @@ async def initialize_database():
         )
 
 
-@router.post("/fetch-data")
-async def fetch_data():
-    """Fetch data from APIs without full initialization"""
+def _run_data_fetch_background(job_id: str):
+    """Background task for data fetching"""
     try:
+        _active_jobs[job_id]['status'] = 'running'
+        _active_jobs[job_id]['stage'] = 'fetching'
+        _active_jobs[job_id]['updated_at'] = datetime.utcnow().isoformat()
+        
         sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
         from data_ingestion_service import DataIngestionService
         
-        logger.info("Starting data ingestion...")
+        logger.info(f"Job {job_id}: Starting data ingestion...")
         
         ingestion_service = DataIngestionService()
         result = ingestion_service.fetch_and_store_all_variables()
         
-        logger.info("✅ Data ingestion complete!")
+        _active_jobs[job_id]['status'] = 'completed'
+        _active_jobs[job_id]['stage'] = 'done'
+        _active_jobs[job_id]['result'] = result
+        _active_jobs[job_id]['updated_at'] = datetime.utcnow().isoformat()
+        
+        logger.info(f"Job {job_id}: ✅ Data ingestion complete!")
+        
+    except Exception as e:
+        logger.error(f"Job {job_id}: Data ingestion failed: {e}", exc_info=True)
+        _active_jobs[job_id]['status'] = 'failed'
+        _active_jobs[job_id]['error'] = str(e)
+        _active_jobs[job_id]['updated_at'] = datetime.utcnow().isoformat()
+
+
+@router.post("/fetch-data")
+async def fetch_data(background_tasks: BackgroundTasks):
+    """Fetch data from APIs in background - returns job_id for polling"""
+    try:
+        # Create job ID
+        job_id = f"fetch_{int(datetime.utcnow().timestamp())}"
+        
+        # Initialize job status
+        _active_jobs[job_id] = {
+            'job_id': job_id,
+            'type': 'data_fetch',
+            'status': 'queued',
+            'stage': 'initializing',
+            'created_at': datetime.utcnow().isoformat(),
+            'updated_at': datetime.utcnow().isoformat()
+        }
+        
+        # Queue background task
+        background_tasks.add_task(_run_data_fetch_background, job_id)
+        
+        logger.info(f"Job {job_id}: Queued data ingestion")
+        
         return JSONResponse({
-            "status": "success",
-            "message": "Data fetched successfully",
-            "stats": result
+            "status": "queued",
+            "message": "Data fetch started in background",
+            "job_id": job_id,
+            "poll_url": f"/api/admin/job-status/{job_id}"
         })
         
     except Exception as e:
-        logger.error(f"Data ingestion failed: {e}", exc_info=True)
+        logger.error(f"Failed to queue data fetch: {e}", exc_info=True)
         return JSONResponse({
             "status": "error",
             "message": str(e)
         }, status_code=500)
+
+
+def _run_correlation_calc_background(job_id: str):
+    """Background task for correlation calculation"""
+    try:
+        _active_jobs[job_id]['status'] = 'running'
+        _active_jobs[job_id]['stage'] = 'calculating'
+        _active_jobs[job_id]['updated_at'] = datetime.utcnow().isoformat()
+        
+        sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+        from correlation_analysis_service import CorrelationAnalysisService
+        from database import get_db_session
+        from models import CorrelationResult
+        from sqlalchemy.orm import joinedload
+        
+        logger.info(f"Job {job_id}: Starting correlation calculation...")
+        
+        analysis_service = CorrelationAnalysisService()
+        analysis_service.calculate_all_correlations()
+        
+        # Get top correlations
+        with get_db_session() as db:
+            top_correlations = (
+                db.query(CorrelationResult)
+                .options(joinedload(CorrelationResult.variable1))
+                .options(joinedload(CorrelationResult.variable2))
+                .filter(CorrelationResult.is_significant.is_(True))
+                .order_by(CorrelationResult.abs_correlation.desc())
+                .limit(10)
+                .all()
+            )
+            
+            top_corr_list = [
+                {
+                    "variable1": corr.variable1.display_name,
+                    "variable2": corr.variable2.display_name,
+                    "correlation": round(corr.correlation_value, 4),
+                    "p_value": round(corr.p_value, 6) if corr.p_value else None,
+                    "sample_size": corr.sample_size
+                }
+                for corr in top_correlations
+            ]
+        
+        _active_jobs[job_id]['status'] = 'completed'
+        _active_jobs[job_id]['stage'] = 'done'
+        _active_jobs[job_id]['result'] = {'top_correlations': top_corr_list}
+        _active_jobs[job_id]['updated_at'] = datetime.utcnow().isoformat()
+        
+        logger.info(f"Job {job_id}: ✅ Correlation calculation complete!")
+        
+    except Exception as e:
+        logger.error(f"Job {job_id}: Correlation calc failed: {e}", exc_info=True)
+        _active_jobs[job_id]['status'] = 'failed'
+        _active_jobs[job_id]['error'] = str(e)
+        _active_jobs[job_id]['updated_at'] = datetime.utcnow().isoformat()
+
+
+@router.post("/calculate-correlations")
+async def calculate_correlations(background_tasks: BackgroundTasks):
+    """Calculate correlations in background - returns job_id for polling"""
+    try:
+        # Create job ID
+        job_id = f"corr_{int(datetime.utcnow().timestamp())}"
+        
+        # Initialize job status
+        _active_jobs[job_id] = {
+            'job_id': job_id,
+            'type': 'correlation_calc',
+            'status': 'queued',
+            'stage': 'initializing',
+            'created_at': datetime.utcnow().isoformat(),
+            'updated_at': datetime.utcnow().isoformat()
+        }
+        
+        # Queue background task
+        background_tasks.add_task(_run_correlation_calc_background, job_id)
+        
+        logger.info(f"Job {job_id}: Queued correlation calculation")
+        
+        return JSONResponse({
+            "status": "queued",
+            "message": "Correlation calculation started in background",
+            "job_id": job_id,
+            "poll_url": f"/api/admin/job-status/{job_id}"
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to queue correlation calc: {e}", exc_info=True)
+        return JSONResponse({
+            "status": "error",
+            "message": str(e)
+        }, status_code=500)
+
+
+@router.get("/job-status/{job_id}")
+async def get_job_status(job_id: str):
+    """Poll status of background job"""
+    if job_id not in _active_jobs:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    return JSONResponse(_active_jobs[job_id])
 
 
 @router.post("/calculate-correlations")
@@ -152,6 +297,82 @@ async def calculate_correlations():
         
     except Exception as e:
         logger.error(f"Correlation calculation failed: {e}", exc_info=True)
+        return JSONResponse({
+            "status": "error",
+            "message": str(e)
+        }, status_code=500)
+
+
+@router.get("/data-quality")
+async def get_data_quality():
+    """Get comprehensive data quality metrics"""
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+        from database import get_db_session
+        from models import VariableMetadata, TimeSeriesData, CorrelationResult
+        from sqlalchemy import func
+        from datetime import datetime, timedelta
+        
+        with get_db_session() as db:
+            # Total variables and data coverage
+            total_vars = db.query(VariableMetadata).filter(
+                VariableMetadata.is_active.is_(True)
+            ).count()
+            
+            vars_with_data = db.query(func.count(func.distinct(TimeSeriesData.variable_id))).scalar()
+            
+            # Data freshness by source
+            thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+            current_vars = db.query(func.count(func.distinct(TimeSeriesData.variable_id))).filter(
+                TimeSeriesData.timestamp >= thirty_days_ago
+            ).scalar()
+            
+            # Total data points and correlations
+            total_points = db.query(TimeSeriesData).count()
+            total_corrs = db.query(CorrelationResult).count()
+            
+            # Sample size distribution
+            sample_sizes = {
+                "0-2": db.query(CorrelationResult).filter(CorrelationResult.sample_size.between(0, 2)).count(),
+                "3-9": db.query(CorrelationResult).filter(CorrelationResult.sample_size.between(3, 9)).count(),
+                "10-19": db.query(CorrelationResult).filter(CorrelationResult.sample_size.between(10, 19)).count(),
+                "20-49": db.query(CorrelationResult).filter(CorrelationResult.sample_size.between(20, 49)).count(),
+                "50+": db.query(CorrelationResult).filter(CorrelationResult.sample_size >= 50).count()
+            }
+            
+            # Suspicious correlations (high correlation, low sample size)
+            suspicious = db.query(CorrelationResult).filter(
+                CorrelationResult.abs_correlation > 0.95,
+                CorrelationResult.sample_size < 20
+            ).count()
+            
+            # Variables by source
+            source_dist = {}
+            for source in ['alpha_vantage', 'usgs', 'nasa_eonet', 'worldbank', 'arxiv', 'clinicaltrials']:
+                count = db.query(VariableMetadata).filter(
+                    VariableMetadata.source == source,
+                    VariableMetadata.is_active.is_(True)
+                ).count()
+                source_dist[source] = count
+            
+            return JSONResponse({
+                "status": "success",
+                "summary": {
+                    "total_variables": total_vars,
+                    "variables_with_data": vars_with_data,
+                    "current_variables": current_vars,
+                    "stale_variables": vars_with_data - current_vars,
+                    "no_data_variables": total_vars - vars_with_data,
+                    "total_data_points": total_points,
+                    "total_correlations": total_corrs
+                },
+                "source_distribution": source_dist,
+                "correlation_sample_sizes": sample_sizes,
+                "suspicious_correlations": suspicious
+            })
+    
+    except Exception as e:
+        logger.error(f"Data quality check failed: {e}", exc_info=True)
         return JSONResponse({
             "status": "error",
             "message": str(e)
