@@ -172,28 +172,37 @@ class DataFetcher:
     def fetch_earthquake_monthly(self, months: int = 60) -> Optional[Dict[str, int]]:
         """
         Fetch monthly earthquake counts (sum of all earthquakes per month).
+        Uses USGS Earthquake Catalog API for historical data.
         Returns dict of {month_start_date: total_count}
-        Note: USGS free feed only provides last 30 days. For historical data,
-        would need to use their catalog API with authentication.
         """
         try:
-            # For MVP, use the 30-day feed and aggregate to current month
-            url = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.geojson"
-            response = requests.get(url, timeout=10)
+            # Calculate date range for historical data
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=months * 30)
+            
+            # USGS Earthquake Catalog API (no auth required)
+            url = "https://earthquake.usgs.gov/fdsnws/event/1/query"
+            params = {
+                "format": "geojson",
+                "starttime": start_date.strftime("%Y-%m-%d"),
+                "endtime": end_date.strftime("%Y-%m-%d"),
+                "minmagnitude": 2.5,  # Significant earthquakes only
+                "orderby": "time"
+            }
+            
+            response = requests.get(url, params=params, timeout=30)
             response.raise_for_status()
             data = response.json()
             
             # Count earthquakes per month
             monthly_counts = {}
             for feature in data.get("features", []):
-                timestamp = feature["properties"]["time"] / 1000  # Convert from ms
+                timestamp = feature["properties"]["time"] / 1000
                 date_obj = datetime.fromtimestamp(timestamp)
-                # Use first day of month as key
                 first_of_month = date_obj.replace(day=1).strftime("%Y-%m-%d")
                 monthly_counts[first_of_month] = monthly_counts.get(first_of_month, 0) + 1
             
-            # TODO: For full historical data, implement USGS catalog API
-            # For now, return what we have (last ~1 month of data)
+            logger.info(f"Fetched {len(data.get('features', []))} earthquakes across {len(monthly_counts)} months")
             return monthly_counts
             
         except Exception as e:
@@ -204,18 +213,30 @@ class DataFetcher:
         """
         Fetch monthly earthquake counts for correlation analysis.
         Returns dict of {month_start_date: total_earthquakes}
-        Note: USGS only provides last 30 days, so historical data limited
+        Uses USGS Earthquake Catalog API for full historical data.
         """
         try:
-            url = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.geojson"
-            response = requests.get(url, timeout=10)
+            # Calculate date range
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=months * 30)
+            
+            url = "https://earthquake.usgs.gov/fdsnws/event/1/query"
+            params = {
+                "format": "geojson",
+                "starttime": start_date.strftime("%Y-%m-%d"),
+                "endtime": end_date.strftime("%Y-%m-%d"),
+                "minmagnitude": 2.5,
+                "orderby": "time"
+            }
+            
+            response = requests.get(url, params=params, timeout=30)
             response.raise_for_status()
             data = response.json()
             
             # Count earthquakes per month
             monthly_counts = {}
             for feature in data.get("features", []):
-                timestamp = feature["properties"]["time"] / 1000  # Convert from ms
+                timestamp = feature["properties"]["time"] / 1000
                 date = datetime.fromtimestamp(timestamp)
                 month_start = date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
                 month_key = month_start.strftime("%Y-%m-%d")
@@ -285,10 +306,14 @@ class DataFetcher:
         Returns dict of {month_start_date: gdp_value}
         """
         try:
+            # Dynamic date range: get last 10 years of data
+            current_year = datetime.now().year
+            start_year = current_year - 10
+            
             url = f"https://api.worldbank.org/v2/country/{country_code}/indicator/NY.GDP.MKTP.CD"
             params = {
                 "format": "json",
-                "date": "2015:2023",
+                "date": f"{start_year}:{current_year}",
                 "per_page": 100
             }
             
@@ -328,10 +353,14 @@ class DataFetcher:
         GDP is annual, so each year's value is repeated for 12 months.
         """
         try:
+            # Dynamic date range: get last 10 years of data
+            current_year = datetime.now().year
+            start_year = current_year - 10
+            
             url = f"https://api.worldbank.org/v2/country/{country_code}/indicator/NY.GDP.MKTP.CD"
             params = {
                 "format": "json",
-                "date": "2015:2023",
+                "date": f"{start_year}:{current_year}",
                 "per_page": 100
             }
             
@@ -363,6 +392,100 @@ class DataFetcher:
             
         except Exception as e:
             logger.error(f"Error fetching monthly GDP data: {e}")
+            return None
+    
+    def fetch_arxiv_papers_monthly(self, topic: str, months: int = 60) -> Optional[Dict[str, int]]:
+        """
+        Fetch monthly counts of arXiv papers on a topic.
+        Queries arXiv API for papers submitted in each month.
+        Returns dict of {month_start_date: paper_count}
+        """
+        try:
+            monthly_counts = {}
+            end_date = datetime.now()
+            
+            # Query each month individually (arXiv API limitation)
+            for i in range(months):
+                month_start = end_date - timedelta(days=(months - i) * 30)
+                month_end = month_start + timedelta(days=30)
+                
+                # Format dates for arXiv API
+                start_str = month_start.strftime("%Y%m%d")
+                end_str = month_end.strftime("%Y%m%d")
+                
+                url = "http://export.arxiv.org/api/query"
+                params = {
+                    "search_query": f"all:{topic} AND submittedDate:[{start_str} TO {end_str}]",
+                    "start": 0,
+                    "max_results": 1  # We only need the count
+                }
+                
+                try:
+                    response = requests.get(url, params=params, timeout=10)
+                    response.raise_for_status()
+                    
+                    # Extract total results from feed
+                    import xml.etree.ElementTree as ET
+                    root = ET.fromstring(response.content)
+                    ns = {'opensearch': 'http://a9.com/-/spec/opensearch/1.1/'}
+                    total = root.find('.//opensearch:totalResults', ns)
+                    count = int(total.text) if total is not None else 0
+                    
+                    # Store with month start date
+                    month_key = month_start.replace(day=1).strftime("%Y-%m-%d")
+                    monthly_counts[month_key] = count
+                    
+                except Exception as e:
+                    logger.warning(f"Error fetching arXiv for {month_start.strftime('%Y-%m')}: {e}")
+                    continue
+            
+            logger.info(f"Fetched arXiv '{topic}' data for {len(monthly_counts)} months")
+            return monthly_counts
+            
+        except Exception as e:
+            logger.error(f"Error fetching monthly arXiv data: {e}")
+            return None
+    
+    def fetch_clinical_trials_monthly(self, condition: str, months: int = 60) -> Optional[Dict[str, int]]:
+        """
+        Fetch monthly counts of clinical trials for a condition.
+        Queries ClinicalTrials.gov API for trials started in each month.
+        Returns dict of {month_start_date: trial_count}
+        """
+        try:
+            monthly_counts = {}
+            end_date = datetime.now()
+            
+            # Query each month
+            for i in range(months):
+                month_start = end_date - timedelta(days=(months - i) * 30)
+                month_end = month_start + timedelta(days=30)
+                
+                url = "https://clinicaltrials.gov/api/v2/studies"
+                params = {
+                    "query.cond": condition,
+                    "filter.advanced": f"AREA[StartDate]RANGE[{month_start.strftime('%m/%d/%Y')}, {month_end.strftime('%m/%d/%Y')}]",
+                    "pageSize": 1
+                }
+                
+                try:
+                    response = requests.get(url, params=params, timeout=10)
+                    response.raise_for_status()
+                    data = response.json()
+                    
+                    count = data.get("totalCount", 0)
+                    month_key = month_start.replace(day=1).strftime("%Y-%m-%d")
+                    monthly_counts[month_key] = count
+                    
+                except Exception as e:
+                    logger.warning(f"Error fetching trials for {month_start.strftime('%Y-%m')}: {e}")
+                    continue
+            
+            logger.info(f"Fetched clinical trials '{condition}' data for {len(monthly_counts)} months")
+            return monthly_counts
+            
+        except Exception as e:
+            logger.error(f"Error fetching monthly clinical trials data: {e}")
             return None
     
     def fetch_arxiv_papers(self, topic: str = "artificial intelligence", max_results: int = 100) -> Optional[int]:

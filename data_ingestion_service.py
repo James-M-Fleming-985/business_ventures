@@ -278,8 +278,8 @@ class DataIngestionService:
         return {'gdp_fetched': success_count, 'gdp_data_points': data_points}
     
     def _fetch_arxiv_data(self) -> dict:
-        """Fetch arXiv paper counts"""
-        logger.info("Fetching arXiv data...")
+        """Fetch monthly arXiv paper counts (60 months historical)"""
+        logger.info("Fetching monthly arXiv data...")
         
         with get_db_session() as session:
             arxiv_vars = session.query(VariableMetadata).filter(
@@ -289,30 +289,35 @@ class DataIngestionService:
             
             success_count = 0
             data_points = 0
-            timestamp = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
             
             for var in arxiv_vars:
                 try:
                     params = json.loads(var.parameters)
                     topic = params.get('topic')
                     
-                    count = self.fetcher.fetch_arxiv_papers(topic, max_results=100)
+                    # Fetch monthly data (60 months = 5 years)
+                    monthly_counts = self.fetcher.fetch_arxiv_papers_monthly(topic, months=60)
                     
-                    if count is not None:
-                        existing = session.query(TimeSeriesData).filter(
-                            TimeSeriesData.variable_id == var.id,
-                            TimeSeriesData.timestamp == timestamp
-                        ).first()
-                        
-                        if not existing:
-                            data_point = TimeSeriesData(
-                                variable_id=var.id,
-                                timestamp=timestamp,
-                                value=float(count),
-                                fetched_at=datetime.utcnow()
-                            )
-                            session.add(data_point)
-                            data_points += 1
+                    if monthly_counts:
+                        # Store monthly data points
+                        for date_str, count in monthly_counts.items():
+                            timestamp = datetime.strptime(date_str, "%Y-%m-%d")
+                            
+                            # Check if data point already exists
+                            existing = session.query(TimeSeriesData).filter(
+                                TimeSeriesData.variable_id == var.id,
+                                TimeSeriesData.timestamp == timestamp
+                            ).first()
+                            
+                            if not existing:
+                                data_point = TimeSeriesData(
+                                    variable_id=var.id,
+                                    timestamp=timestamp,
+                                    value=float(count),
+                                    fetched_at=datetime.utcnow()
+                                )
+                                session.add(data_point)
+                                data_points += 1
                         
                         success_count += 1
                         self._update_api_status(session, 'arxiv', 'active')
@@ -327,8 +332,8 @@ class DataIngestionService:
         return {'arxiv_fetched': success_count, 'arxiv_data_points': data_points}
     
     def _fetch_clinical_trials_data(self) -> dict:
-        """Fetch clinical trial counts"""
-        logger.info("Fetching clinical trials data...")
+        """Fetch monthly clinical trial counts (60 months historical)"""
+        logger.info("Fetching monthly clinical trials data...")
         
         with get_db_session() as session:
             trial_vars = session.query(VariableMetadata).filter(
@@ -338,30 +343,35 @@ class DataIngestionService:
             
             success_count = 0
             data_points = 0
-            timestamp = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
             
             for var in trial_vars:
                 try:
                     params = json.loads(var.parameters)
                     condition = params.get('condition')
                     
-                    count = self.fetcher.fetch_clinical_trials(condition)
+                    # Fetch monthly data (60 months = 5 years)
+                    monthly_counts = self.fetcher.fetch_clinical_trials_monthly(condition, months=60)
                     
-                    if count is not None:
-                        existing = session.query(TimeSeriesData).filter(
-                            TimeSeriesData.variable_id == var.id,
-                            TimeSeriesData.timestamp == timestamp
-                        ).first()
-                        
-                        if not existing:
-                            data_point = TimeSeriesData(
-                                variable_id=var.id,
-                                timestamp=timestamp,
-                                value=float(count),
-                                fetched_at=datetime.utcnow()
-                            )
-                            session.add(data_point)
-                            data_points += 1
+                    if monthly_counts:
+                        # Store monthly data points
+                        for date_str, count in monthly_counts.items():
+                            timestamp = datetime.strptime(date_str, "%Y-%m-%d")
+                            
+                            # Check if data point already exists
+                            existing = session.query(TimeSeriesData).filter(
+                                TimeSeriesData.variable_id == var.id,
+                                TimeSeriesData.timestamp == timestamp
+                            ).first()
+                            
+                            if not existing:
+                                data_point = TimeSeriesData(
+                                    variable_id=var.id,
+                                    timestamp=timestamp,
+                                    value=float(count),
+                                    fetched_at=datetime.utcnow()
+                                )
+                                session.add(data_point)
+                                data_points += 1
                         
                         success_count += 1
                         self._update_api_status(session, 'clinicaltrials', 'active')
