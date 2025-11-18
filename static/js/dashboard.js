@@ -300,15 +300,6 @@ function dashboardData() {
                 console.error('Failed to load time series:', error);
             }
         },
-                
-                // Update available metrics
-                this.availableMetrics = data.series.map(s => s.name);
-                
-            } catch (error) {
-                console.error('Failed to load time series:', error);
-                this.createDemoTimeSeries();
-            }
-        },
         
         async loadNetwork() {
             try {
