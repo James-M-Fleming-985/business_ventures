@@ -145,8 +145,10 @@ async def get_heatmap_data(
         # Initialize matrix: None for missing, 1.0 on diagonal
         n = len(labels)
         matrix = [[None for _ in range(n)] for _ in range(n)]
+        metadata = [[None for _ in range(n)] for _ in range(n)]  # Store sample sizes
         for i in range(n):
             matrix[i][i] = 1.0
+            metadata[i][i] = {'sample_size': 0, 'p_value': 0, 'dates': ''}
         
         # Fill in correlations (only pairs we have)
         for corr in top_pairs:
@@ -154,12 +156,23 @@ async def get_heatmap_data(
             j = var_to_idx[corr['variable2_name']]
             r = corr['correlation_value']
             
+            # Store correlation and metadata
             matrix[i][j] = r
             matrix[j][i] = r
+            
+            meta = {
+                'sample_size': corr.get('sample_size', 0),
+                'p_value': corr.get('p_value', 0),
+                'start_date': corr.get('start_date', ''),
+                'end_date': corr.get('end_date', '')
+            }
+            metadata[i][j] = meta
+            metadata[j][i] = meta
         
         return {
             "labels": labels,
             "matrix": matrix,
+            "metadata": metadata,  # Add metadata for tooltips
             "correlation_count": len(top_pairs),
             "top_n": top_n,
             "cross_domain_filter": cross_domain,

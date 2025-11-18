@@ -203,9 +203,10 @@ class CorrelationAnalysisService:
                 return None
             
             # Check minimum sample size
+            # (20 points minimum for reliable correlation)
             try:
                 sample_size = int(len(aligned_data))
-                if sample_size < 3:
+                if sample_size < 20:
                     return None
             except Exception as e:
                 logger.error(f"Sample size check error for {var1_id}-{var2_id}: {e}")
@@ -438,14 +439,28 @@ class CorrelationAnalysisService:
                     'p_value': r.p_value,
                     'method': r.method,
                     'sample_size': r.sample_size,
-                    'is_significant': r.is_significant
+                    'is_significant': r.is_significant,
+                    'start_date': (
+                        r.start_date.strftime('%Y-%m-%d')
+                        if r.start_date else None
+                    ),
+                    'end_date': (
+                        r.end_date.strftime('%Y-%m-%d')
+                        if r.end_date else None
+                    )
                 })
                 
                 if len(correlations) >= limit:
                     break
             
-            logger.info(f"Returned {len(correlations)} cross-domain correlations with source diversity")
+            logger.info(
+                f"Returned {len(correlations)} cross-domain "
+                f"correlations with source diversity"
+            )
             if cross_domain:
-                logger.info(f"Source pair distribution: {dict(source_pair_count)}")
+                logger.info(
+                    f"Source pair distribution: "
+                    f"{dict(source_pair_count)}"
+                )
             
             return correlations

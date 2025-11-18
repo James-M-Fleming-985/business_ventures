@@ -98,11 +98,10 @@ function dashboardData() {
                     row.map((val, j) => (i > j) ? val : null)  // Only show below diagonal
                 );
                 
-                // Create user-friendly hover callouts (not x, y, z)
+                // Create user-friendly hover callouts with sample size
                 const hoverText = data.matrix.map((row, i) => 
                     row.map((r, j) => {
                         if (r === null || r === undefined) {
-                            // Upper triangle or missing data
                             return `<i>See lower triangle for this correlation</i>`;
                         }
                         
@@ -113,18 +112,25 @@ function dashboardData() {
                         }
                         
                         if (i < j) {
-                            // Upper triangle - hide duplicate
                             return `<i>See lower triangle</i>`;
                         }
                         
-                        // Lower triangle - show full details
+                        // Lower triangle - show full details with sample size
                         const strength = interpretCorrelation(r);
                         const direction = r > 0 ? 'positive' : 'negative';
-                        const significance = formatSignificance(0.001);
+                        const meta = data.metadata && data.metadata[i] && data.metadata[i][j] || {};
+                        const sampleSize = meta.sample_size || 'N/A';
+                        const pValue = meta.p_value !== undefined ? meta.p_value : 0.001;
+                        const significance = formatSignificance(pValue);
+                        const dateRange = meta.start_date && meta.end_date 
+                            ? `${meta.start_date} to ${meta.end_date}`
+                            : 'Date range unavailable';
                         
                         return `<b>Variable Pair:</b><br>` +
                                `${data.labels[i]} ↔ ${data.labels[j]}<br><br>` +
                                `<b>Correlation:</b> ${r.toFixed(3)} (${strength} ${direction})<br>` +
+                               `<b>Sample Size:</b> ${sampleSize} data points<br>` +
+                               `<b>Period:</b> ${dateRange}<br>` +
                                `<b>Statistical Significance:</b> ${significance}<br><br>` +
                                `<i>💡 Click to view detailed analysis with scatter plot</i>`;
                     })
