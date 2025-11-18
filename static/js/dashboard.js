@@ -64,9 +64,11 @@ function dashboardData() {
         },
         
         async loadHeatmap() {
+            console.log('📊 Loading heatmap...');
             try {
                 const response = await fetch('/api/dashboard/heatmap?cross_domain=true&top_n=12');
                 const data = await response.json();
+                console.log('📊 Heatmap data received:', data);
                 
                 if (!data.labels || data.labels.length === 0) {
                     console.warn('No correlation data available:', data);
@@ -184,7 +186,9 @@ function dashboardData() {
                     modeBarButtonsToRemove: ['pan2d', 'lasso2d', 'select2d']
                 };
                 
+                console.log('📊 Rendering heatmap with Plotly...');
                 Plotly.newPlot('heatmap', [trace], layout, config).then(() => {
+                    console.log('✅ Heatmap rendered successfully');
                     // Add click handler after plot is created
                     const heatmapDiv = document.getElementById('heatmap');
                     const self = this; // Preserve context
@@ -215,9 +219,11 @@ function dashboardData() {
         },
         
         async loadTimeSeries() {
+            console.log('📈 Loading time series...');
             try {
                 const response = await fetch('/api/dashboard/top-variables-timeseries?limit=5');
                 const data = await response.json();
+                console.log('📈 Time series data received:', data);
                 
                 if (!data.series || data.series.length === 0) {
                     console.warn('No time series data available:', data.message);
@@ -283,7 +289,12 @@ function dashboardData() {
                     displaylogo: false
                 };
                 
-                Plotly.newPlot('timeseries', traces, layout, config);
+                console.log('📈 Rendering time series with Plotly...');
+                Plotly.newPlot('timeseries', traces, layout, config).then(() => {
+                    console.log('✅ Time series rendered successfully');
+                }).catch(err => {
+                    console.error('❌ Time series rendering failed:', err);
+                });
                 
             } catch (error) {
                 console.error('Failed to load time series:', error);
