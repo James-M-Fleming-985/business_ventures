@@ -78,11 +78,15 @@ def seed_initial_data(session):
     ))
     
     # Seed environmental event variables
+    # Only include categories with actual data in EONET (verified 2025-11-22)
+    # Wildfires: 5,607 events | Sea/Lake Ice: 46 events | Volcanoes: 33 events | Severe Storms: 1 event
+    # Removed: floods, droughts, dust_haze, landslides, snow, water_color (0 events in EONET)
+    # Only include categories with actual data in EONET (verified 2025-11-22)
+    # Wildfires: 5,607 events | Sea/Lake Ice: 46 events | Volcanoes: 33 events | Severe Storms: 1 event
+    # Removed: floods, droughts, dust_haze, landslides, snow, water_color (0 events in EONET)
     env_categories = [
-        'wildfires', 'severe_storms', 'volcanoes', 'sea_lake_ice',
-        'floods', 'droughts', 'dust_haze', 'landslides', 'snow', 'water_color'
+        'wildfires', 'severe_storms', 'volcanoes', 'sea_lake_ice'
     ]
-    for category in env_categories:
         display = category.replace('_', ' ').title()
         session.add(VariableMetadata(
             name=f'env_{category}',

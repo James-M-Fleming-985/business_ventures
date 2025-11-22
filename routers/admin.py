@@ -525,3 +525,46 @@ async def data_quality_diagnostic():
             "message": str(e)
         }, status_code=500)
 
+
+
+@router.post("/disable-empty-environmental-vars")
+async def disable_empty_environmental_vars():
+    """
+    Disable environmental variables that have no data in EONET API.
+    Only Wildfires, Severe Storms, Volcanoes, and Sea/Lake Ice have data.
+    """
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+        from database import get_db_session
+        from models import VariableMetadata
+        
+        # Categories with no events in EONET
+        empty_categories = [
+            'env_floods', 'env_droughts', 'env_dust_haze', 
+            'env_landslides', 'env_snow', 'env_water_color'
+        ]
+        
+        disabled_count = 0
+        with get_db_session() as session:
+            for var_name in empty_categories:
+                var = session.query(VariableMetadata).filter(
+                    VariableMetadata.name == var_name
+                ).first()
+                
+                if var and var.is_active:
+                    var.is_active = False
+                    disabled_count += 1
+                    logger.info(f"Disabled {var.display_name} (no EONET data)")
+            
+            session.commit()
+        
+        return {
+            "status": "success",
+            "message": f"Disabled {disabled_count} empty environmental variables",
+            "disabled_vars": empty_categories,
+            "reason": "These categories have 0 events in NASA EONET API"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error disabling variables: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
