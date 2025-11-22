@@ -171,58 +171,73 @@ class DataIngestionService:
         return {'earthquakes_fetched': 0}
     
     def _fetch_environmental_data(self) -> dict:
-        """Fetch environmental event counts"""
-        logger.info("Fetching environmental data...")
+        """Fetch monthly environmental event counts from NASA EONET"""
+        logger.info("Fetching monthly environmental data...")
         
-        # Environmental data is event counts, not time series
-        # Store as single data point for "now"
-        try:
-            events = self.fetcher.fetch_environmental_events()
+        with get_db_session() as session:
+            env_vars = session.query(VariableMetadata).filter(
+                VariableMetadata.source == 'nasa_eonet',
+                VariableMetadata.is_active == True
+            ).all()
             
-            if events:
-                with get_db_session() as session:
-                    env_vars = session.query(VariableMetadata).filter(
-                        VariableMetadata.source == 'nasa_eonet',
-                        VariableMetadata.is_active == True
-                    ).all()
+            if not env_vars:
+                return {'environmental_fetched': 0}
+            
+            try:
+                # Fetch monthly historical data (60 months = 5 years)
+                category_monthly_data = self.fetcher.fetch_environmental_events_monthly(months=60)
+                
+                if not category_monthly_data:
+                    logger.warning("No environmental data returned from API")
+                    return {'environmental_fetched': 0}
+                
+                success_count = 0
+                data_points = 0
+                
+                for var in env_vars:
+                    params = json.loads(var.parameters)
+                    category = params.get('category', '')
                     
-                    data_points = 0
-                    timestamp = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+                    # Map variable category to API category title
+                    category_title = category.replace('_', ' ').title()
                     
-                    for var in env_vars:
-                        params = json.loads(var.parameters)
-                        category = params.get('category', '')
+                    monthly_counts = category_monthly_data.get(category_title, {})
+                    
+                    if monthly_counts:
+                        # Store all monthly data points
+                        for date_str, count in monthly_counts.items():
+                            timestamp = datetime.strptime(date_str, "%Y-%m-%d")
+                            
+                            # Check if data point already exists
+                            existing = session.query(TimeSeriesData).filter(
+                                TimeSeriesData.variable_id == var.id,
+                                TimeSeriesData.timestamp == timestamp
+                            ).first()
+                            
+                            if not existing:
+                                data_point = TimeSeriesData(
+                                    variable_id=var.id,
+                                    timestamp=timestamp,
+                                    value=float(count),
+                                    fetched_at=datetime.utcnow()
+                                )
+                                session.add(data_point)
+                                data_points += 1
                         
-                        # Map category name to event count
-                        category_title = category.replace('_', ' ').title()
-                        count = events.get(category_title, 0)
-                        
-                        existing = session.query(TimeSeriesData).filter(
-                            TimeSeriesData.variable_id == var.id,
-                            TimeSeriesData.timestamp == timestamp
-                        ).first()
-                        
-                        if not existing:
-                            data_point = TimeSeriesData(
-                                variable_id=var.id,
-                                timestamp=timestamp,
-                                value=float(count),
-                                fetched_at=datetime.utcnow()
-                            )
-                            session.add(data_point)
-                            data_points += 1
-                    
-                    session.commit()
-                    self._update_api_status(session, 'nasa_eonet', 'active')
-                    logger.info(f"Environmental data: {data_points} data points")
-                    return {'environmental_fetched': len(env_vars), 'environmental_data_points': data_points}
-                    
-        except Exception as e:
-            logger.error(f"Error fetching environmental data: {e}")
-            with get_db_session() as session:
+                        session.commit()
+                        success_count += 1
+                        logger.info(f"Stored {len(monthly_counts)} months for {category_title}")
+                    else:
+                        logger.warning(f"No data for {category_title}")
+                
+                self._update_api_status(session, 'nasa_eonet', 'active')
+                logger.info(f"Environmental data: {success_count} variables, {data_points} new data points")
+                return {'environmental_fetched': success_count, 'environmental_data_points': data_points}
+                
+            except Exception as e:
+                logger.error(f"Error fetching environmental data: {e}")
                 self._update_api_status(session, 'nasa_eonet', 'failed', str(e))
-        
-        return {'environmental_fetched': 0}
+                return {'environmental_fetched': 0}
     
     def _fetch_gdp_data(self) -> dict:
         """Fetch monthly GDP data (forward-filled from annual)"""

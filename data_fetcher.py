@@ -550,3 +550,80 @@ class DataFetcher:
             }
         
         return result
+    
+    def fetch_environmental_events_monthly(self, months: int = 60) -> Optional[Dict[str, Dict[str, int]]]:
+        """
+        Fetch monthly environmental event counts from NASA EONET.
+        Returns dict of {category_title: {month_start_date: count}}
+        
+        Args:
+            months: Number of months of historical data to fetch
+            
+        Returns:
+            Nested dict mapping category names to monthly counts
+            e.g., {"Wildfires": {"2025-01-01": 15, "2025-02-01": 12, ...}, ...}
+        """
+        try:
+            # Calculate date range
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=months * 30)
+            
+            # NASA EONET API with date range
+            url = "https://eonet.gsfc.nasa.gov/api/v3/events"
+            params = {
+                "start": start_date.strftime("%Y-%m-%d"),
+                "end": end_date.strftime("%Y-%m-%d"),
+                "limit": 10000  # Get all events in range
+            }
+            
+            logger.info(f"Fetching EONET events from {params['start']} to {params['end']}...")
+            response = requests.get(url, params=params, timeout=30)
+            response.raise_for_status()
+            data = response.json()
+            
+            events = data.get("events", [])
+            logger.info(f"Found {len(events)} environmental events")
+            
+            # Count events by category and month
+            # Structure: {category: {month: count}}
+            category_monthly_counts = {}
+            
+            for event in events:
+                # Get event start date from first geometry
+                geometries = event.get("geometry", [])
+                if not geometries:
+                    continue
+                    
+                event_date_str = geometries[0].get("date")
+                if not event_date_str:
+                    continue
+                
+                # Parse date and normalize to first of month
+                try:
+                    event_date = datetime.fromisoformat(event_date_str.replace('Z', '+00:00'))
+                    month_start = event_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+                    month_key = month_start.strftime("%Y-%m-%d")
+                except:
+                    continue
+                
+                # Count by category
+                for category in event.get("categories", []):
+                    cat_title = category.get("title", "Unknown")
+                    
+                    if cat_title not in category_monthly_counts:
+                        category_monthly_counts[cat_title] = {}
+                    
+                    if month_key not in category_monthly_counts[cat_title]:
+                        category_monthly_counts[cat_title][month_key] = 0
+                    
+                    category_monthly_counts[cat_title][month_key] += 1
+            
+            # Log summary
+            for category, monthly_data in category_monthly_counts.items():
+                logger.info(f"{category}: {len(monthly_data)} months of data")
+            
+            return category_monthly_counts
+            
+        except Exception as e:
+            logger.error(f"Error fetching monthly environmental events: {e}")
+            return None
