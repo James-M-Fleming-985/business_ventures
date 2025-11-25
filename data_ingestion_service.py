@@ -240,13 +240,13 @@ class DataIngestionService:
                 return {'environmental_fetched': 0}
     
     def _fetch_gdp_data(self) -> dict:
-        """Fetch monthly GDP data (forward-filled from annual)"""
-        logger.info("Fetching monthly GDP data...")
+        """Fetch annual GDP data from World Bank"""
+        logger.info("Fetching annual GDP data...")
         
         with get_db_session() as session:
             gdp_vars = session.query(VariableMetadata).filter(
                 VariableMetadata.source == 'worldbank',
-                VariableMetadata.is_active == True
+                VariableMetadata.is_active.is_(True)
             ).all()
             
             success_count = 0
@@ -257,13 +257,20 @@ class DataIngestionService:
                     params = json.loads(var.parameters)
                     country_code = params.get('country_code')
                     
-                    # Fetch monthly forward-filled GDP data
-                    monthly_gdp = self.fetcher.fetch_gdp_monthly(country_code)
+                    if not country_code:
+                        logger.warning(f"No country_code for {var.name}")
+                        continue
                     
-                    if monthly_gdp:
-                        # Store monthly data points
-                        for date_str, value in monthly_gdp.items():
-                            timestamp = datetime.strptime(date_str, "%Y-%m-%d")
+                    # Fetch annual GDP data (20 years)
+                    annual_gdp = self.fetcher.fetch_gdp_data_annual(
+                        country_code, years=20
+                    )
+                    
+                    if annual_gdp:
+                        # Store annual data points
+                        for year, value in annual_gdp.items():
+                            # Jan 1st of year
+                            timestamp = datetime(int(year), 1, 1)
                             
                             existing = session.query(TimeSeriesData).filter(
                                 TimeSeriesData.variable_id == var.id,
@@ -282,15 +289,28 @@ class DataIngestionService:
                         
                         session.commit()
                         success_count += 1
-                        self._update_api_status(session, 'worldbank', 'active')
-                        logger.info(f"Stored {len(monthly_gdp)} monthly GDP values for {country_code}")
+                        self._update_api_status(
+                            session, 'worldbank', 'active'
+                        )
+                        logger.info(
+                            f"GDP: {len(annual_gdp)} points "
+                            f"for {var.display_name}"
+                        )
                         
                 except Exception as e:
-                    logger.error(f"Error fetching GDP for {var.name}: {e}")
-                    self._update_api_status(session, 'worldbank', 'failed', str(e))
+                    logger.error(f"Error fetching GDP {var.name}: {e}")
+                    self._update_api_status(
+                        session, 'worldbank', 'failed', str(e)
+                    )
         
-        logger.info(f"GDP data: {success_count} variables, {data_points} data points")
-        return {'gdp_fetched': success_count, 'gdp_data_points': data_points}
+        logger.info(
+            f"GDP data: {success_count} variables, "
+            f"{data_points} data points"
+        )
+        return {
+            'gdp_fetched': success_count,
+            'gdp_data_points': data_points
+        }
     
     def _fetch_arxiv_data(self) -> dict:
         """Fetch monthly arXiv paper counts (60 months historical)"""

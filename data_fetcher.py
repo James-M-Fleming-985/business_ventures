@@ -627,3 +627,49 @@ class DataFetcher:
         except Exception as e:
             logger.error(f"Error fetching monthly environmental events: {e}")
             return None
+    
+    def fetch_gdp_data_annual(self, country_code: str, years: int = 20) -> Optional[Dict[str, float]]:
+        """
+        Fetch annual GDP data from World Bank API.
+        Returns dict of {year: gdp_value}
+        
+        Args:
+            country_code: ISO3 country code (e.g., 'USA', 'DEU', 'JPN')
+            years: Number of years to fetch (default 20)
+        """
+        try:
+            # World Bank API endpoint
+            current_year = datetime.now().year
+            start_year = current_year - years
+            
+            url = f"https://api.worldbank.org/v2/country/{country_code}/indicator/NY.GDP.MKTP.CD"
+            params = {
+                'format': 'json',
+                'date': f'{start_year}:{current_year}',
+                'per_page': 100
+            }
+            
+            response = requests.get(url, params=params, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            
+            if len(data) < 2:
+                logger.error(f"Unexpected response format from World Bank API")
+                return None
+            
+            # Parse GDP data
+            gdp_data = {}
+            for record in data[1]:  # Second element contains the data
+                year = record.get('date')
+                value = record.get('value')
+                
+                if year and value is not None:
+                    # Store as year string for consistency
+                    gdp_data[year] = float(value)
+            
+            logger.info(f"Fetched {len(gdp_data)} years of GDP data for {country_code}")
+            return gdp_data
+            
+        except Exception as e:
+            logger.error(f"Error fetching GDP data for {country_code}: {e}")
+            return None
