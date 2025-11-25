@@ -568,3 +568,97 @@ async def disable_empty_environmental_vars():
     except Exception as e:
         logger.error(f"Error disabling variables: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/sample-size-report")
+async def get_sample_size_report():
+    """
+    Get detailed report on correlation sample sizes to identify data quality issues
+    """
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+        from database import get_db_session
+        from models import CorrelationResult, VariableMetadata, TimeSeriesData
+        from sqlalchemy import func
+        from sqlalchemy.orm import joinedload
+        
+        with get_db_session() as db:
+            # Sample size distribution
+            size_ranges = [
+                (0, 5, "0-5 (CRITICAL)"),
+                (5, 10, "5-10 (BAD)"),
+                (10, 20, "10-20 (POOR)"),
+                (20, 50, "20-50 (MARGINAL)"),
+                (50, 100, "50-100 (OK)"),
+                (100, 999999, "100+ (GOOD)")
+            ]
+            
+            distribution = {}
+            for min_size, max_size, label in size_ranges:
+                count = db.query(CorrelationResult).filter(
+                    CorrelationResult.sample_size >= min_size,
+                    CorrelationResult.sample_size < max_size
+                ).count()
+                distribution[label] = count
+            
+            # Get worst offenders (sample size < 10)
+            bad_correlations = db.query(CorrelationResult).filter(
+                CorrelationResult.sample_size < 10
+            ).options(
+                joinedload(CorrelationResult.variable1),
+                joinedload(CorrelationResult.variable2)
+            ).order_by(CorrelationResult.sample_size).limit(50).all()
+            
+            bad_corr_list = [
+                {
+                    "var1": corr.variable1.display_name if corr.variable1 else f"ID{corr.var1_id}",
+                    "var2": corr.variable2.display_name if corr.variable2 else f"ID{corr.var2_id}",
+                    "correlation": round(corr.correlation_value, 3),
+                    "sample_size": corr.sample_size,
+                    "p_value": round(corr.p_value, 4) if corr.p_value else None
+                }
+                for corr in bad_correlations
+            ]
+            
+            # Variables with insufficient data
+            var_counts = db.query(
+                VariableMetadata.id,
+                VariableMetadata.display_name,
+                VariableMetadata.category,
+                VariableMetadata.is_active,
+                func.count(TimeSeriesData.id).label('data_points')
+            ).outerjoin(
+                TimeSeriesData, VariableMetadata.id == TimeSeriesData.variable_id
+            ).group_by(
+                VariableMetadata.id
+            ).having(
+                func.count(TimeSeriesData.id) < 20
+            ).order_by(
+                func.count(TimeSeriesData.id)
+            ).all()
+            
+            low_data_vars = [
+                {
+                    "name": name,
+                    "category": category,
+                    "active": active,
+                    "data_points": count
+                }
+                for _, name, category, active, count in var_counts
+            ]
+            
+            total_correlations = db.query(CorrelationResult).count()
+            
+            return {
+                "status": "success",
+                "total_correlations": total_correlations,
+                "sample_size_distribution": distribution,
+                "correlations_under_10": len(bad_corr_list),
+                "worst_correlations": bad_corr_list,
+                "variables_under_20_points": len(low_data_vars),
+                "low_data_variables": low_data_vars
+            }
+    
+    except Exception as e:
+        logger.error(f"Sample size report failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
