@@ -624,7 +624,7 @@ async def get_sample_size_report():
             var_counts = db.query(
                 VariableMetadata.id,
                 VariableMetadata.display_name,
-                VariableMetadata.category,
+                VariableMetadata.source,
                 VariableMetadata.is_active,
                 func.count(TimeSeriesData.id).label('data_points')
             ).outerjoin(
@@ -640,11 +640,11 @@ async def get_sample_size_report():
             low_data_vars = [
                 {
                     "name": name,
-                    "category": category,
+                    "source": source,
                     "active": active,
                     "data_points": count
                 }
-                for _, name, category, active, count in var_counts
+                for _, name, source, active, count in var_counts
             ]
             
             total_correlations = db.query(CorrelationResult).count()
