@@ -1,9 +1,14 @@
 """
 Data Ingestion Service
-Fetches data from APIs and stores in database
+Fetches data from APIs and stores in database with standardized alignment
 """
 
 from data_fetcher import DataFetcher
+from data_alignment_utils import (
+    get_standard_monthly_grid,
+    normalize_to_standard_grid,
+    get_fill_strategy_for_variable_type
+)
 from database import get_db_session
 from models import VariableMetadata, TimeSeriesData, APIStatus, AnalysisJob
 from datetime import datetime, timedelta
@@ -15,10 +20,12 @@ logger = logging.getLogger(__name__)
 
 
 class DataIngestionService:
-    """Service to fetch API data and store in database"""
+    """Service to fetch API data and store in database with alignment"""
     
     def __init__(self):
         self.fetcher = DataFetcher()
+        # Generate standard monthly grid for all data
+        self.standard_grid = get_standard_monthly_grid(months_back=60)
     
     def fetch_and_store_all_variables(self) -> dict:
         """
@@ -84,11 +91,28 @@ class DataIngestionService:
                     symbol = params.get('symbol')
                     
                     # Fetch monthly data (60 months = 5 years)
-                    monthly_prices = self.fetcher.fetch_stock_data_monthly(symbol, months=60)
+                    monthly_prices = self.fetcher.fetch_stock_data_monthly(
+                        symbol, months=60
+                    )
                     
                     if monthly_prices:
-                        # Store monthly data points
-                        for date_str, price in monthly_prices.items():
+                        # NORMALIZE to standard grid with interpolation
+                        fill_method = get_fill_strategy_for_variable_type(
+                            'alpha_vantage', var.name
+                        )
+                        aligned_data = normalize_to_standard_grid(
+                            monthly_prices,
+                            self.standard_grid,
+                            fill_method=fill_method
+                        )
+                        
+                        logger.info(
+                            f"{symbol}: {len(monthly_prices)} raw points "
+                            f"-> {len(aligned_data)} aligned points"
+                        )
+                        
+                        # Store aligned data points
+                        for date_str, price in aligned_data.items():
                             timestamp = datetime.strptime(date_str, "%Y-%m-%d")
                             
                             # Check if data point already exists
@@ -139,9 +163,24 @@ class DataIngestionService:
                 monthly_counts = self.fetcher.fetch_earthquake_monthly(months=60)
                 
                 if monthly_counts:
+                    # NORMALIZE to standard grid
+                    fill_method = get_fill_strategy_for_variable_type(
+                        'usgs', eq_var.name
+                    )
+                    aligned_data = normalize_to_standard_grid(
+                        monthly_counts,
+                        self.standard_grid,
+                        fill_method=fill_method
+                    )
+                    
+                    logger.info(
+                        f"Earthquakes: {len(monthly_counts)} raw points "
+                        f"-> {len(aligned_data)} aligned points"
+                    )
+                    
                     data_points = 0
                     
-                    for date_str, count in monthly_counts.items():
+                    for date_str, count in aligned_data.items():
                         timestamp = datetime.strptime(date_str, "%Y-%m-%d")
                         
                         existing = session.query(TimeSeriesData).filter(
@@ -330,12 +369,29 @@ class DataIngestionService:
                     params = json.loads(var.parameters)
                     topic = params.get('topic')
                     
-                    # Fetch monthly data (60 months = 5 years)
-                    monthly_counts = self.fetcher.fetch_arxiv_papers_monthly(topic, months=60)
+                    # Fetch monthly paper counts
+                    monthly_counts = self.fetcher.fetch_arxiv_papers_monthly(
+                        topic, months=60
+                    )
                     
                     if monthly_counts:
-                        # Store monthly data points
-                        for date_str, count in monthly_counts.items():
+                        # NORMALIZE to standard grid
+                        fill_method = get_fill_strategy_for_variable_type(
+                            'arxiv', var.name
+                        )
+                        aligned_data = normalize_to_standard_grid(
+                            monthly_counts,
+                            self.standard_grid,
+                            fill_method=fill_method
+                        )
+                        
+                        logger.info(
+                            f"{topic}: {len(monthly_counts)} raw points "
+                            f"-> {len(aligned_data)} aligned points"
+                        )
+                        
+                        # Store aligned data
+                        for date_str, count in aligned_data.items():
                             timestamp = datetime.strptime(date_str, "%Y-%m-%d")
                             
                             # Check if data point already exists
@@ -384,12 +440,29 @@ class DataIngestionService:
                     params = json.loads(var.parameters)
                     condition = params.get('condition')
                     
-                    # Fetch monthly data (60 months = 5 years)
-                    monthly_counts = self.fetcher.fetch_clinical_trials_monthly(condition, months=60)
+                    # Fetch monthly trial counts
+                    monthly_counts = self.fetcher.fetch_clinical_trials_monthly(
+                        condition, months=60
+                    )
                     
                     if monthly_counts:
-                        # Store monthly data points
-                        for date_str, count in monthly_counts.items():
+                        # NORMALIZE to standard grid
+                        fill_method = get_fill_strategy_for_variable_type(
+                            'clinicaltrials', var.name
+                        )
+                        aligned_data = normalize_to_standard_grid(
+                            monthly_counts,
+                            self.standard_grid,
+                            fill_method=fill_method
+                        )
+                        
+                        logger.info(
+                            f"{condition}: {len(monthly_counts)} raw points "
+                            f"-> {len(aligned_data)} aligned points"
+                        )
+                        
+                        # Store aligned data
+                        for date_str, count in aligned_data.items():
                             timestamp = datetime.strptime(date_str, "%Y-%m-%d")
                             
                             # Check if data point already exists
