@@ -17,6 +17,9 @@ class DataFetcher:
     
     def __init__(self):
         self.alpha_vantage_key = os.getenv('ALPHA_VANTAGE_API_KEY')
+        if not self.alpha_vantage_key:
+            logger.critical("⚠️  ALPHA_VANTAGE_API_KEY not set - stock data fetching will fail!")
+            logger.critical("   Get a free key at: https://www.alphavantage.co/support/#api-key")
         
     def fetch_stock_data(self, symbol: str, days: int = 30) -> Optional[List[float]]:
         """Fetch stock price data from Alpha Vantage."""
@@ -25,7 +28,7 @@ class DataFetcher:
             return None
             
         try:
-            url = f"https://www.alphavantage.co/query"
+            url = "https://www.alphavantage.co/query"
             params = {
                 "function": "TIME_SERIES_DAILY",
                 "symbol": symbol,
@@ -33,7 +36,7 @@ class DataFetcher:
                 "outputsize": "compact"  # Last 100 days
             }
             
-            response = requests.get(url, params=params, timeout=10)
+            response = requests.get(url, params=params, timeout=30)
             response.raise_for_status()
             data = response.json()
             
@@ -54,7 +57,9 @@ class DataFetcher:
             logger.error(f"Error fetching stock data for {symbol}: {e}")
             return None
     
-    def fetch_stock_data_monthly(self, symbol: str, months: int = 60) -> Optional[Dict[str, float]]:
+    def fetch_stock_data_monthly(
+        self, symbol: str, months: int = 60
+    ) -> Optional[Dict[str, float]]:
         """
         Fetch monthly stock data (end-of-month closing prices).
         Returns dict of {month_start_date: end_of_month_price}
@@ -64,14 +69,14 @@ class DataFetcher:
             return None
             
         try:
-            url = f"https://www.alphavantage.co/query"
+            url = "https://www.alphavantage.co/query"
             params = {
                 "function": "TIME_SERIES_MONTHLY",
                 "symbol": symbol,
                 "apikey": self.alpha_vantage_key
             }
             
-            response = requests.get(url, params=params, timeout=10)
+            response = requests.get(url, params=params, timeout=30)
             response.raise_for_status()
             data = response.json()
             
@@ -88,57 +93,16 @@ class DataFetcher:
                 # Convert to first day of month for consistency
                 date_obj = datetime.strptime(date_str, "%Y-%m-%d")
                 first_of_month = date_obj.replace(day=1).strftime("%Y-%m-%d")
-                monthly_prices[first_of_month] = float(time_series[date_str]["4. close"])
+                monthly_prices[first_of_month] = float(
+                    time_series[date_str]["4. close"]
+                )
             
             return monthly_prices
             
         except Exception as e:
-            logger.error(f"Error fetching monthly stock data for {symbol}: {e}")
-            return None
-    
-    def fetch_stock_data_monthly(self, symbol: str, months: int = 60) -> Optional[Dict[str, float]]:
-        """
-        Fetch end-of-month stock prices for correlation analysis.
-        Returns dict of {month_start_date: end_of_month_price}
-        """
-        if not self.alpha_vantage_key:
-            logger.warning("Alpha Vantage API key not configured")
-            return None
-            
-        try:
-            url = f"https://www.alphavantage.co/query"
-            params = {
-                "function": "TIME_SERIES_MONTHLY",
-                "symbol": symbol,
-                "apikey": self.alpha_vantage_key
-            }
-            
-            response = requests.get(url, params=params, timeout=10)
-            response.raise_for_status()
-            data = response.json()
-            
-            if "Monthly Time Series" not in data:
-                logger.error(f"Unexpected response: {data}")
-                return None
-            
-            # Extract monthly closing prices
-            time_series = data["Monthly Time Series"]
-            monthly_prices = {}
-            
-            for date_str in sorted(time_series.keys(), reverse=True)[:months]:
-                # Parse date and normalize to first of month
-                date = datetime.strptime(date_str, "%Y-%m-%d")
-                month_start = date.replace(day=1)
-                
-                # Use the close price (end of month)
-                price = float(time_series[date_str]["4. close"])
-                monthly_prices[month_start.strftime("%Y-%m-%d")] = price
-            
-            logger.info(f"Fetched {len(monthly_prices)} monthly prices for {symbol}")
-            return monthly_prices
-            
-        except Exception as e:
-            logger.error(f"Error fetching monthly stock data for {symbol}: {e}")
+            logger.error(
+                f"Error fetching monthly stock data for {symbol}: {e}"
+            )
             return None
     
     def fetch_earthquake_count(self, days: int = 30) -> Optional[List[int]]:
