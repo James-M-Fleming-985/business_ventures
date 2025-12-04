@@ -31,7 +31,7 @@ def get_standard_monthly_grid(months_back: int = 60) -> List[datetime]:
     """
     today = datetime.now()
     # Most recent complete month
-    end_date = today.replace(day=1)
+    end_date = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     if today.day < 5:  # If early in month, use previous month
         end_date = (end_date - pd.DateOffset(months=1))
     
@@ -42,7 +42,11 @@ def get_standard_monthly_grid(months_back: int = 60) -> List[datetime]:
         freq='MS'  # Month Start
     )
     
-    return dates.to_pydatetime().tolist()
+    # Normalize all dates to midnight to ensure exact matching
+    return [
+        dt.replace(hour=0, minute=0, second=0, microsecond=0)
+        for dt in dates.to_pydatetime()
+    ]
 
 
 def normalize_to_standard_grid(
@@ -121,7 +125,10 @@ def normalize_to_standard_grid(
     return result
 
 
-def get_fill_strategy_for_variable_type(source: str, variable_name: str) -> str:
+def get_fill_strategy_for_variable_type(
+    source: str,
+    variable_name: str
+) -> str:
     """
     Determine best fill strategy based on variable type.
     
@@ -154,10 +161,10 @@ def get_fill_strategy_for_variable_type(source: str, variable_name: str) -> str:
 
 # Usage example:
 if __name__ == "__main__":
-    std_dates = get_standard_monthly_dates(60)
+    std_dates = get_standard_monthly_grid(60)
     print(f"Standard date range: {len(std_dates)} months")
-    print(f"From: {std_dates[-1].strftime('%Y-%m-%d')}")
-    print(f"To: {std_dates[0].strftime('%Y-%m-%d')}")
-    print(f"\\nFirst 5 dates:")
+    print(f"From: {std_dates[0].strftime('%Y-%m-%d')}")
+    print(f"To: {std_dates[-1].strftime('%Y-%m-%d')}")
+    print("\nFirst 5 dates:")
     for d in std_dates[:5]:
         print(f"  {d.strftime('%Y-%m-%d')}")
