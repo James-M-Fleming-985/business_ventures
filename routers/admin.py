@@ -80,15 +80,30 @@ async def initialize_database():
         )
 
 
-def _run_data_fetch_background(job_id: str):
+def _run_data_fetch_background(job_id: str, force: bool = False):
     """Background task for data fetching"""
     try:
         _active_jobs[job_id]['status'] = 'running'
-        _active_jobs[job_id]['stage'] = 'fetching'
         _active_jobs[job_id]['updated_at'] = datetime.utcnow().isoformat()
         
         sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
         from data_ingestion_service import DataIngestionService
+        from database import get_db_session
+        from models import TimeSeriesData
+        
+        # If force=True, delete existing time series data first
+        if force:
+            _active_jobs[job_id]['stage'] = 'deleting_old_data'
+            logger.info(f"Job {job_id}: Force refetch - deleting existing time series data...")
+            
+            with get_db_session() as session:
+                deleted_count = session.query(TimeSeriesData).delete()
+                session.commit()
+                logger.info(f"Job {job_id}: Deleted {deleted_count} existing data points")
+                _active_jobs[job_id]['deleted_count'] = deleted_count
+        
+        _active_jobs[job_id]['stage'] = 'fetching'
+        _active_jobs[job_id]['updated_at'] = datetime.utcnow().isoformat()
         
         logger.info(f"Job {job_id}: Starting data ingestion...")
         
@@ -110,8 +125,13 @@ def _run_data_fetch_background(job_id: str):
 
 
 @router.post("/fetch-data")
-async def fetch_data(background_tasks: BackgroundTasks):
-    """Fetch data from APIs in background - returns job_id for polling"""
+async def fetch_data(background_tasks: BackgroundTasks, force: bool = False):
+    """
+    Fetch data from APIs in background - returns job_id for polling
+    
+    Args:
+        force: If True, deletes existing data before refetching (use for fixing incomplete data)
+    """
     try:
         # Create job ID
         job_id = f"fetch_{int(datetime.utcnow().timestamp())}"
@@ -122,20 +142,22 @@ async def fetch_data(background_tasks: BackgroundTasks):
             'type': 'data_fetch',
             'status': 'queued',
             'stage': 'initializing',
+            'force': force,
             'created_at': datetime.utcnow().isoformat(),
             'updated_at': datetime.utcnow().isoformat()
         }
         
         # Queue background task
-        background_tasks.add_task(_run_data_fetch_background, job_id)
+        background_tasks.add_task(_run_data_fetch_background, job_id, force)
         
-        logger.info(f"Job {job_id}: Queued data ingestion")
+        logger.info(f"Job {job_id}: Queued data ingestion (force={force})")
         
         return JSONResponse({
             "status": "queued",
-            "message": "Data fetch started in background",
+            "message": f"Data fetch started in background (force refetch: {force})",
             "job_id": job_id,
-            "poll_url": f"/api/admin/job-status/{job_id}"
+            "poll_url": f"/api/admin/job-status/{job_id}",
+            "force": force
         })
         
     except Exception as e:
