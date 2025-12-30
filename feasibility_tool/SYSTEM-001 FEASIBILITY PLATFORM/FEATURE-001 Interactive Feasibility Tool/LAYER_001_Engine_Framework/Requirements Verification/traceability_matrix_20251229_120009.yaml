@@ -1,0 +1,214 @@
+matrix_metadata:
+  timestamp: '20251229_120009'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-001
+  requirement: FeasibilityEngine abstract base class defines complete interface
+  description: FeasibilityEngine abstract base class defines complete interface
+  test_files: &id001
+  - /workspaces/business_ventures/projects/PROJECT-001 ENERGY EFFICIENCY/SYSTEM-001
+    FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility Tool/LAYER_001_Engine_Framework/tests/test_generated_20251229_115935.py
+  test_methods:
+  - test_ac_001
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-002
+  requirement: EngineRegistry can register and list engines
+  description: EngineRegistry can register and list engines
+  test_files: *id001
+  test_methods:
+  - test_ac_002
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-003
+  requirement: HoseOptimizationEngine returns valid metadata
+  description: HoseOptimizationEngine returns valid metadata
+  test_files: *id001
+  test_methods:
+  - test_ac_003
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-004
+  requirement: HoseOptimizationEngine returns complete input schema
+  description: HoseOptimizationEngine returns complete input schema
+  test_files: *id001
+  test_methods:
+  - test_ac_004
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-005
+  requirement: HoseOptimizationEngine calculate() returns results with formulas
+  description: HoseOptimizationEngine calculate() returns results with formulas
+  test_files: *id001
+  test_methods:
+  - test_ac_005
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-006
+  requirement: Calculation results match manual verification within 1%
+  description: Calculation results match manual verification within 1%
+  test_files: *id001
+  test_methods:
+  - test_ac_006
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-007
+  requirement: Formula tracking includes step-by-step breakdown
+  description: Formula tracking includes step-by-step breakdown
+  test_files: *id001
+  test_methods:
+  - test_ac_007
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /workspaces/business_ventures/projects/PROJECT-001 ENERGY EFFICIENCY/SYSTEM-001
+    FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility Tool/LAYER_001_Engine_Framework/src/implementation.py
+  lines: 187
+  methods:
+  - name: get_metadata
+    lines: 11-15
+  - name: get_input_schema
+    lines: 16-20
+  - name: calculate
+    lines: 21-25
+  - name: validate_inputs
+    lines: 26-30
+  - name: __init__
+    lines: 34-36
+  - name: register
+    lines: 37-42
+  - name: list_engines
+    lines: 43-46
+  - name: get_engine
+    lines: 47-51
+  - name: get_metadata
+    lines: 55-62
+  - name: get_input_schema
+    lines: 63-86
+  - name: calculate
+    lines: 87-157
+  - name: validate_inputs
+    lines: 158-168
+  classes:
+  - name: FeasibilityEngine
+    type: class
+    lines: 7-30
+  - name: EngineRegistry
+    type: class
+    lines: 31-51
+  - name: HoseOptimizationEngine
+    type: class
+    lines: 52-187
+  implements_requirements:
+  - AC-001
+  - AC-002
+  - AC-003
+  - AC-004
+  - AC-005
+  - AC-006
+  - AC-007
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /workspaces/business_ventures/projects/PROJECT-001 ENERGY EFFICIENCY/SYSTEM-001
+    FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility Tool/LAYER_001_Engine_Framework/tests/test_generated_20251229_115935.py
+  test_count: 0
+  implementation_files:
+  - /workspaces/business_ventures/projects/PROJECT-001 ENERGY EFFICIENCY/SYSTEM-001
+    FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility Tool/LAYER_001_Engine_Framework/src/implementation.py
+  methods_tested:
+  - get_metadata
+  - get_input_schema
+  - calculate
+  - validate_inputs
+  - __init__
+  - register
+  - list_engines
+  - get_engine
+  - get_metadata
+  - get_input_schema
+  - calculate
+  - validate_inputs
+  classes_tested:
+  - FeasibilityEngine
+  - EngineRegistry
+  - HoseOptimizationEngine
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /workspaces/business_ventures/projects/PROJECT-001 ENERGY
+    EFFICIENCY/SYSTEM-001 FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility
+    Tool/LAYER_001_Engine_Framework/src/implementation.py:11-15
+  method_name: get_metadata
+  requirement: AC-001
+  test: test_get_metadata
+  test_file: /workspaces/business_ventures/projects/PROJECT-001 ENERGY EFFICIENCY/SYSTEM-001
+    FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility Tool/LAYER_001_Engine_Framework/tests/test_generated_20251229_115935.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/projects/PROJECT-001 ENERGY
+    EFFICIENCY/SYSTEM-001 FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility
+    Tool/LAYER_001_Engine_Framework/src/implementation.py:16-20
+  method_name: get_input_schema
+  requirement: AC-001
+  test: test_get_input_schema
+  test_file: /workspaces/business_ventures/projects/PROJECT-001 ENERGY EFFICIENCY/SYSTEM-001
+    FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility Tool/LAYER_001_Engine_Framework/tests/test_generated_20251229_115935.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/projects/PROJECT-001 ENERGY
+    EFFICIENCY/SYSTEM-001 FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility
+    Tool/LAYER_001_Engine_Framework/src/implementation.py:21-25
+  method_name: calculate
+  requirement: AC-001
+  test: test_calculate
+  test_file: /workspaces/business_ventures/projects/PROJECT-001 ENERGY EFFICIENCY/SYSTEM-001
+    FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility Tool/LAYER_001_Engine_Framework/tests/test_generated_20251229_115935.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/projects/PROJECT-001 ENERGY
+    EFFICIENCY/SYSTEM-001 FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility
+    Tool/LAYER_001_Engine_Framework/src/implementation.py:26-30
+  method_name: validate_inputs
+  requirement: AC-001
+  test: test_validate_inputs
+  test_file: /workspaces/business_ventures/projects/PROJECT-001 ENERGY EFFICIENCY/SYSTEM-001
+    FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility Tool/LAYER_001_Engine_Framework/tests/test_generated_20251229_115935.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/projects/PROJECT-001 ENERGY
+    EFFICIENCY/SYSTEM-001 FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility
+    Tool/LAYER_001_Engine_Framework/src/implementation.py:34-36
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/business_ventures/projects/PROJECT-001 ENERGY EFFICIENCY/SYSTEM-001
+    FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility Tool/LAYER_001_Engine_Framework/tests/test_generated_20251229_115935.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 7
+  requirements_traced: 7
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

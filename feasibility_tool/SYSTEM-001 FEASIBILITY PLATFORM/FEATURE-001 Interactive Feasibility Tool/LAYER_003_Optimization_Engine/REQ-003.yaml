@@ -1,0 +1,319 @@
+# ====================================================================================
+# LAYER REQUIREMENT: Optimization Engine
+# ====================================================================================
+# LAYER-003: Multi-Objective Optimization and Normalization
+# ====================================================================================
+
+metadata:
+  requirement_id: "REQ-003"
+  requirement_title: "Optimization Engine"
+  layer_id: "LAYER-003"
+  layer_name: "Optimization Engine"
+  layer_folder: "LAYER-003 Optimization Engine"
+  
+  parent_feature: "FEATURE-001"
+  parent_feature_file: "../FEATURE-001_interactive_feasibility_tool.yaml"
+  
+  version: "1.0.0"
+  status: "Active"
+  priority: "MUST HAVE"
+  created_date: "2025-12-29"
+  updated_date: "2025-12-29"
+  owner: "AI Code Generator"
+  target_date: "2026-01-03"
+
+# ====================================================================================
+# TRACEABILITY
+# ====================================================================================
+
+traceability:
+  parent_feature_requirements:
+    - "FEAT-REQ-004: 3D response surface visualization with normalized scores"
+    - "FEAT-REQ-006: Overall optimization score calculation"
+  
+  parent_system_requirements:
+    - "SYS-AC-006: Calculation results include normalized scores (0-100 scale)"
+  
+  parent_project_requirements:
+    - "PROJECT-AC-003: 3D visualization displays normalized composite scores"
+    - "PROJECT-AC-005: Overall optimization score displayed"
+  
+  derivation_rationale: |
+    Engine outputs have different units (bar, $, years, m/s). To visualize
+    on common 3D axes, we need:
+    1. Normalization: Convert all metrics to 0-100 scale
+    2. Composite scores: Group related metrics (Performance, Economics, Durability)
+    3. Overall score: Weighted average of composites
+    
+    This layer provides the mathematical foundation for visualization.
+
+# ====================================================================================
+# REQUIREMENT DEFINITION
+# ====================================================================================
+
+requirement:
+  title: "Optimization Engine"
+  
+  description: |
+    Provides normalization algorithms and composite score calculation for
+    multi-objective optimization visualization. Includes:
+    
+    - Min-max normalization (for bounded metrics)
+    - Target-based scoring (for metrics with optimal target)
+    - Logarithmic scaling (for wide-range metrics)
+    - Composite score calculation (weighted averages)
+    - Overall optimization score (grand weighted average)
+    - Pareto frontier identification (future)
+  
+  rationale: |
+    Users need to compare configurations across multiple objectives that use
+    different scales. Normalization enables apples-to-apples comparison.
+    Composite scores reduce dimensionality while preserving trade-off information.
+
+# ====================================================================================
+# SPECIFICATION
+# ====================================================================================
+
+specification:
+  structure:
+    entry_point: "src/optimization/normalizer.py"
+    modules:
+      - "normalizer.py - Normalization algorithms"
+      - "composite_scorer.py - Composite score calculation"
+      - "optimizer.py - Multi-objective optimization (future)"
+  
+  classes:
+    - name: "Normalizer"
+      purpose: "Convert metrics to 0-100 scale using various methods"
+      methods:
+        - name: "min_max_normalize"
+          signature: "min_max_normalize(value: float, min_val: float, max_val: float) -> float"
+          purpose: "Normalize to [0, 100] using min-max scaling"
+          example: |
+            norm = Normalizer()
+            score = norm.min_max_normalize(0.7, 0.0, 2.0)  # Returns 35
+        
+        - name: "target_based_normalize"
+          signature: "target_based_normalize(value: float, target: float, tolerance: float) -> float"
+          purpose: "Score based on distance from target (100 at target, 0 at ±tolerance)"
+          example: |
+            score = norm.target_based_normalize(2.1, 2.0, 0.5)  # 80 (close to target)
+        
+        - name: "log_normalize"
+          signature: "log_normalize(value: float, min_val: float, max_val: float) -> float"
+          purpose: "Normalize wide-range metrics using logarithmic scale"
+          example: |
+            score = norm.log_normalize(100, 10, 10000)  # Returns ~50
+    
+    - name: "CompositeScorer"
+      purpose: "Calculate composite scores from normalized components"
+      methods:
+        - name: "calculate_composite"
+          signature: "calculate_composite(components: Dict[str, float], weights: Dict[str, float]) -> float"
+          purpose: "Weighted average of normalized component scores"
+          example: |
+            scorer = CompositeScorer()
+            performance = scorer.calculate_composite(
+                {'deltaP': 70, 'efficiency': 85, 'velocity': 75},
+                {'deltaP': 0.4, 'efficiency': 0.4, 'velocity': 0.2}
+            )  # Returns 76.5
+        
+        - name: "calculate_overall_score"
+          signature: "calculate_overall_score(composites: Dict[str, float], weights: Dict[str, float]) -> float"
+          purpose: "Grand weighted average of composite scores"
+          example: |
+            overall = scorer.calculate_overall_score(
+                {'performance': 76, 'economic': 82, 'durability': 68},
+                {'performance': 0.4, 'economic': 0.4, 'durability': 0.2}
+            )  # Returns 76.4
+  
+  implementation_details:
+    libraries:
+      - "numpy (numerical operations)"
+      - "pygmo (multi-objective optimization - future)"
+    
+    patterns:
+      - "Strategy pattern for different normalization methods"
+    
+    error_handling:
+      - error_type: "ValueError"
+        handling: "Raise if value outside valid range for normalization method"
+  
+  inputs:
+    - name: "components"
+      type: "Dict[str, float]"
+      description: "Raw calculated values from engine"
+      example: "{'deltaP': 0.7, 'ROI': 25.3, 'lifespan': 12.5}"
+  
+  outputs:
+    - name: "normalized_components"
+      type: "Dict[str, float]"
+      description: "Normalized scores (0-100)"
+      example: "{'deltaP': 70, 'ROI': 82, 'lifespan': 68}"
+
+# ====================================================================================
+# ACCEPTANCE CRITERIA
+# ====================================================================================
+
+acceptance_criteria:
+  - criterion: "Min-max normalization returns 0 for min, 100 for max"
+    test: "pytest tests/unit/test_normalizer.py::test_min_max_bounds -v"
+  
+  - criterion: "Target-based scoring returns 100 at target value"
+    test: "pytest tests/unit/test_normalizer.py::test_target_based_peak -v"
+  
+  - criterion: "Composite score is weighted average of components"
+    test: "pytest tests/unit/test_composite_scorer.py::test_weighted_average -v"
+  
+  - criterion: "Overall score is weighted average of composites"
+    test: "pytest tests/unit/test_composite_scorer.py::test_overall_score -v"
+
+# ====================================================================================
+# TDD IMPLEMENTATION PLAN
+# ====================================================================================
+
+week_1_task:
+  title: "Build Optimization Engine (TDD)"
+  
+  steps:
+    - step: 1
+      action: "Write failing tests for normalization methods (RED)"
+      file: "tests/unit/test_normalizer.py"
+      tests:
+        - "test_min_max_normalize_bounds"
+        - "test_min_max_normalize_midpoint"
+        - "test_target_based_normalize_at_target"
+        - "test_target_based_normalize_away_from_target"
+        - "test_log_normalize"
+      duration: "1 hour"
+    
+    - step: 2
+      action: "Write failing tests for composite scorer (RED)"
+      file: "tests/unit/test_composite_scorer.py"
+      tests:
+        - "test_calculate_composite_weighted_avg"
+        - "test_calculate_overall_score"
+        - "test_weights_sum_to_one"
+      duration: "45 min"
+    
+    - step: 3
+      action: "Run pytest (RED phase)"
+      command: "pytest tests/unit/ -v"
+      expected: "All tests FAIL"
+      duration: "2 min"
+    
+    - step: 4
+      action: "Implement Normalizer class (GREEN)"
+      file: "src/optimization/normalizer.py"
+      methods:
+        - "min_max_normalize()"
+        - "target_based_normalize()"
+        - "log_normalize()"
+      duration: "2 hours"
+    
+    - step: 5
+      action: "Implement CompositeScorer class (GREEN)"
+      file: "src/optimization/composite_scorer.py"
+      methods:
+        - "calculate_composite()"
+        - "calculate_overall_score()"
+      duration: "1 hour"
+    
+    - step: 6
+      action: "Run pytest (GREEN phase)"
+      command: "pytest tests/unit/ -v --cov=src/optimization"
+      expected: "All tests PASS, coverage >85%"
+      duration: "5 min"
+    
+    - step: 7
+      action: "Integration test with engine layer"
+      file: "tests/integration/test_engine_normalization.py"
+      duration: "30 min"
+  
+  total_time: "5 hours 30 minutes"
+  
+  deliverable: "Normalization and composite scoring with 85%+ coverage"
+
+# ====================================================================================
+# INTEGRATION POINTS
+# ====================================================================================
+
+integration:
+  input_from:
+    - layer: "LAYER-001 Engine Framework"
+      data_type: "Raw component calculation results"
+      interface: "CalculationResult.components"
+  
+  output_to:
+    - layer: "LAYER-004 API Backend"
+      data_type: "Normalized scores and composites"
+      interface: "Normalizer.normalize_results(components) -> normalized_dict"
+    
+    - layer: "LAYER-005 3D Visualization Frontend"
+      data_type: "X, Y, Z coordinates for 3D plotting"
+      interface: "CalculationResult.visualization_point"
+
+# ====================================================================================
+# TESTING STRATEGY
+# ====================================================================================
+
+testing_strategy:
+  unit_tests:
+    location: "tests/unit/test_optimization.py"
+    coverage_target: "90%"
+    key_scenarios:
+      - "Each normalization method with edge cases"
+      - "Composite score calculation with different weights"
+      - "Overall score accuracy"
+  
+  integration_tests:
+    location: "tests/integration/test_optimization_integration.py"
+    scenarios:
+      - "End-to-end: engine result → normalization → visualization point"
+
+# ====================================================================================
+# DEPLOYMENT
+# ====================================================================================
+
+deployment:
+  dependencies:
+    - package: "numpy"
+      version: ">=1.24.0"
+      purpose: "Numerical operations"
+    
+    - package: "pygmo"
+      version: ">=2.19.0"
+      purpose: "Multi-objective optimization (future)"
+  
+  usage_example: |
+    from src.optimization.normalizer import Normalizer
+    from src.optimization.composite_scorer import CompositeScorer
+    
+    norm = Normalizer()
+    scorer = CompositeScorer()
+    
+    # Normalize individual components
+    deltaP_norm = norm.min_max_normalize(0.7, 0.0, 2.0)  # 35
+    ROI_norm = norm.min_max_normalize(25.3, 0, 50)  # 50.6
+    
+    # Calculate composite
+    performance = scorer.calculate_composite(
+        {'deltaP': 35, 'efficiency': 85},
+        {'deltaP': 0.5, 'efficiency': 0.5}
+    )  # 60
+
+# ====================================================================================
+# CODE GENERATION CONSTRAINTS
+# ====================================================================================
+
+code_generation_constraints:
+  output_format:
+    - "Return ONLY raw Python code"
+  
+  quality_requirements:
+    - "Normalization methods must handle edge cases (division by zero)"
+    - "Weights must be validated to sum to 1.0"
+
+# ====================================================================================
+# END OF LAYER REQUIREMENT
+# ====================================================================================

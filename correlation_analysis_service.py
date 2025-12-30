@@ -171,7 +171,9 @@ class CorrelationAnalysisService:
                 TimeSeriesData.variable_id == variable_id
             ).order_by(TimeSeriesData.timestamp).all()
             
-            if not data_points or len(data_points) < 3:
+            # Require minimum 20 data points for reliable correlation analysis
+            # This matches the sample_size check later and prevents wasted computation
+            if not data_points or len(data_points) < 20:
                 return None
             
             # Convert to pandas Series
@@ -192,12 +194,24 @@ class CorrelationAnalysisService:
         """Calculate correlation between two variables"""
         try:
             # Align time series (handle different timestamps)
+            # Use outer join + interpolation for variables with different frequencies
             try:
+                # Combine both series with outer join to get all timestamps
                 aligned_data = pd.DataFrame({
                     'var1': var1_data,
                     'var2': var2_data
                 })
+                
+                # Sort by timestamp
+                aligned_data = aligned_data.sort_index()
+                
+                # Interpolate missing values to align different frequencies
+                # This allows daily stock prices to correlate with monthly GDP data
+                aligned_data = aligned_data.interpolate(method='time', limit_direction='both')
+                
+                # After interpolation, drop any remaining NaN (start/end edges)
                 aligned_data = aligned_data.dropna()
+                
             except Exception as e:
                 logger.error(f"DataFrame alignment error for {var1_id}-{var2_id}: {e}")
                 return None

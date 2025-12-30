@@ -1,0 +1,497 @@
+# ====================================================================================
+# LAYER REQUIREMENT: Engine Framework
+# ====================================================================================
+# LAYER-001: Pluggable Engine Framework with Hose Optimization Implementation
+# ====================================================================================
+
+metadata:
+  requirement_id: "REQ-001"
+  requirement_title: "Engine Framework"
+  layer_id: "LAYER-001"
+  layer_name: "Engine Framework"
+  layer_folder: "LAYER-001 Engine Framework"
+  
+  parent_feature: "FEATURE-001"
+  parent_feature_file: "../FEATURE-001_interactive_feasibility_tool.yaml"
+  
+  version: "1.0.0"
+  status: "Active"
+  priority: "MUST HAVE"
+  created_date: "2025-12-29"
+  updated_date: "2025-12-29"
+  owner: "AI Code Generator"
+  target_date: "2026-01-02"
+  
+  change_log:
+    - version: "1.0.0"
+      date: "2025-12-29"
+      changes: "Initial version with abstract engine interface and hose optimization engine"
+      author: "AI-derived"
+
+# ====================================================================================
+# TRACEABILITY
+# ====================================================================================
+
+traceability:
+  parent_feature_requirements:
+    - "FEAT-REQ-001: Engine selection and metadata display"
+    - "FEAT-REQ-002: Dynamic control panel generation from input schema"
+    - "FEAT-REQ-003: Real-time calculation with formula tracking"
+  
+  parent_system_requirements:
+    - "SYS-AC-001: Engine registry can list all available engines with metadata"
+    - "SYS-AC-002: API returns input schema for any registered engine"
+    - "SYS-AC-003: API returns output schema for any registered engine"
+    - "SYS-AC-004: Calculate endpoint returns results with formula tracking"
+  
+  parent_project_requirements:
+    - "PROJECT-AC-001: Users can select from multiple feasibility engines"
+    - "PROJECT-AC-004: Every data point has comprehensive tooltip with formula"
+  
+  derivation_rationale: |
+    This layer implements the core engine abstraction that enables the entire
+    pluggable architecture. It provides:
+    
+    1. Abstract FeasibilityEngine base class defining common interface
+    2. EngineRegistry for dynamic engine discovery and registration
+    3. HoseOptimizationEngine as reference implementation
+    4. Formula tracking capability for calculation transparency
+    
+    Without this layer, each domain would require custom API and frontend code.
+    With it, new domains can be added by simply implementing the engine interface.
+
+# ====================================================================================
+# REQUIREMENT DEFINITION
+# ====================================================================================
+
+requirement:
+  title: "Engine Framework"
+  
+  description: |
+    Provides abstract engine interface and registry system for pluggable feasibility
+    engines. Includes complete HoseOptimizationEngine implementation demonstrating:
+    
+    - Hydraulic calculations (pressure drop, Reynolds number, velocity)
+    - Material property lookups
+    - Economic metrics (ROI, payback period, total cost)
+    - Formula tracking for every calculated value
+    - Composite score normalization (Performance, Economics, Durability)
+    
+    The framework ensures all engines follow standard contract, enabling
+    generic API and frontend code.
+  
+  rationale: |
+    Feasibility analysis spans multiple engineering domains with different
+    calculations, but share common workflow:
+    
+    1. User provides input parameters
+    2. Engine performs domain-specific calculations
+    3. Results normalized to common scales
+    4. Visualization shows multi-dimensional trade-offs
+    
+    This layer abstracts the common pattern, making the platform extensible.
+
+# ====================================================================================
+# SPECIFICATION
+# ====================================================================================
+
+specification:
+  structure:
+    entry_point: "src/engines/base.py"
+    modules:
+      - "base.py - Abstract FeasibilityEngine class"
+      - "registry.py - EngineRegistry singleton"
+      - "hose_optimization.py - HoseOptimizationEngine implementation"
+      - "schemas.py - Pydantic models for metadata, schemas, results"
+  
+  classes:
+    - name: "FeasibilityEngine"
+      purpose: "Abstract base class defining engine interface"
+      methods:
+        - name: "get_metadata"
+          signature: "get_metadata() -> EngineMetadata"
+          purpose: "Return engine ID, name, description, version, domain"
+          example: |
+            engine = HoseOptimizationEngine()
+            metadata = engine.get_metadata()
+            print(metadata.name)  # "Hose/Pipe Optimization"
+        
+        - name: "get_input_schema"
+          signature: "get_input_schema() -> Dict[str, ParameterSchema]"
+          purpose: "Return schema defining all input parameters with types, ranges, units"
+          example: |
+            schema = engine.get_input_schema()
+            print(schema['Di'].min_value)  # 0.01 (meters)
+        
+        - name: "get_output_schema"
+          signature: "get_output_schema() -> Dict[str, OutputSchema]"
+          purpose: "Return schema defining all output metrics"
+          example: |
+            schema = engine.get_output_schema()
+            print(schema['deltaP'].unit)  # "bar"
+        
+        - name: "calculate"
+          signature: "calculate(inputs: Dict[str, Any]) -> CalculationResult"
+          purpose: "Perform calculations and return results with formulas"
+          example: |
+            result = engine.calculate({'Di': 0.015, 'Do': 0.021, 'L': 25, ...})
+            print(result.components['deltaP'].formula)  # "ΔP = f × (L/Di) × (ρv²/2)"
+        
+        - name: "get_target_profile"
+          signature: "get_target_profile(profile_name: str) -> Dict[str, Any]"
+          purpose: "Return predefined optimal configuration"
+          example: |
+            profile = engine.get_target_profile("Maximum Performance")
+            print(profile['Di'])  # 0.020
+    
+    - name: "EngineRegistry"
+      purpose: "Singleton registry for managing available engines"
+      methods:
+        - name: "register"
+          signature: "register(engine: FeasibilityEngine) -> None"
+          purpose: "Add engine to registry"
+        
+        - name: "list_engines"
+          signature: "list_engines() -> List[EngineMetadata]"
+          purpose: "Get metadata for all registered engines"
+        
+        - name: "get_engine"
+          signature: "get_engine(engine_id: str) -> FeasibilityEngine"
+          purpose: "Retrieve specific engine by ID"
+    
+    - name: "HoseOptimizationEngine"
+      purpose: "Reference implementation for hose/pipe feasibility analysis"
+      methods:
+        - name: "_calculate_pressure_drop"
+          signature: "_calculate_pressure_drop(...) -> ComponentResult"
+          purpose: "Calculate ΔP with Darcy-Weisbach equation, return with formula + steps"
+        
+        - name: "_calculate_reynolds"
+          signature: "_calculate_reynolds(...) -> ComponentResult"
+          purpose: "Calculate Reynolds number, return with formula + steps"
+        
+        - name: "_calculate_roi"
+          signature: "_calculate_roi(...) -> ComponentResult"
+          purpose: "Calculate ROI percentage, return with formula + steps"
+  
+  implementation_details:
+    libraries:
+      - "abc (abstract base classes)"
+      - "pydantic (data validation)"
+      - "numpy (numerical computations)"
+      - "scipy (Colebrook-White equation solver)"
+    
+    patterns:
+      - "Abstract Base Class pattern for engine interface"
+      - "Singleton pattern for EngineRegistry"
+      - "Strategy pattern for different engines"
+      - "Factory pattern for creating calculation results"
+    
+    error_handling:
+      - error_type: "InvalidInputError"
+        handling: "Validate inputs against schema, raise with specific field"
+      - error_type: "CalculationError"
+        handling: "Wrap math errors, include context about which calculation failed"
+  
+  inputs:
+    - name: "inputs"
+      type: "Dict[str, Any]"
+      description: "Dictionary of parameter values keyed by parameter name"
+      example: "{'Di': 0.015, 'Do': 0.021, 'L': 25, 'flow_rate': 2.0, ...}"
+  
+  outputs:
+    - name: "CalculationResult"
+      type: "CalculationResult (Pydantic model)"
+      description: "Contains components (with formulas), composites, visualization_point, overall_score"
+      example: |
+        {
+          "components": {
+            "deltaP": {
+              "value": 0.7,
+              "unit": "bar",
+              "formula": "ΔP = f × (L/Di) × (ρv²/2)",
+              "calculation_steps": ["f = 0.024", "ρv²/2 = 1442 Pa", "..."],
+              "normalized": 70
+            }
+          },
+          "composites": {
+            "performance_score": 75,
+            "economic_score": 82,
+            "durability_score": 68
+          },
+          "visualization_point": {"x": 75, "y": 82, "z": 68},
+          "overall_score": 75.5
+        }
+
+# ====================================================================================
+# ACCEPTANCE CRITERIA
+# ====================================================================================
+
+acceptance_criteria:
+  - criterion: "FeasibilityEngine abstract base class defines complete interface"
+    test: "pytest tests/unit/test_base_engine.py::test_abstract_interface -v"
+  
+  - criterion: "EngineRegistry can register and list engines"
+    test: "pytest tests/unit/test_registry.py::test_register_and_list -v"
+  
+  - criterion: "HoseOptimizationEngine returns valid metadata"
+    test: "pytest tests/unit/test_hose_engine.py::test_get_metadata -v"
+  
+  - criterion: "HoseOptimizationEngine returns complete input schema"
+    test: "pytest tests/unit/test_hose_engine.py::test_get_input_schema -v"
+  
+  - criterion: "HoseOptimizationEngine calculate() returns results with formulas"
+    test: "pytest tests/unit/test_hose_engine.py::test_calculate_with_formulas -v"
+  
+  - criterion: "Calculation results match manual verification within 1%"
+    test: "pytest tests/unit/test_hose_calculations.py::test_accuracy -v"
+  
+  - criterion: "Formula tracking includes step-by-step breakdown"
+    test: "pytest tests/unit/test_formula_tracking.py::test_calculation_steps -v"
+
+# ====================================================================================
+# TDD IMPLEMENTATION PLAN
+# ====================================================================================
+
+week_1_task:
+  title: "Build Engine Framework with Hose Optimization (TDD)"
+  
+  steps:
+    - step: 1
+      action: "Write failing unit tests for abstract engine interface (RED)"
+      file: "tests/unit/test_base_engine.py"
+      tests:
+        - "test_abstract_methods_required"
+        - "test_engine_metadata_structure"
+        - "test_calculate_returns_calculation_result"
+      duration: "1 hour"
+    
+    - step: 2
+      action: "Write failing tests for EngineRegistry (RED)"
+      file: "tests/unit/test_registry.py"
+      tests:
+        - "test_register_engine"
+        - "test_list_engines_returns_metadata"
+        - "test_get_engine_by_id"
+        - "test_duplicate_registration_error"
+      duration: "1 hour"
+    
+    - step: 3
+      action: "Write failing tests for HoseOptimizationEngine (RED)"
+      file: "tests/unit/test_hose_engine.py"
+      tests:
+        - "test_pressure_drop_calculation"
+        - "test_reynolds_number_calculation"
+        - "test_roi_calculation"
+        - "test_formula_tracking_present"
+        - "test_normalized_scores_in_range"
+      duration: "2 hours"
+    
+    - step: 4
+      action: "Run pytest to confirm RED phase"
+      command: "pytest tests/unit/ -v"
+      expected: "All tests FAIL (as expected)"
+      duration: "5 min"
+    
+    - step: 5
+      action: "Implement FeasibilityEngine abstract base class (GREEN)"
+      file: "src/engines/base.py"
+      methods:
+        - "@abstractmethod get_metadata()"
+        - "@abstractmethod get_input_schema()"
+        - "@abstractmethod get_output_schema()"
+        - "@abstractmethod calculate()"
+        - "@abstractmethod get_target_profile()"
+      duration: "30 min"
+    
+    - step: 6
+      action: "Implement EngineRegistry singleton (GREEN)"
+      file: "src/engines/registry.py"
+      methods:
+        - "register(engine)"
+        - "list_engines()"
+        - "get_engine(engine_id)"
+      duration: "45 min"
+    
+    - step: 7
+      action: "Implement HoseOptimizationEngine (GREEN)"
+      file: "src/engines/hose_optimization.py"
+      methods:
+        - "get_metadata()"
+        - "get_input_schema()"
+        - "get_output_schema()"
+        - "calculate() with all hydraulic/economic calculations"
+        - "_calculate_pressure_drop() with formula tracking"
+        - "_calculate_reynolds() with formula tracking"
+        - "_calculate_roi() with formula tracking"
+      duration: "4 hours"
+    
+    - step: 8
+      action: "Run pytest to confirm GREEN phase"
+      command: "pytest tests/unit/ -v --cov=src/engines --cov-report=term"
+      expected: "All tests PASS, coverage >85%"
+      duration: "10 min"
+    
+    - step: 9
+      action: "Refactor for code quality (REFACTOR)"
+      improvements:
+        - "Extract normalization functions to separate module"
+        - "Create helper for formula tracking boilerplate"
+        - "Add comprehensive docstrings"
+        - "Optimize Colebrook-White solver"
+      duration: "1 hour"
+    
+    - step: 10
+      action: "Integration test with API layer"
+      file: "tests/integration/test_engine_api.py"
+      duration: "30 min"
+  
+  total_time: "11 hours 30 minutes"
+  
+  deliverable: "Fully functional engine framework with HoseOptimizationEngine, 85%+ test coverage"
+
+# ====================================================================================
+# INTEGRATION POINTS
+# ====================================================================================
+
+integration:
+  input_from:
+    - layer: "LAYER-002 Material Database"
+      data_type: "Material properties (density, viscosity, roughness)"
+      interface: "MaterialDatabase.get_material_properties(material_name)"
+  
+  output_to:
+    - layer: "LAYER-004 API Backend"
+      data_type: "CalculationResult with formulas and normalized scores"
+      interface: "Engine.calculate(inputs) -> CalculationResult"
+    
+    - layer: "LAYER-003 Optimization Engine"
+      data_type: "Raw calculation outputs for multi-objective optimization"
+      interface: "Engine.calculate(inputs).components"
+  
+  shared_dependencies:
+    - "app/schemas/response.py (FeatureResponse)"
+
+# ====================================================================================
+# TESTING STRATEGY
+# ====================================================================================
+
+testing_strategy:
+  unit_tests:
+    location: "tests/unit/test_engines.py, test_registry.py, test_hose_engine.py"
+    coverage_target: "90%"
+    key_scenarios:
+      - "Abstract interface enforcement"
+      - "Registry operations (register, list, get)"
+      - "Each calculation method with formula tracking"
+      - "Normalization accuracy"
+      - "Input validation"
+  
+  integration_tests:
+    location: "tests/integration/test_engine_integration.py"
+    scenarios:
+      - "Engine registration and retrieval via registry"
+      - "Calculation with material database lookup"
+      - "Formula tracking end-to-end"
+  
+  fixtures:
+    location: "tests/fixtures/engines/"
+    files:
+      - "sample_hose_inputs.json"
+      - "expected_calculations.json"
+      - "material_properties.json"
+
+# ====================================================================================
+# DEPLOYMENT
+# ====================================================================================
+
+deployment:
+  dependencies:
+    - package: "numpy"
+      version: ">=1.24.0"
+      purpose: "Numerical computations"
+    
+    - package: "scipy"
+      version: ">=1.11.0"
+      purpose: "Colebrook-White equation solver"
+    
+    - package: "pydantic"
+      version: ">=2.0.0"
+      purpose: "Data validation and schemas"
+  
+  configuration:
+    - setting: "DEFAULT_MATERIAL"
+      value: "EPDM"
+      location: "config/engines.yaml"
+    
+    - setting: "NORMALIZATION_BOUNDS"
+      value: "{'deltaP': (0, 2), 'ROI': (0, 50), ...}"
+      location: "config/engines.yaml"
+  
+  usage_example: |
+    from src.engines.hose_optimization import HoseOptimizationEngine
+    from src.engines.registry import EngineRegistry
+    
+    # Register engine
+    engine = HoseOptimizationEngine()
+    EngineRegistry().register(engine)
+    
+    # Use engine
+    inputs = {'Di': 0.015, 'Do': 0.021, 'L': 25, 'flow_rate': 2.0, ...}
+    result = engine.calculate(inputs)
+    print(result.components['deltaP'].formula)
+
+# ====================================================================================
+# CODE GENERATION CONSTRAINTS
+# ====================================================================================
+
+code_generation_constraints:
+  output_format:
+    - "Return ONLY raw Python code - NO markdown fences"
+    - "First line MUST be valid Python import or class definition"
+  
+  api_usage:
+    - "ONLY implement methods defined in specification.classes"
+    - "Use EXACT method signatures"
+    - "DO NOT add helper methods not listed in spec"
+  
+  import_completeness:
+    - "Import ABC, abstractmethod from abc"
+    - "Import Dict, List, Optional, Any from typing"
+    - "Import BaseModel from pydantic"
+    - "Import numpy as np"
+  
+  naming_conventions:
+    - "Class names: FeasibilityEngine, EngineRegistry, HoseOptimizationEngine"
+    - "Method names: get_metadata, get_input_schema, calculate, etc."
+  
+  quality_requirements:
+    - "NO stub implementations - all methods fully functional"
+    - "Formula tracking MUST be present in all ComponentResult objects"
+    - "Calculation accuracy within 1% of manual verification"
+
+# ====================================================================================
+# NOTES
+# ====================================================================================
+
+notes: |
+  IMPORTANT CONSIDERATIONS:
+  - Formula tracking is CRITICAL - every calculated value must include formula + steps
+  - Colebrook-White equation requires iterative solver (use scipy.optimize.fsolve)
+  - Normalization bounds should be configurable, not hardcoded
+  - Material properties come from LAYER-002, don't hardcode density/viscosity
+  
+  DESIGN DECISIONS:
+  - Abstract base class chosen over Protocol to enforce interface at registration time
+  - Singleton pattern for registry ensures single source of truth
+  - ComponentResult dataclass includes both value AND formula to keep them together
+  
+  FUTURE ENHANCEMENTS:
+  - Add caching for expensive calculations (memoization)
+  - Support unit conversion (user inputs meters, but engine works in mm)
+  - Add calculation explanation feature (natural language description of steps)
+  - Support multi-threading for batch calculations
+
+# ====================================================================================
+# END OF LAYER REQUIREMENT
+# ====================================================================================

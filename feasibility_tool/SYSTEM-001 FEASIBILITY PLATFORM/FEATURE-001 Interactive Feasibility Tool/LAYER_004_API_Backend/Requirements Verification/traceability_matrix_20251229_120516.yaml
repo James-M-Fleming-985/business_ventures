@@ -1,0 +1,209 @@
+matrix_metadata:
+  timestamp: '20251229_120516'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-001
+  requirement: GET /api/engines returns list of engines
+  description: GET /api/engines returns list of engines
+  test_files: &id001
+  - /workspaces/business_ventures/projects/PROJECT-001 ENERGY EFFICIENCY/SYSTEM-001
+    FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility Tool/LAYER_004_API_Backend/tests/test_generated_20251229_120432.py
+  test_methods:
+  - test_ac_001
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-002
+  requirement: GET /api/engines/{id}/input-schema returns valid schema
+  description: GET /api/engines/{id}/input-schema returns valid schema
+  test_files: *id001
+  test_methods:
+  - test_ac_002
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-003
+  requirement: POST /api/engines/{id}/calculate returns results with formulas
+  description: POST /api/engines/{id}/calculate returns results with formulas
+  test_files: *id001
+  test_methods:
+  - test_ac_003
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-004
+  requirement: Invalid inputs return 400 with error message
+  description: Invalid inputs return 400 with error message
+  test_files: *id001
+  test_methods:
+  - test_ac_004
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-005
+  requirement: Non-existent engine returns 404
+  description: Non-existent engine returns 404
+  test_files: *id001
+  test_methods:
+  - test_ac_005
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-006
+  requirement: API response time < 200ms (p95)
+  description: API response time < 200ms (p95)
+  test_files: *id001
+  test_methods:
+  - test_ac_006
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /workspaces/business_ventures/projects/PROJECT-001 ENERGY EFFICIENCY/SYSTEM-001
+    FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility Tool/LAYER_004_API_Backend/src/implementation.py
+  lines: 305
+  methods:
+  - name: __init__
+    lines: 15-18
+  - name: add_response_time
+    lines: 19-23
+  - name: get_p95
+    lines: 24-36
+  - name: __init__
+    lines: 40-48
+  - name: validate_inputs
+    lines: 49-85
+  - name: calculate
+    lines: 86-96
+  - name: do_GET
+    lines: 190-206
+  - name: do_POST
+    lines: 207-221
+  - name: _handle_get_engines
+    lines: 222-233
+  - name: _handle_get_input_schema
+    lines: 234-242
+  - name: _handle_calculate
+    lines: 243-279
+  - name: _send_response
+    lines: 280-286
+  - name: log_message
+    lines: 287-291
+  - name: run_server
+    lines: 292-302
+  classes:
+  - name: PerformanceTracker
+    type: class
+    lines: 12-36
+  - name: Engine
+    type: class
+    lines: 37-186
+  - name: APIHandler
+    type: class
+    lines: 187-305
+  implements_requirements:
+  - AC-001
+  - AC-002
+  - AC-003
+  - AC-004
+  - AC-005
+  - AC-006
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /workspaces/business_ventures/projects/PROJECT-001 ENERGY EFFICIENCY/SYSTEM-001
+    FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility Tool/LAYER_004_API_Backend/tests/test_generated_20251229_120432.py
+  test_count: 0
+  implementation_files:
+  - /workspaces/business_ventures/projects/PROJECT-001 ENERGY EFFICIENCY/SYSTEM-001
+    FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility Tool/LAYER_004_API_Backend/src/implementation.py
+  methods_tested:
+  - __init__
+  - add_response_time
+  - get_p95
+  - __init__
+  - validate_inputs
+  - calculate
+  - do_GET
+  - do_POST
+  - _handle_get_engines
+  - _handle_get_input_schema
+  - _handle_calculate
+  - _send_response
+  - log_message
+  - run_server
+  classes_tested:
+  - PerformanceTracker
+  - Engine
+  - APIHandler
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /workspaces/business_ventures/projects/PROJECT-001 ENERGY
+    EFFICIENCY/SYSTEM-001 FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility
+    Tool/LAYER_004_API_Backend/src/implementation.py:15-18
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/business_ventures/projects/PROJECT-001 ENERGY EFFICIENCY/SYSTEM-001
+    FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility Tool/LAYER_004_API_Backend/tests/test_generated_20251229_120432.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/projects/PROJECT-001 ENERGY
+    EFFICIENCY/SYSTEM-001 FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility
+    Tool/LAYER_004_API_Backend/src/implementation.py:19-23
+  method_name: add_response_time
+  requirement: AC-001
+  test: test_add_response_time
+  test_file: /workspaces/business_ventures/projects/PROJECT-001 ENERGY EFFICIENCY/SYSTEM-001
+    FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility Tool/LAYER_004_API_Backend/tests/test_generated_20251229_120432.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/projects/PROJECT-001 ENERGY
+    EFFICIENCY/SYSTEM-001 FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility
+    Tool/LAYER_004_API_Backend/src/implementation.py:24-36
+  method_name: get_p95
+  requirement: AC-001
+  test: test_get_p95
+  test_file: /workspaces/business_ventures/projects/PROJECT-001 ENERGY EFFICIENCY/SYSTEM-001
+    FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility Tool/LAYER_004_API_Backend/tests/test_generated_20251229_120432.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/projects/PROJECT-001 ENERGY
+    EFFICIENCY/SYSTEM-001 FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility
+    Tool/LAYER_004_API_Backend/src/implementation.py:40-48
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/business_ventures/projects/PROJECT-001 ENERGY EFFICIENCY/SYSTEM-001
+    FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility Tool/LAYER_004_API_Backend/tests/test_generated_20251229_120432.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/projects/PROJECT-001 ENERGY
+    EFFICIENCY/SYSTEM-001 FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility
+    Tool/LAYER_004_API_Backend/src/implementation.py:49-85
+  method_name: validate_inputs
+  requirement: AC-001
+  test: test_validate_inputs
+  test_file: /workspaces/business_ventures/projects/PROJECT-001 ENERGY EFFICIENCY/SYSTEM-001
+    FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility Tool/LAYER_004_API_Backend/tests/test_generated_20251229_120432.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 6
+  requirements_traced: 6
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

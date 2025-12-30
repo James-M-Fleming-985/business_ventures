@@ -1,0 +1,106 @@
+matrix_metadata:
+  timestamp: '20251230_120449'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-001
+  requirement: 13 bars are rendered, one for each input parameter
+  description: 13 bars are rendered, one for each input parameter
+  test_files: &id001
+  - LAYER_001_002_006_Sensitivity_Analysis_Component/tests/test_generated_20251230_120416.py
+  test_methods:
+  - test_ac_001
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-002
+  requirement: Bars are sorted in descending order by sensitivity magnitude
+  description: Bars are sorted in descending order by sensitivity magnitude
+  test_files: *id001
+  test_methods:
+  - test_ac_002
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-003
+  requirement: Sensitivity values computed via finite difference with delta=0.01
+  description: Sensitivity values computed via finite difference with delta=0.01
+  test_files: *id001
+  test_methods:
+  - test_ac_003
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-004
+  requirement: Positive impact bars are green, negative impact bars are red
+  description: Positive impact bars are green, negative impact bars are red
+  test_files: *id001
+  test_methods:
+  - test_ac_004
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-005
+  requirement: Clicking a bar triggers onParameterHighlight callback
+  description: Clicking a bar triggers onParameterHighlight callback
+  test_files: *id001
+  test_methods:
+  - test_ac_005
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-006
+  requirement: Chart updates within 5ms of input change
+  description: Chart updates within 5ms of input change
+  test_files: *id001
+  test_methods:
+  - test_ac_006
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: LAYER_001_002_006_Sensitivity_Analysis_Component/src/implementation.tsx
+  lines: 220
+  methods: []
+  classes: []
+  implements_requirements:
+  - AC-001
+  - AC-002
+  - AC-003
+  - AC-004
+  - AC-005
+  - AC-006
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: LAYER_001_002_006_Sensitivity_Analysis_Component/tests/test_generated_20251230_120416.py
+  test_count: 0
+  implementation_files:
+  - LAYER_001_002_006_Sensitivity_Analysis_Component/src/implementation.tsx
+  methods_tested: []
+  classes_tested: []
+  coverage: 0.0%
+line_level_traceability: []
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 6
+  requirements_traced: 6
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

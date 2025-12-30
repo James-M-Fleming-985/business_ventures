@@ -1,0 +1,84 @@
+matrix_metadata:
+  timestamp: '20251230_121036'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-001
+  requirement: Mode switching completes in < 200ms
+  description: Mode switching completes in < 200ms
+  test_files: &id001
+  - LAYER_001_002_010_Integration_Layer/tests/test_generated_20251230_120940.py
+  test_methods:
+  - test_ac_001
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-002
+  requirement: Slider updates propagate in < 5ms
+  description: Slider updates propagate in < 5ms
+  test_files: *id001
+  test_methods:
+  - test_ac_002
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-003
+  requirement: History queue maintains exactly 100 entries max
+  description: History queue maintains exactly 100 entries max
+  test_files: *id001
+  test_methods:
+  - test_ac_003
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-004
+  requirement: FPS stays at 60 during continuous updates
+  description: FPS stays at 60 during continuous updates
+  test_files: *id001
+  test_methods:
+  - test_ac_004
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: LAYER_001_002_010_Integration_Layer/src/implementation.tsx
+  lines: 422
+  methods: []
+  classes: []
+  implements_requirements:
+  - AC-001
+  - AC-002
+  - AC-003
+  - AC-004
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: LAYER_001_002_010_Integration_Layer/tests/test_generated_20251230_120940.py
+  test_count: 0
+  implementation_files:
+  - LAYER_001_002_010_Integration_Layer/src/implementation.tsx
+  methods_tested: []
+  classes_tested: []
+  coverage: 0.0%
+line_level_traceability: []
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 4
+  requirements_traced: 4
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

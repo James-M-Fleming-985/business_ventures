@@ -1,0 +1,261 @@
+nohup: ignoring input
+
+================================================================================
+  🚀 AI Feature Builder - Starting
+================================================================================
+
+
+================================================================================
+  Loading Feature Specification
+================================================================================
+
+✓ Feature: Advanced 3D Visualizations
+✓ Feature ID: FEATURE-001-002
+✓ Layers to build: 10
+   - Visualization Framework (LAYER-001-002-001)
+   - Ternary Diagram Component (LAYER-001-002-002)
+   - Feasibility Volume Component (LAYER-001-002-003)
+   - Parallel Coordinates Component (LAYER-001-002-004)
+   - Response Surface Component (LAYER-001-002-005)
+   - Sensitivity Analysis Component (LAYER-001-002-006)
+   - Correlation Matrix Component (LAYER-001-002-007)
+   - Pareto Frontier Component (LAYER-001-002-008)
+   - Radar Chart Component (LAYER-001-002-009)
+   - Integration Layer (LAYER-001-002-010)
+✓ Using AI provider: ANTHROPIC
+
+================================================================================
+  Building Layer 1/10: Visualization Framework
+================================================================================
+
+✓ Layer spec: LAYER_001_002_001_Visualization_Framework/LAYER-001-002-001_visualization_framework.yaml
+✓ Output directory: LAYER_001_002_001_Visualization_Framework
+🤖 Initializing AI Code Generator...
+🤖 Executing full TDD cycle for Visualization Framework...
+✅ Layer Visualization Framework completed successfully!
+📊 Verification reports generated:
+   - LAYER_001_002_001_Visualization_Framework/Requirements Verification/requirements_verification_20251230_115721.yaml
+   - LAYER_001_002_001_Visualization_Framework/Requirements Verification/test_pyramid_report_20251230_115721.yaml
+   - LAYER_001_002_001_Visualization_Framework/Requirements Verification/traceability_matrix_20251230_115721.yaml
+   - LAYER_001_002_001_Visualization_Framework/Requirements Verification/quality_gates_report_20251230_115721.yaml
+
+================================================================================
+  Building Layer 2/10: Ternary Diagram Component
+================================================================================
+
+✓ Layer spec: LAYER_001_002_002_Ternary_Diagram_Component/LAYER-001-002-002_ternary_diagram.yaml
+✓ Output directory: LAYER_001_002_002_Ternary_Diagram_Component
+🤖 Initializing AI Code Generator...
+🤖 Executing full TDD cycle for Ternary Diagram Component...
+✅ Layer Ternary Diagram Component completed successfully!
+📊 Verification reports generated:
+   - LAYER_001_002_002_Ternary_Diagram_Component/Requirements Verification/requirements_verification_20251230_115912.yaml
+   - LAYER_001_002_002_Ternary_Diagram_Component/Requirements Verification/test_pyramid_report_20251230_115912.yaml
+   - LAYER_001_002_002_Ternary_Diagram_Component/Requirements Verification/traceability_matrix_20251230_115912.yaml
+   - LAYER_001_002_002_Ternary_Diagram_Component/Requirements Verification/quality_gates_report_20251230_115912.yaml
+
+================================================================================
+  Building Layer 3/10: Feasibility Volume Component
+================================================================================
+
+✓ Layer spec: LAYER_001_002_003_Feasibility_Volume_Component/LAYER-001-002-003_feasibility_volume.yaml
+✓ Output directory: LAYER_001_002_003_Feasibility_Volume_Component
+🤖 Initializing AI Code Generator...
+🤖 Executing full TDD cycle for Feasibility Volume Component...
+✅ Layer Feasibility Volume Component completed successfully!
+📊 Verification reports generated:
+   - LAYER_001_002_003_Feasibility_Volume_Component/Requirements Verification/requirements_verification_20251230_120035.yaml
+   - LAYER_001_002_003_Feasibility_Volume_Component/Requirements Verification/test_pyramid_report_20251230_120035.yaml
+   - LAYER_001_002_003_Feasibility_Volume_Component/Requirements Verification/traceability_matrix_20251230_120035.yaml
+   - LAYER_001_002_003_Feasibility_Volume_Component/Requirements Verification/quality_gates_report_20251230_120035.yaml
+
+================================================================================
+  Building Layer 4/10: Parallel Coordinates Component
+================================================================================
+
+✓ Layer spec: LAYER_001_002_004_Parallel_Coordinates_Component/LAYER-001-002-004_parallel_coordinates.yaml
+✓ Output directory: LAYER_001_002_004_Parallel_Coordinates_Component
+🤖 Initializing AI Code Generator...
+🤖 Executing full TDD cycle for Parallel Coordinates Component...
+✅ Layer Parallel Coordinates Component completed successfully!
+📊 Verification reports generated:
+   - LAYER_001_002_004_Parallel_Coordinates_Component/Requirements Verification/requirements_verification_20251230_120201.yaml
+   - LAYER_001_002_004_Parallel_Coordinates_Component/Requirements Verification/test_pyramid_report_20251230_120201.yaml
+   - LAYER_001_002_004_Parallel_Coordinates_Component/Requirements Verification/traceability_matrix_20251230_120201.yaml
+   - LAYER_001_002_004_Parallel_Coordinates_Component/Requirements Verification/quality_gates_report_20251230_120201.yaml
+
+================================================================================
+  Building Layer 5/10: Response Surface Component
+================================================================================
+
+✓ Layer spec: LAYER_001_002_005_Response_Surface_Component/LAYER-001-002-005_response_surface.yaml
+✓ Output directory: LAYER_001_002_005_Response_Surface_Component
+🤖 Initializing AI Code Generator...
+🤖 Executing full TDD cycle for Response Surface Component...
+✅ Layer Response Surface Component completed successfully!
+📊 Verification reports generated:
+   - LAYER_001_002_005_Response_Surface_Component/Requirements Verification/requirements_verification_20251230_120345.yaml
+   - LAYER_001_002_005_Response_Surface_Component/Requirements Verification/test_pyramid_report_20251230_120345.yaml
+   - LAYER_001_002_005_Response_Surface_Component/Requirements Verification/traceability_matrix_20251230_120345.yaml
+   - LAYER_001_002_005_Response_Surface_Component/Requirements Verification/quality_gates_report_20251230_120345.yaml
+
+================================================================================
+  Building Layer 6/10: Sensitivity Analysis Component
+================================================================================
+
+✓ Layer spec: LAYER_001_002_006_Sensitivity_Analysis_Component/LAYER-001-002-006_sensitivity_tornado.yaml
+✓ Output directory: LAYER_001_002_006_Sensitivity_Analysis_Component
+🤖 Initializing AI Code Generator...
+🤖 Executing full TDD cycle for Sensitivity Analysis Component...
+✅ Layer Sensitivity Analysis Component completed successfully!
+📊 Verification reports generated:
+   - LAYER_001_002_006_Sensitivity_Analysis_Component/Requirements Verification/requirements_verification_20251230_120449.yaml
+   - LAYER_001_002_006_Sensitivity_Analysis_Component/Requirements Verification/test_pyramid_report_20251230_120449.yaml
+   - LAYER_001_002_006_Sensitivity_Analysis_Component/Requirements Verification/traceability_matrix_20251230_120449.yaml
+   - LAYER_001_002_006_Sensitivity_Analysis_Component/Requirements Verification/quality_gates_report_20251230_120449.yaml
+
+================================================================================
+  Building Layer 7/10: Correlation Matrix Component
+================================================================================
+
+✓ Layer spec: LAYER_001_002_007_Correlation_Matrix_Component/LAYER-001-002-007_correlation_matrix.yaml
+✓ Output directory: LAYER_001_002_007_Correlation_Matrix_Component
+🤖 Initializing AI Code Generator...
+🤖 Executing full TDD cycle for Correlation Matrix Component...
+✅ Layer Correlation Matrix Component completed successfully!
+📊 Verification reports generated:
+   - LAYER_001_002_007_Correlation_Matrix_Component/Requirements Verification/requirements_verification_20251230_120603.yaml
+   - LAYER_001_002_007_Correlation_Matrix_Component/Requirements Verification/test_pyramid_report_20251230_120603.yaml
+   - LAYER_001_002_007_Correlation_Matrix_Component/Requirements Verification/traceability_matrix_20251230_120603.yaml
+   - LAYER_001_002_007_Correlation_Matrix_Component/Requirements Verification/quality_gates_report_20251230_120603.yaml
+
+================================================================================
+  Building Layer 8/10: Pareto Frontier Component
+================================================================================
+
+✓ Layer spec: LAYER_001_002_008_Pareto_Frontier_Component/LAYER-001-002-008_pareto_frontier.yaml
+✓ Output directory: LAYER_001_002_008_Pareto_Frontier_Component
+🤖 Initializing AI Code Generator...
+🤖 Executing full TDD cycle for Pareto Frontier Component...
+✅ Layer Pareto Frontier Component completed successfully!
+📊 Verification reports generated:
+   - LAYER_001_002_008_Pareto_Frontier_Component/Requirements Verification/requirements_verification_20251230_120732.yaml
+   - LAYER_001_002_008_Pareto_Frontier_Component/Requirements Verification/test_pyramid_report_20251230_120732.yaml
+   - LAYER_001_002_008_Pareto_Frontier_Component/Requirements Verification/traceability_matrix_20251230_120732.yaml
+   - LAYER_001_002_008_Pareto_Frontier_Component/Requirements Verification/quality_gates_report_20251230_120732.yaml
+
+================================================================================
+  Building Layer 9/10: Radar Chart Component
+================================================================================
+
+✓ Layer spec: LAYER_001_002_009_Radar_Chart_Component/LAYER-001-002-009_radar_chart.yaml
+✓ Output directory: LAYER_001_002_009_Radar_Chart_Component
+🤖 Initializing AI Code Generator...
+🤖 Executing full TDD cycle for Radar Chart Component...
+✅ Layer Radar Chart Component completed successfully!
+📊 Verification reports generated:
+   - LAYER_001_002_009_Radar_Chart_Component/Requirements Verification/requirements_verification_20251230_120846.yaml
+   - LAYER_001_002_009_Radar_Chart_Component/Requirements Verification/test_pyramid_report_20251230_120846.yaml
+   - LAYER_001_002_009_Radar_Chart_Component/Requirements Verification/traceability_matrix_20251230_120846.yaml
+   - LAYER_001_002_009_Radar_Chart_Component/Requirements Verification/quality_gates_report_20251230_120846.yaml
+
+================================================================================
+  Building Layer 10/10: Integration Layer
+================================================================================
+
+✓ Layer spec: LAYER_001_002_010_Integration_Layer/LAYER-001-002-010_integration_layer.yaml
+✓ Output directory: LAYER_001_002_010_Integration_Layer
+🤖 Initializing AI Code Generator...
+🤖 Executing full TDD cycle for Integration Layer...
+✅ Layer Integration Layer completed successfully!
+📊 Verification reports generated:
+   - LAYER_001_002_010_Integration_Layer/Requirements Verification/requirements_verification_20251230_121036.yaml
+   - LAYER_001_002_010_Integration_Layer/Requirements Verification/test_pyramid_report_20251230_121036.yaml
+   - LAYER_001_002_010_Integration_Layer/Requirements Verification/traceability_matrix_20251230_121036.yaml
+   - LAYER_001_002_010_Integration_Layer/Requirements Verification/quality_gates_report_20251230_121036.yaml
+
+================================================================================
+  ✅ ALL LAYERS COMPLETE
+================================================================================
+
+All 10 layers built successfully!
+
+================================================================================
+  🔗 Building Feature Integration Layer
+================================================================================
+
+  🤖 Generating feature integration code for Advanced 3D Visualizations...
+  ❌ Error generating feature integration: 'str' object has no attribute 'get'
+
+⚠️  Feature integration generation failed
+Layers are complete, but feature integration layer was not generated.
+
+  🧪 Generating feature-level tests...
+  🔗 Generating integration tests...
+  ✅ Integration tests generated: 11 tests
+  🎯 Generating E2E tests...
+  ✅ E2E tests generated: 3 tests
+
+================================================================================
+  📋 Generating Feature-Level Verification
+================================================================================
+
+  🔍 Generating feature-level verification artifacts...
+  ✅ Feature-level verification artifacts generated:
+     - Requirements Verification/feature_requirements_verification_20251230_121359.yaml
+     - Requirements Verification/feature_test_pyramid_20251230_121359.yaml
+     - Requirements Verification/feature_traceability_matrix_20251230_121359.yaml
+     - Requirements Verification/feature_quality_gates_20251230_121359.yaml
+
+================================================================================
+  🎉 FEATURE BUILD COMPLETE!
+================================================================================
+
+Duration: 19.7 minutes
+AI Provider: ANTHROPIC
+
+================================================================================
+FEATURE BUILD SUMMARY
+================================================================================
+
+✅ Layers Built: 10
+   • LAYER-001-002-001: Visualization Framework
+     Implementation: LAYER_001_002_001_Visualization_Framework/src/implementation.tsx
+     Tests: 2 files
+   • LAYER-001-002-002: Ternary Diagram Component
+     Implementation: LAYER_001_002_002_Ternary_Diagram_Component/src/implementation.tsx
+     Tests: 2 files
+   • LAYER-001-002-003: Feasibility Volume Component
+     Implementation: LAYER_001_002_003_Feasibility_Volume_Component/src/implementation.tsx
+     Tests: 3 files
+   • LAYER-001-002-004: Parallel Coordinates Component
+     Implementation: LAYER_001_002_004_Parallel_Coordinates_Component/src/implementation.tsx
+     Tests: 3 files
+   • LAYER-001-002-005: Response Surface Component
+     Implementation: LAYER_001_002_005_Response_Surface_Component/src/implementation.tsx
+     Tests: 3 files
+   • LAYER-001-002-006: Sensitivity Analysis Component
+     Implementation: LAYER_001_002_006_Sensitivity_Analysis_Component/src/implementation.tsx
+     Tests: 3 files
+   • LAYER-001-002-007: Correlation Matrix Component
+     Implementation: LAYER_001_002_007_Correlation_Matrix_Component/src/implementation.tsx
+     Tests: 3 files
+   • LAYER-001-002-008: Pareto Frontier Component
+     Implementation: LAYER_001_002_008_Pareto_Frontier_Component/src/implementation.tsx
+     Tests: 3 files
+   • LAYER-001-002-009: Radar Chart Component
+     Implementation: LAYER_001_002_009_Radar_Chart_Component/src/implementation.tsx
+     Tests: 3 files
+   • LAYER-001-002-010: Integration Layer
+     Implementation: LAYER_001_002_010_Integration_Layer/src/implementation.tsx
+     Tests: 3 files
+
+🔗 Feature Integration Layer:
+   ⚠️  Integration code not found
+
+📦 Feature: Advanced 3D Visualizations
+   Feature ID: FEATURE-001-002
+   Total Layers: 10
+   Feature Directory: .
+
+================================================================================

@@ -1,0 +1,128 @@
+matrix_metadata:
+  timestamp: '20251230_120201'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-001
+  requirement: Renders all 16 axes (13 inputs + 3 outputs) with correct labels
+  description: Renders all 16 axes (13 inputs + 3 outputs) with correct labels
+  test_files: &id001
+  - LAYER_001_002_004_Parallel_Coordinates_Component/tests/test_generated_20251230_120122.py
+  test_methods:
+  - test_ac_001
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-002
+  requirement: Current configuration displayed as bright polyline connecting all axes
+  description: Current configuration displayed as bright polyline connecting all axes
+  test_files: *id001
+  test_methods:
+  - test_ac_002
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-003
+  requirement: Last 10 configurations shown with decreasing opacity (1.0 to 0.1)
+  description: Last 10 configurations shown with decreasing opacity (1.0 to 0.1)
+  test_files: *id001
+  test_methods:
+  - test_ac_003
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-004
+  requirement: Updates within 5ms when currentConfig prop changes
+  description: Updates within 5ms when currentConfig prop changes
+  test_files: *id001
+  test_methods:
+  - test_ac_004
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-005
+  requirement: Maintains 60 FPS during continuous updates
+  description: Maintains 60 FPS during continuous updates
+  test_files: *id001
+  test_methods:
+  - test_ac_005
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-006
+  requirement: Uses colorblind-friendly palette for polyline coloring
+  description: Uses colorblind-friendly palette for polyline coloring
+  test_files: *id001
+  test_methods:
+  - test_ac_006
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-007
+  requirement: Axis values normalized to [0, 1] range for consistent display
+  description: Axis values normalized to [0, 1] range for consistent display
+  test_files: *id001
+  test_methods:
+  - test_ac_007
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-008
+  requirement: Responsive to container size changes
+  description: Responsive to container size changes
+  test_files: *id001
+  test_methods:
+  - test_ac_008
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: LAYER_001_002_004_Parallel_Coordinates_Component/src/implementation.tsx
+  lines: 267
+  methods: []
+  classes: []
+  implements_requirements:
+  - AC-001
+  - AC-002
+  - AC-003
+  - AC-004
+  - AC-005
+  - AC-006
+  - AC-007
+  - AC-008
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: LAYER_001_002_004_Parallel_Coordinates_Component/tests/test_generated_20251230_120122.py
+  test_count: 0
+  implementation_files:
+  - LAYER_001_002_004_Parallel_Coordinates_Component/src/implementation.tsx
+  methods_tested: []
+  classes_tested: []
+  coverage: 0.0%
+line_level_traceability: []
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 8
+  requirements_traced: 8
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

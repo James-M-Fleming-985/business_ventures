@@ -1,0 +1,545 @@
+# ====================================================================================
+# FEATURE REQUIREMENTS INDEX: Interactive Feasibility Tool
+# ====================================================================================
+# FEATURE ID: FEATURE-001
+# VERSION: 1.0.0
+# LAST UPDATED: 2025-12-29
+# OWNER: AI Code Generator
+# ====================================================================================
+# This feature provides a web-based interface for users to:
+# - Select from multiple feasibility engines
+# - Input parameters via dynamically generated control panel
+# - Visualize results as 3D response surface
+# - Explore calculations through comprehensive tooltips
+# ====================================================================================
+
+metadata:
+  requirement_id: "FEATURE-001"
+  requirement_name: "Interactive Feasibility Tool"
+  feature_id: "FEATURE-001"  # Required by build_feature.py
+  feature_name: "Interactive Feasibility Tool"  # Required by build_feature.py
+  feature_code: "IFT"
+  version: "1.0.0"
+  status: "Active"
+  created_date: "2025-12-29"
+  last_modified: "2025-12-29"
+  owner: "AI Code Generator"
+  priority: "MUST HAVE"
+  target_date: "2026-01-05"
+  
+  traceability:
+    parent_system: "SYSTEM-001"
+    parent_system_file: "../SYSTEM-001_feasibility_platform.yaml"
+    parent_system_requirements:
+      - "SYS-AC-001: Engine registry can list all available engines with metadata"
+      - "SYS-AC-002: API returns input schema for any registered engine"
+      - "SYS-AC-003: API returns output schema for any registered engine"
+      - "SYS-AC-004: Calculate endpoint returns results with formula tracking"
+      - "SYS-AC-006: Calculation results include normalized scores"
+      - "SYS-AC-007: Adding new engine requires no changes to API or frontend code"
+    
+    derivation_rationale: |
+      SYSTEM-001 defines the pluggable engine framework and API contracts.
+      This feature implements the user-facing components that consume those APIs:
+      
+      1. Frontend components for engine selection and parameter input
+      2. 3D visualization of response surfaces using normalized composite scores
+      3. Tooltip system displaying formulas and calculation steps
+      4. Backend API endpoints for engine operations
+      5. Database layer for storing engine configurations and calculation history
+
+# ====================================================================================
+# FEATURE OVERVIEW
+# ====================================================================================
+
+overview:
+  description: |
+    Interactive web application that allows users to evaluate feasibility across
+    multiple domains (hose optimization, solar panels, HVAC, etc.) using pluggable
+    mathematical engines. Features include:
+    
+    - Engine selector dropdown (dynamically populated from registry)
+    - Control panel with sliders/inputs (generated from engine's input schema)
+    - Real-time calculation triggered by parameter changes
+    - 3D scatter plot showing Performance/Economics/Durability axes
+    - Comprehensive tooltips with value, unit, formula, calculation steps
+    - Target profile comparison showing optimal configurations
+    - Overall optimization score display
+  
+  business_value:
+    - "Non-technical users can perform complex feasibility analysis"
+    - "Calculation transparency builds stakeholder trust"
+    - "3D visualization reveals non-obvious trade-offs"
+    - "Single interface serves multiple engineering domains"
+    - "Reduces analysis time from days to minutes"
+  
+  user_story: |
+    As an energy efficiency consultant,
+    I want to evaluate different hose configurations interactively,
+    So that I can identify the optimal balance of performance, cost, and durability
+    without manual calculations or spreadsheet modeling.
+  
+  acceptance_criteria:
+    - "User can select an engine from dropdown and see its description"
+    - "Control panel updates to show engine-specific input parameters"
+    - "Adjusting any parameter triggers recalculation within 100ms"
+    - "3D visualization updates in real-time with new calculation results"
+    - "Clicking any data point shows tooltip with comprehensive calculation details"
+    - "Tooltip displays value, unit, formula (LaTeX), and step-by-step calculations"
+    - "Overall optimization score is calculated and displayed prominently"
+    - "User can select target profile and see comparison metrics"
+    - "Application renders at 60 FPS with smooth interactions"
+
+# ====================================================================================
+# SHARED INTERFACES - MUST MATCH PARENT SYSTEM
+# ====================================================================================
+
+shared_interfaces:
+  response_structure: "api_response_structure"
+  
+  parent_system_reference:
+    file: "../SYSTEM-001_feasibility_platform.yaml"
+    section: "shared_interfaces.api_response_structure"
+  
+  implementation_requirement: |
+    CRITICAL RULES:
+    1. Copy EXACT response structure from parent SYSTEM requirements
+    2. Use IDENTICAL class names (FeatureResponse)
+    3. Use IDENTICAL field names and types (success, data, error, metadata)
+    4. Import from app.schemas.response OR duplicate exactly in feature code
+    5. ALL layers in this feature must use this response structure
+    
+    Implementation:
+    ```python
+    from pydantic import BaseModel, Field
+    from typing import Optional, Any, Dict
+    from datetime import datetime
+    
+    class FeatureResponse(BaseModel):
+        success: bool
+        data: Optional[Any] = None
+        error: Optional[str] = None
+        metadata: Optional[Dict[str, Any]] = Field(default_factory=dict)
+        
+        class Config:
+            json_encoders = {
+                datetime: lambda v: v.isoformat()
+            }
+    ```
+  
+  verification:
+    - "All API endpoints return FeatureResponse instances"
+    - "Response structure matches parent system exactly"
+    - "HTTP status codes mapped per system specification"
+
+# ====================================================================================
+# LAYER ARCHITECTURE
+# ====================================================================================
+
+layers:
+  - layer_id: "LAYER-001"
+    name: "Engine Framework"
+    responsibility: "Abstract engine interface, registry, hose optimization engine implementation"
+    technology: "Python 3.11, numpy, scipy, abstract base classes"
+    requirement_file: "REQ-001.yaml"
+    requirements:
+      - REQ-001-001
+      - REQ-001-002
+      - REQ-001-003
+    
+    traceability_note: |
+      Implements SYS-AC-001 (list engines), SYS-AC-002/003 (schemas),
+      SYS-AC-004 (calculation with formula tracking)
+  
+  - layer_id: "LAYER-002"
+    name: "Material Database"
+    responsibility: "Store and retrieve material properties, climate zones, cost data"
+    technology: "SQLAlchemy, PostgreSQL, Pydantic models"
+    requirement_file: "REQ-002.yaml"
+    requirements:
+      - REQ-002-001
+      - REQ-002-002
+    
+    traceability_note: |
+      Supports engine calculations by providing reference data
+      (material properties, regional electricity costs, climate factors)
+  
+  - layer_id: "LAYER-003"
+    name: "Optimization Engine"
+    responsibility: "Multi-objective optimization, normalization, composite score calculation"
+    technology: "pygmo, scipy.optimize, custom normalization algorithms"
+    requirement_file: "REQ-003.yaml"
+    requirements:
+      - REQ-003-001
+      - REQ-003-002
+    
+    traceability_note: |
+      Implements SYS-AC-006 (normalized scores), computes composite dimensions
+      for 3D visualization (Performance/Economics/Durability)
+  
+  - layer_id: "LAYER-004"
+    name: "API Backend"
+    responsibility: "FastAPI endpoints for engine operations, request validation, error handling"
+    technology: "FastAPI 0.104, Pydantic, uvicorn"
+    requirement_file: "REQ-004.yaml"
+    requirements:
+      - REQ-004-001
+      - REQ-004-002
+      - REQ-004-003
+    
+    traceability_note: |
+      Exposes engine functionality via REST API:
+      GET /api/engines (list), GET /api/engines/{id}/schema,
+      POST /api/engines/{id}/calculate
+  
+  - layer_id: "LAYER-005"
+    name: "3D Visualization Frontend"
+    responsibility: "React UI with engine selector, dynamic controls, 3D scatter plot, tooltips"
+    technology: "React 18, TypeScript, React-Three-Fiber, Three.js, Material-UI"
+    requirement_file: "REQ-005.yaml"
+    requirements:
+      - REQ-005-001
+      - REQ-005-002
+      - REQ-005-003
+      - REQ-005-004
+    
+    traceability_note: |
+      Implements user-facing interface for all feature acceptance criteria:
+      engine selection, dynamic controls, 3D viz, tooltips, target profiles
+
+# ====================================================================================
+# FEATURE REQUIREMENTS
+# ====================================================================================
+
+requirements:
+  - id: "FEAT-REQ-001"
+    title: "Engine Selection and Metadata Display"
+    description: |
+      User can select from available engines via dropdown. Upon selection,
+      engine metadata (name, description, version, domain) is displayed.
+    priority: "MUST HAVE"
+    status: "Active"
+    traces_to:
+      project_requirements: ["PROJECT-AC-001"]
+      system_requirements: ["SYS-AC-001"]
+      layer_requirements: ["REQ-001-001", "REQ-004-001", "REQ-005-001"]
+  
+  - id: "FEAT-REQ-002"
+    title: "Dynamic Control Panel Generation"
+    description: |
+      Control panel UI is dynamically generated based on selected engine's
+      input schema. Each parameter shows label, unit, slider/input, default value.
+    priority: "MUST HAVE"
+    status: "Active"
+    traces_to:
+      project_requirements: ["PROJECT-AC-002"]
+      system_requirements: ["SYS-AC-002"]
+      layer_requirements: ["REQ-001-002", "REQ-005-002"]
+  
+  - id: "FEAT-REQ-003"
+    title: "Real-time Calculation with Formula Tracking"
+    description: |
+      When user adjusts any parameter, calculation is triggered within 100ms.
+      Results include raw component values AND formulas + calculation steps.
+    priority: "MUST HAVE"
+    status: "Active"
+    traces_to:
+      project_requirements: ["PROJECT-AC-004"]
+      system_requirements: ["SYS-AC-004"]
+      layer_requirements: ["REQ-001-003", "REQ-004-002"]
+  
+  - id: "FEAT-REQ-004"
+    title: "3D Response Surface Visualization"
+    description: |
+      Results displayed as 3D scatter plot with normalized composite scores
+      on axes (Performance X, Economics Y, Durability Z). Renders at 60 FPS.
+    priority: "MUST HAVE"
+    status: "Active"
+    traces_to:
+      project_requirements: ["PROJECT-AC-003"]
+      system_requirements: ["SYS-AC-006"]
+      layer_requirements: ["REQ-003-001", "REQ-005-003"]
+  
+  - id: "FEAT-REQ-005"
+    title: "Comprehensive Calculation Tooltips"
+    description: |
+      Clicking any output metric shows tooltip with:
+      - Metric name and value with unit
+      - Formula in LaTeX notation
+      - Step-by-step calculation breakdown
+      - Normalized score (0-100)
+    priority: "MUST HAVE"
+    status: "Active"
+    traces_to:
+      project_requirements: ["PROJECT-AC-004"]
+      system_requirements: ["SYS-AC-004"]
+      layer_requirements: ["REQ-005-004"]
+  
+  - id: "FEAT-REQ-006"
+    title: "Overall Optimization Score"
+    description: |
+      Compute and display overall optimization score as weighted average
+      of Performance, Economics, and Durability composite scores.
+    priority: "MUST HAVE"
+    status: "Active"
+    traces_to:
+      project_requirements: ["PROJECT-AC-005"]
+      system_requirements: ["SYS-AC-006"]
+      layer_requirements: ["REQ-003-002"]
+  
+  - id: "FEAT-REQ-007"
+    title: "Target Profile Comparison"
+    description: |
+      User can select predefined target profiles (e.g., "Maximum Performance",
+      "Best ROI", "Balanced"). App shows comparison metrics.
+    priority: "SHOULD HAVE"
+    status: "Active"
+    traces_to:
+      project_requirements: ["PROJECT-AC-006"]
+      system_requirements: []
+      layer_requirements: ["REQ-001-002", "REQ-005-002"]
+
+# ====================================================================================
+# INTEGRATION POINTS
+# ====================================================================================
+
+integration:
+  upstream_features: []
+  
+  downstream_features: []
+  
+  shared_components:
+    - "app/schemas/response.py (FeatureResponse)"
+    - "app/core/config.py (application settings)"
+    - "app/db/database.py (database session)"
+
+# ====================================================================================
+# IMPLEMENTATION NOTES
+# ====================================================================================
+
+implementation:
+  week_1_deliverables:
+    - "LAYER-001: Engine framework with hose optimization engine"
+    - "LAYER-002: Material database schema and seed data"
+    - "LAYER-003: Normalization and composite score algorithms"
+    - "LAYER-004: FastAPI endpoints (list, schema, calculate)"
+    - "LAYER-005: React frontend with 3D visualization"
+  
+  dependencies:
+    - "numpy>=1.24.0 (numerical computations)"
+    - "scipy>=1.11.0 (optimization)"
+    - "pygmo>=2.19.0 (multi-objective optimization)"
+    - "fastapi>=0.104.0 (API framework)"
+    - "sqlalchemy>=2.0.0 (ORM)"
+    - "react@^18.2.0 (frontend)"
+    - "@react-three/fiber@^8.15.0 (3D rendering)"
+    - "three@^0.158.0 (WebGL 3D library)"
+  
+  testing_approach:
+    - "Unit tests: Each engine calculation tested against manual verification"
+    - "Unit tests: Normalization algorithms tested with edge cases"
+    - "Integration tests: API endpoints tested with real engine instances"
+    - "E2E tests: Full user workflow from engine selection to visualization"
+    - "Performance tests: Calculation latency, rendering FPS"
+
+# ====================================================================================
+# TESTING STRATEGY
+# ====================================================================================
+
+testing:
+  unit_tests:
+    location: "tests/unit/"
+    coverage_target: "85%"
+    critical_areas:
+      - "Engine calculate() methods"
+      - "Normalization functions"
+      - "Composite score calculation"
+      - "Input validation"
+  
+  integration_tests:
+    location: "tests/integration/"
+    scenarios:
+      - "Engine registry operations (register, list, get)"
+      - "API endpoint integration (with real database)"
+      - "Calculation pipeline (inputs → engine → normalization → results)"
+  
+  e2e_tests:
+    location: "tests/e2e/"
+    scenarios:
+      - "Complete user workflow: select engine → adjust params → view results"
+      - "Engine switching: change engine and verify UI updates"
+      - "Tooltip interaction: click data point and verify formula display"
+
+# ====================================================================================
+# TRACEABILITY
+# ====================================================================================
+
+traceability:
+  implements_project_requirements:
+    - PROJECT-AC-001
+    - PROJECT-AC-002
+    - PROJECT-AC-003
+    - PROJECT-AC-004
+    - PROJECT-AC-005
+    - PROJECT-AC-006
+    - PROJECT-AC-007
+  
+  implements_system_requirements:
+    - SYS-AC-001
+    - SYS-AC-002
+    - SYS-AC-003
+    - SYS-AC-004
+    - SYS-AC-006
+    - SYS-AC-007
+  
+  distills_to_layers:
+    - LAYER-001: REQ-001 (Engine Framework)
+    - LAYER-002: REQ-002 (Material Database)
+    - LAYER-003: REQ-003 (Optimization Engine)
+    - LAYER-004: REQ-004 (API Backend)
+    - LAYER-005: REQ-005 (3D Visualization Frontend)
+
+# ====================================================================================
+# DEPLOYMENT
+# ====================================================================================
+
+deployment:
+  dependencies:
+    - package: "fastapi"
+      version: ">=0.104.0"
+      purpose: "API framework"
+    
+    - package: "sqlalchemy"
+      version: ">=2.0.0"
+      purpose: "ORM for database operations"
+    
+    - package: "numpy"
+      version: ">=1.24.0"
+      purpose: "Numerical computations"
+    
+    - package: "scipy"
+      version: ">=1.11.0"
+      purpose: "Scientific computing and optimization"
+    
+    - package: "pygmo"
+      version: ">=2.19.0"
+      purpose: "Multi-objective optimization algorithms"
+    
+    - package: "react"
+      version: "^18.2.0"
+      purpose: "Frontend UI framework"
+    
+    - package: "@react-three/fiber"
+      version: "^8.15.0"
+      purpose: "React renderer for Three.js"
+    
+    - package: "three"
+      version: "^0.158.0"
+      purpose: "WebGL 3D library"
+  
+  configuration_required:
+    - setting: "DATABASE_URL"
+      value: "postgresql://user:pass@localhost/feasibility_db"
+      location: ".env"
+    
+    - setting: "API_BASE_URL"
+      value: "http://localhost:8000"
+      location: "frontend/.env"
+  
+  deployment_steps:
+    - "Install backend dependencies: pip install -r requirements.txt"
+    - "Run database migrations: alembic upgrade head"
+    - "Seed material database: python scripts/seed_materials.py"
+    - "Start backend: uvicorn app.main:app --reload"
+    - "Install frontend dependencies: cd frontend && npm install"
+    - "Start frontend: npm run dev"
+    - "Verify E2E tests: pytest tests/e2e/"
+
+# ====================================================================================
+# FEATURE-LEVEL VERIFICATION
+# ====================================================================================
+
+feature_level_verification:
+  required: true
+  description: |
+    After all layers complete, generate feature-level test pyramid and 
+    requirements verification artifacts that validate the integrated feature.
+  
+  artifacts:
+    location: "Requirements Verification/"
+    required_files:
+      - name: "feature_requirements_verification_{timestamp}.yaml"
+        description: "Validates all feature requirements are satisfied"
+      
+      - name: "feature_test_pyramid_{timestamp}.yaml"
+        description: "Feature-level test pyramid report"
+      
+      - name: "feature_traceability_matrix_{timestamp}.yaml"
+        description: "Complete feature traceability"
+      
+      - name: "feature_quality_gates_{timestamp}.yaml"
+        description: "Feature-level quality gate results"
+  
+  test_execution:
+    integration_tests:
+      description: "Run feature-level integration tests across all layers"
+      test_directory: "tests/integration/"
+      required: true
+    
+    e2e_tests:
+      description: "Run feature-level end-to-end tests"
+      test_directory: "tests/e2e/"
+      required: true
+  
+  quality_gates:
+    - gate: "All layers passed individual quality gates"
+      required: true
+    
+    - gate: "Feature integration tests pass"
+      required: true
+    
+    - gate: "Feature E2E tests pass"
+      required: true
+    
+    - gate: "Feature test coverage >= 85%"
+      required: true
+    
+    - gate: "Calculation latency < 100ms"
+      required: true
+    
+    - gate: "3D rendering at 60 FPS"
+      required: true
+
+# ====================================================================================
+# FEATURE INTEGRATION CODE CONSTRAINTS
+# ====================================================================================
+
+feature_integration_constraints:
+  output_format:
+    - "Return ONLY raw Python code for feature_integration.py"
+    - "NO markdown code fences"
+    - "File must start with import statements"
+  
+  layer_api_usage:
+    - "ONLY call methods that exist in actual layer implementations"
+    - "Use EXACT method names from layer code"
+    - "DO NOT invent method names"
+  
+  config_field_usage:
+    - "ONLY use field names from FeatureConfig dataclass"
+    - "DO NOT invent new config fields"
+  
+  naming_conventions:
+    - "Main orchestrator class: FeatureOrchestrator"
+    - "Config class: FeatureConfig (using @dataclass)"
+    - "Response class: FeatureResponse"
+  
+  quality_requirements:
+    - "Complete implementation - NO stub methods"
+    - "Proper error handling with try/except"
+    - "Return FeatureResponse with proper status and data"
+    - "NO placeholder TODOs or FIXME comments"
+
+# ====================================================================================
+# END OF FEATURE REQUIREMENTS INDEX
+# ====================================================================================

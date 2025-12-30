@@ -1,0 +1,95 @@
+matrix_metadata:
+  timestamp: '20251230_120603'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-001
+  requirement: 13×3 grid of cubes renders correctly
+  description: 13×3 grid of cubes renders correctly
+  test_files: &id001
+  - LAYER_001_002_007_Correlation_Matrix_Component/tests/test_generated_20251230_120522.py
+  test_methods:
+  - test_ac_001
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-002
+  requirement: Pearson correlation computed accurately from history
+  description: Pearson correlation computed accurately from history
+  test_files: *id001
+  test_methods:
+  - test_ac_002
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-003
+  requirement: Requires minimum 30 data points
+  description: Requires minimum 30 data points
+  test_files: *id001
+  test_methods:
+  - test_ac_003
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-004
+  requirement: Hover displays exact correlation value
+  description: Hover displays exact correlation value
+  test_files: *id001
+  test_methods:
+  - test_ac_004
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-005
+  requirement: Performance maintains 60 FPS
+  description: Performance maintains 60 FPS
+  test_files: *id001
+  test_methods:
+  - test_ac_005
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: LAYER_001_002_007_Correlation_Matrix_Component/src/implementation.tsx
+  lines: 258
+  methods: []
+  classes: []
+  implements_requirements:
+  - AC-001
+  - AC-002
+  - AC-003
+  - AC-004
+  - AC-005
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: LAYER_001_002_007_Correlation_Matrix_Component/tests/test_generated_20251230_120522.py
+  test_count: 0
+  implementation_files:
+  - LAYER_001_002_007_Correlation_Matrix_Component/src/implementation.tsx
+  methods_tested: []
+  classes_tested: []
+  coverage: 0.0%
+line_level_traceability: []
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 5
+  requirements_traced: 5
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

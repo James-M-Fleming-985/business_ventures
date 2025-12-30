@@ -1,0 +1,334 @@
+# ====================================================================================
+# LAYER REQUIREMENT: API Backend
+# ====================================================================================
+# LAYER-004: FastAPI REST API for Engine Operations
+# ====================================================================================
+
+metadata:
+  requirement_id: "REQ-004"
+  requirement_title: "API Backend"
+  layer_id: "LAYER-004"
+  layer_name: "API Backend"
+  layer_folder: "LAYER-004 API Backend"
+  
+  parent_feature: "FEATURE-001"
+  parent_feature_file: "../FEATURE-001_interactive_feasibility_tool.yaml"
+  
+  version: "1.0.0"
+  status: "Active"
+  priority: "MUST HAVE"
+  created_date: "2025-12-29"
+  updated_date: "2025-12-29"
+  owner: "AI Code Generator"
+  target_date: "2026-01-04"
+
+# ====================================================================================
+# TRACEABILITY
+# ====================================================================================
+
+traceability:
+  parent_feature_requirements:
+    - "FEAT-REQ-001: Engine selection and metadata display"
+    - "FEAT-REQ-002: Dynamic control panel generation"
+    - "FEAT-REQ-003: Real-time calculation with formula tracking"
+  
+  parent_system_requirements:
+    - "SYS-AC-001: Engine registry can list all engines"
+    - "SYS-AC-002: API returns input schema"
+    - "SYS-AC-003: API returns output schema"
+    - "SYS-AC-004: Calculate endpoint returns results with formulas"
+    - "SYS-AC-005: Calculations complete in <100ms"
+  
+  parent_project_requirements:
+    - "PROJECT-AC-001: Select from multiple engines"
+    - "PROJECT-AC-002: Dynamic control panel"
+    - "PROJECT-AC-004: Comprehensive tooltips"
+  
+  derivation_rationale: |
+    Frontend needs REST API to:
+    - List available engines
+    - Get input/output schemas for dynamic UI generation
+    - Trigger calculations and receive results with formulas
+    
+    This layer exposes engine functionality via HTTP endpoints with
+    proper validation, error handling, and response formatting.
+
+# ====================================================================================
+# REQUIREMENT DEFINITION
+# ====================================================================================
+
+requirement:
+  title: "API Backend"
+  
+  description: |
+    FastAPI application with endpoints:
+    - GET /api/engines - List all engines with metadata
+    - GET /api/engines/{engine_id}/input-schema - Get input parameter schema
+    - GET /api/engines/{engine_id}/output-schema - Get output metric schema
+    - POST /api/engines/{engine_id}/calculate - Perform calculation
+    - GET /api/engines/{engine_id}/target-profiles - Get predefined profiles
+    - GET /health - Health check endpoint
+    
+    All endpoints return FeatureResponse structure matching parent system.
+  
+  rationale: |
+    Separating backend API from frontend enables:
+    - Independent scaling (can run multiple backend instances)
+    - Technology flexibility (frontend can be React, Vue, or mobile)
+    - API-first development (can build CLI or other clients)
+
+# ====================================================================================
+# SPECIFICATION
+# ====================================================================================
+
+specification:
+  structure:
+    entry_point: "app/main.py"
+    modules:
+      - "app/main.py - FastAPI app initialization"
+      - "app/routers/engines.py - Engine endpoints"
+      - "app/schemas/request.py - Request models"
+      - "app/schemas/response.py - FeatureResponse model"
+      - "app/core/config.py - Configuration"
+  
+  classes:
+    - name: "FastAPI app"
+      purpose: "Main application instance"
+      endpoints:
+        - "GET /api/engines"
+        - "GET /api/engines/{engine_id}/input-schema"
+        - "GET /api/engines/{engine_id}/output-schema"
+        - "POST /api/engines/{engine_id}/calculate"
+        - "GET /api/engines/{engine_id}/target-profiles"
+        - "GET /health"
+    
+    - name: "FeatureResponse"
+      purpose: "Standard response structure (from parent system)"
+      fields:
+        - "success: bool"
+        - "data: Optional[Any]"
+        - "error: Optional[str]"
+        - "metadata: Optional[Dict[str, Any]]"
+  
+  implementation_details:
+    libraries:
+      - "fastapi>=0.104.0"
+      - "pydantic>=2.0.0"
+      - "uvicorn>=0.24.0"
+    
+    patterns:
+      - "Router pattern for endpoint organization"
+      - "Dependency injection for database/engine registry"
+    
+    error_handling:
+      - error_type: "EngineNotFoundError"
+        handling: "Return 404 with FeatureResponse(success=false, error=message)"
+      - error_type: "ValidationError"
+        handling: "Return 400 with FeatureResponse(success=false, error=message)"
+      - error_type: "CalculationError"
+        handling: "Return 500 with FeatureResponse(success=false, error=message)"
+  
+  inputs:
+    - name: "engine_id"
+      type: "str (path parameter)"
+      description: "Engine identifier"
+      example: "hose_optimization"
+    
+    - name: "calculation inputs"
+      type: "Dict[str, Any] (request body)"
+      description: "Parameter values for calculation"
+      example: "{'Di': 0.015, 'Do': 0.021, 'L': 25, ...}"
+  
+  outputs:
+    - name: "FeatureResponse"
+      type: "JSON"
+      description: "Standard response with data or error"
+      example: |
+        {
+          "success": true,
+          "data": {
+            "components": {...},
+            "composites": {...},
+            "visualization_point": {...}
+          },
+          "error": null,
+          "metadata": {"calculation_time_ms": 45}
+        }
+
+# ====================================================================================
+# ACCEPTANCE CRITERIA
+# ====================================================================================
+
+acceptance_criteria:
+  - criterion: "GET /api/engines returns list of engines"
+    test: "pytest tests/integration/test_api.py::test_list_engines -v"
+  
+  - criterion: "GET /api/engines/{id}/input-schema returns valid schema"
+    test: "pytest tests/integration/test_api.py::test_get_input_schema -v"
+  
+  - criterion: "POST /api/engines/{id}/calculate returns results with formulas"
+    test: "pytest tests/integration/test_api.py::test_calculate -v"
+  
+  - criterion: "Invalid inputs return 400 with error message"
+    test: "pytest tests/integration/test_api.py::test_invalid_inputs -v"
+  
+  - criterion: "Non-existent engine returns 404"
+    test: "pytest tests/integration/test_api.py::test_engine_not_found -v"
+  
+  - criterion: "API response time < 200ms (p95)"
+    test: "pytest tests/performance/test_api_latency.py -v"
+
+# ====================================================================================
+# TDD IMPLEMENTATION PLAN
+# ====================================================================================
+
+week_1_task:
+  title: "Build API Backend (TDD)"
+  
+  steps:
+    - step: 1
+      action: "Write failing integration tests for endpoints (RED)"
+      file: "tests/integration/test_api.py"
+      tests:
+        - "test_list_engines"
+        - "test_get_input_schema"
+        - "test_get_output_schema"
+        - "test_calculate_success"
+        - "test_calculate_invalid_inputs"
+        - "test_engine_not_found"
+      duration: "2 hours"
+    
+    - step: 2
+      action: "Run pytest (RED phase)"
+      command: "pytest tests/integration/ -v"
+      expected: "All tests FAIL"
+      duration: "2 min"
+    
+    - step: 3
+      action: "Implement FastAPI app and routers (GREEN)"
+      file: "app/main.py, app/routers/engines.py"
+      duration: "3 hours"
+    
+    - step: 4
+      action: "Implement FeatureResponse schema (GREEN)"
+      file: "app/schemas/response.py"
+      duration: "30 min"
+    
+    - step: 5
+      action: "Run pytest (GREEN phase)"
+      command: "pytest tests/integration/ -v --cov=app"
+      expected: "All tests PASS, coverage >75%"
+      duration: "5 min"
+    
+    - step: 6
+      action: "Performance test API latency"
+      file: "tests/performance/test_api_latency.py"
+      duration: "1 hour"
+  
+  total_time: "7 hours"
+  
+  deliverable: "Functional FastAPI backend with 75%+ coverage"
+
+# ====================================================================================
+# INTEGRATION POINTS
+# ====================================================================================
+
+integration:
+  input_from:
+    - layer: "LAYER-001 Engine Framework"
+      data_type: "Engine instances, calculation results"
+      interface: "EngineRegistry, Engine.calculate()"
+    
+    - layer: "LAYER-003 Optimization Engine"
+      data_type: "Normalized scores"
+      interface: "Normalizer, CompositeScorer"
+  
+  output_to:
+    - layer: "LAYER-005 3D Visualization Frontend"
+      data_type: "JSON responses via HTTP"
+      interface: "REST API endpoints"
+
+# ====================================================================================
+# TESTING STRATEGY
+# ====================================================================================
+
+testing_strategy:
+  unit_tests:
+    location: "tests/unit/test_routers.py"
+    coverage_target: "85%"
+    key_scenarios:
+      - "Request validation"
+      - "Response formatting"
+      - "Error handling"
+  
+  integration_tests:
+    location: "tests/integration/test_api.py"
+    scenarios:
+      - "Full request-response cycle with real engine"
+      - "Error scenarios (404, 400, 500)"
+  
+  performance_tests:
+    location: "tests/performance/test_api_latency.py"
+    scenarios:
+      - "API latency under load"
+      - "Concurrent request handling"
+
+# ====================================================================================
+# DEPLOYMENT
+# ====================================================================================
+
+deployment:
+  dependencies:
+    - package: "fastapi"
+      version: ">=0.104.0"
+      purpose: "API framework"
+    
+    - package: "uvicorn"
+      version: ">=0.24.0"
+      purpose: "ASGI server"
+    
+    - package: "pydantic"
+      version: ">=2.0.0"
+      purpose: "Request/response validation"
+  
+  configuration:
+    - setting: "API_HOST"
+      value: "0.0.0.0"
+      location: ".env"
+    
+    - setting: "API_PORT"
+      value: "8000"
+      location: ".env"
+  
+  usage_example: |
+    # Start server
+    uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    
+    # Test endpoint
+    curl http://localhost:8000/api/engines
+    
+    # Calculate
+    curl -X POST http://localhost:8000/api/engines/hose_optimization/calculate \\
+      -H "Content-Type: application/json" \\
+      -d '{"Di": 0.015, "Do": 0.021, "L": 25, "flow_rate": 2.0}'
+
+# ====================================================================================
+# CODE GENERATION CONSTRAINTS
+# ====================================================================================
+
+code_generation_constraints:
+  output_format:
+    - "Return ONLY raw Python code"
+  
+  api_usage:
+    - "Use FastAPI dependency injection for engine registry"
+    - "Use Pydantic BaseModel for request/response validation"
+  
+  quality_requirements:
+    - "ALL endpoints must return FeatureResponse"
+    - "HTTP status codes must match system specification"
+    - "Include calculation_time_ms in metadata"
+
+# ====================================================================================
+# END OF LAYER REQUIREMENT
+# ====================================================================================

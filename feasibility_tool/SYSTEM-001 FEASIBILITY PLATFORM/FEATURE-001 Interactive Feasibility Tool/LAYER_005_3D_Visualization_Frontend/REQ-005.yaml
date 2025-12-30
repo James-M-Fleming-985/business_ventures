@@ -1,0 +1,471 @@
+# ====================================================================================
+# LAYER REQUIREMENT: 3D Visualization Frontend
+# ====================================================================================
+# LAYER-005: React Frontend with Three.js 3D Response Surface Visualization
+# ====================================================================================
+
+metadata:
+  requirement_id: "REQ-005"
+  requirement_title: "3D Visualization Frontend"
+  layer_id: "LAYER-005"
+  layer_name: "3D Visualization Frontend"
+  layer_folder: "LAYER-005 3D Visualization Frontend"
+  
+  parent_feature: "FEATURE-001"
+  parent_feature_file: "../FEATURE-001_interactive_feasibility_tool.yaml"
+  
+  version: "1.0.0"
+  status: "Active"
+  priority: "MUST HAVE"
+  created_date: "2025-12-29"
+  updated_date: "2025-12-29"
+  owner: "AI Code Generator"
+  target_date: "2026-01-05"
+
+# ====================================================================================
+# TRACEABILITY
+# ====================================================================================
+
+traceability:
+  parent_feature_requirements:
+    - "FEAT-REQ-001: Engine selection and metadata display"
+    - "FEAT-REQ-002: Dynamic control panel generation"
+    - "FEAT-REQ-003: Real-time calculation (<100ms)"
+    - "FEAT-REQ-004: 3D response surface visualization at 60 FPS"
+    - "FEAT-REQ-005: Comprehensive calculation tooltips"
+    - "FEAT-REQ-006: Overall optimization score display"
+    - "FEAT-REQ-007: Target profile comparison"
+  
+  parent_system_requirements:
+    - "SYS-AC-001: List engines"
+    - "SYS-AC-002: Get input schema"
+    - "SYS-AC-004: Calculate with formulas"
+    - "SYS-AC-006: Normalized scores"
+  
+  parent_project_requirements:
+    - "PROJECT-AC-001: Select from multiple engines"
+    - "PROJECT-AC-002: Dynamic control panel"
+    - "PROJECT-AC-003: 3D normalized composite scores"
+    - "PROJECT-AC-004: Comprehensive tooltips"
+    - "PROJECT-AC-005: Overall optimization score"
+    - "PROJECT-AC-006: Target profile comparison"
+  
+  derivation_rationale: |
+    This is the user-facing layer that brings all backend capabilities together
+    into an interactive web application. It consumes API endpoints and renders
+    the 3D visualization that makes multi-objective trade-offs visible.
+
+# ====================================================================================
+# REQUIREMENT DEFINITION
+# ====================================================================================
+
+requirement:
+  title: "3D Visualization Frontend"
+  
+  description: |
+    React 18 + TypeScript web application with:
+    
+    Components:
+    - EngineSelector: Dropdown for choosing engine, displays metadata
+    - DynamicControlPanel: Renders sliders/inputs from engine input schema
+    - ResponseSurface3D: Three.js 3D scatter plot (Performance X, Economics Y, Durability Z)
+    - TooltipPanel: Expandable panel showing value, unit, formula (LaTeX), calculation steps
+    - ScoreDisplay: Overall optimization score with breakdown
+    - TargetProfileSelector: Dropdown for predefined configurations
+    
+    State Management:
+    - React Query for API calls and caching
+    - Zustand for local UI state (selected engine, input values, calculation results)
+    
+    Performance:
+    - 60 FPS rendering with 1000+ data points
+    - Debounced input for <100ms calculation trigger
+    - Progressive loading for large datasets
+  
+  rationale: |
+    3D visualization reveals non-obvious trade-offs that tables or 2D charts miss.
+    Formula tooltips build trust through calculation transparency.
+    Dynamic UI generation from schemas enables pluggable engines without code changes.
+
+# ====================================================================================
+# SPECIFICATION
+# ====================================================================================
+
+specification:
+  structure:
+    entry_point: "src/App.tsx"
+    modules:
+      - "src/App.tsx - Main application component"
+      - "src/components/EngineSelector.tsx"
+      - "src/components/DynamicControlPanel.tsx"
+      - "src/components/ResponseSurface3D.tsx"
+      - "src/components/TooltipPanel.tsx"
+      - "src/components/ScoreDisplay.tsx"
+      - "src/hooks/useEngines.ts - React Query hook for engines API"
+      - "src/hooks/useCalculate.ts - React Query hook for calculate API"
+      - "src/store/appStore.ts - Zustand state management"
+      - "src/utils/formulaRenderer.ts - LaTeX to HTML using KaTeX"
+  
+  classes:
+    - name: "EngineSelector"
+      purpose: "Dropdown to select engine, shows metadata"
+      props:
+        - "engines: EngineMetadata[]"
+        - "selectedEngineId: string"
+        - "onEngineChange: (engineId: string) => void"
+      state:
+        - "None (controlled component)"
+      example: |
+        <EngineSelector
+          engines={engines}
+          selectedEngineId="hose_optimization"
+          onEngineChange={setSelectedEngine}
+        />
+    
+    - name: "DynamicControlPanel"
+      purpose: "Renders sliders/inputs from engine input schema"
+      props:
+        - "schema: Dict[str, ParameterSchema]"
+        - "values: Dict[str, any]"
+        - "onChange: (name: string, value: any) => void"
+      state:
+        - "None (controlled component)"
+      example: |
+        <DynamicControlPanel
+          schema={inputSchema}
+          values={inputValues}
+          onChange={handleInputChange}
+        />
+    
+    - name: "ResponseSurface3D"
+      purpose: "Three.js 3D scatter plot with axes: Performance/Economics/Durability"
+      props:
+        - "dataPoints: Array<{x: number, y: number, z: number, metadata: any}>"
+        - "currentPoint: {x: number, y: number, z: number}"
+        - "onPointClick: (point: any) => void"
+      state:
+        - "camera: THREE.Camera"
+        - "controls: OrbitControls"
+      rendering:
+        - "Use React-Three-Fiber for declarative Three.js"
+        - "Instanced rendering for 1000+ points"
+        - "LOD (Level of Detail) for performance"
+      example: |
+        <Canvas camera={{position: [5, 5, 5]}}>
+          <ResponseSurface3D
+            dataPoints={calculationHistory}
+            currentPoint={currentResult.visualization_point}
+            onPointClick={handlePointClick}
+          />
+        </Canvas>
+    
+    - name: "TooltipPanel"
+      purpose: "Shows detailed calculation breakdown"
+      props:
+        - "component: ComponentResult"
+        - "isOpen: boolean"
+        - "onClose: () => void"
+      rendering:
+        - "Value and unit in large font"
+        - "Formula rendered with KaTeX"
+        - "Calculation steps as expandable list"
+        - "Normalized score progress bar"
+      example: |
+        <TooltipPanel
+          component={{
+            value: 0.7,
+            unit: "bar",
+            formula: "ΔP = f × (L/Di) × (ρv²/2)",
+            calculation_steps: ["f = 0.024", "..."],
+            normalized: 70
+          }}
+          isOpen={true}
+          onClose={() => setTooltipOpen(false)}
+        />
+  
+  implementation_details:
+    libraries:
+      - "react@^18.2.0"
+      - "typescript@^5.0.0"
+      - "@react-three/fiber@^8.15.0 (React renderer for Three.js)"
+      - "@react-three/drei@^9.88.0 (Three.js helpers)"
+      - "three@^0.158.0 (3D library)"
+      - "@mui/material@^5.14.0 (UI components)"
+      - "@tanstack/react-query@^5.0.0 (API caching)"
+      - "zustand@^4.4.0 (state management)"
+      - "katex@^0.16.0 (LaTeX formula rendering)"
+      - "axios@^1.6.0 (HTTP client)"
+    
+    patterns:
+      - "Controlled components for all inputs"
+      - "Custom hooks for API calls"
+      - "Compound component pattern for complex UI"
+    
+    error_handling:
+      - error_type: "API error"
+        handling: "Show error toast, fallback to last valid state"
+      - error_type: "Render error"
+        handling: "Error boundary with fallback UI"
+  
+  inputs:
+    - name: "User interactions"
+      type: "Mouse clicks, slider changes"
+      description: "User adjusts parameters or selects engine"
+      example: "User drags diameter slider to 15mm"
+  
+  outputs:
+    - name: "3D visualization"
+      type: "WebGL canvas"
+      description: "Interactive 3D scatter plot showing configuration space"
+      example: "Current configuration highlighted in red, history in blue"
+
+# ====================================================================================
+# ACCEPTANCE CRITERIA
+# ====================================================================================
+
+acceptance_criteria:
+  - criterion: "Engine selector dropdown populated from API"
+    test: "Cypress e2e test: cy.get('[data-testid=engine-selector]').should('have.length.gt', 0)"
+  
+  - criterion: "Control panel renders sliders from schema"
+    test: "Cypress: cy.get('[data-testid=control-slider]').should('have.length', 10)"
+  
+  - criterion: "3D visualization renders at 60 FPS"
+    test: "Performance test: measure FPS with Chrome DevTools"
+  
+  - criterion: "Adjusting slider triggers calculation within 100ms"
+    test: "Performance test: measure time from slider change to API response"
+  
+  - criterion: "Tooltip shows formula in LaTeX"
+    test: "Cypress: cy.get('[data-testid=formula]').should('contain', 'ΔP')"
+  
+  - criterion: "Overall score displayed and updates"
+    test: "Cypress: cy.get('[data-testid=overall-score]').should('have.text', /\\d+\\.\\d+/)"
+
+# ====================================================================================
+# TDD IMPLEMENTATION PLAN
+# ====================================================================================
+
+week_1_task:
+  title: "Build 3D Visualization Frontend (TDD)"
+  
+  steps:
+    - step: 1
+      action: "Write failing unit tests for components (RED)"
+      file: "src/components/__tests__/EngineSelector.test.tsx"
+      tests:
+        - "test_renders_engine_list"
+        - "test_calls_onChange_when_selected"
+        - "test_displays_engine_metadata"
+      duration: "2 hours"
+    
+    - step: 2
+      action: "Write failing tests for API hooks (RED)"
+      file: "src/hooks/__tests__/useEngines.test.ts"
+      tests:
+        - "test_fetches_engines_on_mount"
+        - "test_caches_engines"
+        - "test_handles_api_error"
+      duration: "1 hour"
+    
+    - step: 3
+      action: "Write failing E2E tests (RED)"
+      file: "cypress/e2e/feasibility_workflow.cy.ts"
+      tests:
+        - "test_complete_workflow: select engine → adjust params → see results"
+      duration: "1 hour"
+    
+    - step: 4
+      action: "Run tests (RED phase)"
+      command: "npm test && npm run cypress:run"
+      expected: "All tests FAIL"
+      duration: "5 min"
+    
+    - step: 5
+      action: "Implement EngineSelector component (GREEN)"
+      file: "src/components/EngineSelector.tsx"
+      duration: "1 hour"
+    
+    - step: 6
+      action: "Implement DynamicControlPanel component (GREEN)"
+      file: "src/components/DynamicControlPanel.tsx"
+      duration: "2 hours"
+    
+    - step: 7
+      action: "Implement ResponseSurface3D component (GREEN)"
+      file: "src/components/ResponseSurface3D.tsx"
+      duration: "4 hours"
+    
+    - step: 8
+      action: "Implement TooltipPanel component (GREEN)"
+      file: "src/components/TooltipPanel.tsx"
+      duration: "2 hours"
+    
+    - step: 9
+      action: "Implement API hooks with React Query (GREEN)"
+      file: "src/hooks/useEngines.ts, useCalculate.ts"
+      duration: "2 hours"
+    
+    - step: 10
+      action: "Implement Zustand store (GREEN)"
+      file: "src/store/appStore.ts"
+      duration: "1 hour"
+    
+    - step: 11
+      action: "Run tests (GREEN phase)"
+      command: "npm test -- --coverage && npm run cypress:run"
+      expected: "All tests PASS, coverage >70%"
+      duration: "10 min"
+    
+    - step: 12
+      action: "Performance optimization (REFACTOR)"
+      improvements:
+        - "Add memoization to expensive computations"
+        - "Implement virtual scrolling for control panel if many params"
+        - "Use React.lazy for code splitting"
+      duration: "2 hours"
+  
+  total_time: "20 hours"
+  
+  deliverable: "Fully functional React frontend with 3D visualization, 70%+ coverage"
+
+# ====================================================================================
+# INTEGRATION POINTS
+# ====================================================================================
+
+integration:
+  input_from:
+    - layer: "LAYER-004 API Backend"
+      data_type: "JSON via HTTP"
+      interface: "REST API endpoints"
+  
+  output_to:
+    - layer: "None (user-facing UI)"
+
+# ====================================================================================
+# TESTING STRATEGY
+# ====================================================================================
+
+testing_strategy:
+  unit_tests:
+    location: "src/components/__tests__/, src/hooks/__tests__/"
+    coverage_target: "75%"
+    key_scenarios:
+      - "Component rendering"
+      - "Event handlers"
+      - "API hooks"
+  
+  integration_tests:
+    location: "src/__tests__/integration/"
+    scenarios:
+      - "API hooks with mock server"
+  
+  e2e_tests:
+    location: "cypress/e2e/"
+    scenarios:
+      - "Complete workflow: select → adjust → visualize"
+      - "Engine switching"
+      - "Tooltip interaction"
+  
+  performance_tests:
+    location: "cypress/e2e/performance/"
+    scenarios:
+      - "3D rendering FPS"
+      - "Calculation latency"
+
+# ====================================================================================
+# DEPLOYMENT
+# ====================================================================================
+
+deployment:
+  dependencies:
+    - package: "react"
+      version: "^18.2.0"
+      purpose: "UI framework"
+    
+    - package: "@react-three/fiber"
+      version: "^8.15.0"
+      purpose: "React renderer for Three.js"
+    
+    - package: "three"
+      version: "^0.158.0"
+      purpose: "3D graphics library"
+    
+    - package: "@mui/material"
+      version: "^5.14.0"
+      purpose: "UI components"
+    
+    - package: "@tanstack/react-query"
+      version: "^5.0.0"
+      purpose: "API state management"
+  
+  configuration:
+    - setting: "VITE_API_BASE_URL"
+      value: "http://localhost:8000"
+      location: ".env"
+  
+  build_commands:
+    - "npm install"
+    - "npm run build"
+    - "npm run preview"
+  
+  usage_example: |
+    # Development
+    npm run dev
+    
+    # Production build
+    npm run build
+    npm run preview
+
+# ====================================================================================
+# CODE GENERATION CONSTRAINTS
+# ====================================================================================
+
+code_generation_constraints:
+  output_format:
+    - "Return ONLY raw TypeScript/TSX code"
+    - "NO markdown fences"
+  
+  api_usage:
+    - "Use React Query for all API calls"
+    - "Use Zustand for global state"
+    - "Use Material-UI components for UI"
+  
+  import_completeness:
+    - "Import React, useState, useEffect from 'react'"
+    - "Import useQuery from '@tanstack/react-query'"
+    - "Import Canvas from '@react-three/fiber'"
+  
+  quality_requirements:
+    - "All components must be typed with TypeScript"
+    - "Use functional components with hooks (no class components)"
+    - "Implement proper loading and error states"
+    - "Add data-testid attributes for E2E tests"
+
+# ====================================================================================
+# NOTES
+# ====================================================================================
+
+notes: |
+  IMPORTANT CONSIDERATIONS:
+  - Three.js can be performance-intensive; use instanced rendering for many points
+  - KaTeX requires specific CSS import for proper formula rendering
+  - Debounce slider inputs to avoid overwhelming API with requests
+  - Use React.memo for expensive components (ResponseSurface3D)
+  
+  DESIGN DECISIONS:
+  - React-Three-Fiber chosen over raw Three.js for better React integration
+  - Material-UI chosen for consistent, accessible UI components
+  - React Query chosen for automatic caching and request deduplication
+  - Zustand chosen over Redux for simpler API and less boilerplate
+  
+  FUTURE ENHANCEMENTS:
+  - Add VR/AR support with WebXR
+  - Export visualization as image/video
+  - Collaborative features (shared sessions)
+  - Advanced camera controls (predefined viewpoints)
+  - Animation of parameter sweeps
+
+# ====================================================================================
+# END OF LAYER REQUIREMENT
+# ====================================================================================

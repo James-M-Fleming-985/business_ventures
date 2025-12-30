@@ -1,0 +1,333 @@
+# ====================================================================================
+# LAYER REQUIREMENT: Material Database
+# ====================================================================================
+# LAYER-002: Material Properties and Reference Data Storage
+# ====================================================================================
+
+metadata:
+  requirement_id: "REQ-002"
+  requirement_title: "Material Database"
+  layer_id: "LAYER-002"
+  layer_name: "Material Database"
+  layer_folder: "LAYER-002 Material Database"
+  
+  parent_feature: "FEATURE-001"
+  parent_feature_file: "../FEATURE-001_interactive_feasibility_tool.yaml"
+  
+  version: "1.0.0"
+  status: "Active"
+  priority: "MUST HAVE"
+  created_date: "2025-12-29"
+  updated_date: "2025-12-29"
+  owner: "AI Code Generator"
+  target_date: "2026-01-03"
+  
+  change_log:
+    - version: "1.0.0"
+      date: "2025-12-29"
+      changes: "Initial version with material properties, climate zones, cost data"
+      author: "AI-derived"
+
+# ====================================================================================
+# TRACEABILITY
+# ====================================================================================
+
+traceability:
+  parent_feature_requirements:
+    - "FEAT-REQ-003: Real-time calculation (requires material property lookups)"
+  
+  parent_system_requirements:
+    - "SYS-AC-004: Calculate endpoint returns accurate results"
+  
+  parent_project_requirements:
+    - "PROJECT-AC-004: Comprehensive tooltips (material properties contribute to calculations)"
+  
+  derivation_rationale: |
+    Engine calculations depend on accurate material properties:
+    - Hose material (EPDM, PVC, Silicone) affects roughness, lifespan, cost
+    - Fluid properties (water, oil, chemicals) affect density, viscosity
+    - Climate zones affect temperature, degradation rates
+    - Regional electricity costs affect ROI calculations
+    
+    This layer provides centralized reference data storage to avoid hardcoding
+    properties in engine code.
+
+# ====================================================================================
+# REQUIREMENT DEFINITION
+# ====================================================================================
+
+requirement:
+  title: "Material Database"
+  
+  description: |
+    PostgreSQL database with tables for:
+    - Material properties (name, density, roughness, Young's modulus, cost_per_meter, lifespan_years)
+    - Fluid properties (name, density_kg_m3, dynamic_viscosity_pa_s, temperature_C)
+    - Climate zones (name, avg_temp_C, humidity_pct, uv_exposure_index)
+    - Regional electricity costs (region, cost_per_kwh, currency)
+    
+    Provides SQLAlchemy ORM models and repository classes for data access.
+  
+  rationale: |
+    Separating reference data from calculation logic enables:
+    - Easy updates to material properties without code changes
+    - Sharing data across multiple engines
+    - Historical tracking of property changes
+    - User-customizable materials (future feature)
+
+# ====================================================================================
+# SPECIFICATION
+# ====================================================================================
+
+specification:
+  structure:
+    entry_point: "src/database/models.py"
+    modules:
+      - "models.py - SQLAlchemy ORM models"
+      - "repository.py - Data access layer"
+      - "seed_data.py - Initial data population script"
+  
+  classes:
+    - name: "Material (SQLAlchemy model)"
+      purpose: "Represent hose material with properties"
+      fields:
+        - "id: int (primary key)"
+        - "name: str (unique)"
+        - "density: float (kg/m³)"
+        - "roughness: float (μm)"
+        - "youngs_modulus: float (GPa)"
+        - "cost_per_meter: float ($/m)"
+        - "lifespan_years: float"
+      example: |
+        material = Material(name="EPDM", density=1150, roughness=0.05, ...)
+    
+    - name: "Fluid (SQLAlchemy model)"
+      purpose: "Represent fluid with temperature-dependent properties"
+      fields:
+        - "id: int"
+        - "name: str"
+        - "density_kg_m3: float"
+        - "dynamic_viscosity_pa_s: float"
+        - "temperature_C: float"
+    
+    - name: "ClimateZone (SQLAlchemy model)"
+      purpose: "Represent climate zone affecting material degradation"
+      fields:
+        - "id: int"
+        - "name: str (e.g., 'Hot-Arid', 'Temperate')"
+        - "avg_temp_C: float"
+        - "humidity_pct: float"
+        - "uv_exposure_index: float (0-1 scale)"
+    
+    - name: "MaterialRepository"
+      purpose: "Data access layer for materials"
+      methods:
+        - name: "get_by_name"
+          signature: "get_by_name(name: str) -> Optional[Material]"
+          purpose: "Retrieve material by name"
+        
+        - name: "list_all"
+          signature: "list_all() -> List[Material]"
+          purpose: "Get all materials"
+  
+  implementation_details:
+    libraries:
+      - "sqlalchemy (ORM)"
+      - "psycopg2-binary (PostgreSQL driver)"
+      - "alembic (database migrations)"
+    
+    patterns:
+      - "Repository pattern for data access"
+      - "Unit of Work pattern for transactions"
+    
+    error_handling:
+      - error_type: "MaterialNotFoundError"
+        handling: "Raise custom exception if material lookup fails"
+  
+  inputs:
+    - name: "material_name"
+      type: "str"
+      description: "Name of material to look up"
+      example: "EPDM"
+  
+  outputs:
+    - name: "Material object"
+      type: "Material (SQLAlchemy model)"
+      description: "Material with all properties"
+      example: "Material(name='EPDM', density=1150, roughness=0.05, ...)"
+
+# ====================================================================================
+# ACCEPTANCE CRITERIA
+# ====================================================================================
+
+acceptance_criteria:
+  - criterion: "Database tables created via Alembic migrations"
+    test: "alembic upgrade head && psql -c '\\dt' | grep materials"
+  
+  - criterion: "Seed data script populates at least 5 materials"
+    test: "python src/database/seed_data.py && pytest tests/unit/test_seed_data.py"
+  
+  - criterion: "MaterialRepository can retrieve material by name"
+    test: "pytest tests/unit/test_material_repository.py::test_get_by_name -v"
+  
+  - criterion: "FluidRepository can retrieve fluid by name and temperature"
+    test: "pytest tests/unit/test_fluid_repository.py::test_get_by_name_temp -v"
+
+# ====================================================================================
+# TDD IMPLEMENTATION PLAN
+# ====================================================================================
+
+week_1_task:
+  title: "Build Material Database (TDD)"
+  
+  steps:
+    - step: 1
+      action: "Write failing unit tests for ORM models (RED)"
+      file: "tests/unit/test_models.py"
+      tests:
+        - "test_material_model_fields"
+        - "test_fluid_model_fields"
+        - "test_climate_zone_model_fields"
+      duration: "30 min"
+    
+    - step: 2
+      action: "Write failing tests for repositories (RED)"
+      file: "tests/unit/test_repositories.py"
+      tests:
+        - "test_material_repository_get_by_name"
+        - "test_material_repository_list_all"
+        - "test_fluid_repository_get_by_name_temp"
+      duration: "45 min"
+    
+    - step: 3
+      action: "Run pytest to confirm RED phase"
+      command: "pytest tests/unit/ -v"
+      expected: "All tests FAIL"
+      duration: "2 min"
+    
+    - step: 4
+      action: "Create database schema with Alembic"
+      file: "alembic/versions/001_initial_schema.py"
+      duration: "30 min"
+    
+    - step: 5
+      action: "Implement SQLAlchemy models (GREEN)"
+      file: "src/database/models.py"
+      duration: "1 hour"
+    
+    - step: 6
+      action: "Implement repository classes (GREEN)"
+      file: "src/database/repository.py"
+      duration: "1 hour"
+    
+    - step: 7
+      action: "Create seed data script"
+      file: "src/database/seed_data.py"
+      duration: "1 hour"
+    
+    - step: 8
+      action: "Run pytest to confirm GREEN phase"
+      command: "pytest tests/unit/ -v --cov=src/database"
+      expected: "All tests PASS, coverage >85%"
+      duration: "5 min"
+    
+    - step: 9
+      action: "Integration test with engine layer"
+      file: "tests/integration/test_engine_material_lookup.py"
+      duration: "30 min"
+  
+  total_time: "6 hours"
+  
+  deliverable: "Functional material database with seed data and repositories"
+
+# ====================================================================================
+# INTEGRATION POINTS
+# ====================================================================================
+
+integration:
+  input_from: []
+  
+  output_to:
+    - layer: "LAYER-001 Engine Framework"
+      data_type: "Material properties for calculations"
+      interface: "MaterialRepository.get_by_name(name)"
+  
+  shared_dependencies:
+    - "app/db/database.py (SQLAlchemy session)"
+
+# ====================================================================================
+# TESTING STRATEGY
+# ====================================================================================
+
+testing_strategy:
+  unit_tests:
+    location: "tests/unit/test_models.py, test_repositories.py"
+    coverage_target: "90%"
+    key_scenarios:
+      - "Model field validation"
+      - "Repository CRUD operations"
+      - "Seed data completeness"
+  
+  integration_tests:
+    location: "tests/integration/test_database.py"
+    scenarios:
+      - "Engine retrieves material properties during calculation"
+  
+  fixtures:
+    location: "tests/fixtures/database/"
+    files:
+      - "sample_materials.json"
+      - "sample_fluids.json"
+
+# ====================================================================================
+# DEPLOYMENT
+# ====================================================================================
+
+deployment:
+  dependencies:
+    - package: "sqlalchemy"
+      version: ">=2.0.0"
+      purpose: "ORM"
+    
+    - package: "psycopg2-binary"
+      version: ">=2.9.0"
+      purpose: "PostgreSQL driver"
+    
+    - package: "alembic"
+      version: ">=1.12.0"
+      purpose: "Database migrations"
+  
+  configuration:
+    - setting: "DATABASE_URL"
+      value: "postgresql://user:pass@localhost/feasibility_db"
+      location: ".env"
+  
+  usage_example: |
+    from src.database.repository import MaterialRepository
+    
+    repo = MaterialRepository()
+    material = repo.get_by_name("EPDM")
+    print(material.density)  # 1150 kg/m³
+
+# ====================================================================================
+# CODE GENERATION CONSTRAINTS
+# ====================================================================================
+
+code_generation_constraints:
+  output_format:
+    - "Return ONLY raw Python code"
+  
+  api_usage:
+    - "Use SQLAlchemy 2.0 declarative style"
+  
+  import_completeness:
+    - "Import Column, Integer, String, Float from sqlalchemy"
+    - "Import declarative_base from sqlalchemy.orm"
+  
+  quality_requirements:
+    - "All models must have __repr__ method"
+    - "Repository methods must handle session cleanup"
+
+# ====================================================================================
+# END OF LAYER REQUIREMENT
+# ====================================================================================

@@ -1,0 +1,155 @@
+matrix_metadata:
+  timestamp: '20251229_120322'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-001
+  requirement: Min-max normalization returns 0 for min, 100 for max
+  description: Min-max normalization returns 0 for min, 100 for max
+  test_files: &id001
+  - /workspaces/business_ventures/projects/PROJECT-001 ENERGY EFFICIENCY/SYSTEM-001
+    FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility Tool/LAYER_003_Optimization_Engine/tests/test_generated_20251229_120255.py
+  test_methods:
+  - test_ac_001
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-002
+  requirement: Target-based scoring returns 100 at target value
+  description: Target-based scoring returns 100 at target value
+  test_files: *id001
+  test_methods:
+  - test_ac_002
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-003
+  requirement: Composite score is weighted average of components
+  description: Composite score is weighted average of components
+  test_files: *id001
+  test_methods:
+  - test_ac_003
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-004
+  requirement: Overall score is weighted average of composites
+  description: Overall score is weighted average of composites
+  test_files: *id001
+  test_methods:
+  - test_ac_004
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /workspaces/business_ventures/projects/PROJECT-001 ENERGY EFFICIENCY/SYSTEM-001
+    FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility Tool/LAYER_003_Optimization_Engine/src/implementation.py
+  lines: 167
+  methods:
+  - name: __init__
+    lines: 16-19
+  - name: normalize_min_max
+    lines: 20-43
+  - name: calculate_target_based_score
+    lines: 44-78
+  - name: calculate_composite_score
+    lines: 79-119
+  - name: calculate_overall_score
+    lines: 120-148
+  - name: optimize_parameters
+    lines: 149-159
+  classes:
+  - name: OptimizationEngine
+    type: class
+    lines: 10-167
+  implements_requirements:
+  - AC-001
+  - AC-002
+  - AC-003
+  - AC-004
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /workspaces/business_ventures/projects/PROJECT-001 ENERGY EFFICIENCY/SYSTEM-001
+    FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility Tool/LAYER_003_Optimization_Engine/tests/test_generated_20251229_120255.py
+  test_count: 0
+  implementation_files:
+  - /workspaces/business_ventures/projects/PROJECT-001 ENERGY EFFICIENCY/SYSTEM-001
+    FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility Tool/LAYER_003_Optimization_Engine/src/implementation.py
+  methods_tested:
+  - __init__
+  - normalize_min_max
+  - calculate_target_based_score
+  - calculate_composite_score
+  - calculate_overall_score
+  - optimize_parameters
+  classes_tested:
+  - OptimizationEngine
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /workspaces/business_ventures/projects/PROJECT-001 ENERGY
+    EFFICIENCY/SYSTEM-001 FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility
+    Tool/LAYER_003_Optimization_Engine/src/implementation.py:16-19
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/business_ventures/projects/PROJECT-001 ENERGY EFFICIENCY/SYSTEM-001
+    FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility Tool/LAYER_003_Optimization_Engine/tests/test_generated_20251229_120255.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/projects/PROJECT-001 ENERGY
+    EFFICIENCY/SYSTEM-001 FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility
+    Tool/LAYER_003_Optimization_Engine/src/implementation.py:20-43
+  method_name: normalize_min_max
+  requirement: AC-001
+  test: test_normalize_min_max
+  test_file: /workspaces/business_ventures/projects/PROJECT-001 ENERGY EFFICIENCY/SYSTEM-001
+    FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility Tool/LAYER_003_Optimization_Engine/tests/test_generated_20251229_120255.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/projects/PROJECT-001 ENERGY
+    EFFICIENCY/SYSTEM-001 FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility
+    Tool/LAYER_003_Optimization_Engine/src/implementation.py:44-78
+  method_name: calculate_target_based_score
+  requirement: AC-001
+  test: test_calculate_target_based_score
+  test_file: /workspaces/business_ventures/projects/PROJECT-001 ENERGY EFFICIENCY/SYSTEM-001
+    FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility Tool/LAYER_003_Optimization_Engine/tests/test_generated_20251229_120255.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/projects/PROJECT-001 ENERGY
+    EFFICIENCY/SYSTEM-001 FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility
+    Tool/LAYER_003_Optimization_Engine/src/implementation.py:79-119
+  method_name: calculate_composite_score
+  requirement: AC-001
+  test: test_calculate_composite_score
+  test_file: /workspaces/business_ventures/projects/PROJECT-001 ENERGY EFFICIENCY/SYSTEM-001
+    FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility Tool/LAYER_003_Optimization_Engine/tests/test_generated_20251229_120255.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/projects/PROJECT-001 ENERGY
+    EFFICIENCY/SYSTEM-001 FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility
+    Tool/LAYER_003_Optimization_Engine/src/implementation.py:120-148
+  method_name: calculate_overall_score
+  requirement: AC-001
+  test: test_calculate_overall_score
+  test_file: /workspaces/business_ventures/projects/PROJECT-001 ENERGY EFFICIENCY/SYSTEM-001
+    FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility Tool/LAYER_003_Optimization_Engine/tests/test_generated_20251229_120255.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 4
+  requirements_traced: 4
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

@@ -1,0 +1,308 @@
+matrix_metadata:
+  timestamp: '20251229_120712'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-001
+  requirement: Engine selector dropdown populated from API
+  description: Engine selector dropdown populated from API
+  test_files: &id001
+  - /workspaces/business_ventures/projects/PROJECT-001 ENERGY EFFICIENCY/SYSTEM-001
+    FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility Tool/LAYER_005_3D_Visualization_Frontend/tests/test_generated_20251229_120616.py
+  test_methods:
+  - test_ac_001
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-002
+  requirement: Control panel renders sliders from schema
+  description: Control panel renders sliders from schema
+  test_files: *id001
+  test_methods:
+  - test_ac_002
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-003
+  requirement: 3D visualization renders at 60 FPS
+  description: 3D visualization renders at 60 FPS
+  test_files: *id001
+  test_methods:
+  - test_ac_003
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-004
+  requirement: Adjusting slider triggers calculation within 100ms
+  description: Adjusting slider triggers calculation within 100ms
+  test_files: *id001
+  test_methods:
+  - test_ac_004
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-005
+  requirement: Tooltip shows formula in LaTeX
+  description: Tooltip shows formula in LaTeX
+  test_files: *id001
+  test_methods:
+  - test_ac_005
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-006
+  requirement: Overall score displayed and updates
+  description: Overall score displayed and updates
+  test_files: *id001
+  test_methods:
+  - test_ac_006
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /workspaces/business_ventures/projects/PROJECT-001 ENERGY EFFICIENCY/SYSTEM-001
+    FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility Tool/LAYER_005_3D_Visualization_Frontend/src/implementation.py
+  lines: 374
+  methods:
+  - name: to_dict
+    lines: 22-31
+  - name: to_dict
+    lines: 43-55
+  - name: render
+    lines: 60-63
+  - name: get_fps
+    lines: 64-67
+  - name: __init__
+    lines: 71-80
+  - name: _render_loop
+    lines: 81-103
+  - name: _do_render
+    lines: 104-108
+  - name: render
+    lines: 109-112
+  - name: get_fps
+    lines: 113-116
+  - name: stop
+    lines: 117-122
+  - name: __init__
+    lines: 126-129
+  - name: calculate
+    lines: 130-150
+  - name: get_last_calculation_time
+    lines: 151-155
+  - name: __init__
+    lines: 159-165
+  - name: get_engines
+    lines: 166-169
+  - name: get_engine
+    lines: 170-177
+  - name: __init__
+    lines: 181-202
+  - name: get_schema
+    lines: 203-207
+  - name: __init__
+    lines: 211-215
+  - name: show
+    lines: 216-221
+  - name: hide
+    lines: 222-225
+  - name: get_content
+    lines: 226-229
+  - name: is_visible
+    lines: 230-234
+  - name: __init__
+    lines: 238-250
+  - name: get_engines
+    lines: 251-254
+  - name: select_engine
+    lines: 255-264
+  - name: get_sliders
+    lines: 265-268
+  - name: update_slider
+    lines: 269-274
+  - name: _trigger_calculation
+    lines: 275-298
+  - name: get_score
+    lines: 299-302
+  - name: get_calculation_time
+    lines: 303-306
+  - name: show_tooltip
+    lines: 307-313
+  - name: hide_tooltip
+    lines: 314-317
+  - name: get_tooltip_content
+    lines: 318-321
+  - name: on_update
+    lines: 322-325
+  - name: _notify_update
+    lines: 326-330
+  - name: get_fps
+    lines: 331-334
+  - name: shutdown
+    lines: 335-343
+  - name: create_app
+    lines: 344-354
+  classes:
+  - name: Engine
+    type: class
+    lines: 15-31
+  - name: SliderConfig
+    type: class
+    lines: 32-55
+  - name: VisualizationRenderer
+    type: class
+    lines: 56-67
+  - name: Default3DRenderer
+    type: class
+    lines: 68-122
+  - name: CalculationEngine
+    type: class
+    lines: 123-155
+  - name: EngineAPI
+    type: class
+    lines: 156-177
+  - name: SchemaProvider
+    type: class
+    lines: 178-207
+  - name: Tooltip
+    type: class
+    lines: 208-234
+  - name: ControlPanel
+    type: class
+    lines: 235-374
+  implements_requirements:
+  - AC-001
+  - AC-002
+  - AC-003
+  - AC-004
+  - AC-005
+  - AC-006
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /workspaces/business_ventures/projects/PROJECT-001 ENERGY EFFICIENCY/SYSTEM-001
+    FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility Tool/LAYER_005_3D_Visualization_Frontend/tests/test_generated_20251229_120616.py
+  test_count: 0
+  implementation_files:
+  - /workspaces/business_ventures/projects/PROJECT-001 ENERGY EFFICIENCY/SYSTEM-001
+    FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility Tool/LAYER_005_3D_Visualization_Frontend/src/implementation.py
+  methods_tested:
+  - to_dict
+  - to_dict
+  - render
+  - get_fps
+  - __init__
+  - _render_loop
+  - _do_render
+  - render
+  - get_fps
+  - stop
+  - __init__
+  - calculate
+  - get_last_calculation_time
+  - __init__
+  - get_engines
+  - get_engine
+  - __init__
+  - get_schema
+  - __init__
+  - show
+  - hide
+  - get_content
+  - is_visible
+  - __init__
+  - get_engines
+  - select_engine
+  - get_sliders
+  - update_slider
+  - _trigger_calculation
+  - get_score
+  - get_calculation_time
+  - show_tooltip
+  - hide_tooltip
+  - get_tooltip_content
+  - on_update
+  - _notify_update
+  - get_fps
+  - shutdown
+  - create_app
+  classes_tested:
+  - Engine
+  - SliderConfig
+  - VisualizationRenderer
+  - Default3DRenderer
+  - CalculationEngine
+  - EngineAPI
+  - SchemaProvider
+  - Tooltip
+  - ControlPanel
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /workspaces/business_ventures/projects/PROJECT-001 ENERGY
+    EFFICIENCY/SYSTEM-001 FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility
+    Tool/LAYER_005_3D_Visualization_Frontend/src/implementation.py:22-31
+  method_name: to_dict
+  requirement: AC-001
+  test: test_to_dict
+  test_file: /workspaces/business_ventures/projects/PROJECT-001 ENERGY EFFICIENCY/SYSTEM-001
+    FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility Tool/LAYER_005_3D_Visualization_Frontend/tests/test_generated_20251229_120616.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/projects/PROJECT-001 ENERGY
+    EFFICIENCY/SYSTEM-001 FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility
+    Tool/LAYER_005_3D_Visualization_Frontend/src/implementation.py:43-55
+  method_name: to_dict
+  requirement: AC-001
+  test: test_to_dict
+  test_file: /workspaces/business_ventures/projects/PROJECT-001 ENERGY EFFICIENCY/SYSTEM-001
+    FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility Tool/LAYER_005_3D_Visualization_Frontend/tests/test_generated_20251229_120616.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/projects/PROJECT-001 ENERGY
+    EFFICIENCY/SYSTEM-001 FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility
+    Tool/LAYER_005_3D_Visualization_Frontend/src/implementation.py:60-63
+  method_name: render
+  requirement: AC-001
+  test: test_render
+  test_file: /workspaces/business_ventures/projects/PROJECT-001 ENERGY EFFICIENCY/SYSTEM-001
+    FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility Tool/LAYER_005_3D_Visualization_Frontend/tests/test_generated_20251229_120616.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/projects/PROJECT-001 ENERGY
+    EFFICIENCY/SYSTEM-001 FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility
+    Tool/LAYER_005_3D_Visualization_Frontend/src/implementation.py:64-67
+  method_name: get_fps
+  requirement: AC-001
+  test: test_get_fps
+  test_file: /workspaces/business_ventures/projects/PROJECT-001 ENERGY EFFICIENCY/SYSTEM-001
+    FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility Tool/LAYER_005_3D_Visualization_Frontend/tests/test_generated_20251229_120616.py
+  verified: true
+- implementation_location: /workspaces/business_ventures/projects/PROJECT-001 ENERGY
+    EFFICIENCY/SYSTEM-001 FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility
+    Tool/LAYER_005_3D_Visualization_Frontend/src/implementation.py:71-80
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /workspaces/business_ventures/projects/PROJECT-001 ENERGY EFFICIENCY/SYSTEM-001
+    FEASIBILITY PLATFORM/FEATURE-001 Interactive Feasibility Tool/LAYER_005_3D_Visualization_Frontend/tests/test_generated_20251229_120616.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 6
+  requirements_traced: 6
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

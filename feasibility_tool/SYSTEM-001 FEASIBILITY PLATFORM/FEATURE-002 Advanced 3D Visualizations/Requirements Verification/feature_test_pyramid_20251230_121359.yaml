@@ -1,0 +1,33 @@
+feature_id: FEATURE-001-002
+feature_name: Advanced 3D Visualizations
+test_pyramid_timestamp: '20251230_121359'
+layer_tests:
+  unit_tests: 28
+  layer_count: 10
+feature_tests:
+  integration_tests:
+    location: tests/integration/
+    count: 11
+    status: COMPLETED
+  e2e_tests:
+    location: tests/e2e/
+    count: 3
+    status: COMPLETED
+integration_scenarios:
+- "User drags material_type dropdown \u2192 all visualizations update instantly showing\
+  \ new material properties"
+- "User adjusts Di slider continuously \u2192 triangle, feasibility volume, parallel\
+  \ coords all morph in real-time at 60 FPS"
+- "User switches from Ternary to Response Surface mode \u2192 mode selector updates,\
+  \ previous mode disposed, new mode renders < 200ms"
+- "User accumulates 100+ configurations \u2192 history queue maintains only last 100,\
+  \ trails show recent exploration path"
+- "User clicks sensitivity bar \u2192 corresponding parameter highlighted in main\
+  \ input panel"
+- "User hovers correlation matrix cube \u2192 tooltip shows exact Pearson coefficient\
+  \ value"
+- "User enables reference planes in feasibility volume \u2192 transparent grids appear\
+  \ at specified score thresholds"
+e2e_scenarios: []
+test_coverage_goal: 90%
+status: PYRAMID_STRUCTURE_DEFINED

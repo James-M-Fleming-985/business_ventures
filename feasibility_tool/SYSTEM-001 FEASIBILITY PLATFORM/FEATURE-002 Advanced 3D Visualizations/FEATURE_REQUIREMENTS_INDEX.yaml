@@ -1,0 +1,555 @@
+# ====================================================================================
+# FEATURE REQUIREMENTS INDEX: Advanced 3D Visualizations for Multi-Objective Optimization
+# ====================================================================================
+# FEATURE ID: FEATURE-001-002
+# VERSION: 1.0.0
+# LAST UPDATED: 2025-12-29
+# OWNER: James Fleming
+# ====================================================================================
+
+metadata:
+  requirement_id: "FEATURE-001-002"
+  requirement_name: "Advanced 3D Visualizations"
+  feature_id: "FEATURE-001-002"
+  feature_name: "Advanced 3D Visualizations"
+  feature_code: "ADV_VIZ"
+  version: "1.0.0"
+  status: "Active"
+  created_date: "2025-12-29"
+  last_modified: "2025-12-29"
+  owner: "James Fleming"
+  priority: "MUST HAVE"
+  target_date: "2025-12-30"
+  
+  traceability:
+    parent_system: "SYSTEM-001"
+    parent_system_file: "../SYSTEM_REQUIREMENTS.yaml"
+    parent_system_requirements:
+      - "SYS-REQ-001: Multi-objective optimization visualization for 13 input parameters"
+      - "SYS-REQ-002: Real-time responsive 3D visualizations with < 5ms update latency"
+      - "SYS-REQ-003: Mathematically rigorous representations of feasibility spaces"
+    
+    derivation_rationale: |
+      This feature implements advanced visualization modes to help users understand
+      the complex relationships between 13 input parameters (material_type, Di, L, etc.)
+      and 3 output scores (performance, durability, economic). Current single-triangle
+      visualization is insufficient for exploring high-dimensional optimization space.
+      
+      Mathematical foundations from materials science (Ashby diagrams), operations
+      research (Pareto frontiers), and information visualization (parallel coordinates)
+      inform the 8 visualization modes.
+
+# ====================================================================================
+# FEATURE OVERVIEW
+# ====================================================================================
+
+overview:
+  description: |
+    Create a suite of 8 mathematically rigorous 3D visualization modes for exploring
+    hose/pipe optimization. Users can select different visualization types via dropdown
+    to understand variable relationships from different perspectives:
+    
+    1. Ternary/Simplex Diagram - Barycentric coordinates showing performance/durability/economic balance
+    2. Feasibility Volume - 3D morphing surface with constraint boundaries
+    3. Parallel Coordinates - All 13 inputs on vertical axes with connecting lines
+    4. Response Surface - Interactive 3D surface for any 2 selected inputs
+    5. Sensitivity Tornado - 3D bar chart showing input impact rankings
+    6. Correlation Matrix - 3D heatmap of input-to-output correlations
+    7. Pareto Frontier - Non-dominated solutions boundary surface
+    8. Radar/Spider Chart - All 13 inputs on radial axes
+    
+    All visualizations update in REAL-TIME as users drag sliders (no debouncing,
+    no waiting for mouse release). Must maintain 60 FPS during interaction.
+  
+  business_value:
+    - "Reveal hidden relationships between input parameters that triangle cannot show"
+    - "Enable data-driven decision making through sensitivity analysis and correlation"
+    - "Reduce optimization time by showing steepest improvement directions"
+    - "Increase user confidence by providing multiple perspectives on same data"
+    - "Support engineering rigor with mathematically standard visualization types"
+  
+  user_story: |
+    As a hose optimization engineer,
+    I want to explore my 13-dimensional input space using mathematically rigorous visualizations,
+    So that I can understand which inputs drive which outputs and find optimal configurations efficiently.
+  
+  acceptance_criteria:
+    - "All 8 visualization modes render without errors"
+    - "Dropdown selector switches modes instantly (< 200ms)"
+    - "Sliders trigger real-time updates using onChange event (< 5ms latency)"
+    - "Maintain 60 FPS during continuous slider adjustment"
+    - "Exploration history tracked (last 100 configurations) and displayed as trails/paths"
+    - "Color scales mathematically accurate and colorblind-friendly (viridis/plasma)"
+    - "All components TypeScript strict mode compliant with no console errors"
+    - "Responsive layout works at 1920×1080 and 1366×768"
+
+# ====================================================================================
+# SHARED INTERFACES
+# ====================================================================================
+
+shared_interfaces:
+  response_structure: "React components consume CalculationResult from API"
+  
+  input_interface: |
+    interface VisualizationProps {
+      calculationResult: CalculationResult | null
+      inputs: Record<string, any>
+      parameterSchema: ParameterSchema[]
+      explorationHistory: CalculationResult[]
+      onParameterHighlight?: (paramName: string) => void
+    }
+    
+    interface CalculationResult {
+      components: Record<string, ComponentResult>
+      composites: Record<string, number>
+      visualization_point: { x: number; y: number; z: number }
+      overall_score: number
+      metadata?: { calculation_time_ms: number; timestamp: string }
+    }
+  
+  output_interface: |
+    Each visualization component renders Three.js scene via @react-three/fiber
+    No return values - pure rendering components
+  
+  technology_stack: |
+    MANDATORY:
+    - React 18.2.0 (functional components with hooks)
+    - TypeScript 5.0+ (strict mode)
+    - Three.js (latest)
+    - @react-three/fiber (latest)
+    - @react-three/drei (latest)
+    - Material-UI 5.x (consistent with existing App.tsx)
+    
+    PERFORMANCE:
+    - 60 FPS (< 16ms per frame) during slider interaction
+    - < 5ms update latency from state change to render
+    - onChange event (fires during drag), NOT onChangeCommitted
+    - React.memo, useMemo, useCallback for optimization
+    - Maximum 100k vertices per scene, use instancing
+  
+  verification:
+    - "Props interface matches VisualizationProps exactly"
+    - "Uses calculationResult.composites for performance/durability/economic scores"
+    - "Uses calculationResult.components for detailed metrics"
+    - "Sliders use onChange event, confirmed by console logging during drag"
+    - "Frame rate measured and logged, maintains 60 FPS"
+
+# ====================================================================================
+# LAYER ARCHITECTURE
+# ====================================================================================
+
+layers:
+  - layer_id: "LAYER-001-002-001"
+    name: "Visualization Framework"
+    responsibility: "Shared utilities, color scales, math functions, history tracker"
+    technology: "TypeScript, Three.js utility functions"
+    requirement_file: "LAYER-001-002-001_visualization_framework.yaml"
+    requirements:
+      - REQ-001-002-001
+    
+    traceability_note: |
+      Provides foundation for all visualization modes. Includes:
+      - ColorScales.ts: Viridis, plasma, cividis color maps
+      - MathUtils.ts: Correlation, gradient computation, normalization
+      - HistoryTracker.ts: FIFO queue for exploration trail (max 100 points)
+      - Types.ts: Shared TypeScript interfaces
+  
+  - layer_id: "LAYER-001-002-002"
+    name: "Ternary Diagram Component"
+    responsibility: "Barycentric coordinate visualization with exploration trail"
+    technology: "React, Three.js, @react-three/fiber"
+    requirement_file: "LAYER-001-002-002_ternary_diagram.yaml"
+    requirements:
+      - REQ-001-002-002
+    
+    traceability_note: |
+      MODE 1: Equilateral triangle showing performance/durability/economic balance.
+      - Triangle vertices at 120° angles: [(100,0,0), (-50,86.6,0), (-50,-86.6,0)]
+      - Current point as glowing sphere
+      - Last 20 configurations as fading trail with gradient opacity
+      - Iso-composition grid lines at 10% intervals
+      - Heat map surface showing overall_score
+  
+  - layer_id: "LAYER-001-002-003"
+    name: "Feasibility Volume Component"
+    responsibility: "Morphing 3D surface with constraint boundaries and Pareto frontier"
+    technology: "React, Three.js parametric surfaces"
+    requirement_file: "LAYER-001-002-003_feasibility_volume.yaml"
+    requirements:
+      - REQ-001-002-003
+    
+    traceability_note: |
+      MODE 2: 50x50 parametric mesh (2500 vertices) that deforms based on constraints.
+      - Morphs based on material properties, pressure limits, temperature
+      - Constraint boundaries as semi-transparent shells
+      - Gradient vectors showing steepest improvement direction
+      - Reference planes at user-defined thresholds
+      - Viridis color scale mapping overall_score
+  
+  - layer_id: "LAYER-001-002-004"
+    name: "Parallel Coordinates Component"
+    responsibility: "16 vertical axes (13 inputs + 3 outputs) with polyline connections"
+    technology: "React, Three.js Line rendering"
+    requirement_file: "LAYER-001-002-004_parallel_coordinates.yaml"
+    requirements:
+      - REQ-001-002-004
+    
+    traceability_note: |
+      MODE 3: High-dimensional data visualization.
+      - 16 axes evenly spaced across 200 units width
+      - Current configuration as bright polyline
+      - Last 10 configurations as faded polylines
+      - Normalize each parameter to [0,100] using schema min/max
+      - Line color = overall_score gradient
+      - Optional brushing: click-drag on axis to filter ranges
+  
+  - layer_id: "LAYER-001-002-005"
+    name: "Response Surface Component"
+    responsibility: "3D surface plot for any 2 selected inputs showing overall_score"
+    technology: "React, Three.js PlaneGeometry"
+    requirement_file: "LAYER-001-002-005_response_surface.yaml"
+    requirements:
+      - REQ-001-002-005
+    
+    traceability_note: |
+      MODE 4: Interactive 2-variable exploration.
+      - User selects 2 inputs from dropdowns (e.g., Di and L)
+      - 30x30 grid = 900 samples (compute score for each XY combination)
+      - X-axis = input1, Y-axis = input2, Z-axis = overall_score
+      - Current point as vertical line from surface to XY plane
+      - Contour lines (iso-score curves) projected on XY plane
+      - Heat map coloring by Z-value
+      - Wireframe toggle
+  
+  - layer_id: "LAYER-001-002-006"
+    name: "Sensitivity Analysis Component"
+    responsibility: "Tornado chart (3D bars) showing input impact rankings"
+    technology: "React, Three.js BoxGeometry"
+    requirement_file: "LAYER-001-002-006_sensitivity_tornado.yaml"
+    requirements:
+      - REQ-001-002-006
+    
+    traceability_note: |
+      MODE 5: Sensitivity analysis via partial derivatives.
+      - 13 horizontal 3D bars (one per input)
+      - Bar length = |∂overall_score/∂input_i|
+      - Sensitivity computation: (score(input+ε) - score(input-ε)) / (2ε)
+      - Sorted descending by magnitude (most influential at top)
+      - Color: Green (positive impact) vs Red (negative impact)
+      - Interactive: Click bar to highlight parameter in main panel
+  
+  - layer_id: "LAYER-001-002-007"
+    name: "Correlation Matrix Component"
+    responsibility: "3D heatmap (13×3 grid) showing input-to-output correlations"
+    technology: "React, Three.js BoxGeometry instancing"
+    requirement_file: "LAYER-001-002-007_correlation_matrix.yaml"
+    requirements:
+      - REQ-001-002-007
+    
+    traceability_note: |
+      MODE 6: Correlation heatmap requiring historical data.
+      - 13×3 grid of cubes (13 inputs × 3 output scores)
+      - Cube height = |correlation coefficient| from 0 to 1
+      - Pearson correlation from last 100 configurations
+      - Color: Blue (negative) vs Red (positive)
+      - Intensity = |correlation|
+      - Hover shows exact correlation value
+  
+  - layer_id: "LAYER-001-002-008"
+    name: "Pareto Frontier Component"
+    responsibility: "Convex hull surface showing non-dominated solutions boundary"
+    technology: "React, Three.js ConvexGeometry"
+    requirement_file: "LAYER-001-002-008_pareto_frontier.yaml"
+    requirements:
+      - REQ-001-002-008
+    
+    traceability_note: |
+      MODE 7: Optimal solutions boundary.
+      - Sample 1000 random input combinations, compute scores, extract Pareto front
+      - 3D convex hull in (performance, durability, economic) space
+      - Current point position relative to frontier
+      - Distance vectors: Arrow from current to nearest Pareto point
+      - Color zones: Red (dominated), Yellow (near-optimal), Green (Pareto-optimal)
+      - Recompute when major inputs change (material, reinforcement, climate)
+  
+  - layer_id: "LAYER-001-002-009"
+    name: "Radar Chart Component"
+    responsibility: "13 radial axes with filled polygon showing input configuration"
+    technology: "React, Three.js ShapeGeometry"
+    requirement_file: "LAYER-001-002-009_radar_chart.yaml"
+    requirements:
+      - REQ-001-002-009
+    
+    traceability_note: |
+      MODE 8: Multivariate radar/spider chart.
+      - 13 radial axes at equal angular spacing (360°/13 = 27.7°)
+      - Current configuration as filled polygon
+      - Reference configuration (optimal/baseline) as dotted overlay
+      - Axis angle: θ_i = (i × 2π) / 13
+      - Point position: (r×cos(θ), r×sin(θ), 0) where r = normalized_input
+      - Semi-transparent fill with overall_score-based color
+      - Concentric circles at 25%, 50%, 75%, 100%
+  
+  - layer_id: "LAYER-001-002-010"
+    name: "Integration Layer"
+    responsibility: "Mode selector dropdown, container component, state management"
+    technology: "React, Material-UI, localStorage"
+    requirement_file: "LAYER-001-002-010_integration_layer.yaml"
+    requirements:
+      - REQ-001-002-010
+    
+    traceability_note: |
+      Orchestrates all 8 visualization modes.
+      - VisualizationContainer.tsx: Main wrapper component
+      - Mode selector dropdown (Material-UI Select)
+      - Lazy loading: Only render active mode
+      - Persist selected mode to localStorage
+      - Update App.tsx to use container instead of current triangle
+      - Shared camera controls, consistent lighting
+      - Dispose geometries/materials when switching modes (memory management)
+
+# ====================================================================================
+# REQUIREMENTS
+# ====================================================================================
+
+requirements:
+  functional:
+    - id: "FR-001-002-001"
+      description: "System shall provide 8 distinct visualization modes selectable via dropdown"
+      priority: "MUST HAVE"
+      acceptance_criteria:
+        - "Dropdown renders all 8 mode options"
+        - "Selecting mode switches visualization instantly (< 200ms)"
+        - "Only one mode active at a time"
+        - "Selected mode persists to localStorage"
+    
+    - id: "FR-001-002-002"
+      description: "System shall update visualizations in real-time during slider interaction"
+      priority: "MUST HAVE"
+      acceptance_criteria:
+        - "Sliders use onChange event (not onChangeCommitted)"
+        - "Visualization updates during drag, not on release"
+        - "Update latency < 5ms from state change to render"
+        - "Console logs confirm onChange fires continuously during drag"
+    
+    - id: "FR-001-002-003"
+      description: "System shall maintain 60 FPS during continuous slider adjustment"
+      priority: "MUST HAVE"
+      acceptance_criteria:
+        - "Frame rate measured and logged"
+        - "No dropped frames during 10-second slider drag test"
+        - "Geometry updates use vertex position morphing, not recreation"
+        - "React.memo/useMemo prevent unnecessary re-renders"
+    
+    - id: "FR-001-002-004"
+      description: "System shall track exploration history (last 100 configurations)"
+      priority: "MUST HAVE"
+      acceptance_criteria:
+        - "History stored as FIFO queue (max 100 entries)"
+        - "Each entry contains inputs + calculationResult"
+        - "History displayed as trails/paths in applicable modes"
+        - "Old entries removed when exceeding 100"
+    
+    - id: "FR-001-002-005"
+      description: "All visualizations shall use colorblind-friendly palettes"
+      priority: "MUST HAVE"
+      acceptance_criteria:
+        - "Viridis, plasma, or cividis color scales used"
+        - "No reliance on red/green distinction alone"
+        - "Color scales verified against test data"
+        - "Gradients smooth and perceptually uniform"
+    
+    - id: "FR-001-002-006"
+      description: "Ternary diagram shall show barycentric coordinates with trail"
+      priority: "MUST HAVE"
+      acceptance_criteria:
+        - "Triangle vertices at 120° angles"
+        - "Current point positioned via barycentric formula"
+        - "Last 20 points shown with fading opacity"
+        - "Iso-composition lines at 10% intervals"
+    
+    - id: "FR-001-002-007"
+      description: "Feasibility volume shall morph based on constraints"
+      priority: "MUST HAVE"
+      acceptance_criteria:
+        - "50x50 mesh (2500 vertices) renders smoothly"
+        - "Vertex positions update via lerp for smooth transitions"
+        - "Gradient vectors computed from finite differences"
+        - "Reference planes toggleable by user"
+    
+    - id: "FR-001-002-008"
+      description: "Parallel coordinates shall show all 16 dimensions"
+      priority: "MUST HAVE"
+      acceptance_criteria:
+        - "13 input axes + 3 output axes visible"
+        - "Current config shown as bright polyline"
+        - "Last 10 configs shown as faded polylines"
+        - "Axes labeled with parameter names and units"
+    
+    - id: "FR-001-002-009"
+      description: "Response surface shall support 2-variable selection"
+      priority: "MUST HAVE"
+      acceptance_criteria:
+        - "Two dropdown selectors for input variables"
+        - "30x30 grid computed efficiently (< 1s)"
+        - "Surface renders with heat map coloring"
+        - "Current point marked with vertical line"
+    
+    - id: "FR-001-002-010"
+      description: "Sensitivity tornado shall rank inputs by impact"
+      priority: "MUST HAVE"
+      acceptance_criteria:
+        - "13 bars sorted descending by sensitivity magnitude"
+        - "Sensitivity computed via finite difference"
+        - "Color indicates positive (green) vs negative (red) impact"
+        - "Click bar to highlight parameter"
+    
+    - id: "FR-001-002-011"
+      description: "Correlation matrix shall show input-output relationships"
+      priority: "SHOULD HAVE"
+      acceptance_criteria:
+        - "13×3 grid of cubes renders"
+        - "Pearson correlation computed from history"
+        - "Requires minimum 30 data points"
+        - "Hover displays exact correlation value"
+    
+    - id: "FR-001-002-012"
+      description: "Pareto frontier shall show optimal boundary"
+      priority: "SHOULD HAVE"
+      acceptance_criteria:
+        - "Convex hull computed from sample points"
+        - "Current point distance to frontier shown"
+        - "Color zones indicate optimality"
+        - "Recomputes when major inputs change"
+    
+    - id: "FR-001-002-013"
+      description: "Radar chart shall show multivariate configuration"
+      priority: "COULD HAVE"
+      acceptance_criteria:
+        - "13 radial axes at equal angles"
+        - "Filled polygon connects input values"
+        - "Reference config shown as dotted overlay"
+        - "Concentric circles show scale"
+  
+  non_functional:
+    - id: "NFR-001-002-001"
+      description: "Performance: Maintain 60 FPS during interaction"
+      category: "Performance"
+      measurement: "Measured via requestAnimationFrame timestamps"
+    
+    - id: "NFR-001-002-002"
+      description: "Latency: Update visualizations within 5ms of state change"
+      category: "Performance"
+      measurement: "Measured via performance.now() before/after state update"
+    
+    - id: "NFR-001-002-003"
+      description: "Memory: No memory leaks after 100 mode switches"
+      category: "Resource Management"
+      measurement: "Chrome DevTools memory profiler"
+    
+    - id: "NFR-001-002-004"
+      description: "Type Safety: TypeScript strict mode with no errors"
+      category: "Code Quality"
+      measurement: "tsc --noEmit returns exit code 0"
+    
+    - id: "NFR-001-002-005"
+      description: "Accessibility: Keyboard navigation and ARIA labels"
+      category: "Usability"
+      measurement: "axe DevTools scan passes"
+    
+    - id: "NFR-001-002-006"
+      description: "Responsiveness: Works at 1920×1080 and 1366×768"
+      category: "Compatibility"
+      measurement: "Visual inspection at both resolutions"
+
+# ====================================================================================
+# INTEGRATION SCENARIOS
+# ====================================================================================
+
+integration_scenarios:
+  - "User drags material_type dropdown → all visualizations update instantly showing new material properties"
+  - "User adjusts Di slider continuously → triangle, feasibility volume, parallel coords all morph in real-time at 60 FPS"
+  - "User switches from Ternary to Response Surface mode → mode selector updates, previous mode disposed, new mode renders < 200ms"
+  - "User accumulates 100+ configurations → history queue maintains only last 100, trails show recent exploration path"
+  - "User clicks sensitivity bar → corresponding parameter highlighted in main input panel"
+  - "User hovers correlation matrix cube → tooltip shows exact Pearson coefficient value"
+  - "User enables reference planes in feasibility volume → transparent grids appear at specified score thresholds"
+
+# ====================================================================================
+# CONSTRAINTS
+# ====================================================================================
+
+constraints:
+  technical:
+    - "Must use onChange event for sliders, NOT onChangeCommitted"
+    - "Must dispose Three.js geometries/materials when switching modes"
+    - "Must use React.memo/useMemo/useCallback for performance"
+    - "Must cap WebGL scene at 100k vertices maximum"
+    - "Must use instancing for repeated geometries (trail spheres, grid points)"
+    - "Must normalize color scales to [0,1] range"
+    - "Must use right-handed coordinates (X=right, Y=up, Z=forward)"
+  
+  architectural:
+    - "All visualization components must accept identical VisualizationProps interface"
+    - "Shared utilities (ColorScales, MathUtils) must be stateless pure functions"
+    - "History tracker must use FIFO queue, not unbounded array"
+    - "Mode selector must lazy-load inactive modes to reduce bundle size"
+  
+  dependencies:
+    - "Requires React 18.2.0 or higher"
+    - "Requires TypeScript 5.0 or higher with strict mode"
+    - "Requires Three.js latest version"
+    - "Requires @react-three/fiber and @react-three/drei latest"
+    - "Requires Material-UI 5.x for consistency with App.tsx"
+
+# ====================================================================================
+# SUCCESS METRICS
+# ====================================================================================
+
+success_metrics:
+  performance:
+    - metric: "Frame Rate"
+      target: "60 FPS"
+      measurement: "requestAnimationFrame delta < 16.67ms"
+    
+    - metric: "Update Latency"
+      target: "< 5ms"
+      measurement: "performance.now() delta from onChange to render"
+    
+    - metric: "Mode Switch Time"
+      target: "< 200ms"
+      measurement: "Time from dropdown select to new mode visible"
+  
+  quality:
+    - metric: "TypeScript Errors"
+      target: "0"
+      measurement: "tsc --noEmit exit code"
+    
+    - metric: "Console Warnings"
+      target: "0"
+      measurement: "Chrome DevTools console count"
+    
+    - metric: "Test Coverage"
+      target: "> 80%"
+      measurement: "Jest coverage report"
+  
+  usability:
+    - metric: "Modes Implemented"
+      target: "8/8"
+      measurement: "Manual verification of dropdown options"
+    
+    - metric: "Real-time Updates"
+      target: "100%"
+      measurement: "All modes update during slider drag"
+
+# ====================================================================================
+# NOTES
+# ====================================================================================
+
+notes:
+  - "Coordinate systems use right-handed (X=right, Y=up, Z=forward)"
+  - "Angles in radians, distances in arbitrary units (scale for visibility)"
+  - "Default camera position: (0, 50, 150) looking at origin, FOV=45°"
+  - "Lighting: AmbientLight (0.6) + DirectionalLight (0.4) from (100, 100, 100)"
+  - "Color palettes must be colorblind-friendly (viridis, plasma, cividis)"
+  - "Use --init-layers to auto-generate layer folders with AI-derived requirements"

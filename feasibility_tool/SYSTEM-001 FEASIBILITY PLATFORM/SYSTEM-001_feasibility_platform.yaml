@@ -1,0 +1,450 @@
+# ====================================================================================
+# SYSTEM REQUIREMENTS: Feasibility Platform
+# ====================================================================================
+# SYSTEM-001: Generic Feasibility Analysis Platform
+# ====================================================================================
+# This system provides a pluggable engine framework for evaluating energy efficiency
+# opportunities across multiple domains. Engines implement a standard interface and
+# provide transparent calculations with formula tracking.
+# ====================================================================================
+
+metadata:
+  system_id: SYSTEM-001
+  system_name: "Feasibility Platform"
+  parent_project: PROJECT-001
+  created_date: 2025-12-29
+  status: "planned"
+  priority: "critical"
+  
+  purpose: |
+    Provide a generic platform for feasibility analysis that supports multiple
+    mathematical engines. Each engine implements calculations for a specific domain
+    (hose optimization, solar panels, HVAC, etc.) while the platform handles:
+    - Dynamic UI generation from engine schemas
+    - 3D visualization of response surfaces
+    - Comprehensive calculation transparency
+    - Multi-objective optimization scoring
+    - Target profile comparison
+    
+    The pluggable architecture enables rapid deployment of new feasibility tools
+    without modifying core platform code.
+  
+  business_value:
+    - "Single platform serves multiple engineering domains"
+    - "New domains added in days, not months"
+    - "Calculation transparency builds stakeholder trust"
+    - "3D visualization reveals non-obvious optimization opportunities"
+    - "Reduces custom tool development costs by 80%+"
+  
+  traceability:
+    parent_project_requirements:
+      - "PROJECT-AC-001: Users can select from multiple feasibility engines via dropdown"
+      - "PROJECT-AC-002: Control panel dynamically generated from engine's input schema"
+      - "PROJECT-AC-003: 3D visualization displays normalized composite scores"
+      - "PROJECT-AC-004: Every data point has comprehensive tooltip"
+      - "PROJECT-AC-007: New engines can be added without modifying frontend or API code"
+    
+    project_requirements_file: "../PROJECT-001_energy_efficiency.yaml"
+    
+    derivation_rationale: |
+      PROJECT-001 requires a platform that can evaluate multiple types of energy
+      efficiency opportunities. This system provides the generic framework that
+      makes this possible through:
+      
+      1. Abstract engine interface defining common contract
+      2. Engine registry for dynamic discovery and loading
+      3. Schema-driven UI generation for engine-agnostic controls
+      4. Response surface visualization for any 3D output space
+      5. Normalization framework for combining different units/scales
+
+deployment:
+  platform: Railway
+  service_type: Backend API + Frontend Dashboard
+  scaling: 1 backend + 1 frontend (Phase 1) → 2-3 replicas (Phase 2)
+  estimated_cost: "$20/month (Phase 1) → $60/month (Phase 2)"
+  
+  railway_config_backend:
+    builder: NIXPACKS
+    build_command: "pip install -r requirements.txt"
+    start_command: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    health_check: "/health"
+    restart_policy: ON_FAILURE
+  
+  railway_config_frontend:
+    builder: NIXPACKS
+    build_command: "npm install && npm run build"
+    start_command: "npm run preview -- --host 0.0.0.0 --port $PORT"
+    health_check: "/"
+    restart_policy: ON_FAILURE
+
+# ====================================================================================
+# SHARED INTERFACES - CRITICAL FOR FEATURE CONSISTENCY
+# ====================================================================================
+# All features in this system use API response structure (FastAPI backend)
+# ====================================================================================
+
+shared_interfaces:
+  response_structure: "api_response_structure"
+  deployment_model: "FastAPI Backend"
+  
+  # ---------------------------------------------------------------------------------
+  # API RESPONSE STRUCTURE - Used by all features
+  # ---------------------------------------------------------------------------------
+  api_response_structure:
+    standard: "Pydantic BaseModel with HTTP semantics"
+    
+    required_fields:
+      - name: "success"
+        type: "bool"
+        description: "Whether operation succeeded (true/false)"
+        required: true
+      
+      - name: "data"
+        type: "Optional[Any]"
+        description: "Successful result payload (None if error)"
+        required: true
+      
+      - name: "error"
+        type: "Optional[str]"
+        description: "Error message if failed (None if success)"
+        required: true
+      
+      - name: "metadata"
+        type: "Optional[Dict[str, Any]]"
+        description: "Additional context (timestamps, calculation_time_ms)"
+        required: true
+    
+    http_status_mapping:
+      - "200 OK: Success with data (success=true)"
+      - "400 Bad Request: Validation error (success=false, error=message)"
+      - "404 Not Found: Engine not found (success=false, error=message)"
+      - "500 Internal Server Error: Calculation error (success=false, error=message)"
+    
+    implementation_example: |
+      ```python
+      from pydantic import BaseModel, Field
+      from typing import Optional, Any, Dict
+      from datetime import datetime
+      
+      class FeatureResponse(BaseModel):
+          success: bool
+          data: Optional[Any] = None
+          error: Optional[str] = None
+          metadata: Optional[Dict[str, Any]] = Field(default_factory=dict)
+          
+          class Config:
+              json_encoders = {
+                  datetime: lambda v: v.isoformat()
+              }
+      ```
+  
+  # ---------------------------------------------------------------------------------
+  # ENGINE INTERFACE - Contract all engines must implement
+  # ---------------------------------------------------------------------------------
+  engine_interface:
+    description: |
+      All feasibility engines must implement this abstract interface.
+      This ensures consistent behavior and enables generic frontend/API code.
+    
+    required_methods:
+      - name: "get_metadata"
+        signature: "() -> EngineMetadata"
+        description: "Return engine ID, name, description, version"
+        
+      - name: "get_input_schema"
+        signature: "() -> Dict[str, ParameterSchema]"
+        description: "Return schema defining all input parameters (name, type, range, unit, default)"
+        
+      - name: "get_output_schema"
+        signature: "() -> Dict[str, OutputSchema]"
+        description: "Return schema defining all output metrics (name, type, unit, normalization)"
+        
+      - name: "calculate"
+        signature: "(inputs: Dict[str, Any]) -> CalculationResult"
+        description: |
+          Perform calculations and return results with formula tracking.
+          Result must include:
+          - components: dict of individual calculated values with formula + steps
+          - composites: dict of derived/normalized scores
+          - visualization_point: (x, y, z) for 3D plotting
+        
+      - name: "get_target_profile"
+        signature: "(profile_name: str) -> Dict[str, Any]"
+        description: "Return predefined optimal configuration for comparison"
+    
+    calculation_result_structure: |
+      ```python
+      {
+        "components": {
+          "deltaP": {
+            "value": 0.7,
+            "unit": "bar",
+            "formula": "ΔP = f × (L/Di) × (ρv²/2)",
+            "calculation_steps": [
+              "f = 0.024 (from Colebrook-White)",
+              "ρv²/2 = 998 × 1.7² / 2 = 1442 Pa",
+              "ΔP = 0.024 × (25/0.015) × 1442 = 57,680 Pa"
+            ],
+            "normalized": 70
+          },
+          # ... more component outputs
+        },
+        "composites": {
+          "performance_score": {"value": 75, "formula": "weighted avg of ΔP, η_P, velocity"},
+          "economic_score": {"value": 82, "formula": "weighted avg of cost, ROI, payback"},
+          "durability_score": {"value": 68, "formula": "weighted avg of lifespan, wear_rate"}
+        },
+        "visualization_point": {"x": 75, "y": 82, "z": 68},
+        "overall_score": 75.5,
+        "metadata": {
+          "calculation_time_ms": 45,
+          "warnings": [],
+          "notes": []
+        }
+      }
+      ```
+  
+  # ---------------------------------------------------------------------------------
+  # NORMALIZATION STRATEGY
+  # ---------------------------------------------------------------------------------
+  normalization:
+    description: |
+      Different engines produce outputs with different units (bar, $, years, m/s).
+      To visualize on common 3D axes, we normalize all metrics to 0-100 scale.
+    
+    methods:
+      min_max_scaling:
+        formula: "normalized = 100 × (value - min) / (max - min)"
+        use_case: "Metrics with known bounds (e.g., efficiency 0-100%)"
+        
+      target_based_scoring:
+        formula: "normalized = 100 × (1 - |value - target| / target)"
+        use_case: "Metrics with optimal target (e.g., velocity near 2 m/s)"
+        
+      logarithmic_scaling:
+        formula: "normalized = 100 × log(value) / log(max)"
+        use_case: "Metrics spanning orders of magnitude (e.g., cost $10-$10000)"
+    
+    composite_scores:
+      description: |
+        Group related outputs and compute weighted average for each 3D axis:
+        - Performance Score (X): ΔP + pump_efficiency + velocity + Re (weighted)
+        - Economic Score (Y): ROI + payback_period + total_cost (weighted)
+        - Durability Score (Z): lifespan + wear_rate + maintenance_cost (weighted)
+
+# ====================================================================================
+# NAMING CONVENTIONS
+# ====================================================================================
+
+naming_conventions:
+  system_folder: "SYSTEM-001 FEASIBILITY PLATFORM"
+  feature_folder_format: "FEATURE-001 Interactive Feasibility Tool"
+  layer_folder_format: "LAYER-001 Engine Framework"
+  
+  python_module_naming:
+    feature_module: "feature_001_interactive_feasibility_tool"
+    layer_module: "layer_001_engine_framework"
+
+# ====================================================================================
+# TECHNOLOGY STACK
+# ====================================================================================
+
+technology_stack:
+  backend:
+    framework: FastAPI 0.104.0
+    orm: SQLAlchemy 2.0
+    computation:
+      - numpy >= 1.24.0
+      - scipy >= 1.11.0
+      - pandas >= 2.0.0
+    optimization:
+      - pygmo >= 2.19.0  # Multi-objective optimization
+  
+  frontend:
+    framework: React 18.2.0
+    language: TypeScript 5.0
+    bundler: Vite 5.0
+    3d_visualization:
+      - "@react-three/fiber": "^8.15.0"
+      - "@react-three/drei": "^9.88.0"
+      - "three": "^0.158.0"
+    ui_components:
+      - "@mui/material": "^5.14.0"
+      - "recharts": "^2.10.0"
+    state_management:
+      - "@tanstack/react-query": "^5.0.0"
+      - "zustand": "^4.4.0"
+  
+  database:
+    type: PostgreSQL 15
+    purpose: "Store engine configurations, calculation history, user preferences"
+    
+  deployment:
+    platform: Railway
+    services:
+      - backend_api
+      - frontend_dashboard
+      - postgresql_database
+
+# ====================================================================================
+# QUALITY REQUIREMENTS
+# ====================================================================================
+
+quality_requirements:
+  performance:
+    calculation_latency: "<100ms for single configuration"
+    3d_rendering_fps: "60 FPS minimum"
+    engine_switching_time: "<200ms"
+    tooltip_display_latency: "<50ms"
+    api_response_time: "<200ms (p95)"
+  
+  scalability:
+    concurrent_users: "10 simultaneous users (Phase 1)"
+    engines_supported: "10+ engines without performance degradation"
+    calculation_cache: "LRU cache for 1000 recent calculations"
+  
+  reliability:
+    uptime: "99% (Phase 1), 99.9% (Phase 2)"
+    calculation_accuracy: "±1% vs manual calculations"
+    error_handling: "Graceful degradation for invalid inputs"
+  
+  maintainability:
+    code_coverage: "85% unit, 75% integration"
+    documentation: "100% of public APIs documented"
+    engine_addition_time: "<4 hours for experienced developer"
+
+# ====================================================================================
+# TESTING REQUIREMENTS
+# ====================================================================================
+
+testing_requirements:
+  unit_tests:
+    coverage_threshold: 0.85
+    critical_areas:
+      - "Engine interface implementation"
+      - "Normalization calculations"
+      - "Formula tracking accuracy"
+      - "Input validation"
+  
+  integration_tests:
+    coverage_threshold: 0.75
+    critical_areas:
+      - "API endpoints (list engines, calculate, get schema)"
+      - "Database persistence"
+      - "Engine registry operations"
+  
+  e2e_tests:
+    coverage_threshold: 0.70
+    critical_areas:
+      - "End-to-end calculation flow"
+      - "3D visualization rendering"
+      - "Tooltip display with formulas"
+      - "Engine switching"
+  
+  performance_tests:
+    - "Calculation latency < 100ms"
+    - "API response time < 200ms"
+    - "3D rendering at 60 FPS with 1000 data points"
+
+# ====================================================================================
+# SYSTEM-LEVEL ACCEPTANCE CRITERIA
+# ====================================================================================
+
+acceptance_criteria:
+  - criterion_id: SYS-AC-001
+    criterion: "Engine registry can list all available engines with metadata"
+    priority: critical
+    
+  - criterion_id: SYS-AC-002
+    criterion: "API returns input schema for any registered engine"
+    priority: critical
+    
+  - criterion_id: SYS-AC-003
+    criterion: "API returns output schema for any registered engine"
+    priority: critical
+    
+  - criterion_id: SYS-AC-004
+    criterion: "Calculate endpoint returns results with formula tracking"
+    priority: critical
+    
+  - criterion_id: SYS-AC-005
+    criterion: "All calculations complete in <100ms"
+    priority: high
+    
+  - criterion_id: SYS-AC-006
+    criterion: "Calculation results include normalized scores (0-100 scale)"
+    priority: high
+    
+  - criterion_id: SYS-AC-007
+    criterion: "Adding new engine requires no changes to API or frontend code"
+    priority: high
+
+# ====================================================================================
+# FEATURES IN THIS SYSTEM
+# ====================================================================================
+
+features:
+  - feature_id: FEATURE-001
+    feature_name: "Interactive Feasibility Tool"
+    description: "Web-based UI for engine selection, parameter input, and 3D visualization"
+    status: planned
+    priority: critical
+
+# ====================================================================================
+# DEPENDENCIES
+# ====================================================================================
+
+dependencies:
+  external_systems: []
+  external_apis: []
+  shared_libraries:
+    - name: "numpy"
+      purpose: "Numerical computations"
+    - name: "scipy"
+      purpose: "Scientific computing, optimization"
+    - name: "pygmo"
+      purpose: "Multi-objective optimization algorithms"
+
+# ====================================================================================
+# RISKS AND MITIGATIONS
+# ====================================================================================
+
+risks:
+  - risk_id: RISK-001
+    description: "3D visualization performance degrades with >1000 data points"
+    impact: high
+    probability: medium
+    mitigation: "Implement LOD (Level of Detail), use instanced rendering, add sampling controls"
+    
+  - risk_id: RISK-002
+    description: "Complex formulas difficult to display in tooltips"
+    impact: medium
+    probability: high
+    mitigation: "Use MathJax/KaTeX for LaTeX rendering, support formula expansion/collapse"
+    
+  - risk_id: RISK-003
+    description: "Engine calculations too slow for real-time updates"
+    impact: high
+    probability: low
+    mitigation: "Implement calculation caching, debounce slider inputs, show loading indicators"
+
+# ====================================================================================
+# TRACEABILITY MATRIX
+# ====================================================================================
+
+traceability_matrix:
+  - project_requirement: "PROJECT-AC-001: Select from multiple engines"
+    system_requirements:
+      - "SYS-AC-001: Engine registry lists all engines"
+      - "SYS-AC-002: API returns input schema"
+    implementation: "FEATURE-001 provides dropdown + dynamic controls"
+    
+  - project_requirement: "PROJECT-AC-003: 3D visualization of composite scores"
+    system_requirements:
+      - "SYS-AC-006: Results include normalized scores"
+    implementation: "FEATURE-001 LAYER-005 renders 3D scatter plot"
+    
+  - project_requirement: "PROJECT-AC-004: Comprehensive tooltips"
+    system_requirements:
+      - "SYS-AC-004: Results include formula tracking"
+    implementation: "FEATURE-001 LAYER-001 engines return formulas + steps"
