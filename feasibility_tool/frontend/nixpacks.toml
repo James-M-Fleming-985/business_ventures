@@ -4,5 +4,8 @@ nixPkgs = ["nodejs_20"]
 [phases.build]
 cmds = ["npm install", "npm run build"]
 
+[phases.install]
+dependsOn = ["setup"]
+
 [start]
-cmd = "npx serve -s dist -l $PORT"
+cmd = "npx serve -s dist -p $PORT"
