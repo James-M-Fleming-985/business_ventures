@@ -6,12 +6,11 @@ from app.engines.base import initialize_engines, EngineRegistry
 from app.auth import router as auth_router
 from app.payments import router as payments_router
 from app.database import init_db
-import sys
-import os
 
-# Add parent directory to path to import version
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from version import __version__, __build_date__, __description__
+# Version info
+__version__ = "1.1.0"
+__build_date__ = "2025-12-31"
+__description__ = "Feasibility Platform with Authentication & Payments"
 
 app = FastAPI(
     title="Feasibility Platform API",
