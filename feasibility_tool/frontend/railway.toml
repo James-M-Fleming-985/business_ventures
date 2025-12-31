@@ -9,6 +9,3 @@ restartPolicyType = "ON_FAILURE"
 
 [phases.setup]
 nixPkgs = ["nodejs_20", "npm-9_x"]
-
-[phases.setup]
-nixPkgs = ["nodejs_20", "npm-9_x"]
