@@ -3,12 +3,31 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Dict, Any, Optional
 from app.engines.base import initialize_engines, EngineRegistry
+from app.auth import router as auth_router
+from app.payments import router as payments_router
+from app.database import init_db
+import sys
+import os
+
+# Add parent directory to path to import version
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+from version import __version__, __build_date__, __description__
 
 app = FastAPI(
     title="Feasibility Platform API",
     description="Generic feasibility analysis platform with pluggable engines",
-    version="1.0.0"
+    version=__version__
 )
+
+# Initialize database on startup
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database tables on startup"""
+    init_db()
+
+# Include routers
+app.include_router(auth_router)
+app.include_router(payments_router)
 
 # CORS middleware
 app.add_middleware(
@@ -38,7 +57,20 @@ async def health_check():
     return APIResponse(
         success=True,
         data={"status": "healthy"},
-        metadata={"service": "feasibility-platform"}
+        metadata={"service": "feasibility-platform", "version": __version__}
+    )
+
+
+@app.get("/api/version")
+async def get_version():
+    """Get API version information"""
+    return APIResponse(
+        success=True,
+        data={
+            "version": __version__,
+            "build_date": __build_date__,
+            "description": __description__
+        }
     )
 
 

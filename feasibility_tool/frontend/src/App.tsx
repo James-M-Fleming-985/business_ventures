@@ -333,6 +333,7 @@ function App() {
   const [calcDetailsPos, setCalcDetailsPos] = useState({ x: 20, y: 20 })
   const [isDragging, setIsDragging] = useState(false)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
+  const [appVersion, setAppVersion] = useState<string>('loading...')
 
   // Fetch input schema
   useEffect(() => {
@@ -351,6 +352,21 @@ function App() {
         }
       })
       .catch(err => console.error('Failed to fetch schema:', err))
+  }, [])
+
+  // Fetch version information
+  useEffect(() => {
+    axios.get(`${API_BASE_URL}/api/version`)
+      .then(res => {
+        if (res.data.success) {
+          setAppVersion(`v${res.data.data.version}`)
+        }
+      })
+      .catch(err => {
+        console.error('Failed to fetch version:', err)
+        // Fallback to package.json version
+        setAppVersion('v1.1.0')
+      })
   }, [])
 
   // Auto-calculate on input change - INSTANT, no debounce
@@ -1207,6 +1223,21 @@ function App() {
             />
           </Box>
         )}
+
+        {/* Footer with version */}
+        <Box sx={{ 
+          borderTop: '1px solid #333', 
+          p: 1, 
+          textAlign: 'center',
+          bgcolor: '#0a0a0a',
+          position: 'sticky',
+          bottom: 0,
+          zIndex: 1000
+        }}>
+          <Typography variant="caption" color="text.secondary">
+            Feasibility Platform {appVersion} · {new Date().getFullYear()} · Powered by AI
+          </Typography>
+        </Box>
       </Box>
     </ThemeProvider>
   )
