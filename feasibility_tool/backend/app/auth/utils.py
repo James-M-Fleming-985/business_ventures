@@ -7,6 +7,8 @@ from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 import os
+import hashlib
+import base64
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -18,14 +20,22 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
 REFRESH_TOKEN_EXPIRE_DAYS = 7
 
 
+def _prepare_password(password: str) -> str:
+    """
+    Pre-hash password with SHA256 to ensure it's within bcrypt's 72-byte limit.
+    Returns base64-encoded hash that's always the same length regardless of input.
+    """
+    return base64.b64encode(hashlib.sha256(password.encode()).digest()).decode()
+
+
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against its hash."""
-    return pwd_context.verify(plain_password, hashed_password)
+    return pwd_context.verify(_prepare_password(plain_password), hashed_password)
 
 
 def get_password_hash(password: str) -> str:
     """Hash a password for storing."""
-    return pwd_context.hash(password)
+    return pwd_context.hash(_prepare_password(password))
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
