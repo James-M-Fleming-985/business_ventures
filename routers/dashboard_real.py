@@ -449,12 +449,25 @@ async def get_relationship_details(
             }
         
         # Get time series data for scatter plot and overlay
+        # CRITICAL: Only use data within the correlation's calculated date range
+        # This ensures scatter plot matches the actual correlation sample size
+        query_filters_var1 = [TimeSeriesData.variable_id == var1.id]
+        query_filters_var2 = [TimeSeriesData.variable_id == var2.id]
+        
+        if corr.start_date:
+            query_filters_var1.append(TimeSeriesData.timestamp >= corr.start_date)
+            query_filters_var2.append(TimeSeriesData.timestamp >= corr.start_date)
+        
+        if corr.end_date:
+            query_filters_var1.append(TimeSeriesData.timestamp <= corr.end_date)
+            query_filters_var2.append(TimeSeriesData.timestamp <= corr.end_date)
+        
         var1_data = db.query(TimeSeriesData).filter(
-            TimeSeriesData.variable_id == var1.id
+            *query_filters_var1
         ).order_by(TimeSeriesData.timestamp).all()
         
         var2_data = db.query(TimeSeriesData).filter(
-            TimeSeriesData.variable_id == var2.id
+            *query_filters_var2
         ).order_by(TimeSeriesData.timestamp).all()
         
         # Build scatter plot data (aligned timestamps)
@@ -563,6 +576,11 @@ async def get_relationship_details(
             "direction": direction,
             "stability": stability,
             "sample_size": corr.sample_size,
+            "actual_scatter_points": len(scatter_data),  # NEW: Verify scatter matches sample size
+            "date_range": {  # NEW: Show actual date range used
+                "start": corr.start_date.strftime('%Y-%m-%d') if corr.start_date else None,
+                "end": corr.end_date.strftime('%Y-%m-%d') if corr.end_date else None
+            },
             "method": corr.method,
             "explanation": explanation,
             "scatter_data": scatter_data,
