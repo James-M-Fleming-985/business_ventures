@@ -7,6 +7,7 @@ function dashboardData() {
             apiSources: 8,
             lastUpdated: '--'
         },
+        isRecalculating: false,
         availableMetrics: [],
         selectedMetric: 'all',
         networkThreshold: 0.5,
@@ -909,6 +910,40 @@ function dashboardData() {
                 this.loadLeaderboard(),
                 this.loadDriftForecast()
             ]);
+        },
+        
+        async recalculateCorrelations() {
+            if (this.isRecalculating) return;
+            
+            if (!confirm('This will recalculate all correlations with proper date ranges. This may take 1-2 minutes. Continue?')) {
+                return;
+            }
+            
+            this.isRecalculating = true;
+            console.log('Starting correlation recalculation...');
+            
+            try {
+                const response = await fetch('/api/admin/calculate-correlations', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                console.log('Recalculation complete:', data);
+                alert(`Success! Recalculated ${data.total_calculated || 'all'} correlations. The scatter plots will now show the correct data points.`);
+                
+                // Refresh dashboard after recalculation
+                await this.refreshAll();
+                
+            } catch (error) {
+                console.error('Recalculation failed:', error);
+                alert('Failed to recalculate correlations: ' + error.message);
+            } finally {
+                this.isRecalculating = false;
+            }
         },
         
         // Demo data functions (fallback if API not ready)

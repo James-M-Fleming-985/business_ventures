@@ -18,7 +18,7 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- Strong Correlations -->
         <div class="bg-slate-800 rounded-lg p-6 border border-slate-700 hover:border-accent-500 transition">
             <div class="flex items-center justify-between">
@@ -31,7 +31,7 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- API Sources -->
         <div class="bg-slate-800 rounded-lg p-6 border border-slate-700 hover:border-green-500 transition">
             <div class="flex items-center justify-between">
@@ -44,7 +44,7 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- Last Updated -->
         <div class="bg-slate-800 rounded-lg p-6 border border-slate-700 hover:border-blue-500 transition">
             <div class="flex items-center justify-between">
@@ -68,12 +68,21 @@
                     <i data-lucide="grid-3x3" class="w-5 h-5 text-primary-400"></i>
                     <h2 class="text-xl font-bold">Correlation Heatmap</h2>
                 </div>
-                <button 
-                    @click="loadHeatmap()" 
-                    class="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm transition"
-                >
-                    <i data-lucide="refresh-cw" class="w-4 h-4 inline"></i>
-                </button>
+                <div class="flex gap-2">
+                    <button 
+                        @click="recalculateCorrelations()" 
+                        :disabled="isRecalculating"
+                        class="px-3 py-1 bg-primary-600 hover:bg-primary-700 disabled:bg-slate-700 disabled:text-slate-500 rounded text-sm transition flex items-center gap-1"
+                        title="Recalculate all correlations with proper date ranges"
+                    >
+                        <i data-lucide="calculator" class="w-4 h-4" :class="{'animate-spin': isRecalculating}"></i>
+                        <span x-text="isRecalculating ? 'Recalculating...' : 'Recalculate'"></span>
+                    </button>
+                    <button @click="loadHeatmap()"
+                        class="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm transition">
+                        <i data-lucide="refresh-cw" class="w-4 h-4 inline"></i>
+                    </button>
+                </div>
             </div>
             <div id="heatmap" class="w-full" style="height: 400px;"></div>
             <p class="text-slate-400 text-sm mt-2">Click any cell to view detailed relationship analysis</p>
@@ -86,19 +95,19 @@
                     <i data-lucide="line-chart" class="w-5 h-5 text-accent-400"></i>
                     <h2 class="text-xl font-bold">Top Variable Trends</h2>
                 </div>
-                <button 
-                    @click="loadTimeSeries()" 
-                    class="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm transition"
-                >
+                <button @click="loadTimeSeries()"
+                    class="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm transition">
                     <i data-lucide="refresh-cw" class="w-4 h-4 inline"></i>
                 </button>
             </div>
             <div id="timeseries" class="w-full" style="height: 400px;"></div>
             <div class="mt-3 p-3 bg-slate-900/50 rounded border border-slate-700">
                 <p class="text-slate-300 text-sm">
-                    <strong>What this shows:</strong> Normalized trends (0-1 scale) for the most interesting variables from top correlations. 
-                    All lines are scaled to the same range so you can compare patterns. 
-                    Hover over any point to see the actual raw values (stocks in GBP, GDP in trillions, event counts, etc.). 
+                    <strong>What this shows:</strong> Normalized trends (0-1 scale) for the most interesting variables
+                    from top correlations.
+                    All lines are scaled to the same range so you can compare patterns.
+                    Hover over any point to see the actual raw values (stocks in GBP, GDP in trillions, event counts,
+                    etc.).
                     Click any correlation in the heatmap above for detailed side-by-side analysis.
                 </p>
             </div>
@@ -113,15 +122,8 @@
                 </div>
                 <div class="flex items-center space-x-2">
                     <label class="text-sm text-slate-400">Min |r|:</label>
-                    <input 
-                        type="range" 
-                        x-model.number="networkThreshold" 
-                        @input="loadNetwork()"
-                        min="0" 
-                        max="1" 
-                        step="0.05"
-                        class="w-24"
-                    >
+                    <input type="range" x-model.number="networkThreshold" @input="loadNetwork()" min="0" max="1"
+                        step="0.05" class="w-24">
                     <span class="text-sm font-mono" x-text="networkThreshold.toFixed(2)"></span>
                 </div>
             </div>
@@ -136,11 +138,8 @@
                     <i data-lucide="award" class="w-5 h-5 text-yellow-400"></i>
                     <h2 class="text-xl font-bold">Top Correlations</h2>
                 </div>
-                <select 
-                    x-model="sortBy" 
-                    @change="loadLeaderboard()"
-                    class="px-3 py-1 bg-slate-700 border border-slate-600 rounded text-sm"
-                >
+                <select x-model="sortBy" @change="loadLeaderboard()"
+                    class="px-3 py-1 bg-slate-700 border border-slate-600 rounded text-sm">
                     <option value="strength">By Strength</option>
                     <option value="positive">Positive Only</option>
                     <option value="negative">Negative Only</option>
@@ -158,10 +157,8 @@
                     </thead>
                     <tbody>
                         <template x-for="(item, idx) in leaderboard" :key="idx">
-                            <tr 
-                                @click="openModal(item)" 
-                                class="border-b border-slate-700/50 hover:bg-slate-700/50 cursor-pointer transition"
-                            >
+                            <tr @click="openModal(item)"
+                                class="border-b border-slate-700/50 hover:bg-slate-700/50 cursor-pointer transition">
                                 <td class="py-3 px-3 text-sm" x-text="idx + 1"></td>
                                 <td class="py-3 px-3">
                                     <div class="flex items-center space-x-2">
@@ -171,23 +168,18 @@
                                     </div>
                                 </td>
                                 <td class="py-3 px-3 text-right">
-                                    <span 
-                                        class="px-2 py-1 rounded text-xs font-mono"
+                                    <span class="px-2 py-1 rounded text-xs font-mono"
                                         :class="item.r >= 0 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'"
-                                        x-text="item.r.toFixed(3)"
-                                    ></span>
+                                        x-text="item.r.toFixed(3)"></span>
                                 </td>
                                 <td class="py-3 px-3 text-right">
-                                    <span 
-                                        class="text-xs px-2 py-1 rounded font-medium"
-                                        :class="{
+                                    <span class="text-xs px-2 py-1 rounded font-medium" :class="{
                                             'bg-green-500/20 text-green-400': item.p < 0.001,
                                             'bg-blue-500/20 text-blue-400': item.p >= 0.001 && item.p < 0.01,
                                             'bg-yellow-500/20 text-yellow-400': item.p >= 0.01 && item.p < 0.05,
                                             'bg-slate-500/20 text-slate-400': item.p >= 0.05
                                         }"
-                                        x-text="item.p < 0.001 ? '< 0.001 ***' : item.p < 0.01 ? item.p.toFixed(3) + ' **' : item.p < 0.05 ? item.p.toFixed(3) + ' *' : item.p.toFixed(3)"
-                                    ></span>
+                                        x-text="item.p < 0.001 ? '< 0.001 ***' : item.p < 0.01 ? item.p.toFixed(3) + ' **' : item.p < 0.05 ? item.p.toFixed(3) + ' *' : item.p.toFixed(3)"></span>
                                 </td>
                             </tr>
                         </template>
@@ -210,11 +202,8 @@
                 </div>
             </div>
             <div class="flex items-center space-x-2">
-                <select 
-                    x-model="selectedDriftMetric" 
-                    @change="loadDriftForecast()"
-                    class="px-3 py-1 bg-slate-700 border border-slate-600 rounded text-sm"
-                >
+                <select x-model="selectedDriftMetric" @change="loadDriftForecast()"
+                    class="px-3 py-1 bg-slate-700 border border-slate-600 rounded text-sm">
                     <option value="S&P 500 Index ↔ GDP Growth (%)">S&P 500 ↔ GDP Growth</option>
                     <option value="GDP Growth (%) ↔ Published Papers">GDP ↔ Published Papers</option>
                     <option value="S&P 500 Index ↔ Clinical Trials">S&P 500 ↔ Clinical Trials</option>
@@ -222,29 +211,27 @@
                     <option value="Global Temp (°C) ↔ GDP Growth (%)">Temperature ↔ GDP</option>
                     <option value="S&P 500 Index ↔ Global Temp (°C)">S&P 500 ↔ Temperature</option>
                 </select>
-                <button 
-                    @click="loadDriftForecast()" 
-                    class="px-3 py-1 bg-accent-600 hover:bg-accent-500 rounded text-sm transition"
-                >
+                <button @click="loadDriftForecast()"
+                    class="px-3 py-1 bg-accent-600 hover:bg-accent-500 rounded text-sm transition">
                     <i data-lucide="zap" class="w-4 h-4 inline"></i> Forecast
                 </button>
             </div>
         </div>
-        
+
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- Drift Chart -->
             <div class="lg:col-span-2">
                 <div id="driftChart" class="w-full" style="height: 300px;"></div>
                 <div class="mt-2 p-3 bg-slate-900/50 rounded border border-slate-700">
                     <p class="text-slate-300 text-xs">
-                        <strong>Correlation Drift:</strong> Tracks correlation coefficient (r) over time. 
-                        Values range from -1 to +1. The solid blue line shows historical correlation strength, 
-                        while the dashed green line predicts future trends based on recent patterns. 
+                        <strong>Correlation Drift:</strong> Tracks correlation coefficient (r) over time.
+                        Values range from -1 to +1. The solid blue line shows historical correlation strength,
+                        while the dashed green line predicts future trends based on recent patterns.
                         Shaded area represents 95% confidence interval.
                     </p>
                 </div>
             </div>
-            
+
             <!-- Drift Metrics -->
             <div class="space-y-4">
                 <div class="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
@@ -255,16 +242,18 @@
                     <p class="text-2xl font-bold" x-text="driftMetrics.current || '0.85'">0.85</p>
                     <p class="text-xs text-slate-500 mt-1">Correlation coefficient (r)</p>
                 </div>
-                
+
                 <div class="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
                     <div class="flex items-center justify-between mb-2">
                         <span class="text-sm text-slate-400">30-Day Forecast</span>
                         <i data-lucide="trending-up" class="w-4 h-4 text-green-400"></i>
                     </div>
-                    <p class="text-2xl font-bold" :class="parseFloat(driftMetrics.forecast) > parseFloat(driftMetrics.current) ? 'text-green-400' : 'text-red-400'" x-text="driftMetrics.forecast || '0.88'">0.88</p>
+                    <p class="text-2xl font-bold"
+                        :class="parseFloat(driftMetrics.forecast) > parseFloat(driftMetrics.current) ? 'text-green-400' : 'text-red-400'"
+                        x-text="driftMetrics.forecast || '0.88'">0.88</p>
                     <p class="text-xs text-slate-500 mt-1">Predicted r-value</p>
                 </div>
-                
+
                 <div class="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
                     <div class="flex items-center justify-between mb-2">
                         <span class="text-sm text-slate-400">Stability Score</span>
@@ -273,13 +262,14 @@
                     <p class="text-2xl font-bold" x-text="driftMetrics.stability || '92'">92</p>
                     <p class="text-xs text-slate-500 mt-1">% (lower = more volatile)</p>
                 </div>
-                
+
                 <div class="bg-accent-500/10 rounded-lg p-3 border border-accent-500/30">
                     <div class="flex items-start space-x-2">
                         <i data-lucide="lightbulb" class="w-4 h-4 text-accent-400 mt-0.5"></i>
                         <div>
                             <p class="text-xs font-medium text-accent-300">Insight</p>
-                            <p class="text-xs text-slate-300 mt-1" x-text="driftMetrics.insight || 'Strong upward trend suggests this correlation will strengthen over the next month.'">
+                            <p class="text-xs text-slate-300 mt-1"
+                                x-text="driftMetrics.insight || 'Strong upward trend suggests this correlation will strengthen over the next month.'">
                                 Strong upward trend suggests this correlation will strengthen over the next month.
                             </p>
                         </div>
@@ -290,124 +280,114 @@
     </div>
 
     <!-- Relationship Analysis Modal -->
-    <div 
-        x-show="modalOpen"
-        x-transition
-        @click.self="modalOpen = false"
-        class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-    >
-    <div 
-        @click.stop
-        class="bg-slate-800 rounded-xl shadow-2xl border border-slate-700 w-full max-w-6xl max-h-[90vh] overflow-y-auto"
-    >
-        <!-- Modal Header -->
-        <div class="sticky top-0 bg-slate-900 border-b border-slate-700 p-6 flex items-center justify-between">
-            <div>
-                <h2 class="text-2xl font-bold" x-text="`${modalData.var1} ↔ ${modalData.var2}`">Relationship Analysis</h2>
-                <p class="text-sm text-slate-400 mt-1">Comprehensive statistical and causal analysis</p>
+    <div x-show="modalOpen" x-transition @click.self="modalOpen = false"
+        class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div @click.stop
+            class="bg-slate-800 rounded-xl shadow-2xl border border-slate-700 w-full max-w-6xl max-h-[90vh] overflow-y-auto">
+            <!-- Modal Header -->
+            <div class="sticky top-0 bg-slate-900 border-b border-slate-700 p-6 flex items-center justify-between">
+                <div>
+                    <h2 class="text-2xl font-bold" x-text="`${modalData.var1} ↔ ${modalData.var2}`">Relationship
+                        Analysis</h2>
+                    <p class="text-sm text-slate-400 mt-1">Comprehensive statistical and causal analysis</p>
+                </div>
+                <button @click="modalOpen = false"
+                    class="w-10 h-10 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
             </div>
-            <button 
-                @click="modalOpen = false" 
-                class="w-10 h-10 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center transition"
-            >
-                <i data-lucide="x" class="w-5 h-5"></i>
-            </button>
-        </div>
-        
-        <!-- Modal Content -->
-        <div class="p-6 space-y-6">
-            <!-- Quick Stats -->
-            <div class="grid grid-cols-4 gap-4">
-                <div class="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
-                    <p class="text-xs text-slate-400 mb-1">Correlation</p>
-                    <p 
-                        class="text-2xl font-bold"
-                        :class="modalData.r >= 0 ? 'text-green-400' : 'text-red-400'"
-                        x-text="modalData.r?.toFixed(3) || 'N/A'"
-                    >0.850</p>
-                </div>
-                <div class="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
-                    <p class="text-xs text-slate-400 mb-1">Significance</p>
-                    <p class="text-2xl font-bold text-green-400" x-text="modalData.p_value || '< 0.001'">< 0.001</p>
-                </div>
-                <div class="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
-                    <p class="text-xs text-slate-400 mb-1">Strength</p>
-                    <p class="text-2xl font-bold text-blue-400" x-text="modalData.strength || 'Strong'">Strong</p>
-                </div>
-                <div class="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
-                    <p class="text-xs text-slate-400 mb-1">Stability</p>
-                    <p class="text-2xl font-bold text-accent-400" x-text="modalData.stability || '92%'">92%</p>
-                </div>
-            </div>
-            
-            <!-- Explanation Section -->
-            <div class="bg-slate-900/50 rounded-lg p-6 border border-slate-700">
-                <div class="flex items-start space-x-3 mb-4">
-                    <i data-lucide="file-text" class="w-5 h-5 text-primary-400 mt-1"></i>
-                    <div>
-                        <h3 class="text-lg font-bold mb-2">Natural Language Explanation</h3>
-                        <p class="text-slate-300" x-text="modalData.explanation || 'Loading detailed analysis...'">
-                            There is a strong positive correlation between Stock Price and GDP. This means that when GDP increases, Stock Price tends to increase as well, and vice versa. The relationship is statistically significant (p < 0.001), indicating this pattern is unlikely to be due to random chance.
-                        </p>
+
+            <!-- Modal Content -->
+            <div class="p-6 space-y-6">
+                <!-- Quick Stats -->
+                <div class="grid grid-cols-4 gap-4">
+                    <div class="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
+                        <p class="text-xs text-slate-400 mb-1">Correlation</p>
+                        <p class="text-2xl font-bold" :class="modalData.r >= 0 ? 'text-green-400' : 'text-red-400'"
+                            x-text="modalData.r?.toFixed(3) || 'N/A'">0.850</p>
+                    </div>
+                    <div class="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
+                        <p class="text-xs text-slate-400 mb-1">Significance</p>
+                        <p class="text-2xl font-bold text-green-400" x-text="modalData.p_value || '< 0.001'">
+                            < 0.001</p>
+                    </div>
+                    <div class="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
+                        <p class="text-xs text-slate-400 mb-1">Strength</p>
+                        <p class="text-2xl font-bold text-blue-400" x-text="modalData.strength || 'Strong'">Strong</p>
+                    </div>
+                    <div class="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
+                        <p class="text-xs text-slate-400 mb-1">Stability</p>
+                        <p class="text-2xl font-bold text-accent-400" x-text="modalData.stability || '92%'">92%</p>
                     </div>
                 </div>
-            </div>
-            
-            <!-- Visualizations -->
-            <div class="grid grid-cols-2 gap-6">
-                <div class="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
-                    <h3 class="text-sm font-bold mb-3 flex items-center space-x-2">
-                        <i data-lucide="scatter-chart" class="w-4 h-4 text-green-400"></i>
-                        <span>Scatter Plot</span>
-                    </h3>
-                    <div id="modalScatter" style="height: 250px;"></div>
-                </div>
-                <div class="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
-                    <h3 class="text-sm font-bold mb-3 flex items-center space-x-2">
-                        <i data-lucide="line-chart" class="w-4 h-4 text-blue-400"></i>
-                        <span>Time Series Overlay</span>
-                    </h3>
-                    <div id="modalTimeSeries" style="height: 250px;"></div>
-                </div>
-            </div>
-            
-            <!-- Causality Analysis (Phase 2) -->
-            <div class="bg-amber-500/10 rounded-lg p-6 border border-amber-500/30">
-                <div class="flex items-start space-x-3">
-                    <i data-lucide="alert-circle" class="w-5 h-5 text-amber-400 mt-1"></i>
-                    <div>
-                        <h3 class="text-lg font-bold text-amber-300 mb-2">Causality Analysis</h3>
-                        <p class="text-sm text-slate-300 mb-3">
-                            <strong>Important:</strong> Correlation does not imply causation. Causality testing features coming in Phase 2.
-                        </p>
-                        <div class="space-y-2 text-sm text-slate-400">
-                            <p>• Granger Causality Test - Determines if one variable predicts another</p>
-                            <p>• Vector Autoregression (VAR) - Models interdependencies</p>
-                            <p>• Transfer Entropy - Quantifies information flow direction</p>
+
+                <!-- Explanation Section -->
+                <div class="bg-slate-900/50 rounded-lg p-6 border border-slate-700">
+                    <div class="flex items-start space-x-3 mb-4">
+                        <i data-lucide="file-text" class="w-5 h-5 text-primary-400 mt-1"></i>
+                        <div>
+                            <h3 class="text-lg font-bold mb-2">Natural Language Explanation</h3>
+                            <p class="text-slate-300" x-text="modalData.explanation || 'Loading detailed analysis...'">
+                                There is a strong positive correlation between Stock Price and GDP. This means that when
+                                GDP increases, Stock Price tends to increase as well, and vice versa. The relationship
+                                is statistically significant (p < 0.001), indicating this pattern is unlikely to be due
+                                    to random chance. </p>
                         </div>
                     </div>
                 </div>
-            </div>
-            
-            <!-- Action Buttons -->
-            <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-700">
-                <button 
-                    @click="exportAnalysis()"
-                    class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition"
-                >
-                    <i data-lucide="download" class="w-4 h-4 inline mr-1"></i>
-                    Export Report
-                </button>
-                <button 
-                    @click="modalOpen = false"
-                    class="px-4 py-2 bg-primary-600 hover:bg-primary-500 rounded-lg text-sm transition"
-                >
-                    Close
-                </button>
+
+                <!-- Visualizations -->
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
+                        <h3 class="text-sm font-bold mb-3 flex items-center space-x-2">
+                            <i data-lucide="scatter-chart" class="w-4 h-4 text-green-400"></i>
+                            <span>Scatter Plot</span>
+                        </h3>
+                        <div id="modalScatter" style="height: 250px;"></div>
+                    </div>
+                    <div class="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
+                        <h3 class="text-sm font-bold mb-3 flex items-center space-x-2">
+                            <i data-lucide="line-chart" class="w-4 h-4 text-blue-400"></i>
+                            <span>Time Series Overlay</span>
+                        </h3>
+                        <div id="modalTimeSeries" style="height: 250px;"></div>
+                    </div>
+                </div>
+
+                <!-- Causality Analysis (Phase 2) -->
+                <div class="bg-amber-500/10 rounded-lg p-6 border border-amber-500/30">
+                    <div class="flex items-start space-x-3">
+                        <i data-lucide="alert-circle" class="w-5 h-5 text-amber-400 mt-1"></i>
+                        <div>
+                            <h3 class="text-lg font-bold text-amber-300 mb-2">Causality Analysis</h3>
+                            <p class="text-sm text-slate-300 mb-3">
+                                <strong>Important:</strong> Correlation does not imply causation. Causality testing
+                                features coming in Phase 2.
+                            </p>
+                            <div class="space-y-2 text-sm text-slate-400">
+                                <p>• Granger Causality Test - Determines if one variable predicts another</p>
+                                <p>• Vector Autoregression (VAR) - Models interdependencies</p>
+                                <p>• Transfer Entropy - Quantifies information flow direction</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-700">
+                    <button @click="exportAnalysis()"
+                        class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition">
+                        <i data-lucide="download" class="w-4 h-4 inline mr-1"></i>
+                        Export Report
+                    </button>
+                    <button @click="modalOpen = false"
+                        class="px-4 py-2 bg-primary-600 hover:bg-primary-500 rounded-lg text-sm transition">
+                        Close
+                    </button>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
 </div><!-- End Alpine.js scope -->
 
