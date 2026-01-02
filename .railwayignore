@@ -2,6 +2,7 @@
 # Only deploy Causal Affect (root level files)
 
 cat-sanctuary-game/
+feasibility_tool/
 financial_optimizer/
 immersive_displays/
 opti_royale/
