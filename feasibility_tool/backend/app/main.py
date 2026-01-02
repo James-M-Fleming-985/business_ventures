@@ -37,6 +37,11 @@ app.include_router(payments_router)
 
 # CORS middleware - get frontend URL from environment
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+
+# Ensure FRONTEND_URL has protocol
+if FRONTEND_URL and not FRONTEND_URL.startswith('http://') and not FRONTEND_URL.startswith('https://'):
+    FRONTEND_URL = f"https://{FRONTEND_URL}"
+
 allowed_origins = [FRONTEND_URL]
 
 # Also allow common development origins
