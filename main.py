@@ -6,7 +6,7 @@ Version: 2.0.14
 
 from fastapi import FastAPI, HTTPException, Depends, status, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, HTMLResponse, FileResponse
+from fastapi.responses import JSONResponse, HTMLResponse, FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
@@ -94,15 +94,8 @@ async def health_check():
 
 @app.get("/", tags=["Health"])
 async def root():
-    """Root endpoint."""
-    return {
-        "message": "Causal Affect Platform API",
-        "version": BUILD_VERSION,
-        "deploy_timestamp": DEPLOY_TIMESTAMP,
-        "docs": "/docs",
-        "health": "/health",
-        "dashboard": "/dashboard"
-    }
+    """Root endpoint - redirects to dashboard."""
+    return RedirectResponse(url="/dashboard", status_code=307)
 
 
 @app.get("/dashboard", response_class=HTMLResponse, tags=["Dashboard"])

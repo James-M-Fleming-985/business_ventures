@@ -113,6 +113,15 @@ async def run_migrations():
             "message": "Migrations complete",
             "migrations_applied": migrations_run
         }
+    except Exception as e:
+        logger.error(f"Migration failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/run-migrations")
+async def run_migrations_get():
+    """GET version of run-migrations for easy browser access"""
+    return await run_migrations()
         
     except Exception as e:
         logger.error(f"Migration failed: {e}", exc_info=True)
