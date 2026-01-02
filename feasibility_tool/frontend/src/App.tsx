@@ -842,18 +842,18 @@ function App() {
               }}
             />
             {/* Baseline & History Controls */}
-            <Paper sx={{ p: 2, mb: 2, bgcolor: '#1a1a1a' }}>
-              <Typography variant="h6" gutterBottom>
+            <Paper sx={{ p: 1.25, mb: 1.25, bgcolor: '#1a1a1a' }}>
+              <Typography variant="caption" fontWeight="bold" gutterBottom display="block" sx={{ fontSize: '0.75rem', mb: 0.75 }}>
                 Baseline & History
               </Typography>
-              <Box sx={{ display: 'flex', gap: 0.75, mb: 0.75 }}>
+              <Box sx={{ display: 'flex', gap: 0.5, mb: 0.5 }}>
                 <Button 
                   variant="outlined" 
                   size="small" 
                   fullWidth
-                  startIcon={<Bookmark sx={{ fontSize: '1rem' }} />}
+                  startIcon={<Bookmark sx={{ fontSize: '0.9rem' }} />}
                   onClick={() => setBaselineModalOpen(true)}
-                  sx={{ py: 0.5, fontSize: '0.7rem' }}
+                  sx={{ py: 0.4, fontSize: '0.65rem' }}
                 >
                   {baseline ? 'Edit' : 'Set'}
                 </Button>
@@ -861,9 +861,9 @@ function App() {
                   variant="outlined" 
                   size="small" 
                   fullWidth
-                  startIcon={<History sx={{ fontSize: '1rem' }} />}
+                  startIcon={<History sx={{ fontSize: '0.9rem' }} />}
                   onClick={() => setHistoryDrawerOpen(true)}
-                  sx={{ py: 0.5, fontSize: '0.7rem' }}
+                  sx={{ py: 0.4, fontSize: '0.65rem' }}
                 >
                   History ({explorationHistory.length})
                 </Button>
@@ -877,7 +877,7 @@ function App() {
 
             {/* Visualization Mode Selector */}
             <Paper sx={{ p: 1.25, mb: 1.25, bgcolor: '#1a1a1a' }}>
-              <Typography variant="caption" fontWeight="bold" gutterBottom display="block" sx={{ fontSize: '0.8rem', mb: 0.75 }}>
+              <Typography variant="caption" fontWeight="bold" gutterBottom display="block" sx={{ fontSize: '0.75rem', mb: 0.75 }}>
                 Visualization Mode
               </Typography>
               <Select
@@ -900,7 +900,7 @@ function App() {
             </Paper>
 
             <Paper sx={{ p: 1.25, mb: 1.25, bgcolor: '#1a1a1a' }}>
-              <Typography variant="caption" fontWeight="bold" gutterBottom display="block" sx={{ fontSize: '0.8rem', mb: 0.75 }}>
+              <Typography variant="caption" fontWeight="bold" gutterBottom display="block" sx={{ fontSize: '0.75rem', mb: 0.75 }}>
                 Target Profile
               </Typography>
               <FormControl fullWidth>
@@ -919,7 +919,7 @@ function App() {
 
             {/* Brightness Control */}
             <Paper sx={{ p: 1.25, mb: 1.25, bgcolor: '#1a1a1a' }}>
-              <Typography variant="caption" fontWeight="bold" gutterBottom display="block" sx={{ fontSize: '0.8rem', mb: 0.5 }}>
+              <Typography variant="caption" fontWeight="bold" gutterBottom display="block" sx={{ fontSize: '0.75rem', mb: 0.5 }}>
                 Surface Brightness
               </Typography>
               <Slider
@@ -939,8 +939,8 @@ function App() {
             </Paper>
 
             {/* Parameter Sliders */}
-            <Paper sx={{ p: 1.5, bgcolor: '#1a1a1a', height: 'calc(100vh - 350px)', overflow: 'auto' }}>
-              <Typography variant="caption" fontWeight="bold" gutterBottom display="block" sx={{ mb: 1.5, fontSize: '0.75rem' }}>
+            <Paper sx={{ p: 1, bgcolor: '#1a1a1a', height: 'calc(100vh - 350px)', overflow: 'auto' }}>
+              <Typography variant="caption" fontWeight="bold" gutterBottom display="block" sx={{ mb: 1, fontSize: '0.7rem' }}>
                 Input Parameters ({Object.keys(inputSchema).length})
               </Typography>
               
@@ -955,30 +955,30 @@ function App() {
                 console.log('Rendering parameter:', key, param)
                 return (
                 <Box key={key} sx={{ 
-                  mb: 1.5, 
-                  p: 1, 
+                  mb: 1, 
+                  p: 0.75, 
                   border: '1px solid #555',
                   borderRadius: 1,
                   bgcolor: '#222',
                   '&:hover': { bgcolor: '#2a2a2a', borderColor: '#00bcd4' }
                 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
-                    <Typography variant="caption" sx={{ color: '#999', fontSize: '0.7rem' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.4 }}>
+                    <Typography variant="caption" sx={{ color: '#999', fontSize: '0.65rem' }}>
                       {param.name}
                     </Typography>
                     <Tooltip title={param.description} arrow>
-                      <IconButton size="small" sx={{ p: 0.25 }}>
-                        <Info fontSize="small" sx={{ fontSize: '1rem' }} />
+                      <IconButton size="small" sx={{ p: 0.2 }}>
+                        <Info fontSize="small" sx={{ fontSize: '0.9rem' }} />
                       </IconButton>
                     </Tooltip>
                   </Box>
                   
-                  {/* VALUE - Make this the star of the show */}
-                  <Box sx={{ mb: 1, display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
-                    <Typography variant="body1" fontWeight="bold" sx={{ color: '#00bcd4', lineHeight: 1, fontSize: '1rem' }}>
+                  {/* VALUE - Compact but prominent */}
+                  <Box sx={{ mb: 0.75, display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
+                    <Typography variant="body2" fontWeight="bold" sx={{ color: '#00bcd4', lineHeight: 1, fontSize: '0.75rem' }}>
                       {inputs[key]?.toFixed?.(3) || inputs[key]}
                     </Typography>
-                    <Typography variant="caption" sx={{ color: '#999', fontSize: '0.7rem' }}>
+                    <Typography variant="caption" sx={{ color: '#999', fontSize: '0.65rem' }}>
                       {param.unit}
                     </Typography>
                   </Box>
