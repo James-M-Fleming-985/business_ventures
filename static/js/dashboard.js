@@ -940,14 +940,14 @@ function dashboardData() {
                 }
                 
                 console.log('Recalculation complete:', data);
-                alert(`Success! Recalculated ${data.total_calculated || 'all'} correlations. The scatter plots will now show the correct data points.`);
+                alert(`✅ All correlations have been refreshed! Your scatter plots now show the complete data.`);
                 
                 // Refresh dashboard after recalculation
                 await this.refreshAll();
                 
             } catch (error) {
                 console.error('Recalculation failed:', error);
-                alert('Failed to recalculate correlations: ' + error.message);
+                alert('⚠️ Couldn\'t refresh correlations. Please try again or contact support if this persists.');
             } finally {
                 this.isRecalculating = false;
             }
@@ -983,7 +983,7 @@ function dashboardData() {
                 
             } catch (error) {
                 console.error('Causality test failed:', error);
-                alert('Failed to test causality: ' + error.message);
+                alert('⚠️ Couldn\'t analyze causality for these variables. They may need more overlapping data points.');
             } finally {
                 this.isTestingCausality = false;
             }
