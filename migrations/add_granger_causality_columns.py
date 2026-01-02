@@ -8,7 +8,7 @@ from database import engine
 
 def upgrade():
     """Add Granger causality columns"""
-    with engine.connect() as conn:
+    with engine.begin() as conn:
         # Add causal_direction column
         conn.execute(text("""
             ALTER TABLE correlation_results 
@@ -33,18 +33,15 @@ def upgrade():
             ADD COLUMN IF NOT EXISTS granger_lags INTEGER
         """))
         
-        conn.commit()
-        
         print("✅ Successfully added Granger causality columns to correlation_results table")
 
 def downgrade():
     """Remove Granger causality columns"""
-    with engine.connect() as conn:
+    with engine.begin() as conn:
         conn.execute(text("ALTER TABLE correlation_results DROP COLUMN IF EXISTS causal_direction"))
         conn.execute(text("ALTER TABLE correlation_results DROP COLUMN IF EXISTS granger_p_value_xy"))
         conn.execute(text("ALTER TABLE correlation_results DROP COLUMN IF EXISTS granger_p_value_yx"))
         conn.execute(text("ALTER TABLE correlation_results DROP COLUMN IF EXISTS granger_lags"))
-        conn.commit()
         
         print("✅ Removed Granger causality columns from correlation_results table")
 
