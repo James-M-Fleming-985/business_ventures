@@ -474,25 +474,51 @@ async def get_relationship_details(
             *query_filters_var2
         ).order_by(TimeSeriesData.timestamp).all()
         
-        # Build scatter plot data (aligned timestamps)
-        var1_dict = {dp.timestamp: dp.value for dp in var1_data}
-        var2_dict = {dp.timestamp: dp.value for dp in var2_data}
-        common_timestamps = sorted(
-            set(var1_dict.keys()) & set(var2_dict.keys())
+        # Use pandas for proper time series alignment with interpolation
+        # This matches the correlation calculation logic (handles different frequencies)
+        import pandas as pd
+        
+        var1_series = pd.Series(
+            [dp.value for dp in var1_data],
+            index=[dp.timestamp for dp in var1_data]
+        )
+        var2_series = pd.Series(
+            [dp.value for dp in var2_data],
+            index=[dp.timestamp for dp in var2_data]
         )
         
+        # Combine both series with outer join to get all timestamps
+        aligned_data = pd.DataFrame({
+            'var1': var1_series,
+            'var2': var2_series
+        })
+        
+        # Sort by timestamp
+        aligned_data = aligned_data.sort_index()
+        
+        # Interpolate missing values to align different frequencies
+        # (e.g., daily stock prices with quarterly GDP data)
+        aligned_data = aligned_data.interpolate(method='time', limit_direction='both')
+        
+        # Drop any remaining NaN
+        aligned_data = aligned_data.dropna()
+        
+        logger.info(f"Scatter plot alignment: {len(var1_data)} var1 points + {len(var2_data)} var2 points = {len(aligned_data)} aligned points")
+        
+        # Build scatter plot data from aligned DataFrame
         scatter_data = [
             {
-                "x": var1_dict[ts],
-                "y": var2_dict[ts],
-                "date": ts.strftime("%Y-%m-%d")
+                "x": float(row['var1']),
+                "y": float(row['var2']),
+                "date": idx.strftime("%Y-%m-%d")
             }
-            for ts in common_timestamps
+            for idx, row in aligned_data.iterrows()
         ]
         
         # Build time series for overlay
-        var1_raw = [var1_dict[ts] for ts in common_timestamps]
-        var2_raw = [var2_dict[ts] for ts in common_timestamps]
+        var1_raw = aligned_data['var1'].tolist()
+        var2_raw = aligned_data['var2'].tolist()
+        dates = [idx.strftime("%Y-%m-%d") for idx in aligned_data.index]
         
         # Normalize to 0-1 range for visualization (so both series visible)
         var1_min, var1_max = min(var1_raw), max(var1_raw)
@@ -510,7 +536,7 @@ async def get_relationship_details(
         ]
         
         timeseries = {
-            "dates": [ts.strftime("%Y-%m-%d") for ts in common_timestamps],
+            "dates": dates,
             "var1_values": var1_normalized,  # Normalized for chart
             "var2_values": var2_normalized,   # Normalized for chart
             "var1_raw": var1_raw,             # Original values
