@@ -122,19 +122,13 @@ effective_observation = 0.7 × (1 - 0.4 × 0.3) × (1 - 0.5 × 0.2) × (1 - (1 -
 
 Thus multiple moderate confounders reduce the architect from seventy percent base capability to forty-nine percent effective capability, demonstrating substantial performance degradation requiring either confounder mitigation (stress reduction, rest, emotional regulation) or acknowledgment of temporarily reduced capacity.
 
-System Architecture Overview
+Strategy Lever Framework
 
-The invention is embodied in a computer system comprising processing hardware (CPU with vector processing capabilities for Monte Carlo simulation), memory storage (RAM for simulation execution, persistent storage for actor profiles and historical data), network communication interfaces (API endpoints for data input/output), and user interface components (web-based visualisation dashboard).
+The system provides five bipolar strategy levers that the user configures prior to each interaction to shape their communication approach. Each lever is represented on a continuous scale from negative one to positive one, allowing nuanced positioning between opposing extremes.
 
-Figure 1 illustrates the overall system architecture comprising six primary modules: (1) Actor Profile Management Module storing and updating actor representations; (2) Variable Ontology Engine maintaining the five-layer variable structure; (3) Simulation Engine executing Monte Carlo predictions; (4) Outcome Recording Module capturing empirical results; (5) Bayesian Learning Module updating model parameters; and (6) Strategic Analytics Module providing recommendations. Data flows from left to right: actor profile creation → simulation execution → outcome prediction → actual interaction → outcome recording → model updating → refined predictions.
+Warmth Lever (negative one equals cold/formal to positive one equals warm/personal) controls emotional tenor. Negative values emphasize professional distance, strict formality, and emotional restraint. Positive values emphasize personal connection, warmth, and emotional expressiveness. Selection depends on actor characteristics and scenario context.
 
-The backend implementation utilises FastAPI framework (Python 3.9+) providing RESTful API endpoints, PostgreSQL relational database (version 13+) for persistent storage with JSONB columns for flexible variable storage, and NumPy/SciPy libraries for numerical computation. The frontend comprises a React single-page application (TypeScript) with real-time WebSocket connections for simulation progress updates and data visualisation using D3.js and Chart.js libraries.
-
-Five-Layer Variable Ontology
-
-Figure 2 depicts the hierarchical ontology structure with five primary layers, each containing 5-12 constituent variables, totalling 40+ quantified communication dimensions.
-
-Cognitive Layer quantifies intellectual capacities affecting communication:
+Competence Lever (negative one equals humble/uncertain to positive one equals confident/expert) controls expertise projection. Negative values signal openness to learning, deference to others' expertise, and acknowledgment of uncertainty. Positive values project confidence, subject matter expertise, and authoritative knowledge. Calibration depends on actual expertise levels, actor skepticism, and power dynamics.
 - Analytical Reasoning (scale 0-100): capacity for logical argument construction and flaw detection
 - Abstract Thinking (0-100): ability to conceptualise non-concrete ideas
 - Pattern Recognition (0-100): skill in identifying trends and connections

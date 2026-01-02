@@ -1,0 +1,10 @@
+# Include package.json for Docker builds
+!package.json
+!package-lock.json
+!tsconfig.json
+!tsconfig.node.json
+
+# Exclude these
+node_modules/
+dist/
+.git/
