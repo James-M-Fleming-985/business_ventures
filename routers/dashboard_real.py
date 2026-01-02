@@ -576,8 +576,8 @@ async def get_relationship_details(
             "direction": direction,
             "stability": stability,
             "sample_size": corr.sample_size,
-            "actual_scatter_points": len(scatter_data),  # NEW: Verify scatter matches sample size
-            "date_range": {  # NEW: Show actual date range used
+            "actual_scatter_points": len(scatter_data),  # Verify scatter matches sample size
+            "date_range": {  # Show actual date range used
                 "start": corr.start_date.strftime('%Y-%m-%d') if corr.start_date else None,
                 "end": corr.end_date.strftime('%Y-%m-%d') if corr.end_date else None
             },
