@@ -181,7 +181,10 @@ function ProfileShapeVisualization({
             <meshStandardMaterial color="#00bcd4" emissive="#00bcd4" emissiveIntensity={hoveredSphere === 'performance' ? 2.0 : 1.2} />
           </mesh>
           <Text position={[animatedScores.performance, 8, 0]} fontSize={4} color="#00bcd4">
-            {animatedScores.performance > 0 ? '+' : ''}{animatedScores.performance.toFixed(1)}
+            {baselineScores ? 
+              `${animatedScores.performance > 0 ? '+' : ''}${animatedScores.performance.toFixed(1)}` :
+              currentScores?.performance.toFixed(1)
+            }
           </Text>
           {hoveredSphere === 'performance' && currentScores && (
             <Html position={[animatedScores.performance, 15, 0]}>
@@ -241,7 +244,10 @@ function ProfileShapeVisualization({
             <meshStandardMaterial color="#4caf50" emissive="#4caf50" emissiveIntensity={hoveredSphere === 'durability' ? 2.0 : 1.2} />
           </mesh>
           <Text position={[0, animatedScores.durability + 8, 0]} fontSize={4} color="#4caf50">
-            {animatedScores.durability > 0 ? '+' : ''}{animatedScores.durability.toFixed(1)}
+            {baselineScores ? 
+              `${animatedScores.durability > 0 ? '+' : ''}${animatedScores.durability.toFixed(1)}` :
+              currentScores?.durability.toFixed(1)
+            }
           </Text>
           {hoveredSphere === 'durability' && currentScores && (
             <Html position={[0, animatedScores.durability + 15, 0]}>
@@ -298,7 +304,10 @@ function ProfileShapeVisualization({
             <meshStandardMaterial color="#ff9800" emissive="#ff9800" emissiveIntensity={hoveredSphere === 'economic' ? 2.0 : 1.2} />
           </mesh>
           <Text position={[0, 8, animatedScores.economic]} fontSize={4} color="#ff9800">
-            {animatedScores.economic > 0 ? '+' : ''}{animatedScores.economic.toFixed(1)}
+            {baselineScores ? 
+              `${animatedScores.economic > 0 ? '+' : ''}${animatedScores.economic.toFixed(1)}` :
+              currentScores?.economic.toFixed(1)
+            }
           </Text>
           {hoveredSphere === 'economic' && currentScores && (
             <Html position={[0, 15, animatedScores.economic]}>

@@ -449,6 +449,9 @@ async def get_relationship_details(
                 "var2": var2_name
             }
         
+        # Debug logging to track date range issues
+        logger.info(f"Correlation {var1_name} vs {var2_name}: sample_size={corr.sample_size}, start={corr.start_date}, end={corr.end_date}")
+        
         # Get time series data for scatter plot and overlay
         # CRITICAL: Only use data within the correlation's calculated date range
         # This ensures scatter plot matches the actual correlation sample size
