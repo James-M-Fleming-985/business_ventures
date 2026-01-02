@@ -142,7 +142,7 @@ export const LandingPage: React.FC = () => {
             Choose the plan that fits your needs
           </Typography>
 
-          <Grid container spacing={4} justifyContent="center" alignItems="stretch">
+          <Grid container spacing={4} justifyContent="center" alignItems="stretch" sx={{ overflow: 'visible' }}>
             <Grid item xs={12} md={6} lg={5} sx={{ display: 'flex' }}>
               <Card sx={{ 
                 textAlign: 'center', 
@@ -183,23 +183,25 @@ export const LandingPage: React.FC = () => {
               </Card>
             </Grid>
 
-            <Grid item xs={12} md={6} lg={5} sx={{ display: 'flex' }}>
+            <Grid item xs={12} md={6} lg={5} sx={{ display: 'flex', overflow: 'visible' }}>
               <Card
                 sx={{
                   textAlign: 'center',
                   p: 4,
+                  pt: 5,
                   border: '3px solid #667eea',
                   position: 'relative',
                   boxShadow: 3,
                   display: 'flex',
                   flexDirection: 'column',
-                  width: '100%'
+                  width: '100%',
+                  overflow: 'visible'
                 }}
               >
                 <Box
                   sx={{
                     position: 'absolute',
-                    top: -15,
+                    top: -12,
                     left: '50%',
                     transform: 'translateX(-50%)',
                     bgcolor: '#667eea',
@@ -207,7 +209,9 @@ export const LandingPage: React.FC = () => {
                     px: 3,
                     py: 0.5,
                     borderRadius: 20,
-                    fontWeight: 'bold'
+                    fontWeight: 'bold',
+                    fontSize: '0.875rem',
+                    zIndex: 1
                   }}
                 >
                   POPULAR
