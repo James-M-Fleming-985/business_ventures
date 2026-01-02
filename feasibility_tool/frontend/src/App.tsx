@@ -874,8 +874,8 @@ function App() {
             </Paper>
 
             {/* Visualization Mode Selector */}
-            <Paper sx={{ p: 2, mb: 2, bgcolor: '#1a1a1a' }}>
-              <Typography variant="h6" gutterBottom>
+            <Paper sx={{ p: 1.5, mb: 1.5, bgcolor: '#1a1a1a' }}>
+              <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
                 Visualization Mode
               </Typography>
               <Select
@@ -896,8 +896,8 @@ function App() {
               </Select>
             </Paper>
 
-            <Paper sx={{ p: 2, mb: 2, bgcolor: '#1a1a1a' }}>
-              <Typography variant="h6" gutterBottom>
+            <Paper sx={{ p: 1.5, mb: 1.5, bgcolor: '#1a1a1a' }}>
+              <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
                 Target Profile
               </Typography>
               <FormControl fullWidth>
@@ -914,8 +914,8 @@ function App() {
             </Paper>
 
             {/* Brightness Control */}
-            <Paper sx={{ p: 2, mb: 2, bgcolor: '#1a1a1a' }}>
-              <Typography variant="body2" gutterBottom>
+            <Paper sx={{ p: 1.5, mb: 1.5, bgcolor: '#1a1a1a' }}>
+              <Typography variant="caption" fontWeight="bold" gutterBottom display="block">
                 Surface Brightness
               </Typography>
               <Slider
@@ -934,9 +934,9 @@ function App() {
             </Paper>
 
             {/* Parameter Sliders */}
-            <Paper sx={{ p: 2, bgcolor: '#1a1a1a', height: 'calc(100vh - 350px)', overflow: 'auto' }}>
-              <Typography variant="h6" gutterBottom>
-                Parameters ({Object.keys(inputSchema).length} inputs)
+            <Paper sx={{ p: 1.5, bgcolor: '#1a1a1a', height: 'calc(100vh - 350px)', overflow: 'auto' }}>
+              <Typography variant="subtitle2" fontWeight="bold" gutterBottom sx={{ mb: 1.5 }}>
+                Input Parameters ({Object.keys(inputSchema).length})
               </Typography>
               
               {Object.keys(inputSchema).length === 0 && (
@@ -949,16 +949,33 @@ function App() {
               {Object.entries(inputSchema).map(([key, param]) => {
                 console.log('Rendering parameter:', key, param)
                 return (
-                <Box key={key} sx={{ mb: 2, p: 1, border: '1px solid #444' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <Typography variant="body2" sx={{ flex: 1 }}>
+                <Box key={key} sx={{ 
+                  mb: 1.5, 
+                  p: 1, 
+                  border: '1px solid #555',
+                  borderRadius: 1,
+                  bgcolor: '#222',
+                  '&:hover': { bgcolor: '#2a2a2a', borderColor: '#00bcd4' }
+                }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+                    <Typography variant="caption" sx={{ color: '#999', fontSize: '0.7rem' }}>
                       {param.name}
                     </Typography>
                     <Tooltip title={param.description} arrow>
-                      <IconButton size="small">
-                        <Info fontSize="small" />
+                      <IconButton size="small" sx={{ p: 0.25 }}>
+                        <Info fontSize="small" sx={{ fontSize: '1rem' }} />
                       </IconButton>
                     </Tooltip>
+                  </Box>
+                  
+                  {/* VALUE - Make this the star of the show */}
+                  <Box sx={{ mb: 1, display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
+                    <Typography variant="h6" fontWeight="bold" sx={{ color: '#00bcd4', lineHeight: 1 }}>
+                      {inputs[key]?.toFixed?.(3) || inputs[key]}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#999' }}>
+                      {param.unit}
+                    </Typography>
                   </Box>
                   
                   {param.type === 'select' ? (
@@ -966,7 +983,7 @@ function App() {
                       <Select
                         value={inputs[key] || param.default}
                         onChange={(e) => setInputs({ ...inputs, [key]: e.target.value })}
-                        sx={{ bgcolor: '#222' }}
+                        sx={{ bgcolor: '#2a2a2a', '& .MuiSelect-select': { py: 0.5 } }}
                       >
                         {param.options?.map(option => (
                           <MenuItem key={option} value={option}>{option}</MenuItem>
@@ -974,19 +991,14 @@ function App() {
                       </Select>
                     </FormControl>
                   ) : (
-                    <>
-                      <Typography variant="caption" color="text.secondary">
-                        {inputs[key]?.toFixed?.(3) || inputs[key]} {param.unit}
-                      </Typography>
-                      <Slider
-                        value={typeof inputs[key] === 'number' ? inputs[key] : param.default}
-                        min={param.min_value}
-                        max={param.max_value}
-                        step={(param.max_value! - param.min_value!) / 100}
-                        onChange={(_: Event, val: number | number[]) => setInputs({ ...inputs, [key]: val as number })}
-                        sx={{ mt: 1 }}
-                      />
-                    </>
+                    <Slider
+                      value={typeof inputs[key] === 'number' ? inputs[key] : param.default}
+                      min={param.min_value}
+                      max={param.max_value}
+                      step={(param.max_value! - param.min_value!) / 100}
+                      onChange={(_: Event, val: number | number[]) => setInputs({ ...inputs, [key]: val as number })}
+                      sx={{ mt: 0.5 }}
+                    />
                   )}
                 </Box>
               )})}
@@ -994,8 +1006,8 @@ function App() {
 
             {/* Score Summary */}
             {result && (
-              <Paper sx={{ p: 2, mt: 2, bgcolor: '#1a1a1a' }}>
-                <Typography variant="h6" gutterBottom>
+              <Paper sx={{ p: 1.5, mt: 1.5, bgcolor: '#1a1a1a' }}>
+                <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
                   Scores
                 </Typography>
                 {Object.entries(result.composites).map(([key, value]) => (
