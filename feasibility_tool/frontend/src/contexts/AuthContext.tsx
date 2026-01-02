@@ -60,7 +60,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (response.ok) {
         const data = await response.json();
         console.log('fetchUser response data:', data);
-        setUser(data.data);
+        // Handle both direct user response and nested data response
+        const userData = data.data || data;
+        console.log('Setting user:', userData);
+        setUser(userData);
       } else {
         const errorText = await response.text();
         console.error('fetchUser failed:', response.status, errorText);
@@ -76,35 +79,41 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const login = async (email: string, password: string) => {
-    const response = await fetch(`${API_URL}/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, password }),
-    });
+    try {
+      const response = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || 'Login failed');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Login failed');
+      }
+
+      const data = await response.json();
+      console.log('Login response:', data);
+      
+      // Handle both direct token response and nested data response
+      const tokenData = data.data || data;
+      const { access_token, refresh_token } = tokenData;
+
+      if (!access_token || !refresh_token) {
+        console.error('Invalid token response:', data);
+        throw new Error('Invalid response from server');
+      }
+
+      localStorage.setItem('access_token', access_token);
+      localStorage.setItem('refresh_token', refresh_token);
+
+      await fetchUser(access_token);
+      console.log('Login completed successfully');
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
     }
-
-    const data = await response.json();
-    console.log('Login response:', data);
-    
-    // Handle both direct token response and nested data response
-    const tokenData = data.data || data;
-    const { access_token, refresh_token } = tokenData;
-
-    if (!access_token || !refresh_token) {
-      console.error('Invalid token response:', data);
-      throw new Error('Invalid response from server');
-    }
-
-    localStorage.setItem('access_token', access_token);
-    localStorage.setItem('refresh_token', refresh_token);
-
-    await fetchUser(access_token);
   };
 
   const register = async (email: string, password: string, fullName: string) => {
