@@ -34,6 +34,15 @@ async def initialize_database():
         
         logger.info("Starting database initialization...")
         
+        # Phase 0: Run database migrations
+        logger.info("Phase 0: Running database migrations...")
+        try:
+            from migrations.add_granger_causality_columns import upgrade as run_granger_migration
+            run_granger_migration()
+            logger.info("✅ Granger causality migration complete")
+        except Exception as e:
+            logger.warning(f"Migration may have already run: {e}")
+        
         # Phase 1: Initialize database schema and seed variables
         logger.info("Phase 1: Creating tables and seeding variables...")
         init_result = init_db_main()
@@ -78,6 +87,36 @@ async def initialize_database():
             status_code=500,
             detail=f"Database initialization failed: {str(e)}"
         )
+
+
+@router.post("/run-migrations")
+async def run_migrations():
+    """
+    Run database migrations (can be called independently)
+    Useful for adding new columns without full database re-initialization
+    """
+    try:
+        logger.info("Running database migrations...")
+        migrations_run = []
+        
+        # Run Granger causality migration
+        try:
+            from migrations.add_granger_causality_columns import upgrade as run_granger_migration
+            run_granger_migration()
+            migrations_run.append("add_granger_causality_columns")
+            logger.info("✅ Granger causality migration complete")
+        except Exception as e:
+            logger.warning(f"Granger migration error (may already be applied): {e}")
+        
+        return {
+            "status": "success",
+            "message": "Migrations complete",
+            "migrations_applied": migrations_run
+        }
+        
+    except Exception as e:
+        logger.error(f"Migration failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Migration failed: {str(e)}")
 
 
 def _run_data_fetch_background(job_id: str, force: bool = False):
