@@ -24,7 +24,11 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// Ensure API_URL has protocol
+let API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+if (API_URL && !API_URL.startsWith('http://') && !API_URL.startsWith('https://')) {
+  API_URL = `https://${API_URL}`;
+}
 console.log('🔧 API_URL configured as:', API_URL);
 console.log('🔧 VITE_API_URL env var:', import.meta.env.VITE_API_URL);
 
