@@ -183,7 +183,7 @@ function ProfileShapeVisualization({
           <Text position={[animatedScores.performance, 8, 0]} fontSize={4} color="#00bcd4">
             {animatedScores.performance > 0 ? '+' : ''}{animatedScores.performance.toFixed(1)}
           </Text>
-          {hoveredSphere === 'performance' && currentScores && baselineScores && (
+          {hoveredSphere === 'performance' && currentScores && (
             <Html position={[animatedScores.performance, 15, 0]}>
               <div style={{ 
                 background: 'rgba(0, 188, 212, 0.95)', 
@@ -196,13 +196,30 @@ function ProfileShapeVisualization({
                 pointerEvents: 'none',
                 boxShadow: '0 2px 10px rgba(0,0,0,0.5)'
               }}>
-                <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>ΔPerformance</div>
-                <div>Current: {currentScores.performance.toFixed(2)}</div>
-                <div>Baseline: {baselineScores.performance.toFixed(2)}</div>
-                <div style={{ borderTop: '1px solid rgba(255,255,255,0.3)', marginTop: '4px', paddingTop: '4px' }}>
-                  Δ = {currentScores.performance.toFixed(2)} - {baselineScores.performance.toFixed(2)}
-                </div>
-                <div>  = {animatedScores.performance.toFixed(2)}</div>
+                {baselineScores ? (
+                  <>
+                    <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>ΔPerformance</div>
+                    <div>Current: {currentScores.performance.toFixed(2)}</div>
+                    <div>Baseline: {baselineScores.performance.toFixed(2)}</div>
+                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.3)', marginTop: '4px', paddingTop: '4px' }}>
+                      Δ = {currentScores.performance.toFixed(2)} - {baselineScores.performance.toFixed(2)}
+                    </div>
+                    <div>  = {animatedScores.performance.toFixed(2)}</div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Performance Score</div>
+                    <div style={{ fontSize: '14px', marginBottom: '4px' }}>{currentScores.performance.toFixed(1)}</div>
+                    {result?.components && Object.entries(result.components)
+                      .filter(([_, comp]: [string, any]) => comp.category === 'performance')
+                      .slice(0, 3)
+                      .map(([key, comp]: [string, any]) => (
+                        <div key={key} style={{ fontSize: '10px', opacity: 0.9 }}>
+                          {key}: {comp.value.toFixed(2)} {comp.unit}
+                        </div>
+                      ))}
+                  </>
+                )}
               </div>
             </Html>
           )}
@@ -218,7 +235,7 @@ function ProfileShapeVisualization({
           <Text position={[0, animatedScores.durability + 8, 0]} fontSize={4} color="#4caf50">
             {animatedScores.durability > 0 ? '+' : ''}{animatedScores.durability.toFixed(1)}
           </Text>
-          {hoveredSphere === 'durability' && currentScores && baselineScores && (
+          {hoveredSphere === 'durability' && currentScores && (
             <Html position={[0, animatedScores.durability + 15, 0]}>
               <div style={{ 
                 background: 'rgba(76, 175, 80, 0.95)', 
@@ -231,13 +248,30 @@ function ProfileShapeVisualization({
                 pointerEvents: 'none',
                 boxShadow: '0 2px 10px rgba(0,0,0,0.5)'
               }}>
-                <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>ΔDurability</div>
-                <div>Current: {currentScores.durability.toFixed(2)}</div>
-                <div>Baseline: {baselineScores.durability.toFixed(2)}</div>
-                <div style={{ borderTop: '1px solid rgba(255,255,255,0.3)', marginTop: '4px', paddingTop: '4px' }}>
-                  Δ = {currentScores.durability.toFixed(2)} - {baselineScores.durability.toFixed(2)}
-                </div>
-                <div>  = {animatedScores.durability.toFixed(2)}</div>
+                {baselineScores ? (
+                  <>
+                    <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>ΔDurability</div>
+                    <div>Current: {currentScores.durability.toFixed(2)}</div>
+                    <div>Baseline: {baselineScores.durability.toFixed(2)}</div>
+                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.3)', marginTop: '4px', paddingTop: '4px' }}>
+                      Δ = {currentScores.durability.toFixed(2)} - {baselineScores.durability.toFixed(2)}
+                    </div>
+                    <div>  = {animatedScores.durability.toFixed(2)}</div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Durability Score</div>
+                    <div style={{ fontSize: '14px', marginBottom: '4px' }}>{currentScores.durability.toFixed(1)}</div>
+                    {result?.components && Object.entries(result.components)
+                      .filter(([_, comp]: [string, any]) => comp.category === 'durability')
+                      .slice(0, 3)
+                      .map(([key, comp]: [string, any]) => (
+                        <div key={key} style={{ fontSize: '10px', opacity: 0.9 }}>
+                          {key}: {comp.value.toFixed(2)} {comp.unit}
+                        </div>
+                      ))}
+                  </>
+                )}
               </div>
             </Html>
           )}
@@ -253,7 +287,7 @@ function ProfileShapeVisualization({
           <Text position={[0, 8, animatedScores.economic]} fontSize={4} color="#ff9800">
             {animatedScores.economic > 0 ? '+' : ''}{animatedScores.economic.toFixed(1)}
           </Text>
-          {hoveredSphere === 'economic' && currentScores && baselineScores && (
+          {hoveredSphere === 'economic' && currentScores && (
             <Html position={[0, 15, animatedScores.economic]}>
               <div style={{ 
                 background: 'rgba(255, 152, 0, 0.95)', 
@@ -266,13 +300,30 @@ function ProfileShapeVisualization({
                 pointerEvents: 'none',
                 boxShadow: '0 2px 10px rgba(0,0,0,0.5)'
               }}>
-                <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>ΔEconomic</div>
-                <div>Current: {currentScores.economic.toFixed(2)}</div>
-                <div>Baseline: {baselineScores.economic.toFixed(2)}</div>
-                <div style={{ borderTop: '1px solid rgba(255,255,255,0.3)', marginTop: '4px', paddingTop: '4px' }}>
-                  Δ = {currentScores.economic.toFixed(2)} - {baselineScores.economic.toFixed(2)}
-                </div>
-                <div>  = {animatedScores.economic.toFixed(2)}</div>
+                {baselineScores ? (
+                  <>
+                    <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>ΔEconomic</div>
+                    <div>Current: {currentScores.economic.toFixed(2)}</div>
+                    <div>Baseline: {baselineScores.economic.toFixed(2)}</div>
+                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.3)', marginTop: '4px', paddingTop: '4px' }}>
+                      Δ = {currentScores.economic.toFixed(2)} - {baselineScores.economic.toFixed(2)}
+                    </div>
+                    <div>  = {animatedScores.economic.toFixed(2)}</div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Economic Score</div>
+                    <div style={{ fontSize: '14px', marginBottom: '4px' }}>{currentScores.economic.toFixed(1)}</div>
+                    {result?.components && Object.entries(result.components)
+                      .filter(([_, comp]: [string, any]) => comp.category === 'economic')
+                      .slice(0, 3)
+                      .map(([key, comp]: [string, any]) => (
+                        <div key={key} style={{ fontSize: '10px', opacity: 0.9 }}>
+                          {key}: {comp.value.toFixed(2)} {comp.unit}
+                        </div>
+                      ))}
+                  </>
+                )}
               </div>
             </Html>
           )}
@@ -1146,22 +1197,7 @@ function App() {
                     </Box>
                   )}
 
-                  {/* Calculation Details */}
-                  <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid #333' }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1, fontWeight: 'bold' }}>
-                      Raw Calculations
-                    </Typography>
-                    {Object.entries(result.components).slice(0, 5).map(([key, comp]) => (
-                      <Box key={key} sx={{ mb: 1 }}>
-                        <Typography variant="caption" color="primary" sx={{ fontSize: '0.65rem', fontFamily: 'monospace' }}>
-                          {key.toUpperCase()}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.65rem' }}>
-                          {comp.value.toFixed(3)} {comp.unit}
-                        </Typography>
-                      </Box>
-                    ))}
-                  </Box>
+                  {/* No raw calculations - use tooltips on 3D visual instead */}
                 </Box>
               </Paper>
             )}
