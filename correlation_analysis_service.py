@@ -389,7 +389,8 @@ class CorrelationAnalysisService:
         limit: int = 20,
         min_significance: float = 0.05,
         method: str = None,
-        cross_domain: bool = False
+        cross_domain: bool = False,
+        min_sample_size: int = 30
     ) -> List[dict]:
         """
         Get top N correlations ranked by absolute strength
@@ -399,13 +400,17 @@ class CorrelationAnalysisService:
             min_significance: Maximum p-value (0.05 = 95% confidence)
             method: Filter by correlation method (None = all)
             cross_domain: Only return correlations between different data sources
+            min_sample_size: Minimum number of overlapping data points (default: 30 for statistical validity)
         
         Returns:
             List of top correlation results
         """
         with get_db_session() as session:
+            # CRITICAL: Filter by minimum sample size to avoid misleading correlations
+            # Correlations with n < 30 are statistically unreliable (e.g., r=0.99 from 3 points)
             query = session.query(CorrelationResult).filter(
-                CorrelationResult.p_value <= min_significance
+                CorrelationResult.p_value <= min_significance,
+                CorrelationResult.sample_size >= min_sample_size  # NEW: Minimum sample filter
             )
             
             if method:
@@ -452,8 +457,9 @@ class CorrelationAnalysisService:
                     'correlation_value': r.correlation_value,
                     'p_value': r.p_value,
                     'method': r.method,
-                    'sample_size': r.sample_size,
+                    'sample_size': r.sample_size,  # CRITICAL: Display prominently in UI
                     'is_significant': r.is_significant,
+                    'data_quality': 'HIGH' if r.sample_size >= 100 else ('MEDIUM' if r.sample_size >= 30 else 'LOW'),  # NEW: Quality indicator
                     'start_date': (
                         r.start_date.strftime('%Y-%m-%d')
                         if r.start_date else None

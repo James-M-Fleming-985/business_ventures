@@ -91,7 +91,8 @@ async def get_heatmap_data(
         all_correlations = service.get_top_correlations(
             limit=500,  # Get many candidates for filtering
             min_significance=0.05,
-            cross_domain=cross_domain  # Actually use the cross_domain filter!
+            cross_domain=cross_domain,  # Actually use the cross_domain filter!
+            min_sample_size=30  # CRITICAL FIX: Only show correlations with n >= 30
         )
         
         if not all_correlations:
@@ -163,6 +164,7 @@ async def get_heatmap_data(
             meta = {
                 'sample_size': corr.get('sample_size', 0),
                 'p_value': corr.get('p_value', 0),
+                'data_quality': corr.get('data_quality', 'UNKNOWN'),  # NEW: Quality indicator
                 'start_date': corr.get('start_date', ''),
                 'end_date': corr.get('end_date', '')
             }
@@ -257,10 +259,10 @@ async def get_network_data(
 ):
     """Get correlation network from REAL DATA - connections above threshold"""
     try:
-        # Get all significant correlations above threshold
-        correlations = db.query(CorrelationResult).filter(
-            CorrelationResult.is_significant.is_(True),
-            CorrelationResult.abs_correlation >= threshold
+        # Get all significant correlations above threshold with minimum sample size
+        correlations = db.query(CorrelationResult).filter(\n            CorrelationResult.is_significant.is_(True),
+            CorrelationResult.abs_correlation >= threshold,
+            CorrelationResult.sample_size >= 30  # CRITICAL: Filter out correlations with insufficient data
         ).all()
         
         if not correlations:
@@ -369,7 +371,8 @@ async def get_leaderboard_data(
         service = CorrelationAnalysisService()
         top_correlations = service.get_top_correlations(
             limit=limit,
-            min_significance=0.05
+            min_significance=0.05,
+            min_sample_size=30  # CRITICAL: Filter out correlations with insufficient data
         )
         
         leaderboard = []
@@ -382,6 +385,7 @@ async def get_leaderboard_data(
                 "p": corr['p_value'],
                 "abs_correlation": abs(corr['correlation_value']),
                 "sample_size": corr['sample_size'],
+                "data_quality": corr.get('data_quality', 'UNKNOWN'),  # NEW: Quality indicator
                 "significance": "***" if corr['p_value'] < 0.001 else "**" if corr['p_value'] < 0.01 else "*"
             })
         
