@@ -209,14 +209,20 @@ function ProfileShapeVisualization({
                 ) : (
                   <>
                     <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Performance Score</div>
-                    <div style={{ fontSize: '14px', marginBottom: '6px', color: '#fff' }}>{currentScores.performance.toFixed(1)}/100</div>
+                    <div style={{ fontSize: '16px', marginBottom: '6px', color: '#fff', fontWeight: 'bold' }}>{currentScores.performance.toFixed(1)}/100</div>
                     {result?.components && (
                       <>
-                        <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '4px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.3)' }}>
-                          velocity: {result.components.velocity?.value.toFixed(2)} {result.components.velocity?.unit}
+                        <div style={{ fontSize: '9px', opacity: 0.8, marginTop: '6px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.3)' }}>
+                          Based on: pressure drop, flow velocity, safety margin
+                        </div>
+                        <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '4px' }}>
+                          Velocity: {result.components.velocity?.value.toFixed(2)} {result.components.velocity?.unit}
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9 }}>
-                          reynolds: {result.components.reynolds?.value.toFixed(0)}
+                          Reynolds: {result.components.reynolds?.value.toFixed(0)}
+                        </div>
+                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
+                          ΔP: {result.components.deltaP?.value.toFixed(2)} {result.components.deltaP?.unit}
                         </div>
                       </>
                     )}
@@ -263,11 +269,19 @@ function ProfileShapeVisualization({
                 ) : (
                   <>
                     <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Durability Score</div>
-                    <div style={{ fontSize: '14px', marginBottom: '6px', color: '#fff' }}>{currentScores.durability.toFixed(1)}/100</div>
+                    <div style={{ fontSize: '16px', marginBottom: '6px', color: '#fff', fontWeight: 'bold' }}>{currentScores.durability.toFixed(1)}/100</div>
                     {result?.components?.deltaP && (
-                      <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '4px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.3)' }}>
-                        ΔP: {result.components.deltaP.value.toFixed(2)} {result.components.deltaP.unit}
-                      </div>
+                      <>
+                        <div style={{ fontSize: '9px', opacity: 0.8, marginTop: '6px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.3)' }}>
+                          Based on: material properties, environment, stress
+                        </div>
+                        <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '4px' }}>
+                          Pressure Drop: {result.components.deltaP.value.toFixed(2)} {result.components.deltaP.unit}
+                        </div>
+                        <div style={{ fontSize: '9px', opacity: 0.8, marginTop: '2px' }}>
+                          (Lower ΔP = less material stress)
+                        </div>
+                      </>
                     )}
                   </>
                 )}
@@ -312,14 +326,23 @@ function ProfileShapeVisualization({
                 ) : (
                   <>
                     <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Economic Score</div>
-                    <div style={{ fontSize: '14px', marginBottom: '6px', color: '#fff' }}>{currentScores.economic.toFixed(1)}/100</div>
+                    <div style={{ fontSize: '16px', marginBottom: '6px', color: '#fff', fontWeight: 'bold' }}>{currentScores.economic.toFixed(1)}/100</div>
                     {result?.components && (
                       <>
-                        <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '4px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.3)' }}>
-                          material: {result.components.material_cost?.value.toFixed(2)} {result.components.material_cost?.unit}
+                        <div style={{ fontSize: '9px', opacity: 0.8, marginTop: '6px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.3)' }}>
+                          Score = (1 - total/£20k) × 100
+                        </div>
+                        <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '4px' }}>
+                          Material: £{result.components.material_cost?.value.toFixed(2)}
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9 }}>
-                          total: {result.components.total_cost?.value.toFixed(2)} {result.components.total_cost?.unit}
+                          10yr Energy: £{(result.components.total_cost?.value - result.components.material_cost?.value).toFixed(2)}
+                        </div>
+                        <div style={{ fontSize: '11px', opacity: 1, marginTop: '2px', paddingTop: '2px', borderTop: '1px solid rgba(255,255,255,0.2)', fontWeight: 'bold' }}>
+                          Total: £{result.components.total_cost?.value.toFixed(2)}
+                        </div>
+                        <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '2px' }}>
+                          (Lower is better)
                         </div>
                       </>
                     )}

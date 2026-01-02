@@ -244,7 +244,7 @@ class HoseOptimizationEngine(FeasibilityEngine):
                 min_value=0.05,
                 max_value=0.50,
                 default=0.12,
-                unit="$/kWh",
+                unit="£/kWh",
                 description="Cost of electricity for pumping"
             ),
             "operating_hours_per_year": ParameterSchema(

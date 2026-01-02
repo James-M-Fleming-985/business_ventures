@@ -121,7 +121,7 @@ def comprehensive_calculate(inputs: Dict[str, Any]) -> CalculationResult:
     performance_score = max(0, min(100, performance_score))
     
     # ===== ECONOMIC SCORE =====
-    max_cost = 5000
+    max_cost = 20000  # £20k threshold for 10-year total cost (material + energy)
     economic_score = max(0, min(100, (1 - total_cost / max_cost) * 100))
     
     # Component results
@@ -148,18 +148,18 @@ def comprehensive_calculate(inputs: Dict[str, Any]) -> CalculationResult:
             normalized=max(0, 100 - (deltaP_bar / 2.0) * 100)
         ),
         "material_cost": ComponentResult(
-            value=material_cost, unit="$",
+            value=material_cost, unit="£",
             formula=f"{material_type} + {reinforcement_type}",
-            calculation_steps=[f"Mass = {mass_kg:.2f} kg", f"Cost = ${material_cost:.2f}"],
+            calculation_steps=[f"Mass = {mass_kg:.2f} kg", f"Cost = £{material_cost:.2f}"],
             normalized=max(0, 100 - (material_cost / 500) * 100)
         ),
         "total_cost": ComponentResult(
-            value=total_cost, unit="$",
+            value=total_cost, unit="£",
             formula="Material + 10yr Energy",
             calculation_steps=[
-                f"Material: ${material_cost:.2f}",
-                f"Energy: ${annual_energy_cost:.2f}/yr × 10 = ${annual_energy_cost*10:.2f}",
-                f"Total: ${total_cost:.2f}"
+                f"Material: £{material_cost:.2f}",
+                f"Energy: £{annual_energy_cost:.2f}/yr × 10 = £{annual_energy_cost*10:.2f}",
+                f"Total: £{total_cost:.2f}"
             ],
             normalized=max(0, 100 - (total_cost / max_cost) * 100)
         ),
