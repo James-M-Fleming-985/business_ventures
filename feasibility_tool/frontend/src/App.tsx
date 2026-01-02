@@ -846,43 +846,46 @@ function App() {
               <Typography variant="h6" gutterBottom>
                 Baseline & History
               </Typography>
-              <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
+              <Box sx={{ display: 'flex', gap: 0.75, mb: 0.75 }}>
                 <Button 
                   variant="outlined" 
                   size="small" 
                   fullWidth
-                  startIcon={<Bookmark />}
+                  startIcon={<Bookmark sx={{ fontSize: '1rem' }} />}
                   onClick={() => setBaselineModalOpen(true)}
+                  sx={{ py: 0.5, fontSize: '0.7rem' }}
                 >
-                  {baseline ? 'Edit Baseline' : 'Set Baseline'}
+                  {baseline ? 'Edit' : 'Set'}
                 </Button>
                 <Button 
                   variant="outlined" 
                   size="small" 
                   fullWidth
-                  startIcon={<History />}
+                  startIcon={<History sx={{ fontSize: '1rem' }} />}
                   onClick={() => setHistoryDrawerOpen(true)}
+                  sx={{ py: 0.5, fontSize: '0.7rem' }}
                 >
                   History ({explorationHistory.length})
                 </Button>
               </Box>
               {baseline && (
-                <Typography variant="caption" color="success.main">
+                <Typography variant="caption" color="success.main" sx={{ fontSize: '0.65rem' }}>
                   ✓ Baseline set · Showing ΔEV
                 </Typography>
               )}
             </Paper>
 
             {/* Visualization Mode Selector */}
-            <Paper sx={{ p: 1.5, mb: 1.5, bgcolor: '#1a1a1a' }}>
-              <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+            <Paper sx={{ p: 1.25, mb: 1.25, bgcolor: '#1a1a1a' }}>
+              <Typography variant="caption" fontWeight="bold" gutterBottom display="block" sx={{ fontSize: '0.8rem', mb: 0.75 }}>
                 Visualization Mode
               </Typography>
               <Select
                 value={visualizationMode}
                 onChange={(e) => setVisualizationMode(e.target.value)}
                 fullWidth
-                sx={{ bgcolor: '#222' }}
+                size="small"
+                sx={{ bgcolor: '#222', '& .MuiSelect-select': { py: 0.5, fontSize: '0.75rem' } }}
               >
                 <MenuItem value="basic">Basic 3D Profile</MenuItem>
                 <MenuItem value="ternary">Ternary Plot</MenuItem>
@@ -896,15 +899,16 @@ function App() {
               </Select>
             </Paper>
 
-            <Paper sx={{ p: 1.5, mb: 1.5, bgcolor: '#1a1a1a' }}>
-              <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+            <Paper sx={{ p: 1.25, mb: 1.25, bgcolor: '#1a1a1a' }}>
+              <Typography variant="caption" fontWeight="bold" gutterBottom display="block" sx={{ fontSize: '0.8rem', mb: 0.75 }}>
                 Target Profile
               </Typography>
               <FormControl fullWidth>
                 <Select
                   value={targetProfile}
                   onChange={(e) => handleProfileChange(e.target.value)}
-                  sx={{ bgcolor: '#222' }}
+                  size="small"
+                  sx={{ bgcolor: '#222', '& .MuiSelect-select': { py: 0.5, fontSize: '0.75rem' } }}
                 >
                   <MenuItem value="Maximum Performance">Maximum Performance</MenuItem>
                   <MenuItem value="Best ROI">Best ROI</MenuItem>
@@ -914,8 +918,8 @@ function App() {
             </Paper>
 
             {/* Brightness Control */}
-            <Paper sx={{ p: 1.5, mb: 1.5, bgcolor: '#1a1a1a' }}>
-              <Typography variant="caption" fontWeight="bold" gutterBottom display="block">
+            <Paper sx={{ p: 1.25, mb: 1.25, bgcolor: '#1a1a1a' }}>
+              <Typography variant="caption" fontWeight="bold" gutterBottom display="block" sx={{ fontSize: '0.8rem', mb: 0.5 }}>
                 Surface Brightness
               </Typography>
               <Slider
@@ -924,18 +928,19 @@ function App() {
                 max={1.0}
                 step={0.05}
                 onChange={(_: Event, val: number | number[]) => setSurfaceBrightness(val as number)}
-                sx={{ mt: 1 }}
+                sx={{ mt: 0.5 }}
+                size="small"
                 marks={[
-                  { value: 0.3, label: 'Dim' },
-                  { value: 0.6, label: 'Normal' },
-                  { value: 0.9, label: 'Bright' }
+                  { value: 0.3, label: <span style={{fontSize: '0.6rem'}}>Dim</span> },
+                  { value: 0.6, label: <span style={{fontSize: '0.6rem'}}>Normal</span> },
+                  { value: 0.9, label: <span style={{fontSize: '0.6rem'}}>Bright</span> }
                 ]}
               />
             </Paper>
 
             {/* Parameter Sliders */}
             <Paper sx={{ p: 1.5, bgcolor: '#1a1a1a', height: 'calc(100vh - 350px)', overflow: 'auto' }}>
-              <Typography variant="subtitle2" fontWeight="bold" gutterBottom sx={{ mb: 1.5 }}>
+              <Typography variant="caption" fontWeight="bold" gutterBottom display="block" sx={{ mb: 1.5, fontSize: '0.75rem' }}>
                 Input Parameters ({Object.keys(inputSchema).length})
               </Typography>
               
@@ -970,10 +975,10 @@ function App() {
                   
                   {/* VALUE - Make this the star of the show */}
                   <Box sx={{ mb: 1, display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
-                    <Typography variant="h6" fontWeight="bold" sx={{ color: '#00bcd4', lineHeight: 1 }}>
+                    <Typography variant="body1" fontWeight="bold" sx={{ color: '#00bcd4', lineHeight: 1, fontSize: '1rem' }}>
                       {inputs[key]?.toFixed?.(3) || inputs[key]}
                     </Typography>
-                    <Typography variant="caption" sx={{ color: '#999' }}>
+                    <Typography variant="caption" sx={{ color: '#999', fontSize: '0.7rem' }}>
                       {param.unit}
                     </Typography>
                   </Box>
@@ -983,10 +988,10 @@ function App() {
                       <Select
                         value={inputs[key] || param.default}
                         onChange={(e) => setInputs({ ...inputs, [key]: e.target.value })}
-                        sx={{ bgcolor: '#2a2a2a', '& .MuiSelect-select': { py: 0.5 } }}
+                        sx={{ bgcolor: '#2a2a2a', '& .MuiSelect-select': { py: 0.375, fontSize: '0.75rem' } }}
                       >
                         {param.options?.map(option => (
-                          <MenuItem key={option} value={option}>{option}</MenuItem>
+                          <MenuItem key={option} value={option} sx={{ fontSize: '0.75rem' }}>{option}</MenuItem>
                         ))}
                       </Select>
                     </FormControl>
@@ -997,7 +1002,8 @@ function App() {
                       max={param.max_value}
                       step={(param.max_value! - param.min_value!) / 100}
                       onChange={(_: Event, val: number | number[]) => setInputs({ ...inputs, [key]: val as number })}
-                      sx={{ mt: 0.5 }}
+                      size="small"
+                      sx={{ mt: 0.25 }}
                     />
                   )}
                 </Box>
@@ -1007,7 +1013,7 @@ function App() {
             {/* Score Summary */}
             {result && (
               <Paper sx={{ p: 1.5, mt: 1.5, bgcolor: '#1a1a1a' }}>
-                <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+                <Typography variant="caption" fontWeight="bold" gutterBottom display="block" sx={{ fontSize: '0.75rem' }}>
                   Scores
                 </Typography>
                 {Object.entries(result.composites).map(([key, value]) => (

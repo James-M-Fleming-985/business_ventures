@@ -1,4 +1,3 @@
-```python
 """
 Granger causality test implementation for time series analysis.
 
@@ -372,5 +371,3 @@ def granger_causality_test(x: Union[np.ndarray, pd.Series, List[float]],
         GrangerTestResult with test results
     """
     tester = GrangerCausalityTest(max_lag=max_lag, confidence_level=confidence_level)
-    return tester.test(x, y)
-```
