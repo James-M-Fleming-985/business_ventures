@@ -84,7 +84,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     const data = await response.json();
-    const { access_token, refresh_token } = data.data;
+    console.log('Login response:', data);
+    
+    // Handle both direct token response and nested data response
+    const tokenData = data.data || data;
+    const { access_token, refresh_token } = tokenData;
+
+    if (!access_token || !refresh_token) {
+      console.error('Invalid token response:', data);
+      throw new Error('Invalid response from server');
+    }
 
     localStorage.setItem('access_token', access_token);
     localStorage.setItem('refresh_token', refresh_token);
@@ -109,6 +118,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const error = await response.json();
       throw new Error(error.detail || 'Registration failed');
     }
+
+    const data = await response.json();
+    console.log('Registration response:', data);
 
     // Auto-login after registration
     await login(email, password);
