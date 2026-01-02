@@ -122,10 +122,6 @@ async def run_migrations():
 async def run_migrations_get():
     """GET version of run-migrations for easy browser access"""
     return await run_migrations()
-        
-    except Exception as e:
-        logger.error(f"Migration failed: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Migration failed: {str(e)}")
 
 
 def _run_data_fetch_background(job_id: str, force: bool = False):
