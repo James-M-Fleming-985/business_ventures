@@ -875,67 +875,81 @@ function App() {
               )}
             </Paper>
 
-            {/* Visualization Mode Selector */}
-            <Paper sx={{ p: 1.25, mb: 1.25, bgcolor: '#1a1a1a' }}>
-              <Typography variant="caption" fontWeight="bold" gutterBottom display="block" sx={{ fontSize: '0.75rem', mb: 0.75 }}>
-                Visualization Mode
-              </Typography>
-              <Select
-                value={visualizationMode}
-                onChange={(e) => setVisualizationMode(e.target.value)}
-                fullWidth
-                size="small"
-                sx={{ bgcolor: '#222', '& .MuiSelect-select': { py: 0.5, fontSize: '0.75rem' } }}
-              >
-                <MenuItem value="basic">Basic 3D Profile</MenuItem>
-                <MenuItem value="ternary">Ternary Plot</MenuItem>
-                <MenuItem value="feasibility">Feasibility Volume</MenuItem>
-                <MenuItem value="parallel">Parallel Coordinates</MenuItem>
-                <MenuItem value="response">Response Surface</MenuItem>
-                <MenuItem value="sensitivity">Sensitivity Analysis</MenuItem>
-                <MenuItem value="correlation">Correlation Matrix</MenuItem>
-                <MenuItem value="pareto">Pareto Frontier</MenuItem>
-                <MenuItem value="radar">Radar Chart</MenuItem>
-              </Select>
-            </Paper>
-
-            <Paper sx={{ p: 1.25, mb: 1.25, bgcolor: '#1a1a1a' }}>
-              <Typography variant="caption" fontWeight="bold" gutterBottom display="block" sx={{ fontSize: '0.75rem', mb: 0.75 }}>
-                Target Profile
-              </Typography>
-              <FormControl fullWidth>
+            {/* Visualization Controls - All in One */}
+            <Paper sx={{ p: 1, mb: 1.25, bgcolor: '#1a1a1a' }}>
+              <Box sx={{ mb: 1 }}>
+                <Typography variant="caption" sx={{ fontSize: '0.65rem', color: '#999', display: 'block', mb: 0.5 }}>
+                  Visualization Mode
+                </Typography>
                 <Select
-                  value={targetProfile}
-                  onChange={(e) => handleProfileChange(e.target.value)}
+                  value={visualizationMode}
+                  onChange={(e) => setVisualizationMode(e.target.value)}
+                  fullWidth
                   size="small"
-                  sx={{ bgcolor: '#222', '& .MuiSelect-select': { py: 0.5, fontSize: '0.75rem' } }}
+                  sx={{ 
+                    bgcolor: '#222', 
+                    borderColor: '#00bcd4',
+                    '& .MuiSelect-select': { py: 0.4, fontSize: '0.7rem' },
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#00bcd4' }
+                  }}
                 >
-                  <MenuItem value="Maximum Performance">Maximum Performance</MenuItem>
-                  <MenuItem value="Best ROI">Best ROI</MenuItem>
-                  <MenuItem value="Balanced">Balanced</MenuItem>
+                  <MenuItem value="basic">Basic 3D Profile</MenuItem>
+                  <MenuItem value="ternary">Ternary Plot</MenuItem>
+                  <MenuItem value="feasibility">Feasibility Volume</MenuItem>
+                  <MenuItem value="parallel">Parallel Coordinates</MenuItem>
+                  <MenuItem value="response">Response Surface</MenuItem>
+                  <MenuItem value="sensitivity">Sensitivity Analysis</MenuItem>
+                  <MenuItem value="correlation">Correlation Matrix</MenuItem>
+                  <MenuItem value="pareto">Pareto Frontier</MenuItem>
+                  <MenuItem value="radar">Radar Chart</MenuItem>
                 </Select>
-              </FormControl>
-            </Paper>
+              </Box>
 
-            {/* Brightness Control */}
-            <Paper sx={{ p: 1.25, mb: 1.25, bgcolor: '#1a1a1a' }}>
-              <Typography variant="caption" fontWeight="bold" gutterBottom display="block" sx={{ fontSize: '0.75rem', mb: 0.5 }}>
-                Surface Brightness
-              </Typography>
-              <Slider
-                value={surfaceBrightness}
-                min={0.1}
-                max={1.0}
-                step={0.05}
-                onChange={(_: Event, val: number | number[]) => setSurfaceBrightness(val as number)}
-                sx={{ mt: 0.5 }}
-                size="small"
-                marks={[
-                  { value: 0.3, label: <span style={{fontSize: '0.6rem'}}>Dim</span> },
-                  { value: 0.6, label: <span style={{fontSize: '0.6rem'}}>Normal</span> },
-                  { value: 0.9, label: <span style={{fontSize: '0.6rem'}}>Bright</span> }
-                ]}
-              />
+              <Box sx={{ mb: 1 }}>
+                <Typography variant="caption" sx={{ fontSize: '0.65rem', color: '#999', display: 'block', mb: 0.5 }}>
+                  Target Profile
+                </Typography>
+                <FormControl fullWidth>
+                  <Select
+                    value={targetProfile}
+                    onChange={(e) => handleProfileChange(e.target.value)}
+                    size="small"
+                    sx={{ 
+                      bgcolor: '#222',
+                      borderColor: '#00bcd4',
+                      '& .MuiSelect-select': { py: 0.4, fontSize: '0.7rem' },
+                      '& .MuiOutlinedInput-notchedOutline': { borderColor: '#00bcd4' }
+                    }}
+                  >
+                    <MenuItem value="Maximum Performance">Maximum Performance</MenuItem>
+                    <MenuItem value="Best ROI">Best ROI</MenuItem>
+                    <MenuItem value="Balanced">Balanced</MenuItem>
+                  </Select>
+                </FormControl>
+              </Box>
+
+              <Box>
+                <Typography variant="caption" sx={{ fontSize: '0.65rem', color: '#999', display: 'block', mb: 0.5 }}>
+                  Brightness
+                </Typography>
+                <Slider
+                  value={surfaceBrightness}
+                  min={0.1}
+                  max={1.0}
+                  step={0.05}
+                  onChange={(_: Event, val: number | number[]) => setSurfaceBrightness(val as number)}
+                  size="small"
+                  sx={{ 
+                    color: '#00bcd4',
+                    '& .MuiSlider-markLabel': { fontSize: '0.55rem' }
+                  }}
+                  marks={[
+                    { value: 0.3, label: 'Dim' },
+                    { value: 0.6, label: 'Normal' },
+                    { value: 0.9, label: 'Bright' }
+                  ]}
+                />
+              </Box>
             </Paper>
 
             {/* Parameter Sliders */}
@@ -954,33 +968,16 @@ function App() {
               {Object.entries(inputSchema).map(([key, param]) => {
                 console.log('Rendering parameter:', key, param)
                 return (
-                <Box key={key} sx={{ 
-                  mb: 1, 
-                  p: 0.75, 
-                  border: '1px solid #555',
-                  borderRadius: 1,
-                  bgcolor: '#222',
-                  '&:hover': { bgcolor: '#2a2a2a', borderColor: '#00bcd4' }
-                }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.4 }}>
+                <Box key={key} sx={{ mb: 0.75 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.3 }}>
                     <Typography variant="caption" sx={{ color: '#999', fontSize: '0.65rem' }}>
-                      {param.name}
+                      {param.name} {param.unit && `(${param.unit})`}
                     </Typography>
                     <Tooltip title={param.description} arrow>
-                      <IconButton size="small" sx={{ p: 0.2 }}>
-                        <Info fontSize="small" sx={{ fontSize: '0.9rem' }} />
+                      <IconButton size="small" sx={{ p: 0.15 }}>
+                        <Info fontSize="small" sx={{ fontSize: '0.85rem' }} />
                       </IconButton>
                     </Tooltip>
-                  </Box>
-                  
-                  {/* VALUE - Compact but prominent */}
-                  <Box sx={{ mb: 0.75, display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
-                    <Typography variant="body2" fontWeight="bold" sx={{ color: '#00bcd4', lineHeight: 1, fontSize: '0.75rem' }}>
-                      {inputs[key]?.toFixed?.(3) || inputs[key]}
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: '#999', fontSize: '0.65rem' }}>
-                      {param.unit}
-                    </Typography>
                   </Box>
                   
                   {param.type === 'select' ? (
@@ -988,23 +985,36 @@ function App() {
                       <Select
                         value={inputs[key] || param.default}
                         onChange={(e) => setInputs({ ...inputs, [key]: e.target.value })}
-                        sx={{ bgcolor: '#2a2a2a', '& .MuiSelect-select': { py: 0.375, fontSize: '0.75rem' } }}
+                        sx={{ 
+                          bgcolor: '#222',
+                          '& .MuiSelect-select': { py: 0.35, fontSize: '0.7rem' },
+                          '& .MuiOutlinedInput-notchedOutline': { borderColor: '#00bcd4' },
+                          '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#00bcd4' },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#00bcd4' }
+                        }}
                       >
                         {param.options?.map(option => (
-                          <MenuItem key={option} value={option} sx={{ fontSize: '0.75rem' }}>{option}</MenuItem>
+                          <MenuItem key={option} value={option} sx={{ fontSize: '0.7rem' }}>{option}</MenuItem>
                         ))}
                       </Select>
                     </FormControl>
                   ) : (
-                    <Slider
-                      value={typeof inputs[key] === 'number' ? inputs[key] : param.default}
-                      min={param.min_value}
-                      max={param.max_value}
-                      step={(param.max_value! - param.min_value!) / 100}
-                      onChange={(_: Event, val: number | number[]) => setInputs({ ...inputs, [key]: val as number })}
-                      size="small"
-                      sx={{ mt: 0.25 }}
-                    />
+                    <Box>
+                      <Slider
+                        value={typeof inputs[key] === 'number' ? inputs[key] : param.default}
+                        min={param.min_value}
+                        max={param.max_value}
+                        step={(param.max_value! - param.min_value!) / 100}
+                        onChange={(_: Event, val: number | number[]) => setInputs({ ...inputs, [key]: val as number })}
+                        size="small"
+                        sx={{ 
+                          color: '#00bcd4',
+                          '& .MuiSlider-valueLabel': { fontSize: '0.65rem' }
+                        }}
+                        valueLabelDisplay="auto"
+                        valueLabelFormat={(value) => value.toFixed(3)}
+                      />
+                    </Box>
                   )}
                 </Box>
               )})}
