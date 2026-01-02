@@ -253,203 +253,21 @@ The system calculates accuracy metrics. Notoriety prediction error: positive 0.0
 
 This complete workflow demonstrates the closed-loop system operation from actor assessment through probabilistic prediction, strategic configuration, empirical outcome capture, accuracy measurement, and continuous model refinement.
 
-CLAIMS
+Analytics Dashboard and Skill Progression Tracking
 
-1. A computer-implemented system for predictive communication outcome optimisation comprising: a processor; a memory storing instructions executable by the processor; an actor profile database storing actor representations, each actor representation including a plurality of communication variables quantified across five ontological layers comprising cognitive variables, emotional variables, sociocultural variables, behavioral variables, and strategic variables; an architect state module storing current skill levels across three dimensions comprising observation skill, adaptation skill, and self-awareness skill, and storing current levels for five confounding variables comprising stress level, fatigue level, emotional state, overconfidence level, and ego investment level; a confounder penalty engine configured to apply multiplicative penalty factors to base skill levels based on current confounder levels, wherein stress level reduces observation skill by 30% and adaptation skill by 30%, fatigue level reduces observation skill by 20% and adaptation skill by 20%, emotional state reduces observation skill by 20% and self-awareness by 30%, overconfidence reduces self-awareness by 40%, and ego investment reduces adaptation skill by 30%; a strategy configuration interface receiving user input defining five strategy lever settings on bipolar scales from -1 to +1 comprising warmth, competence, dominance, status, and rapport; a Monte Carlo simulation engine configured to execute a plurality of iterations, each iteration sampling actor variable values and calculating predicted changes in three strategic outcomes comprising ΔN, ΔR, and ΔW, wherein notoriety is calculated as mean across actors of product of awareness, understanding, and support willingness, respect is calculated as mean across actors of product of feels understood, consideration received, and value alignment perceived, and wealth comprises sum of direct financial gains, pipeline opportunity value, and executed project value; a strategic index calculation module configured to compute seven effectiveness metrics comprising ROI Index calculated as 50 + 50 × weighted sum of outcome changes, Confidence Delta measuring estimate certainty change, Resistance Index measuring interaction friction, Energy Cost measuring cognitive and emotional load, Influence Depth measuring belief change achieved, Leverage Activation measuring strategic advantage creation, and Narrative Coherence measuring message clarity; a post-interaction recording interface configured to capture actual confounder levels experienced, actual strategy lever deployments, actual strategic index values observed, and actual outcome changes achieved; an accuracy calculation module configured to compute prediction error metrics by comparing predicted values to actual values across confounders, strategy levers, strategic indexes, and strategic outcomes; and a bias identification module configured to identify systematic overestimation or underestimation patterns for specific variables or actor types based on accumulated accuracy metrics across multiple interactions.
-- Analytical Reasoning (scale 0-100): capacity for logical argument construction and flaw detection
-- Abstract Thinking (0-100): ability to conceptualise non-concrete ideas
-- Pattern Recognition (0-100): skill in identifying trends and connections
-- Knowledge Depth: array of domain expertise levels, e.g., {finance: 80, technology: 65, healthcare: 30}
-- Learning Rate (0-10): speed of new concept acquisition
-- Cognitive Flexibility (0-100): adaptability in changing argumentative contexts
-- Memory Capacity (0-100): retention of conversation details
-- Processing Speed (0-100): rapidity of comprehension and response formulation
+A particularly novel component of the invention is the analytics dashboard providing longitudinal visualization of architect skill development and prediction accuracy improvement over time. This addresses a critical limitation of conventional communication training systems which measure knowledge retention through quizzes rather than real-world applied skill effectiveness.
 
-Emotional Layer models affective dimensions:
-- Emotional Intelligence (0-100): accuracy in perceiving others' emotional states
-- Empathy (0-100): capacity for perspective-taking
-- Stress Resilience (0-100): performance maintenance under pressure
-- Emotional Stability (0-100): consistency of emotional state
-- Optimism Bias (-50 to +50): tendency toward positive/negative expectations
-- Emotional Expressiveness (0-100): degree of outward emotional display
-- Conflict Tolerance (0-100): comfort with disagreement or tension
+The system maintains a comprehensive training analytics database recording all simulation predictions, actual outcomes, and calculated accuracy metrics across multiple interactions. Time-series analysis enables architects to track measurable improvement in three core dimensions.
 
-Sociocultural Layer captures social and cultural influences:
-- Cultural Fluency: dictionary mapping cultures to competency scores, e.g., {UK_Business: 90, US_Tech: 70, Japanese_Formal: 40}
-- Social Status Sensitivity (0-100): responsiveness to hierarchical cues
-- Authority Response Pattern (categorical): {Deferential, Collaborative, Challenging, Independent}
-- Group Identity Strength (0-100): degree of in-group affiliation
-- Formality Preference (0-100): inclination toward formal vs. casual communication
-- Network Centrality (0-100): position within relevant social networks
+Prediction Accuracy Trends visualize prediction error convergence over interaction count. For each strategic outcome (ΔN, ΔR, ΔW) and each strategic index, the system plots mean absolute error across a rolling window of recent interactions. Architects observe whether their predictions become more accurate with experience, with target accuracy improving from initial errors of 30-40% to trained performance of 10-15% error after 50-100 interactions. Graph visualizations include trend lines with confidence intervals indicating whether observed improvement is statistically significant or within random variation.
 
-Behavioural Layer quantifies observable communication patterns:
-- Communication Style (categorical): {Direct, Indirect, Assertive, Passive, Aggressive}
-- Verbosity (0-100): typical word count in responses
-- Interruption Tendency (0-100): likelihood of speaking over others
-- Question-Asking Frequency (0-100): rate of inquiry during dialogue
-- Risk Tolerance (0-100): comfort with uncertain outcomes
-- Decision-Making Speed (0-100): rapidity of commitment
-- Detail Orientation (0-100): focus on specifics vs. big-picture
+Skill Progression Charts display the three architect skills (observation, adaptation, self-awareness) calculated automatically by the system based on empirical performance rather than self-assessment. Observation skill is measured through information gain, quantifying how much new accurate information about actor variables the architect extracted from each interaction compared to pre-interaction uncertainty. Adaptation skill is measured through strategy optimality, comparing the architect's chosen strategy levers against optimal settings calculated post-hoc given actual actor variable values observed. Self-awareness skill is measured through calibration error, quantifying the degree to which the architect's predicted confounders and strategic indexes matched actual experienced values, with lower calibration error indicating better self-knowledge. Each skill displays as a line graph with smoothed trend showing progression from baseline (typically 0.4-0.5) toward expert performance (0.7-0.8 range) over dozens of interactions.
 
-Strategic Layer models goal-oriented communication:
-- Goal Clarity (0-100): specificity of interaction objectives
-- Strategic Thinking (0-100): capacity for multi-move planning
-- Long-Term Orientation (0-100): weight given to future consequences vs. immediate outcomes
-- Negotiation Skill (0-100): effectiveness in value-claiming and value-creation
-- Persuasion Competency (0-100): ability to shift others' positions
-- Adaptability (0-100): responsiveness to changing interaction dynamics
+Calibration Plots enable architects to assess whether their prediction confidence matches empirical accuracy. For predictions expressed with confidence intervals, the system bins predictions by stated confidence level (for example, 70% confidence, 80% confidence, 90% confidence) and calculates empirical frequency of actual outcomes falling within those intervals. Perfect calibration produces a diagonal line where 70% confidence predictions contain actual values 70% of the time. Overconfidence appears as points below the diagonal (claiming 90% confidence but only 60% empirical accuracy), while underconfidence appears above diagonal (claiming 60% confidence but achieving 80% accuracy). The system flags systematic calibration biases and recommends confidence adjustment strategies.
 
-Each variable is stored as a Beta distribution Beta(α,β) where α and β are shape parameters updated through Bayesian learning. The Beta distribution is selected for technical reasons: (1) bounded support on [0,1] naturally representing percentage scales; (2) flexible shape enabling representation of diverse belief states (uniform, peaked, bimodal); (3) conjugate prior for Bernoulli/Binomial likelihoods enabling closed-form Bayesian updates; and (4) interpretable parameters where α/(α+β) represents the mean and α+β represents certainty (concentration).
+Systematic Bias Identification Panel highlights specific variables or actor types where the architect exhibits consistent overestimation or underestimation patterns exceeding 20% error threshold. For example, the system might identify: stress confounder consistently underestimated by 35% (architect predicts stress level of 0.3 but actual averages 0.5), respect outcomes with high-status actors overestimated by 28% (predictions average ΔR of positive 0.15 but actuals average positive 0.08), or influence depth with analytical actors underestimated by 22%. Each identified bias includes actionable recommendations such as "increase predicted stress by 40% when anticipating difficult conversations" or "reduce respect expectations by 20% when status differential exceeds 30 points". This automated bias detection and calibration guidance represents a significant technical advance over generic communication training which relies on instructor observation rather than quantified empirical patterns.
 
-Actor Profile Data Structure
-
-Figure 3 shows the actor profile schema implemented as a PostgreSQL table with the following structure:
-
-```
-TABLE actor_profiles {
-  id: UUID PRIMARY KEY,
-  name: VARCHAR(255),
-  created_at: TIMESTAMP,
-  updated_at: TIMESTAMP,
-  archetype: ENUM(Analytical_Skeptic, Charismatic_Champion, Pragmatic_Operator, 
-                  Empathetic_Collaborator, Strategic_Visionary, Defensive_Guardian),
-  variables: JSONB,
-  interaction_count: INTEGER,
-  last_interaction: TIMESTAMP,
-  confidence_score: FLOAT
-}
-```
-
-Strategy Lever Framework
-
-The system provides five bipolar strategy levers that the user configures prior to each interaction to shape their communication approach. Each lever is represented on a continuous scale from -1 to +1, allowing nuanced positioning between opposing extremes.
-
-Warmth Lever (negative 1 = cold/formal to positive 1 = warm/personal) controls emotional tenor. Negative values emphasize professional distance, strict formality, and emotional restraint. Positive values emphasize personal connection, warmth, and emotional expressiveness. Selection depends on actor characteristics and scenario context.
-
-Competence Lever (negative 1 = humble/uncertain to positive 1 = confident/expert) controls expertise projection. Negative values signal openness to learning, deference to others' expertise, and acknowledgment of uncertainty. Positive values project confidence, subject matter expertise, and authoritative knowledge. Calibration depends on actual expertise levels, actor skepticism, and power dynamics.
-
-Dominance Lever (negative 1 = submissive/yielding to positive 1 = dominant/assertive) controls behavioral assertiveness. Negative values involve yielding conversational control, following the other party's lead, and accommodating preferences. Positive values involve directing the conversation, setting the agenda, and asserting preferences firmly.
-
-Status Lever (negative 1 = low status signaling to positive 1 = high status signaling) controls social positioning independent of actual status. Negative values involve deferential language, seeking approval, and acknowledging the other party's superior position. Positive values involve status assertion through language choices, expectation-setting, and framing that positions the user as higher status.
-
-Rapport Lever (negative 1 = minimal rapport building to positive 1 = maximum rapport building) controls investment in relationship-building activities distinct from warmth. Negative values minimize small talk, personal disclosure, and commonality exploration. Positive values emphasize discovering shared interests, personal storytelling, and activities that build interpersonal connection.
-
-These five strategy levers are mathematically distinct from actor variables. Variables describe enduring characteristics of individuals, while strategy levers represent tactical choices made by the user for a specific interaction. The Monte Carlo simulation incorporates strategy lever settings as inputs to outcome functions, enabling the system to model how different strategic approaches affect predicted outcomes given the actor's variable profile.
-
-Cognitive Journal Integration
-
-A particularly novel component of the invention is the integration of a cognitive distortion logging system with the communication simulation framework. This integration serves three technical functions: tracking cognitive bias episodes that may impair accurate actor assessment and simulation quality, linking distortion episodes to specific actors to identify bias patterns, and feeding self-awareness metrics derived from distortion logging into the architect skill calculation framework.
-
-The cognitive journal allows the user to log episodes where they recognize cognitive distortions occurring during interaction preparation, execution, or reflection. Each logged distortion episode records observed elements including triggering external stimulus, associated somatic feelings, interpreted core belief, and positive reframe.
-
-Actor Linkage: Each cognitive journal entry can be linked to a specific actor via a foreign key relationship stored in database field linked_actor_id. This linkage enables the system to identify which actors or actor types systematically trigger cognitive distortions for the user. For example, analysis might reveal that the user experiences overconfidence distortions when interacting with actors assessed as having low analytical reasoning, or experiences catastrophic thinking when interacting with high-status actors.
-
-Jungian Polarity Integration: The system maps logged distortions to Jungian psychological polarities such as autonomy versus connection, assertion versus receptivity, and perfection versus acceptance. When a distortion is logged, the system can generate a suggested integration experiment as a task, encouraging the user to explore the opposite pole. For instance, if distortion reflects extreme autonomy orientation, generate a connection-focused exercise. This provides a pathway for psychological development that directly supports improved communication effectiveness.
-
-Self-Awareness Metric Feeding: The frequency, recognition speed, and successful reframing of cognitive distortions are aggregated into a self-awareness score. This score is incorporated into the architect skill framework, specifically affecting the self-awareness dimension. Higher self-awareness (demonstrated through consistent cognitive distortion recognition and reframing) improves simulation accuracy by reducing bias in actor variable estimation and strategy selection.
-
-The cognitive journal integration represents a significant innovation beyond generic cognitive behavioral therapy logging tools. By explicitly linking psychological bias recognition to actor profiles and feeding self-awareness metrics into communication simulation parameters, the system creates a closed feedback loop between psychological development and strategic effectiveness.
-
-Communication Projects Architecture
-
-The system implements a specialized task management framework called Communication Projects, distinct from generic project management tools, designed specifically for planning and tracking strategic communication initiatives. A Communication Project represents a coherent communication objective requiring multiple interactions, persistent actor relationship management, and strategic coherence across time.
-
-Project Structure: Each Communication Project contains a strategic objective such as securing series A funding from three target venture capitalists, resolving organizational conflict with engineering leadership, or building strategic partnership with specific company. Projects include linked actors (the set of actors involved in achieving the objective), task hierarchy (individual interactions and preparation activities structured as tasks explicitly typed as communication events), outcome templates (pre-configured simulation templates for common communication scenarios), and progress tracking (aggregated metrics showing project-level strategic outcome trajectories across all linked actors).
-
-Project Types: The system includes specialized project types with domain-specific templates. Stakeholder Alignment Projects manage communication with multiple stakeholders requiring buy-in for an initiative such as product launch or organizational change. Conflict Resolution Projects provide structured approach to resolving interpersonal or group conflicts through phased communication. Relationship Building Projects systematically develop strategic relationships such as mentor cultivation or strategic partnership development. Negotiation Projects handle complex multi-stage negotiations requiring preparation for multiple interaction rounds.
-
-The Communication Projects architecture provides strategic coherence across interactions. Because projects track actor relationships longitudinally, the system can identify when relationship degradation in 1 interaction threatens project objectives, trigger alerts for relationship recovery actions, and recommend actor-specific strategies that maintain project-level strategic alignment. This represents an inventive integration of task management with probabilistic communication simulation not present in prior art.
-
-Actor Variable Ontology Implementation
-
-The system employs a comprehensive ontology categorising human attributes and states into five hierarchical layers totaling 34 distinct variables. This ontology is implemented as a PostgreSQL JSONB structure enabling flexible storage and querying.
-
-Cognitive Variables (8 variables): analytical reasoning, abstract thinking, pattern recognition, knowledge depth, learning rate, cognitive flexibility, memory capacity, processing speed
-
-Emotional Variables (seven variables): emotional intelligence, empathy, stress resilience, emotional stability, optimism bias, emotional expressiveness, conflict tolerance
-
-Sociocultural Variables (six variables): cultural fluency, social status sensitivity, authority response patterns, group identity strength, formality preference, network centrality
-
-Behavioral Variables (seven variables): communication style, verbosity, interruption tendency, question frequency, risk tolerance, decision speed, detail orientation
-
-Strategic Variables (six variables): goal clarity, strategic thinking, long-term orientation, negotiation skill, adaptability, relationship motivation
-
-Each variable is stored as a data structure containing alpha parameter, beta parameter, observation count tracking number of empirical updates, and last_updated timestamp. For example, an actor's empathy variable might be represented as { " empathy " : { " alpha " : 15.0, " beta " : 5.0, " observations " : 8, " last_updated " : " 2024 - 03 - 15 " } }.
-
-This structured representation enables probabilistic reasoning about actor characteristics. When the Monte Carlo simulation samples from actor variable distributions, it draws from Beta(alpha, beta) for each variable, generating a complete actor state vector for that simulation iteration. Repeated sampling across thousands of iterations produces outcome probability distributions accounting for estimation uncertainty.
-
-Actor Profile Assessment Interface
-
-The system provides a slider-based assessment interface for actor profile creation. For each variable in the ontology, the user provides best estimate using a slider control ranging from 0 to 100 (mapped internally to 0 to 1 scale), and confidence level using a qualitative selector including low confidence (generates high variance Beta distribution), medium confidence (generates moderate variance), and high confidence (generates low variance concentrated distribution).
-
-The backend converts these inputs into Beta distribution parameters using method of moments calculation. Given user-specified mean mu and desired variance sigma_squared corresponding to confidence level, the alpha and beta parameters are calculated as alpha = mu × ( mu × (1 - mu / sigma_squared - 1 ), and beta = 1 - mu × ( mu × (1 - mu / sigma_squared - 1 ).
-
-For example, if user estimates an actor's analytical reasoning as 70% (mu = 0.7) with medium confidence (sigma_squared = 0.02), the system calculates alpha approximately = 24 and beta approximately = 10.2. This Beta(24, 10.2) distribution has mean 0.7 and moderate spread reflecting medium confidence.
-
-Monte Carlo Simulation Algorithm
-
-The core technical innovation of the simulation engine is its ability to generate probabilistic outcome predictions by executing repeated sampling from actor variable distributions while incorporating real-time architect state confounders and user-configured strategy levers.
-
-Algorithm: Pre-Interaction Simulation
-
-Input: Architect architect_state (including base skills and current confounders), Actor actor_profile (with Beta distributions for all variables), Strategy strategy_levers (five dimensions from -1 to +1), Scenario scenario_context, Integer iteration_count (default 1,000)
-
-Step 1: Calculate effective architect skills by applying confounder penalties multiplicatively. Effective observation = base observation × (1 - stress × 0.3) × (1 - fatigue × 0.2) × (1 - (1 - emotional_state) × 0.2). Effective adaptation = base adaptation × (1 - stress × 0.3) × (1 - fatigue × 0.2) × (1 - ego_investment × 0.3). Effective self-awareness = base self_awareness × (1 - (1 - emotional_state) × 0.3) × (1 - overconfidence × 0.4).
-
-Step 2: Initialize results array with capacity for iteration_count outcome records.
-
-Step 3: For each iteration i from 1 to iteration_count execute sampling loop. For each variable v in actor_profile.variables, sample actor_variables [ v ] from Beta distribution with parameters alpha = actor_profile.variables[v].alpha and beta = actor_profile.variables[v].beta using numpy.random.beta function. Calculate seven strategic indexes using effective architect skills, sampled actor variables, strategy lever settings, and scenario context. Compute ΔN delta_N = calculate_notoriety_change with inputs effective observation, effective adaptation, sampled actor variables, strategy levers. Compute ΔR delta_R = calculate_respect_change with inputs effective adaptation, effective self_awareness, sampled actor variables, strategy levers. Compute ΔW delta_W = calculate_wealth_change with inputs effective skills, sampled actor variables, strategy levers, scenario context. Store results in results array index i.
-
-Step 4: Aggregate results across all iterations. Calculate mean values mean_delta_N = mean of results array delta_N column, mean_delta_R = mean of delta_R column, mean_delta_W = mean of delta_W column. Calculate percentile-based confidence intervals using NumPy percentile function with arguments results array delta_N column and percentiles [ 2.5, 97.5 ]. Repeat for delta_R and delta_W. Compile strategic indexes aggregating means and variances for ROI Index, Confidence Delta, Resistance Index, Energy Cost, Influence Depth, Leverage Activation, and Narrative Coherence.
-
-Output: Predictions object containing mean outcome changes (mean_delta_N, mean_delta_R, mean_delta_W), 95% confidence intervals for each outcome, aggregated strategic index predictions with uncertainty ranges, and iteration count used for result generation.
-
-The simulation engine leverages NumPy vectorized operations for computational efficiency. Sampling 10,000 values from a Beta distribution requires approximately 0.002 seconds on modern hardware. Total execution time for 1,000 iterations with 34 variables per actor scales approximately linearly, completing in 0.4 to 0.5 seconds, thereby supporting interactive real-time use.
-
-Post-Interaction Feedback Loop
-
-After an actual interaction completes, the system captures empirical observations enabling comparison between predicted and actual outcomes. This feedback loop serves two critical functions: quantifying prediction accuracy to track model improvement over time, and identifying systematically misestimated variables requiring recalibration or additional observation.
-
-Figure 7 illustrates the post-interaction recording interface implemented as a modal dialog component. The interface presents dual input sections for actual confounders experienced, actual strategy levers deployed, actual strategic indexes observed, and actual outcomes achieved.
-
-Actual Confounders Section: For each of the five confounders (stress, fatigue, emotional state, overconfidence, ego investment), the user adjusts a slider from 0 to 100 indicating the level actually experienced during the interaction. These values may differ from pre-interaction predictions if unexpected stressors arose or anticipated anxiety did not materialize.
-
-Actual Strategy Levers Section: For each of the five strategy levers (warmth, competence, dominance, status, rapport), the user adjusts a bipolar slider from -100 to +100 indicating the approach actually deployed. These may differ from planned settings if the interaction dynamics required tactical adjustment.
-
-Actual Strategic Indexes Section: The user provides subjective assessments or objective measurements where available for each of the seven strategic indexes.  Resistance Index relies on user assessment of friction encountered. Energy Cost reflects subjective fatigue experienced. Influence Depth, Leverage Activation, and Narrative Coherence require qualitative judgment about interaction quality.
-
-Actual Outcomes Section: The system calculates actual ΔN, ΔR, and ΔW values based on the recorded strategic indexes, actual confounders, actual strategy levers, interaction duration, and other empirical inputs. The ROI Index is automatically computed from these calculated outcome changes using the weighted formula ROI_index = 50 + (50 × [w_N × ΔN + w_R × ΔR + w_W × ΔW_normalised]). Additionally, free-text notes enable qualitative context capture for factors not quantified by the structured inputs.
-
-The backend processes this recorded data by calculating accuracy metrics comparing predicted versus actual values across all dimensions. Mean Absolute Error = average of absolute value of predicted - actual summed across all outcome dimensions. For continuous outcomes such as delta_N, delta_R, delta_W, this is straightforward arithmetic. For categorical outcomes, the system uses cross-entropy or categorical accuracy metrics. The system maintains cumulative accuracy statistics enabling time-series analysis of prediction improvement. Graph visualizations show accuracy trends revealing whether the architect's predictive capability improves with experience.
-
-Systematic bias identification analyzes which variables consistently produce overestimation or underestimation. The system automatically calibrates architect skill levels based on prediction accuracy patterns. If predictions consistently overestimate outcomes when stress confounders are present, the system reduces the calculated adaptation skill effectiveness under stress conditions and flags this pattern for architect awareness. If outcomes consistently underperform predictions when interacting with high-status actors, the system recalibrates the observation skill for status-related variables and identifies this as a blind spot requiring focused improvement.
-
-Example Scenario: Stakeholder Alignment Communication
-
-To illustrate the complete workflow, consider an architect preparing for a stakeholder alignment interaction. The architect is a product manager seeking approval from an engineering director (the actor) to prioritize a new feature in the development roadmap.
-
-Step 1: Actor Profile Creation
-The architect creates an actor profile for the engineering director using the slider-based assessment interface. Based on previous meetings and email exchanges, the architect estimates analytical reasoning at 80 (high logical rigor), empathy at 40 (task-focused, limited emotional warmth), formality preference at 70 (prefers structured communication), risk tolerance at 30 (conservative, prefers proven approaches), and strategic thinking at 75 (long-term oriented). Confidence levels are set to medium for most variables, generating Beta distributions with moderate variance.
-
-Step 2: Architect State Configuration
-The architect assesses their current state. Base skills are observation 0.7, adaptation 0.6, self-awareness 0.65. Current confounders are stress level 0.5 (moderate anxiety about securing approval), fatigue 0.3 (well-rested), emotional state 0.6 (slight anxiety but generally positive), overconfidence 0.2 (appropriately humble given uncertainty), ego investment 0.4 (some personal attachment to the feature but manageable). Effective skills are calculated applying confounder penalties: effective observation approximately 0.6 1, effective adaptation approximately 0.5 1, effective self-awareness approximately 0.6.
-
-Step 3: Strategy Configuration
-The architect configures strategy levers. Warmth set to negative 0.2 (slightly formal professional tone matching actor's formality preference). Competence set to positive 0.6 (confident subject matter expertise without arrogance). Dominance set to 0 (collaborative balanced power dynamic). Status set to negative 0.1 (slight deference acknowledging director's authority). Rapport set to positive 0.3 (moderate investment in relationship building without excessive personal talk).
-
-Step 4: Monte Carlo Simulation
-The system executes 1,000 iterations sampling from the director's variable distributions and calculating predicted outcomes. Results predict mean ΔN delta_N of positive 0.12 (modest awareness increase), mean ΔR delta_R of positive 0.08 (slight relationship improvement), ΔW delta_W of positive 0.25 (normalized wealth increase representing pipeline opportunity advancement with estimated 30% execution probability based on conditional approval scenario). Strategic indexes predict ROI Index of 62 (moderately positive), Resistance Index of 0.45 (moderate pushback expected given risk aversion), Energy Cost of 0.55 (effortful interaction requiring careful navigation), Confidence Delta of positive 0.1 (expect to confirm existing estimates), Influence Depth of 0.4 (likely to achieve stated agreement without deep belief change), and Narrative Coherence of 0.65 (clear structured message planned).
-
-Step 5: Interaction Execution
-The architect conducts the meeting following the planned strategy. During the interaction, the director raises expected objections about implementation complexity (resistance signal) but responds positively to data showing customer demand (competence lever effectiveness). The architect maintains composure despite initial pushback (stress confounder managed). Conversation concludes with conditional approval pending technical feasibility assessment.
-
-Step 6: Outcome Recording
-Post-interaction, the architect records actual values. Actual confounders: stress 0.6 (slightly higher than anticipated due to unexpected objection intensity), fatigue 0.4, emotional state 0.55, overconfidence 0.2, ego investment 0.5 (increased during defensive moments). Actual strategy levers: warmth negative 0.1 (slightly warmer than planned when building rapport), competence positive 0.7 (stronger expertise projection when presenting data), dominance positive 0.2 (more assertive than planned when addressing objections), status 0, rapport positive 0.4. Actual outcomes: delta_N positive 0.15 (director now understands feature value better than expected), delta_R positive 0.05 (slight relationship improvement, less than predicted due to tension moments), delta_W positive 0.30 (calculated wealth increase higher than predicted, reflecting stronger conditional approval and improved pipeline advancement probability). Strategic indexes: ROI Index 68 (better than predicted due to higher notoriety gain), Resistance Index 0.5 (slightly higher friction than expected), Energy Cost 0.6 (more draining than anticipated), Confidence Delta positive 0.13 (confirmed estimates, slightly higher learning), Influence Depth 0.35 (less deep influence than hoped), Narrative Coherence 0.7 (clearer message delivery than planned).
-
-Step 7: Accuracy Analysis and Learning
-The system calculates accuracy metrics. Notoriety prediction error: positive 0.03 (predicted 0.12, actual 0.15, slight underestimation). Respect prediction error: negative 0.03 (predicted 0.08, actual 0.05, slight overestimation). ROI Index error: negative six points (predicted 62, actual 68). The system flags respect overestimation pattern and prompts the architect to reflect on whether they underestimated relationship friction from assertiveness. Cognitive journal entry links to director's actor profile noting defensive reaction pattern when risk concerns raised, creating actor-specific bias awareness for future interactions.
-
-This complete workflow demonstrates the closed-loop system operation from actor assessment through probabilistic prediction, strategic configuration, empirical outcome capture, accuracy measurement, and continuous model refinement.
+The analytics dashboard thereby transforms communication skill development from subjective assessment to data-driven continuous improvement, enabling architects to measure and optimize real-world interaction effectiveness through objective metrics derived from systematic comparison of predictions to outcomes.
 
 CLAIMS
 
@@ -528,6 +346,10 @@ Figure 10: Communication projects hierarchy diagram showing project-level struct
 Figure 11: Confounder penalty system flowchart illustrating multiplicative penalty application process, showing base skills (observation, adaptation, self-awareness) receiving percentage reductions from active confounders (stress - 30% observation/adaptation, fatigue - 20% observation/adaptation, emotional state - 20% observation and - 30% self-awareness, overconfidence - 40% self-awareness, ego investment - 30% adaptation) with compound effect calculation producing effective skill levels used in simulation.
 
 Figure 12: Strategy lever configuration interface showing five bipolar sliders (Warmth from Cold/Formal to Warm/Personal, Competence from Humble/Uncertain to Confident/Expert, Dominance from Submissive/Yielding to Dominant/Assertive, Status from Low Signaling to High Signaling, Rapport from Minimal to Maximum Building) with recommended settings based on actor profile characteristics and scenario context, and simulation preview showing outcome probability changes as levers are adjusted.
+
+Figure 13: Analytics dashboard displaying architect skill progression charts showing three skill dimensions (Observation measured via information gain from interactions, Adaptation measured via strategy optimality compared to post-hoc optimal settings, Self-Awareness measured via calibration error between predicted and actual confounders) with time-series line graphs, smoothed trend lines, confidence intervals, and statistical significance indicators tracking improvement from baseline 0.4-0.5 skill levels toward expert 0.7-0.8 performance over 50-100 interactions.
+
+Figure 14: Prediction accuracy analysis panel comprising calibration plot showing predicted confidence intervals (x-axis) versus empirical frequency of actual outcomes falling within intervals (y-axis) with diagonal reference line indicating perfect calibration, systematic bias identification table listing variables with consistent overestimation or underestimation patterns exceeding 20% error threshold with actionable calibration recommendations, and prediction error trend graphs for strategic outcomes (ΔN, ΔR, ΔW) and strategic indexes showing mean absolute error convergence over rolling 20-interaction window with target accuracy bands.
 
 INDUSTRIAL APPLICABILITY
 

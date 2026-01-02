@@ -588,6 +588,18 @@ function App() {
                   size="small"
                 />
               </Grid>
+              <Grid item xs={6}>
+                <Typography variant="caption">Surface Roughness - mm</Typography>
+                <Slider
+                  value={typeof inputs.roughness === 'number' ? inputs.roughness : 0.007}
+                  min={inputSchema.roughness?.min_value || 0.0015}
+                  max={inputSchema.roughness?.max_value || 0.15}
+                  step={0.001}
+                  onChange={(_, val) => setInputs({ ...inputs, roughness: val as number })}
+                  valueLabelDisplay="on"
+                  size="small"
+                />
+              </Grid>
             </Grid>
           </Paper>
 

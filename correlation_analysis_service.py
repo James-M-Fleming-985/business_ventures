@@ -272,29 +272,52 @@ class CorrelationAnalysisService:
             return None
     
     def _store_correlation(self, result: dict, job_id: int):
-        """Store correlation result in database"""
+        """Store or update correlation result in database"""
         with get_db_session() as session:
             # Fetch source tags from variable metadata
             var1_meta = session.query(VariableMetadata).filter_by(id=result['variable1_id']).first()
             var2_meta = session.query(VariableMetadata).filter_by(id=result['variable2_id']).first()
             
-            corr = CorrelationResult(
-                variable1_id=result['variable1_id'],
-                variable2_id=result['variable2_id'],
-                correlation_value=result['correlation_value'],
-                p_value=result['p_value'],
-                method=result['method'],
-                sample_size=result['sample_size'],
-                start_date=result['start_date'],
-                end_date=result['end_date'],
-                is_significant=result['is_significant'],
-                abs_correlation=result['abs_correlation'],
-                analysis_job_id=job_id,
-                calculated_at=datetime.utcnow(),
-                source1=var1_meta.source if var1_meta else None,
-                source2=var2_meta.source if var2_meta else None
-            )
-            session.add(corr)
+            # Check if correlation already exists (update instead of duplicate)
+            existing = session.query(CorrelationResult).filter(
+                CorrelationResult.variable1_id == result['variable1_id'],
+                CorrelationResult.variable2_id == result['variable2_id'],
+                CorrelationResult.method == result['method']
+            ).first()
+            
+            if existing:
+                # UPDATE existing correlation
+                existing.correlation_value = result['correlation_value']
+                existing.p_value = result['p_value']
+                existing.sample_size = result['sample_size']
+                existing.start_date = result['start_date']
+                existing.end_date = result['end_date']
+                existing.is_significant = result['is_significant']
+                existing.abs_correlation = result['abs_correlation']
+                existing.analysis_job_id = job_id
+                existing.calculated_at = datetime.utcnow()
+                existing.source1 = var1_meta.source if var1_meta else None
+                existing.source2 = var2_meta.source if var2_meta else None
+            else:
+                # CREATE new correlation
+                corr = CorrelationResult(
+                    variable1_id=result['variable1_id'],
+                    variable2_id=result['variable2_id'],
+                    correlation_value=result['correlation_value'],
+                    p_value=result['p_value'],
+                    method=result['method'],
+                    sample_size=result['sample_size'],
+                    start_date=result['start_date'],
+                    end_date=result['end_date'],
+                    is_significant=result['is_significant'],
+                    abs_correlation=result['abs_correlation'],
+                    analysis_job_id=job_id,
+                    calculated_at=datetime.utcnow(),
+                    source1=var1_meta.source if var1_meta else None,
+                    source2=var2_meta.source if var2_meta else None
+                )
+                session.add(corr)
+            
             session.commit()
     
     def calculate_rolling_correlations(
