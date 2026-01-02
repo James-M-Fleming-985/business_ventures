@@ -142,9 +142,16 @@ export const LandingPage: React.FC = () => {
             Choose the plan that fits your needs
           </Typography>
 
-          <Grid container spacing={4} justifyContent="center">
-            <Grid item xs={12} md={6} lg={5}>
-              <Card sx={{ textAlign: 'center', p: 4, border: '2px solid #e0e0e0' }}>
+          <Grid container spacing={4} justifyContent="center" alignItems="stretch">
+            <Grid item xs={12} md={6} lg={5} sx={{ display: 'flex' }}>
+              <Card sx={{ 
+                textAlign: 'center', 
+                p: 4, 
+                border: '2px solid #e0e0e0',
+                display: 'flex',
+                flexDirection: 'column',
+                width: '100%'
+              }}>
                 <Typography variant="h5" fontWeight="bold" gutterBottom>
                   Free
                 </Typography>
@@ -157,7 +164,7 @@ export const LandingPage: React.FC = () => {
                 <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
                   Perfect for getting started
                 </Typography>
-                <Box sx={{ textAlign: 'left', mb: 3 }}>
+                <Box sx={{ textAlign: 'left', mb: 3, flexGrow: 1 }}>
                   <Typography variant="body2" sx={{ mb: 1 }}>✓ 5 explorations per month</Typography>
                   <Typography variant="body2" sx={{ mb: 1 }}>✓ Basic visualizations</Typography>
                   <Typography variant="body2" sx={{ mb: 1 }}>✓ Baseline comparison</Typography>
@@ -169,21 +176,24 @@ export const LandingPage: React.FC = () => {
                   variant="outlined"
                   fullWidth
                   size="large"
-                  sx={{ textTransform: 'none' }}
+                  sx={{ textTransform: 'none', mt: 'auto' }}
                 >
                   Get Started Free
                 </Button>
               </Card>
             </Grid>
 
-            <Grid item xs={12} md={6} lg={5}>
+            <Grid item xs={12} md={6} lg={5} sx={{ display: 'flex' }}>
               <Card
                 sx={{
                   textAlign: 'center',
                   p: 4,
                   border: '3px solid #667eea',
                   position: 'relative',
-                  boxShadow: 3
+                  boxShadow: 3,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  width: '100%'
                 }}
               >
                 <Box
@@ -214,7 +224,7 @@ export const LandingPage: React.FC = () => {
                 <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
                   For serious professionals
                 </Typography>
-                <Box sx={{ textAlign: 'left', mb: 3 }}>
+                <Box sx={{ textAlign: 'left', mb: 3, flexGrow: 1 }}>
                   <Typography variant="body2" sx={{ mb: 1 }}>✓ Unlimited explorations</Typography>
                   <Typography variant="body2" sx={{ mb: 1 }}>✓ All 9 visualization modes</Typography>
                   <Typography variant="body2" sx={{ mb: 1 }}>✓ Multiple baselines</Typography>
@@ -233,7 +243,8 @@ export const LandingPage: React.FC = () => {
                     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                     '&:hover': {
                       background: 'linear-gradient(135deg, #5568d3 0%, #65408d 100%)',
-                    }
+                    },
+                    mt: 'auto'
                   }}
                 >
                   Start Pro Trial
