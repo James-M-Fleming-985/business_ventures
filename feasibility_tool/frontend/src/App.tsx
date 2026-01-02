@@ -1020,36 +1020,15 @@ function App() {
               )})}
             </Paper>
 
-            {/* Score Summary */}
+            {/* Overall Score - D/P/E shown on 3D visual */}
             {result && (
-              <Paper sx={{ p: 1.5, mt: 1.5, bgcolor: '#1a1a1a' }}>
-                <Typography variant="caption" fontWeight="bold" gutterBottom display="block" sx={{ fontSize: '0.75rem' }}>
-                  Scores
+              <Paper sx={{ p: 1.5, mt: 1.25, bgcolor: '#00bcd4', borderRadius: 1, textAlign: 'center' }}>
+                <Typography variant="caption" sx={{ fontSize: '0.65rem', color: '#000', fontWeight: 'bold' }}>
+                  OVERALL SCORE
                 </Typography>
-                {Object.entries(result.composites).map(([key, value]) => (
-                  <Box key={key} sx={{ mb: 2 }}>
-                    <Typography variant="caption" color="text.secondary">
-                      {key.replace('_score', '').toUpperCase()}
-                    </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Box sx={{ flex: 1, height: 8, bgcolor: '#333', borderRadius: 1, overflow: 'hidden' }}>
-                        <Box sx={{ 
-                          height: '100%', 
-                          width: `${value}%`, 
-                          bgcolor: value > 75 ? '#4caf50' : value > 50 ? '#ff9800' : '#f44336',
-                          transition: 'width 0.3s'
-                        }} />
-                      </Box>
-                      <Typography variant="body2" sx={{ minWidth: 40 }}>
-                        {value.toFixed(1)}
-                      </Typography>
-                    </Box>
-                  </Box>
-                ))}
-                <Box sx={{ mt: 3, p: 2, bgcolor: '#00bcd4', borderRadius: 1 }}>
-                  <Typography variant="caption">OVERALL SCORE</Typography>
-                  <Typography variant="h3">{result.overall_score.toFixed(1)}</Typography>
-                </Box>
+                <Typography variant="h3" sx={{ color: '#000', fontWeight: 'bold', lineHeight: 1.2 }}>
+                  {result.overall_score.toFixed(1)}
+                </Typography>
               </Paper>
             )}
           </Box>
