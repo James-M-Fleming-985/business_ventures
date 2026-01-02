@@ -260,7 +260,8 @@ async def get_network_data(
     """Get correlation network from REAL DATA - connections above threshold"""
     try:
         # Get all significant correlations above threshold with minimum sample size
-        correlations = db.query(CorrelationResult).filter(\n            CorrelationResult.is_significant.is_(True),
+        correlations = db.query(CorrelationResult).filter(
+            CorrelationResult.is_significant.is_(True),
             CorrelationResult.abs_correlation >= threshold,
             CorrelationResult.sample_size >= 30  # CRITICAL: Filter out correlations with insufficient data
         ).all()
