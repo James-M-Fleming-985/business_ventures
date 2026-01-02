@@ -8,6 +8,9 @@ function dashboardData() {
             lastUpdated: '--'
         },
         isRecalculating: false,
+        isTestingCausality: false,
+        causalityResults: null,
+        causalityExplanation: '',
         availableMetrics: [],
         selectedMetric: 'all',
         networkThreshold: 0.5,
@@ -415,6 +418,10 @@ function dashboardData() {
         
         async openModal(relationship) {
             console.log('Opening modal for:', relationship);
+            
+            // Reset causality results when opening new modal
+            this.causalityResults = null;
+            this.causalityExplanation = '';
             
             try {
                 // Get detailed relationship data from API
@@ -943,6 +950,42 @@ function dashboardData() {
                 alert('Failed to recalculate correlations: ' + error.message);
             } finally {
                 this.isRecalculating = false;
+            }
+        },
+        
+        async testCausality() {
+            if (this.isTestingCausality) return;
+            
+            this.isTestingCausality = true;
+            console.log('Testing Granger causality for:', this.modalData.var1, '↔', this.modalData.var2);
+            
+            try {
+                const response = await fetch(
+                    `/api/dashboard/causality/${encodeURIComponent(this.modalData.var1)}/${encodeURIComponent(this.modalData.var2)}`,
+                    { method: 'POST' }
+                );
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Causality test failed');
+                }
+                
+                const data = await response.json();
+                console.log('Causality results:', data);
+                
+                this.causalityResults = data;
+                this.causalityExplanation = data.explanation || 'Causality analysis complete';
+                
+                // Scroll to results
+                setTimeout(() => {
+                    document.querySelector('.space-y-3')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 100);
+                
+            } catch (error) {
+                console.error('Causality test failed:', error);
+                alert('Failed to test causality: ' + error.message);
+            } finally {
+                this.isTestingCausality = false;
             }
         },
         

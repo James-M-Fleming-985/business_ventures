@@ -373,15 +373,51 @@
                     </div>
                 </div>
 
+                <!-- Phase 2: Granger Causality Analysis Section -->
+                <div x-show="causalityResults" x-transition class="mt-6 p-4 bg-slate-900/50 rounded-lg border border-slate-700">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-lg font-bold text-primary-400 flex items-center gap-2">
+                            <i data-lucide="git-fork" class="w-5 h-5"></i>
+                            Granger Causality Analysis
+                        </h3>
+                    </div>
+                    
+                    <div class="space-y-3" x-html="causalityExplanation"></div>
+                    
+                    <!-- Directional Results -->
+                    <div class="grid grid-cols-2 gap-3 mt-4">
+                        <div class="p-3 bg-slate-800/50 rounded">
+                            <p class="text-xs text-slate-400 mb-1" x-text="`${modalData.var1} → ${modalData.var2}`"></p>
+                            <p class="text-lg font-bold" :class="causalityResults?.var1_to_var2?.significant ? 'text-green-400' : 'text-slate-500'"
+                               x-text="`p = ${causalityResults?.var1_to_var2?.p_value?.toFixed(4) || 'N/A'}`"></p>
+                            <p class="text-xs" :class="causalityResults?.var1_to_var2?.significant ? 'text-green-300' : 'text-slate-500'"
+                               x-text="causalityResults?.var1_to_var2?.significant ? '✓ Significant' : '✗ Not significant'"></p>
+                        </div>
+                        <div class="p-3 bg-slate-800/50 rounded">
+                            <p class="text-xs text-slate-400 mb-1" x-text="`${modalData.var2} → ${modalData.var1}`"></p>
+                            <p class="text-lg font-bold" :class="causalityResults?.var2_to_var1?.significant ? 'text-green-400' : 'text-slate-500'"
+                               x-text="`p = ${causalityResults?.var2_to_var1?.p_value?.toFixed(4) || 'N/A'}`"></p>
+                            <p class="text-xs" :class="causalityResults?.var2_to_var1?.significant ? 'text-green-300' : 'text-slate-500'"
+                               x-text="causalityResults?.var2_to_var1?.significant ? '✓ Significant' : '✗ Not significant'"></p>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Action Buttons -->
                 <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-700">
+                    <button @click="testCausality()"
+                        :disabled="isTestingCausality"
+                        class="px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:bg-slate-700 disabled:text-slate-500 rounded-lg text-sm transition flex items-center gap-2">
+                        <i data-lucide="git-fork" class="w-4 h-4" :class="{'animate-spin': isTestingCausality}"></i>
+                        <span x-text="isTestingCausality ? 'Testing...' : 'Test Causality'"></span>
+                    </button>
                     <button @click="exportAnalysis()"
                         class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition">
                         <i data-lucide="download" class="w-4 h-4 inline mr-1"></i>
                         Export Report
                     </button>
                     <button @click="modalOpen = false"
-                        class="px-4 py-2 bg-primary-600 hover:bg-primary-500 rounded-lg text-sm transition">
+                        class="px-4 py-2 bg-slate-600 hover:bg-slate-500 rounded-lg text-sm transition">
                         Close
                     </button>
                 </div>

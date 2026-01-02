@@ -75,6 +75,12 @@ class CorrelationResult(Base):
     is_significant = Column(Boolean)  # p < 0.05
     abs_correlation = Column(Float)  # For ranking by strength
     
+    # Phase 2: Granger Causality fields
+    causal_direction = Column(String(20))  # 'x_to_y', 'y_to_x', 'bidirectional', 'none', or NULL
+    granger_p_value_xy = Column(Float)  # p-value for var1 → var2
+    granger_p_value_yx = Column(Float)  # p-value for var2 → var1
+    granger_lags = Column(Integer)  # Optimal lag found by Granger test
+    
     # Source tags for cross-domain filtering
     source1 = Column(String(100))  # Source of variable1 (e.g., 'alphavantage', 'worldbank')
     source2 = Column(String(100))  # Source of variable2

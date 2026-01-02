@@ -3,7 +3,7 @@ Dashboard Router for Correlation Discovery Engine
 ALL ENDPOINTS USE REAL API DATA - NO MOCK/SYNTHETIC DATA
 """
 
-from fastapi import APIRouter, Request, Query, Depends
+from fastapi import APIRouter, Request, Query, Depends, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
@@ -13,6 +13,7 @@ from models import (
     RollingCorrelation, APIStatus, AnalysisJob
 )
 from correlation_analysis_service import CorrelationAnalysisService
+from services.granger_causality_service import GrangerCausalityService
 from typing import Optional, List
 from datetime import datetime, timedelta
 import logging
@@ -712,3 +713,84 @@ async def get_api_status(db: Session = Depends(get_db)):
     except Exception as e:
         logger.error(f"Error getting API status: {e}")
         return {"apis": [], "error": str(e)}
+
+
+@router.post("/causality/{var1_name}/{var2_name}")
+async def test_granger_causality(
+    var1_name: str,
+    var2_name: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Test Granger causality between two variables (Phase 2)
+    
+    Returns bidirectional causality test results showing which variable
+    (if any) Granger-causes the other.
+    """
+    try:
+        # Find variables by display_name
+        var1 = db.query(VariableMetadata).filter(
+            VariableMetadata.display_name == var1_name
+        ).first()
+        
+        if not var1:
+            var1 = db.query(VariableMetadata).filter(
+                VariableMetadata.display_name.ilike(f"%{var1_name}%")
+            ).first()
+        
+        var2 = db.query(VariableMetadata).filter(
+            VariableMetadata.display_name == var2_name
+        ).first()
+        
+        if not var2:
+            var2 = db.query(VariableMetadata).filter(
+                VariableMetadata.display_name.ilike(f"%{var2_name}%")
+            ).first()
+        
+        if not var1 or not var2:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Variables not found: {var1_name}, {var2_name}"
+            )
+        
+        # Get existing correlation to use its date range
+        corr = db.query(CorrelationResult).filter(
+            ((CorrelationResult.variable1_id == var1.id) &
+             (CorrelationResult.variable2_id == var2.id)) |
+            ((CorrelationResult.variable1_id == var2.id) &
+             (CorrelationResult.variable2_id == var1.id))
+        ).first()
+        
+        # Initialize Granger causality service
+        granger_service = GrangerCausalityService(max_lag=12, confidence_level=0.05)
+        
+        # Test causality using the same date range as correlation
+        start_date = corr.start_date if corr else None
+        end_date = corr.end_date if corr else None
+        
+        result = granger_service.test_causality(
+            var1.id, 
+            var2.id,
+            start_date=start_date,
+            end_date=end_date
+        )
+        
+        # Update correlation result with Granger findings if correlation exists
+        if corr:
+            corr.causal_direction = result['causal_direction']
+            corr.granger_p_value_xy = result['var1_to_var2']['p_value']
+            corr.granger_p_value_yx = result['var2_to_var1']['p_value']
+            corr.granger_lags = result['var1_to_var2']['lags']
+            db.commit()
+            
+            logger.info(f"Updated correlation {corr.id} with Granger causality results: {result['causal_direction']}")
+        
+        return result
+        
+    except ValueError as e:
+        logger.error(f"Validation error in Granger test: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error testing Granger causality: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Causality test failed: {str(e)}")
+
