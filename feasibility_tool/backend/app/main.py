@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Dict, Any, Optional
+import os
 from app.engines.base import initialize_engines, EngineRegistry
 from app.auth import router as auth_router
 from app.payments import router as payments_router
@@ -34,10 +35,23 @@ async def startup_event():
 app.include_router(auth_router)
 app.include_router(payments_router)
 
-# CORS middleware
+# CORS middleware - get frontend URL from environment
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+allowed_origins = [FRONTEND_URL]
+
+# Also allow common development origins
+if "localhost" in FRONTEND_URL or "127.0.0.1" in FRONTEND_URL:
+    allowed_origins.extend([
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:5173",
+    ])
+
+print(f"✅ CORS allowed origins: {allowed_origins}")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure for production
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
