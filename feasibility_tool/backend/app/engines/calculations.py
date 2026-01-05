@@ -84,14 +84,20 @@ def comprehensive_calculate(inputs: Dict[str, Any]) -> CalculationResult:
     deltaP_bar = deltaP_Pa / 100000
     
     # ===== ECONOMIC CALCULATIONS =====
+    # Get total system length (defaults to L if not specified)
+    total_system_length = inputs.get("total_system_length", L)
+    
+    # Calculate cost per meter
     wall_thickness = (Do - Di) / 2
-    volume_m3 = np.pi * ((Do/2)**2 - (Di/2)**2) * L
-    mass_kg = volume_m3 * mat["density"]
+    volume_per_meter = np.pi * ((Do/2)**2 - (Di/2)**2) * 1.0  # Volume for 1 meter
+    mass_per_meter = volume_per_meter * mat["density"]
     
     # Use overrides if provided, otherwise use database values
     cost_per_kg = material_cost_override if material_cost_override is not None else mat["cost_per_kg"]
     cost_multiplier = reinf_cost_override if reinf_cost_override is not None else reinf["cost_multiplier"]
-    material_cost = mass_kg * cost_per_kg * cost_multiplier
+    
+    cost_per_meter = mass_per_meter * cost_per_kg * cost_multiplier
+    material_cost = cost_per_meter * total_system_length
     
     # ===== DURABILITY CALCULATIONS (needed for lifespan-based economics) =====
     temp_degradation = max(0, (ambient_temp - mat["max_temp"]) / 100) if ambient_temp > mat["max_temp"] else 0
@@ -161,7 +167,15 @@ def comprehensive_calculate(inputs: Dict[str, Any]) -> CalculationResult:
         "material_cost": ComponentResult(
             value=material_cost, unit="£",
             formula=f"{material_type} + {reinforcement_type}",
-            calculation_steps=[f"Mass = {mass_kg:.2f} kg", f"Unit cost = £{material_cost:.2f}", f"Lifespan = {expected_lifespan_years:.1f} yrs", f"Replacements in 10yr = {int(num_replacements)}×", f"Total material = £{total_material_cost:.2f}"],
+            calculation_steps=[
+                f"Mass/m = {mass_per_meter:.3f} kg/m",
+                f"Cost/m = {mass_per_meter:.3f} × £{cost_per_kg:.2f} × {cost_multiplier:.2f} = £{cost_per_meter:.2f}/m",
+                f"System length = {total_system_length:.1f}m",
+                f"Unit cost = £{material_cost:.2f}",
+                f"Lifespan = {expected_lifespan_years:.1f} yrs",
+                f"Replacements in 10yr = {int(num_replacements)}×",
+                f"Total material = £{total_material_cost:.2f}"
+            ],
             normalized=max(0, 100 - (material_cost / 500) * 100)
         ),
         "total_cost": ComponentResult(

@@ -372,7 +372,7 @@ function ProfileShapeVisualization({
                     {result?.components && baseline?.components && (
                       <>
                         <div style={{ fontSize: '9px', opacity: 0.8, marginTop: '6px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.3)' }}>
-                          10-Year Cost Comparison (per {baseline.inputs?.L || 1}m section)
+                          10-Year Cost Comparison
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '4px' }}>
                           Baseline: £{baseline.components.total_cost?.value.toFixed(2)}
@@ -387,20 +387,15 @@ function ProfileShapeVisualization({
                           ({result.components.lifespan?.value.toFixed(1)}yr life = {Math.ceil(10 / result.components.lifespan?.value)}× replacements)
                         </div>
                         <div style={{ fontSize: '11px', opacity: 1, marginTop: '4px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.2)', fontWeight: 'bold', color: (baseline.components.total_cost?.value - result.components.total_cost?.value) > 0 ? '#4caf50' : '#f44336' }}>
-                          Savings/section: £{(baseline.components.total_cost?.value - result.components.total_cost?.value).toFixed(2)}
+                          TOTAL 10yr Savings: £{(baseline.components.total_cost?.value - result.components.total_cost?.value).toFixed(2)}
                         </div>
                         {baseline.inputs?.total_system_length && (
-                          <>
-                            <div style={{ fontSize: '11px', opacity: 1, marginTop: '2px', fontWeight: 'bold', color: '#ffd700' }}>
-                              TOTAL System Savings ({baseline.inputs.total_system_length}m)
-                            </div>
-                            <div style={{ fontSize: '12px', opacity: 1, fontWeight: 'bold', color: '#4caf50' }}>
-                              £{((baseline.components.total_cost?.value - result.components.total_cost?.value) * (baseline.inputs.total_system_length / (baseline.inputs?.L || 1))).toFixed(2)}
-                            </div>
-                          </>
+                          <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '2px' }}>
+                            (For {baseline.inputs.total_system_length}m system)
+                          </div>
                         )}
                         <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '2px' }}>
-                          Material diff: £{(result.components.material_cost?.value - baseline.components.material_cost?.value).toFixed(2)}
+                          Initial investment diff: £{(result.components.material_cost?.value - baseline.components.material_cost?.value).toFixed(2)}
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '2px' }}>
                           ROI: {((baseline.components.total_cost?.value - result.components.total_cost?.value) / Math.abs(result.components.material_cost?.value - baseline.components.material_cost?.value) * 100).toFixed(0)}%
@@ -423,13 +418,13 @@ function ProfileShapeVisualization({
                     {result?.components && (
                       <>
                         <div style={{ fontSize: '9px', opacity: 0.8, marginTop: '6px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.3)' }}>
-                          10-Year Total Cost (for length L)
+                          10-Year Total Cost
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '4px' }}>
                           Material: £{result.components.material_cost?.value.toFixed(2)} × {Math.ceil(10 / result.components.lifespan?.value)}
                         </div>
                         <div style={{ fontSize: '9px', opacity: 0.7 }}>
-                          (Lifespan = {result.components.lifespan?.value.toFixed(1)} years)
+                          (Lifespan = {result.components.lifespan?.value.toFixed(1)} years, {Math.ceil(10 / result.components.lifespan?.value)}× replacements)
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '2px' }}>
                           Energy: £{(result.components.total_cost?.value - (result.components.material_cost?.value * Math.ceil(10 / result.components.lifespan?.value))).toFixed(2)}
