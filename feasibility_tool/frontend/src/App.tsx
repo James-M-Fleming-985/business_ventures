@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { ThemeProvider, createTheme } from '@mui/material/styles'
-import { CssBaseline, Box, Typography, Paper, Grid, Slider, Select, MenuItem, FormControl, Tooltip, IconButton, Accordion, AccordionSummary, AccordionDetails, Tabs, Tab, Drawer, List, ListItem, ListItemText, Divider, Button, Dialog, DialogTitle, DialogContent, DialogActions, Chip } from '@mui/material'
+import { CssBaseline, Box, Typography, Paper, Grid, Slider, Select, MenuItem, FormControl, Tooltip, IconButton, Accordion, AccordionSummary, AccordionDetails, Tabs, Tab, Drawer, List, ListItem, ListItemText, Divider, Button, Dialog, DialogTitle, DialogContent, DialogActions, Chip, TextField } from '@mui/material'
 import { Info, ExpandMore, History, Bookmark, Close } from '@mui/icons-material'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, PerspectiveCamera, Text, Html } from '@react-three/drei'
@@ -372,7 +372,7 @@ function ProfileShapeVisualization({
                     {result?.components && baseline?.components && (
                       <>
                         <div style={{ fontSize: '9px', opacity: 0.8, marginTop: '6px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.3)' }}>
-                          10-Year Cost Comparison (for length L)
+                          10-Year Cost Comparison (per {baseline.inputs?.L || 1}m section)
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '4px' }}>
                           Baseline: £{baseline.components.total_cost?.value.toFixed(2)}
@@ -387,14 +387,29 @@ function ProfileShapeVisualization({
                           ({result.components.lifespan?.value.toFixed(1)}yr life = {Math.ceil(10 / result.components.lifespan?.value)}× replacements)
                         </div>
                         <div style={{ fontSize: '11px', opacity: 1, marginTop: '4px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.2)', fontWeight: 'bold', color: (baseline.components.total_cost?.value - result.components.total_cost?.value) > 0 ? '#4caf50' : '#f44336' }}>
-                          Savings: £{(baseline.components.total_cost?.value - result.components.total_cost?.value).toFixed(2)}
+                          Savings/section: £{(baseline.components.total_cost?.value - result.components.total_cost?.value).toFixed(2)}
                         </div>
+                        {baseline.inputs?.total_system_length && (
+                          <>
+                            <div style={{ fontSize: '11px', opacity: 1, marginTop: '2px', fontWeight: 'bold', color: '#ffd700' }}>
+                              TOTAL System Savings ({baseline.inputs.total_system_length}m)
+                            </div>
+                            <div style={{ fontSize: '12px', opacity: 1, fontWeight: 'bold', color: '#4caf50' }}>
+                              £{((baseline.components.total_cost?.value - result.components.total_cost?.value) * (baseline.inputs.total_system_length / (baseline.inputs?.L || 1))).toFixed(2)}
+                            </div>
+                          </>
+                        )}
                         <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '2px' }}>
                           Material diff: £{(result.components.material_cost?.value - baseline.components.material_cost?.value).toFixed(2)}
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '2px' }}>
                           ROI: {((baseline.components.total_cost?.value - result.components.total_cost?.value) / Math.abs(result.components.material_cost?.value - baseline.components.material_cost?.value) * 100).toFixed(0)}%
                         </div>
+                        {baseline.inputs?.expected_total_lifespan && baseline.inputs?.current_system_age && (
+                          <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '2px', fontStyle: 'italic' }}>
+                            Note: Baseline {baseline.inputs.current_system_age}yr old, expects {baseline.inputs.expected_total_lifespan}yr total life
+                          </div>
+                        )}
                       </>
                     )}
                   </>
@@ -866,6 +881,63 @@ function App() {
               <Grid item xs={12}>
                 <Typography variant="caption" color="text.secondary">
                   💡 Material costs can be overridden here. Future: Auto-fetch from commodity price APIs
+                </Typography>
+              </Grid>
+            </Grid>
+          </Paper>
+
+          {/* SYSTEM SCALE & LIFESPAN */}
+          <Paper sx={{ p: 2, bgcolor: '#1a1a2e' }}>
+            <Typography variant="h6" color="warning.main" gutterBottom>
+              System Scale & Current Lifespan
+            </Typography>
+            <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
+              Essential for ROI calculation: total hose length and observed lifespan
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={6}>
+                <Typography variant="caption">Total System Length - meters</Typography>
+                <TextField
+                  type="number"
+                  value={inputs.total_system_length || 100}
+                  onChange={(e) => setInputs({ ...inputs, total_system_length: parseFloat(e.target.value) })}
+                  fullWidth
+                  size="small"
+                  helperText="Total hose installed (for scaling savings)"
+                  InputProps={{ sx: { fontSize: '0.8rem' } }}
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <Typography variant="caption">Current System Age - years</Typography>
+                <TextField
+                  type="number"
+                  value={inputs.current_system_age || 2}
+                  onChange={(e) => setInputs({ ...inputs, current_system_age: parseFloat(e.target.value) })}
+                  fullWidth
+                  size="small"
+                  helperText="How long current hose has been in service"
+                  InputProps={{ sx: { fontSize: '0.8rem' } }}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <Typography variant="caption">Expected Total Lifespan - years</Typography>
+                <Slider
+                  value={inputs.expected_total_lifespan || 5}
+                  min={1}
+                  max={15}
+                  step={0.5}
+                  marks={[
+                    { value: 1, label: '1yr' },
+                    { value: 5, label: '5yr' },
+                    { value: 10, label: '10yr' },
+                    { value: 15, label: '15yr' }
+                  ]}
+                  onChange={(_, val) => setInputs({ ...inputs, expected_total_lifespan: val as number })}
+                  valueLabelDisplay="on"
+                  size="small"
+                />
+                <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
+                  💡 Based on experience: how long do you expect this baseline hose to last before replacement?
                 </Typography>
               </Grid>
             </Grid>
