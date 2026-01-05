@@ -204,6 +204,22 @@ function ProfileShapeVisualization({
                     <div style={{ borderTop: '1px solid rgba(255,255,255,0.3)', marginTop: '4px', paddingTop: '4px', fontSize: '10px' }}>
                       {currentScores.performance.toFixed(1)} - {baselineScores.performance.toFixed(1)} = <span style={{ fontWeight: 'bold', fontSize: '12px' }}>{(currentScores.performance - baselineScores.performance).toFixed(1)}</span>
                     </div>
+                    {result?.components && (
+                      <>
+                        <div style={{ fontSize: '9px', opacity: 0.8, marginTop: '6px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.3)' }}>
+                          Formula: 0.4×ΔP + 0.2×v + 0.4×Safety
+                        </div>
+                        <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '4px' }}>
+                          v = Q/A = {result.components.velocity?.value.toFixed(2)} {result.components.velocity?.unit}
+                        </div>
+                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
+                          Re = ρvD/μ = {result.components.reynolds?.value.toFixed(0)}
+                        </div>
+                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
+                          ΔP = f(L/D)(ρv²/2) = {result.components.deltaP?.value.toFixed(3)} {result.components.deltaP?.unit}
+                        </div>
+                      </>
+                    )}
                   </>
                 ) : (
                   <>
@@ -215,16 +231,19 @@ function ProfileShapeVisualization({
                     {result?.components && (
                       <>
                         <div style={{ fontSize: '9px', opacity: 0.8, marginTop: '6px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.3)' }}>
-                          Based on: pressure drop, flow velocity, safety margin
+                          Formula: 0.4×ΔP + 0.2×v + 0.4×Safety
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '4px' }}>
-                          Velocity: {result.components.velocity?.value.toFixed(2)} {result.components.velocity?.unit}
+                          v = Q/A = {result.components.velocity?.value.toFixed(2)} {result.components.velocity?.unit}
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9 }}>
-                          Reynolds: {result.components.reynolds?.value.toFixed(0)}
+                          Re = ρvD/μ = {result.components.reynolds?.value.toFixed(0)}
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9 }}>
-                          ΔP: {result.components.deltaP?.value.toFixed(2)} {result.components.deltaP?.unit}
+                          ΔP = f(L/D)(ρv²/2) = {result.components.deltaP?.value.toFixed(3)} {result.components.deltaP?.unit}
+                        </div>
+                        <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '2px', fontStyle: 'italic' }}>
+                          Lower ΔP & moderate v = better
                         </div>
                       </>
                     )}
@@ -266,6 +285,25 @@ function ProfileShapeVisualization({
                     <div style={{ borderTop: '1px solid rgba(255,255,255,0.3)', marginTop: '4px', paddingTop: '4px', fontSize: '10px' }}>
                       {currentScores.durability.toFixed(1)} - {baselineScores.durability.toFixed(1)} = <span style={{ fontWeight: 'bold', fontSize: '12px' }}>{(currentScores.durability - baselineScores.durability).toFixed(1)}</span>
                     </div>
+                    {result?.components?.deltaP && (
+                      <>
+                        <div style={{ fontSize: '9px', opacity: 0.8, marginTop: '6px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.3)' }}>
+                          Formula: (Material×Reinf×100 - Degradation) / Climate
+                        </div>
+                        <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '4px' }}>
+                          Material Factor × Reinforcement Factor
+                        </div>
+                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
+                          - Temp Degradation (if T > T_max)
+                        </div>
+                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
+                          - UV Degradation = (UV/10)×Climate×(1-UV_resist)
+                        </div>
+                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
+                          ΔP = {result.components.deltaP.value.toFixed(3)} {result.components.deltaP.unit}
+                        </div>
+                      </>
+                    )}
                   </>
                 ) : (
                   <>
@@ -277,13 +315,19 @@ function ProfileShapeVisualization({
                     {result?.components?.deltaP && (
                       <>
                         <div style={{ fontSize: '9px', opacity: 0.8, marginTop: '6px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.3)' }}>
-                          Based on: material properties, environment, stress
+                          Formula: (Material×Reinf×100 - Degradation) / Climate
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '4px' }}>
-                          Pressure Drop: {result.components.deltaP.value.toFixed(2)} {result.components.deltaP.unit}
+                          Material Factor × Reinforcement Factor
                         </div>
-                        <div style={{ fontSize: '9px', opacity: 0.8, marginTop: '2px' }}>
-                          (Lower ΔP = less material stress)
+                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
+                          - Temp Degradation (if T > T_max)
+                        </div>
+                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
+                          - UV Degradation = (UV/10)×Climate×(1-UV_resist)
+                        </div>
+                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
+                          ΔP = {result.components.deltaP.value.toFixed(3)} {result.components.deltaP.unit} (stress indicator)
                         </div>
                       </>
                     )}
@@ -325,6 +369,25 @@ function ProfileShapeVisualization({
                     <div style={{ borderTop: '1px solid rgba(255,255,255,0.3)', marginTop: '4px', paddingTop: '4px', fontSize: '10px' }}>
                       {currentScores.economic.toFixed(1)} - {baselineScores.economic.toFixed(1)} = <span style={{ fontWeight: 'bold', fontSize: '12px' }}>{(currentScores.economic - baselineScores.economic).toFixed(1)}</span>
                     </div>
+                    {result?.components && (
+                      <>
+                        <div style={{ fontSize: '9px', opacity: 0.8, marginTop: '6px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.3)' }}>
+                          Score = (1 - Total/£20k) × 100
+                        </div>
+                        <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '4px' }}>
+                          Material = Mass×Cost/kg×Reinf_mult = £{result.components.material_cost?.value.toFixed(2)}
+                        </div>
+                        <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '2px' }}>
+                          Energy = (ΔP×Q)×Hours×Rate×10yr = £{(result.components.total_cost?.value - result.components.material_cost?.value).toFixed(2)}
+                        </div>
+                        <div style={{ fontSize: '11px', opacity: 1, marginTop: '2px', paddingTop: '2px', borderTop: '1px solid rgba(255,255,255,0.2)', fontWeight: 'bold' }}>
+                          Total: £{result.components.total_cost?.value.toFixed(2)}
+                        </div>
+                        <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '2px' }}>
+                          Score = (1 - {result.components.total_cost?.value.toFixed(2)}/20000) × 100 = {currentScores.economic.toFixed(1)}
+                        </div>
+                      </>
+                    )}
                   </>
                 ) : (
                   <>
@@ -336,19 +399,25 @@ function ProfileShapeVisualization({
                     {result?.components && (
                       <>
                         <div style={{ fontSize: '9px', opacity: 0.8, marginTop: '6px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.3)' }}>
-                          Score = (1 - total/£20k) × 100
+                          Score = (1 - Total/£20k) × 100
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '4px' }}>
-                          Material: £{result.components.material_cost?.value.toFixed(2)}
+                          Material = Mass×Cost/kg×Reinf_mult
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9 }}>
-                          10yr Energy: £{(result.components.total_cost?.value - result.components.material_cost?.value).toFixed(2)}
+                          = £{result.components.material_cost?.value.toFixed(2)}
+                        </div>
+                        <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '2px' }}>
+                          Energy = (ΔP×Q)×Hours×Rate×10yr
+                        </div>
+                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
+                          = £{(result.components.total_cost?.value - result.components.material_cost?.value).toFixed(2)}
                         </div>
                         <div style={{ fontSize: '11px', opacity: 1, marginTop: '2px', paddingTop: '2px', borderTop: '1px solid rgba(255,255,255,0.2)', fontWeight: 'bold' }}>
                           Total: £{result.components.total_cost?.value.toFixed(2)}
                         </div>
                         <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '2px' }}>
-                          (Lower is better)
+                          Score = (1 - {result.components.total_cost?.value.toFixed(2)}/20000) × 100 = {currentScores.economic.toFixed(1)}
                         </div>
                       </>
                     )}
