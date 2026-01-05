@@ -209,6 +209,9 @@ function ProfileShapeVisualization({
                   <>
                     <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Performance Score</div>
                     <div style={{ fontSize: '16px', marginBottom: '6px', color: '#fff', fontWeight: 'bold' }}>{currentScores.performance.toFixed(1)}/100</div>
+                    <div style={{ fontSize: '9px', opacity: 0.7, marginBottom: '6px', fontStyle: 'italic' }}>
+                      Position = {currentScores.performance.toFixed(1)} - 50 = {animatedScores.performance.toFixed(1)}
+                    </div>
                     {result?.components && (
                       <>
                         <div style={{ fontSize: '9px', opacity: 0.8, marginTop: '6px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.3)' }}>
@@ -268,6 +271,9 @@ function ProfileShapeVisualization({
                   <>
                     <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Durability Score</div>
                     <div style={{ fontSize: '16px', marginBottom: '6px', color: '#fff', fontWeight: 'bold' }}>{currentScores.durability.toFixed(1)}/100</div>
+                    <div style={{ fontSize: '9px', opacity: 0.7, marginBottom: '6px', fontStyle: 'italic' }}>
+                      Position = {currentScores.durability.toFixed(1)} - 50 = {animatedScores.durability.toFixed(1)}
+                    </div>
                     {result?.components?.deltaP && (
                       <>
                         <div style={{ fontSize: '9px', opacity: 0.8, marginTop: '6px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.3)' }}>
@@ -324,6 +330,9 @@ function ProfileShapeVisualization({
                   <>
                     <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Economic Score</div>
                     <div style={{ fontSize: '16px', marginBottom: '6px', color: '#fff', fontWeight: 'bold' }}>{currentScores.economic.toFixed(1)}/100</div>
+                    <div style={{ fontSize: '9px', opacity: 0.7, marginBottom: '6px', fontStyle: 'italic' }}>
+                      Position = {currentScores.economic.toFixed(1)} - 50 = {animatedScores.economic.toFixed(1)}
+                    </div>
                     {result?.components && (
                       <>
                         <div style={{ fontSize: '9px', opacity: 0.8, marginTop: '6px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.3)' }}>
