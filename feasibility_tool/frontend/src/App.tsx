@@ -294,7 +294,7 @@ function ProfileShapeVisualization({
                           Material Factor × Reinforcement Factor
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9 }}>
-                          - Temp Degradation (if T > T_max)
+                          - Temp Degradation (if T &gt; T_max)
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9 }}>
                           - UV Degradation = (UV/10)×Climate×(1-UV_resist)
@@ -321,7 +321,7 @@ function ProfileShapeVisualization({
                           Material Factor × Reinforcement Factor
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9 }}>
-                          - Temp Degradation (if T > T_max)
+                          - Temp Degradation (if T &gt; T_max)
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9 }}>
                           - UV Degradation = (UV/10)×Climate×(1-UV_resist)
