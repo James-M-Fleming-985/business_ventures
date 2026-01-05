@@ -201,13 +201,12 @@ function ProfileShapeVisualization({
               }}>
                 {baselineScores ? (
                   <>
-                    <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>ΔPerformance</div>
-                    <div>Current: {currentScores.performance.toFixed(2)}</div>
-                    <div>Baseline: {baselineScores.performance.toFixed(2)}</div>
-                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.3)', marginTop: '4px', paddingTop: '4px' }}>
-                      Δ = {currentScores.performance.toFixed(2)} - {baselineScores.performance.toFixed(2)}
+                    <div style={{ fontWeight: 'bold', marginBottom: '6px', fontSize: '12px' }}>ΔPerformance (EV)</div>
+                    <div style={{ fontSize: '10px', opacity: 0.9 }}>Current: {currentScores.performance.toFixed(1)}</div>
+                    <div style={{ fontSize: '10px', opacity: 0.9 }}>Baseline: {baselineScores.performance.toFixed(1)}</div>
+                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.3)', marginTop: '4px', paddingTop: '4px', fontSize: '10px' }}>
+                      {currentScores.performance.toFixed(1)} - {baselineScores.performance.toFixed(1)} = <span style={{ fontWeight: 'bold', fontSize: '12px' }}>{(currentScores.performance - baselineScores.performance).toFixed(1)}</span>
                     </div>
-                    <div>  = {animatedScores.performance.toFixed(2)}</div>
                   </>
                 ) : (
                   <>
@@ -264,13 +263,12 @@ function ProfileShapeVisualization({
               }}>
                 {baselineScores ? (
                   <>
-                    <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>ΔDurability</div>
-                    <div>Current: {currentScores.durability.toFixed(2)}</div>
-                    <div>Baseline: {baselineScores.durability.toFixed(2)}</div>
-                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.3)', marginTop: '4px', paddingTop: '4px' }}>
-                      Δ = {currentScores.durability.toFixed(2)} - {baselineScores.durability.toFixed(2)}
+                    <div style={{ fontWeight: 'bold', marginBottom: '6px', fontSize: '12px' }}>ΔDurability (EV)</div>
+                    <div style={{ fontSize: '10px', opacity: 0.9 }}>Current: {currentScores.durability.toFixed(1)}</div>
+                    <div style={{ fontSize: '10px', opacity: 0.9 }}>Baseline: {baselineScores.durability.toFixed(1)}</div>
+                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.3)', marginTop: '4px', paddingTop: '4px', fontSize: '10px' }}>
+                      {currentScores.durability.toFixed(1)} - {baselineScores.durability.toFixed(1)} = <span style={{ fontWeight: 'bold', fontSize: '12px' }}>{(currentScores.durability - baselineScores.durability).toFixed(1)}</span>
                     </div>
-                    <div>  = {animatedScores.durability.toFixed(2)}</div>
                   </>
                 ) : (
                   <>
@@ -324,13 +322,12 @@ function ProfileShapeVisualization({
               }}>
                 {baselineScores ? (
                   <>
-                    <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>ΔEconomic</div>
-                    <div>Current: {currentScores.economic.toFixed(2)}</div>
-                    <div>Baseline: {baselineScores.economic.toFixed(2)}</div>
-                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.3)', marginTop: '4px', paddingTop: '4px' }}>
-                      Δ = {currentScores.economic.toFixed(2)} - {baselineScores.economic.toFixed(2)}
+                    <div style={{ fontWeight: 'bold', marginBottom: '6px', fontSize: '12px' }}>ΔEconomic (EV)</div>
+                    <div style={{ fontSize: '10px', opacity: 0.9 }}>Current: {currentScores.economic.toFixed(1)}</div>
+                    <div style={{ fontSize: '10px', opacity: 0.9 }}>Baseline: {baselineScores.economic.toFixed(1)}</div>
+                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.3)', marginTop: '4px', paddingTop: '4px', fontSize: '10px' }}>
+                      {currentScores.economic.toFixed(1)} - {baselineScores.economic.toFixed(1)} = <span style={{ fontWeight: 'bold', fontSize: '12px' }}>{(currentScores.economic - baselineScores.economic).toFixed(1)}</span>
                     </div>
-                    <div>  = {animatedScores.economic.toFixed(2)}</div>
                   </>
                 ) : (
                   <>
