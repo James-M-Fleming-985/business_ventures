@@ -1,6 +1,23 @@
 [build]
 builder = "NIXPACKS"
-watchPatterns = ["**"]
+watchPatterns = [
+  "*.py",
+  "*.txt",
+  "*.toml",
+  "requirements.txt",
+  "main.py",
+  "database.py",
+  "models.py",
+  "config.py",
+  "routers/**",
+  "services/**",
+  "migrations/**",
+  "static/**",
+  "templates/**",
+  "Causal_affect/**",
+  "!feasibility_tool/**",
+  "!immersive_displays/**"
+]
 
 [deploy]
 numReplicas = 1
