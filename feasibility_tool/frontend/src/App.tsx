@@ -363,28 +363,37 @@ function ProfileShapeVisualization({
               }}>
                 {baselineScores ? (
                   <>
-                    <div style={{ fontWeight: 'bold', marginBottom: '6px', fontSize: '12px' }}>ΔEconomic (EV)</div>
+                    <div style={{ fontWeight: 'bold', marginBottom: '6px', fontSize: '12px' }}>ΔEconomic (EV) + ROI</div>
                     <div style={{ fontSize: '10px', opacity: 0.9 }}>Current: {currentScores.economic.toFixed(1)}</div>
                     <div style={{ fontSize: '10px', opacity: 0.9 }}>Baseline: {baselineScores.economic.toFixed(1)}</div>
                     <div style={{ borderTop: '1px solid rgba(255,255,255,0.3)', marginTop: '4px', paddingTop: '4px', fontSize: '10px' }}>
                       {currentScores.economic.toFixed(1)} - {baselineScores.economic.toFixed(1)} = <span style={{ fontWeight: 'bold', fontSize: '12px' }}>{(currentScores.economic - baselineScores.economic).toFixed(1)}</span>
                     </div>
-                    {result?.components && (
+                    {result?.components && baseline?.components && (
                       <>
                         <div style={{ fontSize: '9px', opacity: 0.8, marginTop: '6px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.3)' }}>
-                          Score = (1 - Total/£20k) × 100
+                          10-Year Cost Comparison (for length L)
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '4px' }}>
-                          Material = Mass×Cost/kg×Reinf_mult = £{result.components.material_cost?.value.toFixed(2)}
+                          Baseline: £{baseline.components.total_cost?.value.toFixed(2)}
+                        </div>
+                        <div style={{ fontSize: '9px', opacity: 0.7 }}>
+                          ({baseline.components.lifespan?.value.toFixed(1)}yr life = {Math.ceil(10 / baseline.components.lifespan?.value)}× replacements)
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '2px' }}>
-                          Energy = (ΔP×Q)×Hours×Rate×10yr = £{(result.components.total_cost?.value - result.components.material_cost?.value).toFixed(2)}
+                          Current: £{result.components.total_cost?.value.toFixed(2)}
                         </div>
-                        <div style={{ fontSize: '11px', opacity: 1, marginTop: '2px', paddingTop: '2px', borderTop: '1px solid rgba(255,255,255,0.2)', fontWeight: 'bold' }}>
-                          Total: £{result.components.total_cost?.value.toFixed(2)}
+                        <div style={{ fontSize: '9px', opacity: 0.7 }}>
+                          ({result.components.lifespan?.value.toFixed(1)}yr life = {Math.ceil(10 / result.components.lifespan?.value)}× replacements)
                         </div>
-                        <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '2px' }}>
-                          Score = (1 - {result.components.total_cost?.value.toFixed(2)}/20000) × 100 = {currentScores.economic.toFixed(1)}
+                        <div style={{ fontSize: '11px', opacity: 1, marginTop: '4px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.2)', fontWeight: 'bold', color: (baseline.components.total_cost?.value - result.components.total_cost?.value) > 0 ? '#4caf50' : '#f44336' }}>
+                          Savings: £{(baseline.components.total_cost?.value - result.components.total_cost?.value).toFixed(2)}
+                        </div>
+                        <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '2px' }}>
+                          Material diff: £{(result.components.material_cost?.value - baseline.components.material_cost?.value).toFixed(2)}
+                        </div>
+                        <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '2px' }}>
+                          ROI: {((baseline.components.total_cost?.value - result.components.total_cost?.value) / Math.abs(result.components.material_cost?.value - baseline.components.material_cost?.value) * 100).toFixed(0)}%
                         </div>
                       </>
                     )}
@@ -399,19 +408,16 @@ function ProfileShapeVisualization({
                     {result?.components && (
                       <>
                         <div style={{ fontSize: '9px', opacity: 0.8, marginTop: '6px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.3)' }}>
-                          Score = (1 - Total/£20k) × 100
+                          10-Year Total Cost (for length L)
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '4px' }}>
-                          Material = Mass×Cost/kg×Reinf_mult
+                          Material: £{result.components.material_cost?.value.toFixed(2)} × {Math.ceil(10 / result.components.lifespan?.value)}
                         </div>
-                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
-                          = £{result.components.material_cost?.value.toFixed(2)}
+                        <div style={{ fontSize: '9px', opacity: 0.7 }}>
+                          (Lifespan = {result.components.lifespan?.value.toFixed(1)} years)
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '2px' }}>
-                          Energy = (ΔP×Q)×Hours×Rate×10yr
-                        </div>
-                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
-                          = £{(result.components.total_cost?.value - result.components.material_cost?.value).toFixed(2)}
+                          Energy: £{(result.components.total_cost?.value - (result.components.material_cost?.value * Math.ceil(10 / result.components.lifespan?.value))).toFixed(2)}
                         </div>
                         <div style={{ fontSize: '11px', opacity: 1, marginTop: '2px', paddingTop: '2px', borderTop: '1px solid rgba(255,255,255,0.2)', fontWeight: 'bold' }}>
                           Total: £{result.components.total_cost?.value.toFixed(2)}

@@ -93,16 +93,7 @@ def comprehensive_calculate(inputs: Dict[str, Any]) -> CalculationResult:
     cost_multiplier = reinf_cost_override if reinf_cost_override is not None else reinf["cost_multiplier"]
     material_cost = mass_kg * cost_per_kg * cost_multiplier
     
-    # Pumping energy cost
-    power_watts = (deltaP_Pa * Q)
-    annual_energy_kwh = (power_watts / 1000) * operating_hours
-    annual_energy_cost = annual_energy_kwh * electricity_rate
-    
-    # Total 10-year cost
-    lifetime_years = 10
-    total_cost = material_cost + (annual_energy_cost * lifetime_years)
-    
-    # ===== DURABILITY CALCULATIONS =====
+    # ===== DURABILITY CALCULATIONS (needed for lifespan-based economics) =====
     temp_degradation = max(0, (ambient_temp - mat["max_temp"]) / 100) if ambient_temp > mat["max_temp"] else 0
     uv_degradation = (uv_exposure / 10) * climate["uv_multiplier"] * (1 - mat["uv_resistance"])
     climate_degradation = climate["degradation_factor"]
@@ -110,6 +101,26 @@ def comprehensive_calculate(inputs: Dict[str, Any]) -> CalculationResult:
     base_durability = mat["durability_factor"] * reinf["durability_multiplier"]
     durability_score = base_durability * 100 * (1 - temp_degradation - uv_degradation * 0.3) / climate_degradation
     durability_score = max(0, min(100, durability_score))
+    
+    # ===== LIFESPAN-BASED ECONOMIC CALCULATIONS =====
+    # Convert durability score to expected lifespan: 100 = 10 years, 0 = 1 year
+    expected_lifespan_years = max(1, (durability_score / 100) * 10)
+    
+    # Calculate number of replacements needed over 10-year analysis period
+    analysis_period = 10
+    num_replacements = np.ceil(analysis_period / expected_lifespan_years)
+    
+    # Total material cost over analysis period (including replacements)
+    total_material_cost = material_cost * num_replacements
+    
+    # Pumping energy cost
+    power_watts = (deltaP_Pa * Q)
+    annual_energy_kwh = (power_watts / 1000) * operating_hours
+    annual_energy_cost = annual_energy_kwh * electricity_rate
+    total_energy_cost = annual_energy_cost * analysis_period
+    
+    # Total 10-year cost (material with replacements + energy)
+    total_cost = total_material_cost + total_energy_cost
     
     # ===== PERFORMANCE SCORE =====
     pressure_safety_margin = (reinf["pressure_rating"] - operating_pressure) / reinf["pressure_rating"]
@@ -150,18 +161,24 @@ def comprehensive_calculate(inputs: Dict[str, Any]) -> CalculationResult:
         "material_cost": ComponentResult(
             value=material_cost, unit="£",
             formula=f"{material_type} + {reinforcement_type}",
-            calculation_steps=[f"Mass = {mass_kg:.2f} kg", f"Cost = £{material_cost:.2f}"],
+            calculation_steps=[f"Mass = {mass_kg:.2f} kg", f"Unit cost = £{material_cost:.2f}", f"Lifespan = {expected_lifespan_years:.1f} yrs", f"Replacements in 10yr = {int(num_replacements)}×", f"Total material = £{total_material_cost:.2f}"],
             normalized=max(0, 100 - (material_cost / 500) * 100)
         ),
         "total_cost": ComponentResult(
             value=total_cost, unit="£",
-            formula="Material + 10yr Energy",
+            formula="Material×Replacements + 10yr Energy",
             calculation_steps=[
-                f"Material: £{material_cost:.2f}",
-                f"Energy: £{annual_energy_cost:.2f}/yr × 10 = £{annual_energy_cost*10:.2f}",
+                f"Material: £{material_cost:.2f} × {int(num_replacements)} = £{total_material_cost:.2f}",
+                f"Energy: £{annual_energy_cost:.2f}/yr × 10 = £{total_energy_cost:.2f}",
                 f"Total: £{total_cost:.2f}"
             ],
             normalized=max(0, 100 - (total_cost / max_cost) * 100)
+        ),
+        "lifespan": ComponentResult(
+            value=expected_lifespan_years, unit="years",
+            formula="Lifespan = (Durability/100) × 10",
+            calculation_steps=[f"Durability = {durability_score:.1f}", f"Lifespan = {expected_lifespan_years:.1f} years"],
+            normalized=durability_score
         ),
     }
     
