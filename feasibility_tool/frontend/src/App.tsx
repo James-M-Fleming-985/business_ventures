@@ -1437,8 +1437,8 @@ function App() {
                   <>
                     <ambientLight intensity={0.8} />
                     <Text
-                      position={[0, 10, 0]}
-                      fontSize={8}
+                      position={[0, 15, 0]}
+                      fontSize={6}
                       color="#00bcd4"
                       anchorX="center"
                       anchorY="middle"
@@ -1446,16 +1446,16 @@ function App() {
                       Set Baseline to Begin Analysis
                     </Text>
                     <Text
-                      position={[0, 0, 0]}
-                      fontSize={4}
-                      color="#888"
+                      position={[0, -5, 0]}
+                      fontSize={3.5}
+                      color="#999"
                       anchorX="center"
                       anchorY="middle"
-                      maxWidth={60}
+                      maxWidth={80}
                       textAlign="center"
                     >
-                      Click "Set as Baseline" to establish your reference configuration.
-                      Then adjust parameters to see comparative performance.
+                      Click "Set Baseline ⚠️" button to establish your reference configuration.
+                      {'\n'}Then adjust parameters to see comparative performance.
                     </Text>
                   </>
                 )}
