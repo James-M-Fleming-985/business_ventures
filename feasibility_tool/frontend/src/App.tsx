@@ -420,19 +420,19 @@ function ProfileShapeVisualization({
                     {result?.components && (
                       <>
                         <div style={{ fontSize: '9px', opacity: 0.8, marginTop: '6px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.3)' }}>
-                          Score = (1 - Total/£20k) × 100
+                          Formula: Score = (1 - Total/£20k) × 100
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '4px' }}>
                           Material = £{result.components.material_cost?.value.toFixed(2)}
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9 }}>
-                          Energy (10yr) = £{(result.components.total_cost?.value - (result.components.material_cost?.value * Math.ceil(10 / result.components.lifespan?.value))).toFixed(2)}
-                        </div>
-                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
-                          Replacements = {Math.ceil(10 / result.components.lifespan?.value)}× ({result.components.lifespan?.value.toFixed(1)}yr life)
+                          Replacements = {Math.ceil(10 / result.components.lifespan?.value)}× over 10yr
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9 }}>
                           Total (10yr) = £{result.components.total_cost?.value.toFixed(2)}
+                        </div>
+                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
+                          Economic = {currentScores.economic.toFixed(1)}/100
                         </div>
                         <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '2px', fontStyle: 'italic' }}>
                           Lower cost = higher score
