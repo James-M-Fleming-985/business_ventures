@@ -285,7 +285,7 @@ function ProfileShapeVisualization({
                     <div style={{ borderTop: '1px solid rgba(255,255,255,0.3)', marginTop: '4px', paddingTop: '4px', fontSize: '10px' }}>
                       {currentScores.durability.toFixed(1)} - {baselineScores.durability.toFixed(1)} = <span style={{ fontWeight: 'bold', fontSize: '12px' }}>{(currentScores.durability - baselineScores.durability).toFixed(1)}</span>
                     </div>
-                    {result?.components?.deltaP && baseline?.components?.lifespan && (
+                    {result?.components?.deltaP && (
                       <>
                         <div style={{ fontSize: '9px', opacity: 0.8, marginTop: '6px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.3)' }}>
                           Formula: (Material×Reinf×100 - Degradation) / Climate
@@ -299,11 +299,8 @@ function ProfileShapeVisualization({
                         <div style={{ fontSize: '10px', opacity: 0.9 }}>
                           - UV Degradation = (UV/10)×Climate×(1-UV_resist)
                         </div>
-                        <div style={{ fontSize: '11px', opacity: 1, marginTop: '4px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.2)', fontWeight: 'bold', color: (result.components.lifespan?.value - baseline.components.lifespan?.value) > 0 ? '#4caf50' : '#f44336' }}>
-                          ΔLifespan: {((result.components.lifespan?.value - baseline.components.lifespan?.value) > 0 ? '+' : '')}{(result.components.lifespan?.value - baseline.components.lifespan?.value).toFixed(1)}yr
-                        </div>
-                        <div style={{ fontSize: '9px', opacity: 0.7 }}>
-                          Baseline: {baseline.components.lifespan?.value.toFixed(1)}yr → Current: {result.components.lifespan?.value.toFixed(1)}yr
+                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
+                          ΔD = {(currentScores.durability - baselineScores.durability).toFixed(1)} ({result.components.lifespan?.value.toFixed(1)}yr life)
                         </div>
                       </>
                     )}
