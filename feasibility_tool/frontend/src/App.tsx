@@ -279,11 +279,11 @@ function ProfileShapeVisualization({
               }}>
                 {baselineScores ? (
                   <>
-                    <div style={{ fontWeight: 'bold', marginBottom: '6px', fontSize: '12px' }}>ΔDurability (EV)</div>
-                    <div style={{ fontSize: '10px', opacity: 0.9 }}>Current: {currentScores.durability.toFixed(1)}</div>
-                    <div style={{ fontSize: '10px', opacity: 0.9 }}>Baseline: {baselineScores.durability.toFixed(1)}</div>
+                    <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Durability Score</div>
+                    <div style={{ fontSize: '10px', opacity: 0.9 }}>Current: {currentScores.durability.toFixed(1)}/100</div>
+                    <div style={{ fontSize: '10px', opacity: 0.9 }}>Baseline: {baselineScores.durability.toFixed(1)}/100</div>
                     <div style={{ borderTop: '1px solid rgba(255,255,255,0.3)', marginTop: '4px', paddingTop: '4px', fontSize: '10px' }}>
-                      {currentScores.durability.toFixed(1)} - {baselineScores.durability.toFixed(1)} = <span style={{ fontWeight: 'bold', fontSize: '12px' }}>{(currentScores.durability - baselineScores.durability).toFixed(1)}</span>
+                      {currentScores.durability.toFixed(1)} - {baselineScores.durability.toFixed(1)} = <span style={{ fontWeight: 'bold', fontSize: '12px' }}>ΔD = {(currentScores.durability - baselineScores.durability).toFixed(1)}</span>
                     </div>
                     {result?.components?.deltaP && (
                       <>
@@ -300,7 +300,13 @@ function ProfileShapeVisualization({
                           - UV Degradation = (UV/10)×Climate×(1-UV_resist)
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9 }}>
-                          ΔD = {(currentScores.durability - baselineScores.durability).toFixed(1)} ({result.components.lifespan?.value.toFixed(1)}yr life)
+                          ΔP = {result.components.deltaP.value.toFixed(3)} {result.components.deltaP.unit}
+                        </div>
+                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
+                          Lifespan = {result.components.lifespan?.value.toFixed(1)}yr
+                        </div>
+                        <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '2px', fontStyle: 'italic' }}>
+                          Higher durability = longer life
                         </div>
                       </>
                     )}
@@ -327,7 +333,10 @@ function ProfileShapeVisualization({
                           - UV Degradation = (UV/10)×Climate×(1-UV_resist)
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9 }}>
-                          ΔP = {result.components.deltaP.value.toFixed(3)} {result.components.deltaP.unit} (stress indicator)
+                          ΔP = {result.components.deltaP.value.toFixed(3)} {result.components.deltaP.unit}
+                        </div>
+                        <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '2px', fontStyle: 'italic' }}>
+                          Lower ΔP = less material stress
                         </div>
                       </>
                     )}
@@ -363,66 +372,56 @@ function ProfileShapeVisualization({
               }}>
                 {baselineScores ? (
                   <>
-                    <div style={{ fontWeight: 'bold', marginBottom: '6px', fontSize: '12px' }}>ΔEconomic (EV) + ROI</div>
-                    <div style={{ fontSize: '10px', opacity: 0.9 }}>Current: {currentScores.economic.toFixed(1)}</div>
-                    <div style={{ fontSize: '10px', opacity: 0.9 }}>Baseline: {baselineScores.economic.toFixed(1)}</div>
+                    <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Economic Score</div>
+                    <div style={{ fontSize: '10px', opacity: 0.9 }}>Current: {currentScores.economic.toFixed(1)}/100</div>
+                    <div style={{ fontSize: '10px', opacity: 0.9 }}>Baseline: {baselineScores.economic.toFixed(1)}/100</div>
                     <div style={{ borderTop: '1px solid rgba(255,255,255,0.3)', marginTop: '4px', paddingTop: '4px', fontSize: '10px' }}>
-                      {currentScores.economic.toFixed(1)} - {baselineScores.economic.toFixed(1)} = <span style={{ fontWeight: 'bold', fontSize: '12px' }}>{(currentScores.economic - baselineScores.economic).toFixed(1)}</span>
+                      {currentScores.economic.toFixed(1)} - {baselineScores.economic.toFixed(1)} = <span style={{ fontWeight: 'bold', fontSize: '12px' }}>ΔE = {(currentScores.economic - baselineScores.economic).toFixed(1)}</span>
                     </div>
                     {result?.components && baseline?.components && (
                       <>
                         <div style={{ fontSize: '9px', opacity: 0.8, marginTop: '6px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.3)' }}>
-                          Cost Breakdown (10yr Total)
+                          Score = (1 - Total/£20k) × 100
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '4px' }}>
-                          Baseline Material: £{baseline.components.material_cost?.value.toFixed(2)} × {Math.ceil(10 / baseline.components.lifespan?.value)}
+                          Baseline Material = £{baseline.components.material_cost?.value.toFixed(2)}
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9 }}>
-                          = £{(baseline.components.material_cost?.value * Math.ceil(10 / baseline.components.lifespan?.value)).toFixed(2)}
+                          Baseline Replacements = {Math.ceil(10 / baseline.components.lifespan?.value)}× ({baseline.components.lifespan?.value.toFixed(1)}yr)
                         </div>
-                        <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '2px' }}>
-                          Baseline Energy: £{(baseline.components.total_cost?.value - (baseline.components.material_cost?.value * Math.ceil(10 / baseline.components.lifespan?.value))).toFixed(2)}
-                        </div>
-                        <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '2px', fontWeight: 'bold' }}>
-                          Baseline TOTAL: £{baseline.components.total_cost?.value.toFixed(2)}
+                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
+                          Baseline Total (10yr) = £{baseline.components.total_cost?.value.toFixed(2)}
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '4px', paddingTop: '4px', borderTop: '1px dashed rgba(255,255,255,0.2)' }}>
-                          Current Material: £{result.components.material_cost?.value.toFixed(2)} × {Math.ceil(10 / result.components.lifespan?.value)}
+                          Current Material = £{result.components.material_cost?.value.toFixed(2)}
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9 }}>
-                          = £{(result.components.material_cost?.value * Math.ceil(10 / result.components.lifespan?.value)).toFixed(2)}
+                          Current Replacements = {Math.ceil(10 / result.components.lifespan?.value)}× ({result.components.lifespan?.value.toFixed(1)}yr)
                         </div>
-                        <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '2px' }}>
-                          Current Energy: £{(result.components.total_cost?.value - (result.components.material_cost?.value * Math.ceil(10 / result.components.lifespan?.value))).toFixed(2)}
+                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
+                          Current Total (10yr) = £{result.components.total_cost?.value.toFixed(2)}
                         </div>
-                        <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '2px', fontWeight: 'bold' }}>
-                          Current TOTAL: £{result.components.total_cost?.value.toFixed(2)}
+                        <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '2px', fontStyle: 'italic' }}>
+                          Lower cost = higher score
                         </div>
-                        <div style={{ fontSize: '11px', opacity: 1, marginTop: '4px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.3)', fontWeight: 'bold', color: (baseline.components.total_cost?.value - result.components.total_cost?.value) > 0 ? '#4caf50' : '#f44336' }}>
-                          💰 Total Savings: £{(baseline.components.total_cost?.value - result.components.total_cost?.value).toFixed(2)}
-                        </div>
-                        {baseline.inputs?.total_system_length && (
-                          <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '2px' }}>
-                            (For {baseline.inputs.total_system_length}m system)
-                          </div>
-                        )}
-                        <div style={{ fontSize: '9px', opacity: 0.8, marginTop: '4px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.2)' }}>
+                        <div style={{ fontSize: '9px', opacity: 0.8, marginTop: '6px', paddingTop: '6px', borderTop: '1px solid rgba(255,255,255,0.4)', fontWeight: 'bold' }}>
                           ROI Analysis
                         </div>
-                        <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '2px' }}>
-                          Upfront Investment: £{(result.components.material_cost?.value - baseline.components.material_cost?.value).toFixed(2)}
+                        <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '4px' }}>
+                          Upfront Investment = £{Math.abs(result.components.material_cost?.value - baseline.components.material_cost?.value).toFixed(2)}
                         </div>
-                        <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '2px' }}>
-                          Payback Period: {Math.abs((result.components.material_cost?.value - baseline.components.material_cost?.value) / ((baseline.components.total_cost?.value - result.components.total_cost?.value) / 10)).toFixed(1)} years
+                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
+                          10yr Savings = £{(baseline.components.total_cost?.value - result.components.total_cost?.value).toFixed(2)}
                         </div>
-                        <div style={{ fontSize: '11px', opacity: 1, marginTop: '2px', fontWeight: 'bold', color: '#ffd700' }}>
-                          ROI: {((baseline.components.total_cost?.value - result.components.total_cost?.value) / Math.abs(result.components.material_cost?.value - baseline.components.material_cost?.value) * 100).toFixed(0)}%
+                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
+                          Payback Period = {Math.abs((result.components.material_cost?.value - baseline.components.material_cost?.value) / ((baseline.components.total_cost?.value - result.components.total_cost?.value) / 10)).toFixed(1)} years
                         </div>
-                        {baseline.inputs?.expected_total_lifespan && baseline.inputs?.current_system_age && (
-                          <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '2px', fontStyle: 'italic' }}>
-                            Note: Baseline {baseline.inputs.current_system_age}yr old, expects {baseline.inputs.expected_total_lifespan}yr total life
-                          </div>
-                        )}
+                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
+                          ROI = {((baseline.components.total_cost?.value - result.components.total_cost?.value) / Math.abs(result.components.material_cost?.value - baseline.components.material_cost?.value) * 100).toFixed(0)}%
+                        </div>
+                        <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '2px', fontStyle: 'italic' }}>
+                          Positive ROI = profitable upgrade
+                        </div>
                       </>
                     )}
                   </>
@@ -436,22 +435,22 @@ function ProfileShapeVisualization({
                     {result?.components && (
                       <>
                         <div style={{ fontSize: '9px', opacity: 0.8, marginTop: '6px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.3)' }}>
-                          10-Year Total Cost
+                          Score = (1 - Total/£20k) × 100
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '4px' }}>
-                          Material: £{result.components.material_cost?.value.toFixed(2)} × {Math.ceil(10 / result.components.lifespan?.value)}
+                          Material = £{result.components.material_cost?.value.toFixed(2)}
                         </div>
-                        <div style={{ fontSize: '9px', opacity: 0.7 }}>
-                          (Lifespan = {result.components.lifespan?.value.toFixed(1)} years, {Math.ceil(10 / result.components.lifespan?.value)}× replacements)
+                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
+                          Energy (10yr) = £{(result.components.total_cost?.value - (result.components.material_cost?.value * Math.ceil(10 / result.components.lifespan?.value))).toFixed(2)}
                         </div>
-                        <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '2px' }}>
-                          Energy: £{(result.components.total_cost?.value - (result.components.material_cost?.value * Math.ceil(10 / result.components.lifespan?.value))).toFixed(2)}
+                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
+                          Replacements = {Math.ceil(10 / result.components.lifespan?.value)}× ({result.components.lifespan?.value.toFixed(1)}yr life)
                         </div>
-                        <div style={{ fontSize: '11px', opacity: 1, marginTop: '2px', paddingTop: '2px', borderTop: '1px solid rgba(255,255,255,0.2)', fontWeight: 'bold' }}>
-                          Total: £{result.components.total_cost?.value.toFixed(2)}
+                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
+                          Total (10yr) = £{result.components.total_cost?.value.toFixed(2)}
                         </div>
-                        <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '2px' }}>
-                          Score = (1 - {result.components.total_cost?.value.toFixed(2)}/20000) × 100 = {currentScores.economic.toFixed(1)}
+                        <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '2px', fontStyle: 'italic' }}>
+                          Lower cost = higher score
                         </div>
                       </>
                     )}
