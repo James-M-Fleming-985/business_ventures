@@ -198,11 +198,11 @@ function ProfileShapeVisualization({
               }}>
                 {baselineScores ? (
                   <>
-                    <div style={{ fontWeight: 'bold', marginBottom: '6px', fontSize: '12px' }}>ΔPerformance (EV)</div>
-                    <div style={{ fontSize: '10px', opacity: 0.9 }}>Current: {currentScores.performance.toFixed(1)}</div>
-                    <div style={{ fontSize: '10px', opacity: 0.9 }}>Baseline: {baselineScores.performance.toFixed(1)}</div>
+                    <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Performance Score</div>
+                    <div style={{ fontSize: '10px', opacity: 0.9 }}>Current: {currentScores.performance.toFixed(1)}/100</div>
+                    <div style={{ fontSize: '10px', opacity: 0.9 }}>Baseline: {baselineScores.performance.toFixed(1)}/100</div>
                     <div style={{ borderTop: '1px solid rgba(255,255,255,0.3)', marginTop: '4px', paddingTop: '4px', fontSize: '10px' }}>
-                      {currentScores.performance.toFixed(1)} - {baselineScores.performance.toFixed(1)} = <span style={{ fontWeight: 'bold', fontSize: '12px' }}>{(currentScores.performance - baselineScores.performance).toFixed(1)}</span>
+                      {currentScores.performance.toFixed(1)} - {baselineScores.performance.toFixed(1)} = <span style={{ fontWeight: 'bold', fontSize: '12px' }}>ΔP = {(currentScores.performance - baselineScores.performance).toFixed(1)}</span>
                     </div>
                     {result?.components && (
                       <>
@@ -217,6 +217,9 @@ function ProfileShapeVisualization({
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9 }}>
                           ΔP = f(L/D)(ρv²/2) = {result.components.deltaP?.value.toFixed(3)} {result.components.deltaP?.unit}
+                        </div>
+                        <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '2px', fontStyle: 'italic' }}>
+                          Lower ΔP & moderate v = better
                         </div>
                       </>
                     )}
