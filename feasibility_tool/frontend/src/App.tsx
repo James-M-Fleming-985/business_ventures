@@ -303,6 +303,9 @@ function ProfileShapeVisualization({
                           - UV Degradation = (UV/10)×Climate×(1-UV_resist)
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9 }}>
+                          ΔD = {(currentScores.durability - baselineScores.durability).toFixed(1)} (durability delta)
+                        </div>
+                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
                           Lifespan = {result.components.lifespan?.value.toFixed(1)}yr
                         </div>
                         <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '2px', fontStyle: 'italic' }}>
@@ -331,6 +334,9 @@ function ProfileShapeVisualization({
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9 }}>
                           - UV Degradation = (UV/10)×Climate×(1-UV_resist)
+                        </div>
+                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
+                          Durability = {currentScores.durability.toFixed(1)}/100
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9 }}>
                           Lifespan = {result.components.lifespan?.value.toFixed(1)}yr
@@ -391,6 +397,9 @@ function ProfileShapeVisualization({
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9 }}>
                           Total (10yr) = £{result.components.total_cost?.value.toFixed(2)}
+                        </div>
+                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
+                          ΔE = {(currentScores.economic - baselineScores.economic).toFixed(1)} (economic delta)
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9 }}>
                           ROI = {((baseline.components.total_cost?.value - result.components.total_cost?.value) / Math.abs(result.components.material_cost?.value - baseline.components.material_cost?.value) * 100).toFixed(0)}% ({Math.abs((result.components.material_cost?.value - baseline.components.material_cost?.value) / ((baseline.components.total_cost?.value - result.components.total_cost?.value) / 10)).toFixed(1)}yr payback)
