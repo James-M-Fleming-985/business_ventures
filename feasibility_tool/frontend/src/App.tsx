@@ -540,8 +540,14 @@ function App() {
   }, [])
 
   // Auto-calculate on input change - INSTANT, no debounce
+  // ONLY calculate if baseline exists - otherwise show "set baseline" message
   useEffect(() => {
     if (Object.keys(inputs).length === 0) return
+    if (!baseline) {
+      console.log('No baseline set - skipping calculation')
+      setResult(null)
+      return
+    }
     
     console.log('Inputs changed, calculating...', inputs)
     axios.post(`${API_BASE_URL}/api/engines/hose_optimization/calculate`, inputs)
@@ -563,7 +569,7 @@ function App() {
         }
       })
       .catch(err => console.error('Calculation failed:', err))
-  }, [inputs])
+  }, [inputs, baseline])
 
   // Load target profile
   const handleProfileChange = (profile: string) => {
@@ -577,11 +583,21 @@ function App() {
       .catch(err => console.error('Failed to load profile:', err))
   }
 
-  // Set current config as baseline
-  const handleSetBaseline = () => {
-    if (result) {
-      setBaseline({ inputs: { ...inputs }, result })
-      setBaselineModalOpen(false)
+  // Set current config as baseline - calculate if needed
+  const handleSetBaseline = async () => {
+    try {
+      // Calculate current configuration
+      const res = await axios.post(`${API_BASE_URL}/api/engines/hose_optimization/calculate`, inputs)
+      if (res.data.success) {
+        const calculatedResult = res.data.data
+        // Save as baseline
+        setBaseline({ inputs: { ...inputs }, result: calculatedResult })
+        // Also set as current result for immediate display
+        setResult(calculatedResult)
+        setBaselineModalOpen(false)
+      }
+    } catch (err) {
+      console.error('Failed to set baseline:', err)
     }
   }
 
@@ -1411,18 +1427,18 @@ function App() {
             {visualizationMode === 'basic' ? (
               <Canvas>
                 <PerspectiveCamera makeDefault position={[80, 80, 80]} />
-                {result ? (
+                {baseline ? (
                   <ProfileShapeVisualization 
-                    currentScores={{
+                    currentScores={result ? {
                       performance: result.composites.performance_score,
                       durability: result.composites.durability_score,
                       economic: result.composites.economic_score
-                    }}
-                    baselineScores={baseline ? {
+                    } : null}
+                    baselineScores={{
                       performance: baseline.result.composites.performance_score,
                       durability: baseline.result.composites.durability_score,
                       economic: baseline.result.composites.economic_score
-                    } : null}
+                    }}
                     brightness={surfaceBrightness}
                     result={result}
                     baseline={baseline}
@@ -1437,7 +1453,7 @@ function App() {
                       anchorX="center"
                       anchorY="middle"
                     >
-                      Adjust Parameters to Calculate
+                      Set Baseline to Begin Analysis
                     </Text>
                     <Text
                       position={[0, -5, 0]}
@@ -1448,8 +1464,8 @@ function App() {
                       maxWidth={80}
                       textAlign="center"
                     >
-                      Change any parameter value to trigger calculation.
-                      {'\n'}Then set baseline for comparative analysis.
+                      Click "Set Baseline ⚠️" to establish your reference configuration.
+                      {'\n'}Then adjust parameters to see comparative performance.
                     </Text>
                   </>
                 )}

@@ -14,7 +14,12 @@ import { Science, Engineering } from '@mui/icons-material';
 import axios from 'axios';
 import type { EngineMetadata } from '../types/visualization';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+// Use VITE_API_URL and add protocol if missing (same as App.tsx)
+let API_BASE_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+if (API_BASE_URL && !API_BASE_URL.startsWith('http://') && !API_BASE_URL.startsWith('https://')) {
+  API_BASE_URL = `https://${API_BASE_URL}`;
+}
+console.log('🔧 EngineSelector API_BASE_URL:', API_BASE_URL);
 
 interface EngineSelectorProps {
   onEngineSelect: (engineId: string) => void;
