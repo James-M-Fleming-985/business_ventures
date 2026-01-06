@@ -303,9 +303,6 @@ function ProfileShapeVisualization({
                           - UV Degradation = (UV/10)×Climate×(1-UV_resist)
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9 }}>
-                          ΔP = {result.components.deltaP.value.toFixed(3)} {result.components.deltaP.unit}
-                        </div>
-                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
                           Lifespan = {result.components.lifespan?.value.toFixed(1)}yr
                         </div>
                         <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '2px', fontStyle: 'italic' }}>
@@ -336,10 +333,10 @@ function ProfileShapeVisualization({
                           - UV Degradation = (UV/10)×Climate×(1-UV_resist)
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9 }}>
-                          ΔP = {result.components.deltaP.value.toFixed(3)} {result.components.deltaP.unit}
+                          Lifespan = {result.components.lifespan?.value.toFixed(1)}yr
                         </div>
                         <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '2px', fontStyle: 'italic' }}>
-                          Lower ΔP = less material stress
+                          Higher durability = longer life
                         </div>
                       </>
                     )}
