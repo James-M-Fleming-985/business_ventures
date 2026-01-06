@@ -431,9 +431,6 @@ function ProfileShapeVisualization({
                         <div style={{ fontSize: '10px', opacity: 0.9 }}>
                           Total (10yr) = £{result.components.total_cost?.value.toFixed(2)}
                         </div>
-                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
-                          Economic = {currentScores.economic.toFixed(1)}/100
-                        </div>
                         <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '2px', fontStyle: 'italic' }}>
                           Lower cost = higher score
                         </div>
