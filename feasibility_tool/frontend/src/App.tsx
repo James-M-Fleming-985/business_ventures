@@ -537,8 +537,8 @@ function App() {
       })
       .catch(err => {
         console.error('Failed to fetch version:', err)
-        // Fallback to package.json version
-        setAppVersion('v1.1.0')
+        // Fallback to package.json version - UPDATED TO FORCE CACHE BUST
+        setAppVersion('v1.1.1-REBUILD')
       })
   }, [])
 
