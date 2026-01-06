@@ -958,8 +958,7 @@ function App() {
           <Button onClick={() => setBaselineModalOpen(false)}>Cancel</Button>
           <Button 
             onClick={handleSetBaseline} 
-            variant="contained" 
-            disabled={!result}
+            variant="contained"
           >
             Save as Baseline
           </Button>
