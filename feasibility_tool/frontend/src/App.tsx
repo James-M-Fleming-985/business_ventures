@@ -381,46 +381,22 @@ function ProfileShapeVisualization({
                     {result?.components && baseline?.components && (
                       <>
                         <div style={{ fontSize: '9px', opacity: 0.8, marginTop: '6px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.3)' }}>
-                          Score = (1 - Total/£20k) × 100
+                          Formula: Score = (1 - Total/£20k) × 100
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '4px' }}>
-                          Baseline Material = £{baseline.components.material_cost?.value.toFixed(2)}
+                          Material = £{result.components.material_cost?.value.toFixed(2)}
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9 }}>
-                          Baseline Replacements = {Math.ceil(10 / baseline.components.lifespan?.value)}× ({baseline.components.lifespan?.value.toFixed(1)}yr)
+                          Replacements = {Math.ceil(10 / result.components.lifespan?.value)}× over 10yr
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9 }}>
-                          Baseline Total (10yr) = £{baseline.components.total_cost?.value.toFixed(2)}
-                        </div>
-                        <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '4px', paddingTop: '4px', borderTop: '1px dashed rgba(255,255,255,0.2)' }}>
-                          Current Material = £{result.components.material_cost?.value.toFixed(2)}
+                          Total (10yr) = £{result.components.total_cost?.value.toFixed(2)}
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9 }}>
-                          Current Replacements = {Math.ceil(10 / result.components.lifespan?.value)}× ({result.components.lifespan?.value.toFixed(1)}yr)
-                        </div>
-                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
-                          Current Total (10yr) = £{result.components.total_cost?.value.toFixed(2)}
+                          ROI = {((baseline.components.total_cost?.value - result.components.total_cost?.value) / Math.abs(result.components.material_cost?.value - baseline.components.material_cost?.value) * 100).toFixed(0)}% ({Math.abs((result.components.material_cost?.value - baseline.components.material_cost?.value) / ((baseline.components.total_cost?.value - result.components.total_cost?.value) / 10)).toFixed(1)}yr payback)
                         </div>
                         <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '2px', fontStyle: 'italic' }}>
                           Lower cost = higher score
-                        </div>
-                        <div style={{ fontSize: '9px', opacity: 0.8, marginTop: '6px', paddingTop: '6px', borderTop: '1px solid rgba(255,255,255,0.4)', fontWeight: 'bold' }}>
-                          ROI Analysis
-                        </div>
-                        <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '4px' }}>
-                          Upfront Investment = £{Math.abs(result.components.material_cost?.value - baseline.components.material_cost?.value).toFixed(2)}
-                        </div>
-                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
-                          10yr Savings = £{(baseline.components.total_cost?.value - result.components.total_cost?.value).toFixed(2)}
-                        </div>
-                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
-                          Payback Period = {Math.abs((result.components.material_cost?.value - baseline.components.material_cost?.value) / ((baseline.components.total_cost?.value - result.components.total_cost?.value) / 10)).toFixed(1)} years
-                        </div>
-                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
-                          ROI = {((baseline.components.total_cost?.value - result.components.total_cost?.value) / Math.abs(result.components.material_cost?.value - baseline.components.material_cost?.value) * 100).toFixed(0)}%
-                        </div>
-                        <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '2px', fontStyle: 'italic' }}>
-                          Positive ROI = profitable upgrade
                         </div>
                       </>
                     )}
