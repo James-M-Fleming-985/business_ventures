@@ -285,7 +285,7 @@ function ProfileShapeVisualization({
                     <div style={{ borderTop: '1px solid rgba(255,255,255,0.3)', marginTop: '4px', paddingTop: '4px', fontSize: '10px' }}>
                       {currentScores.durability.toFixed(1)} - {baselineScores.durability.toFixed(1)} = <span style={{ fontWeight: 'bold', fontSize: '12px' }}>{(currentScores.durability - baselineScores.durability).toFixed(1)}</span>
                     </div>
-                    {result?.components?.deltaP && (
+                    {result?.components?.deltaP && baseline?.components?.lifespan && (
                       <>
                         <div style={{ fontSize: '9px', opacity: 0.8, marginTop: '6px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.3)' }}>
                           Formula: (Material×Reinf×100 - Degradation) / Climate
@@ -299,8 +299,11 @@ function ProfileShapeVisualization({
                         <div style={{ fontSize: '10px', opacity: 0.9 }}>
                           - UV Degradation = (UV/10)×Climate×(1-UV_resist)
                         </div>
-                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
-                          ΔP = {result.components.deltaP.value.toFixed(3)} {result.components.deltaP.unit}
+                        <div style={{ fontSize: '11px', opacity: 1, marginTop: '4px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.2)', fontWeight: 'bold', color: (result.components.lifespan?.value - baseline.components.lifespan?.value) > 0 ? '#4caf50' : '#f44336' }}>
+                          ΔLifespan: {((result.components.lifespan?.value - baseline.components.lifespan?.value) > 0 ? '+' : '')}{(result.components.lifespan?.value - baseline.components.lifespan?.value).toFixed(1)}yr
+                        </div>
+                        <div style={{ fontSize: '9px', opacity: 0.7 }}>
+                          Baseline: {baseline.components.lifespan?.value.toFixed(1)}yr → Current: {result.components.lifespan?.value.toFixed(1)}yr
                         </div>
                       </>
                     )}
@@ -372,32 +375,50 @@ function ProfileShapeVisualization({
                     {result?.components && baseline?.components && (
                       <>
                         <div style={{ fontSize: '9px', opacity: 0.8, marginTop: '6px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.3)' }}>
-                          10-Year Cost Comparison
+                          Cost Breakdown (10yr Total)
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '4px' }}>
-                          Baseline: £{baseline.components.total_cost?.value.toFixed(2)}
+                          Baseline Material: £{baseline.components.material_cost?.value.toFixed(2)} × {Math.ceil(10 / baseline.components.lifespan?.value)}
                         </div>
-                        <div style={{ fontSize: '9px', opacity: 0.7 }}>
-                          ({baseline.components.lifespan?.value.toFixed(1)}yr life = {Math.ceil(10 / baseline.components.lifespan?.value)}× replacements)
+                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
+                          = £{(baseline.components.material_cost?.value * Math.ceil(10 / baseline.components.lifespan?.value)).toFixed(2)}
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '2px' }}>
-                          Current: £{result.components.total_cost?.value.toFixed(2)}
+                          Baseline Energy: £{(baseline.components.total_cost?.value - (baseline.components.material_cost?.value * Math.ceil(10 / baseline.components.lifespan?.value))).toFixed(2)}
                         </div>
-                        <div style={{ fontSize: '9px', opacity: 0.7 }}>
-                          ({result.components.lifespan?.value.toFixed(1)}yr life = {Math.ceil(10 / result.components.lifespan?.value)}× replacements)
+                        <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '2px', fontWeight: 'bold' }}>
+                          Baseline TOTAL: £{baseline.components.total_cost?.value.toFixed(2)}
                         </div>
-                        <div style={{ fontSize: '11px', opacity: 1, marginTop: '4px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.2)', fontWeight: 'bold', color: (baseline.components.total_cost?.value - result.components.total_cost?.value) > 0 ? '#4caf50' : '#f44336' }}>
-                          TOTAL 10yr Savings: £{(baseline.components.total_cost?.value - result.components.total_cost?.value).toFixed(2)}
+                        <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '4px', paddingTop: '4px', borderTop: '1px dashed rgba(255,255,255,0.2)' }}>
+                          Current Material: £{result.components.material_cost?.value.toFixed(2)} × {Math.ceil(10 / result.components.lifespan?.value)}
+                        </div>
+                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
+                          = £{(result.components.material_cost?.value * Math.ceil(10 / result.components.lifespan?.value)).toFixed(2)}
+                        </div>
+                        <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '2px' }}>
+                          Current Energy: £{(result.components.total_cost?.value - (result.components.material_cost?.value * Math.ceil(10 / result.components.lifespan?.value))).toFixed(2)}
+                        </div>
+                        <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '2px', fontWeight: 'bold' }}>
+                          Current TOTAL: £{result.components.total_cost?.value.toFixed(2)}
+                        </div>
+                        <div style={{ fontSize: '11px', opacity: 1, marginTop: '4px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.3)', fontWeight: 'bold', color: (baseline.components.total_cost?.value - result.components.total_cost?.value) > 0 ? '#4caf50' : '#f44336' }}>
+                          💰 Total Savings: £{(baseline.components.total_cost?.value - result.components.total_cost?.value).toFixed(2)}
                         </div>
                         {baseline.inputs?.total_system_length && (
                           <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '2px' }}>
                             (For {baseline.inputs.total_system_length}m system)
                           </div>
                         )}
-                        <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '2px' }}>
-                          Initial investment diff: £{(result.components.material_cost?.value - baseline.components.material_cost?.value).toFixed(2)}
+                        <div style={{ fontSize: '9px', opacity: 0.8, marginTop: '4px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.2)' }}>
+                          ROI Analysis
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '2px' }}>
+                          Upfront Investment: £{(result.components.material_cost?.value - baseline.components.material_cost?.value).toFixed(2)}
+                        </div>
+                        <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '2px' }}>
+                          Payback Period: {Math.abs((result.components.material_cost?.value - baseline.components.material_cost?.value) / ((baseline.components.total_cost?.value - result.components.total_cost?.value) / 10)).toFixed(1)} years
+                        </div>
+                        <div style={{ fontSize: '11px', opacity: 1, marginTop: '2px', fontWeight: 'bold', color: '#ffd700' }}>
                           ROI: {((baseline.components.total_cost?.value - result.components.total_cost?.value) / Math.abs(result.components.material_cost?.value - baseline.components.material_cost?.value) * 100).toFixed(0)}%
                         </div>
                         {baseline.inputs?.expected_total_lifespan && baseline.inputs?.current_system_age && (
