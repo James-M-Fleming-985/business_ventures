@@ -540,8 +540,14 @@ function App() {
   }, [])
 
   // Auto-calculate on input change - INSTANT, no debounce
+  // ONLY calculate if baseline exists - otherwise show "set baseline" message
   useEffect(() => {
     if (Object.keys(inputs).length === 0) return
+    if (!baseline) {
+      console.log('No baseline set - skipping calculation')
+      setResult(null)
+      return
+    }
     
     console.log('Inputs changed, calculating...', inputs)
     axios.post(`${API_BASE_URL}/api/engines/hose_optimization/calculate`, inputs)
@@ -563,7 +569,7 @@ function App() {
         }
       })
       .catch(err => console.error('Calculation failed:', err))
-  }, [inputs])
+  }, [inputs, baseline])
 
   // Load target profile
   const handleProfileChange = (profile: string) => {
@@ -1082,14 +1088,23 @@ function App() {
               </Typography>
               <Box sx={{ display: 'flex', gap: 0.5, mb: 0.5 }}>
                 <Button 
-                  variant="outlined" 
+                  variant={baseline ? "outlined" : "contained"}
                   size="small" 
                   fullWidth
                   startIcon={<Bookmark sx={{ fontSize: '0.9rem' }} />}
                   onClick={() => setBaselineModalOpen(true)}
-                  sx={{ py: 0.4, fontSize: '0.65rem' }}
+                  sx={{ 
+                    py: 0.4, 
+                    fontSize: '0.65rem',
+                    ...(baseline ? {} : {
+                      bgcolor: '#00bcd4',
+                      color: '#000',
+                      fontWeight: 'bold',
+                      '&:hover': { bgcolor: '#00acc1' }
+                    })
+                  }}
                 >
-                  {baseline ? 'Edit' : 'Set'}
+                  {baseline ? 'Edit' : 'Set Baseline ⚠️'}
                 </Button>
                 <Button 
                   variant="outlined" 
@@ -1402,21 +1417,48 @@ function App() {
             {visualizationMode === 'basic' ? (
               <Canvas>
                 <PerspectiveCamera makeDefault position={[80, 80, 80]} />
-                <ProfileShapeVisualization 
-                  currentScores={result ? {
-                    performance: result.composites.performance_score,
-                    durability: result.composites.durability_score,
-                    economic: result.composites.economic_score
-                  } : null}
-                  baselineScores={baseline ? {
-                    performance: baseline.result.composites.performance_score,
-                    durability: baseline.result.composites.durability_score,
-                    economic: baseline.result.composites.economic_score
-                  } : null}
-                  brightness={surfaceBrightness}
-                  result={result}
-                  baseline={baseline}
-                />
+                {baseline ? (
+                  <ProfileShapeVisualization 
+                    currentScores={result ? {
+                      performance: result.composites.performance_score,
+                      durability: result.composites.durability_score,
+                      economic: result.composites.economic_score
+                    } : null}
+                    baselineScores={baseline ? {
+                      performance: baseline.result.composites.performance_score,
+                      durability: baseline.result.composites.durability_score,
+                      economic: baseline.result.composites.economic_score
+                    } : null}
+                    brightness={surfaceBrightness}
+                    result={result}
+                    baseline={baseline}
+                  />
+                ) : (
+                  <>
+                    <ambientLight intensity={0.8} />
+                    <Text
+                      position={[0, 10, 0]}
+                      fontSize={8}
+                      color="#00bcd4"
+                      anchorX="center"
+                      anchorY="middle"
+                    >
+                      Set Baseline to Begin Analysis
+                    </Text>
+                    <Text
+                      position={[0, 0, 0]}
+                      fontSize={4}
+                      color="#888"
+                      anchorX="center"
+                      anchorY="middle"
+                      maxWidth={60}
+                      textAlign="center"
+                    >
+                      Click "Set as Baseline" to establish your reference configuration.
+                      Then adjust parameters to see comparative performance.
+                    </Text>
+                  </>
+                )}
                 <OrbitControls 
                   enableDamping 
                   dampingFactor={0.05}
