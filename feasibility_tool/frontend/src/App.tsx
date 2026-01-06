@@ -540,14 +540,8 @@ function App() {
   }, [])
 
   // Auto-calculate on input change - INSTANT, no debounce
-  // ONLY calculate if baseline exists - otherwise show "set baseline" message
   useEffect(() => {
     if (Object.keys(inputs).length === 0) return
-    if (!baseline) {
-      console.log('No baseline set - skipping calculation')
-      setResult(null)
-      return
-    }
     
     console.log('Inputs changed, calculating...', inputs)
     axios.post(`${API_BASE_URL}/api/engines/hose_optimization/calculate`, inputs)
@@ -569,7 +563,7 @@ function App() {
         }
       })
       .catch(err => console.error('Calculation failed:', err))
-  }, [inputs, baseline])
+  }, [inputs])
 
   // Load target profile
   const handleProfileChange = (profile: string) => {
@@ -1417,13 +1411,13 @@ function App() {
             {visualizationMode === 'basic' ? (
               <Canvas>
                 <PerspectiveCamera makeDefault position={[80, 80, 80]} />
-                {baseline ? (
+                {result ? (
                   <ProfileShapeVisualization 
-                    currentScores={result ? {
+                    currentScores={{
                       performance: result.composites.performance_score,
                       durability: result.composites.durability_score,
                       economic: result.composites.economic_score
-                    } : null}
+                    }}
                     baselineScores={baseline ? {
                       performance: baseline.result.composites.performance_score,
                       durability: baseline.result.composites.durability_score,
@@ -1443,7 +1437,7 @@ function App() {
                       anchorX="center"
                       anchorY="middle"
                     >
-                      Set Baseline to Begin Analysis
+                      Adjust Parameters to Calculate
                     </Text>
                     <Text
                       position={[0, -5, 0]}
@@ -1454,8 +1448,8 @@ function App() {
                       maxWidth={80}
                       textAlign="center"
                     >
-                      Click "Set Baseline ⚠️" button to establish your reference configuration.
-                      {'\n'}Then adjust parameters to see comparative performance.
+                      Change any parameter value to trigger calculation.
+                      {'\n'}Then set baseline for comparative analysis.
                     </Text>
                   </>
                 )}
