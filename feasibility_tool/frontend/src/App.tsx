@@ -379,9 +379,10 @@ function ProfileShapeVisualization({
                 {baselineScores ? (
                   <>
                     <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Economic Score</div>
-                    <div style={{ fontSize: '16px', marginBottom: '6px', color: '#fff', fontWeight: 'bold' }}>{currentScores.economic.toFixed(1)}/100</div>
-                    <div style={{ fontSize: '10px', opacity: 0.9, marginBottom: '6px' }}>
-                      ΔE = {(currentScores.economic - baselineScores.economic).toFixed(1)}
+                    <div style={{ fontSize: '10px', opacity: 0.9 }}>Current: {currentScores.economic.toFixed(1)}/100</div>
+                    <div style={{ fontSize: '10px', opacity: 0.9 }}>Baseline: {baselineScores.economic.toFixed(1)}/100</div>
+                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.3)', marginTop: '4px', paddingTop: '4px', fontSize: '10px' }}>
+                      {currentScores.economic.toFixed(1)} - {baselineScores.economic.toFixed(1)} = <span style={{ fontWeight: 'bold', fontSize: '12px' }}>ΔE = {(currentScores.economic - baselineScores.economic).toFixed(1)}</span>
                     </div>
                     {result?.components && baseline?.components && (
                       <>
