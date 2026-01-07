@@ -15,7 +15,7 @@ watchPatterns = [
   "static/**",
   "templates/**",
   "Causal_affect/**",
-  "!feasibility_tool/**",
+  "feasibility_tool/**",
   "!immersive_displays/**"
 ]
 
