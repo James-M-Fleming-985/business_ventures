@@ -174,9 +174,9 @@ class GrangerCausalityService:
                     'lags': yx_result.lags,
                     'significant': yx_result.reject_null,
                     'interpretation': self._interpret_result(var2.display_name, var1.display_name, yx_result)
-                }frequency': resample_rule,
+                },
+                'frequency': resample_rule,
                 'frequency_note': f'Downsampled to {resample_rule} using real observations (not interpolated)',
-                ',
                 'causal_direction': direction,
                 'sample_size': len(common_timestamps),
                 'date_range': {
