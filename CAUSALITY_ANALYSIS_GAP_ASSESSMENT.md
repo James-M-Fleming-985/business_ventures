@@ -465,18 +465,46 @@ Since the APIs support 10-50 years of historical data, we just need to:
        # Resample, interpolate, align timestamps
    ```
 
-**Week 2: Implement Granger Causality**
+**Week 2: Implement Granger Causality** ✅ **COMPLETED - Jan 2026**
 
-3. Add causality endpoint to `main.py`:
+3. **✅ IMPLEMENTED:** Frequency-aware downsampling for Granger causality
+   - Detects frequency of each time series (daily, weekly, monthly, quarterly, yearly)
+   - Downsamples to lowest common frequency using real observations
+   - Adaptive max_lag based on frequency (4 for quarterly, 12 for monthly, etc.)
+   - **Statistical validity:** Uses real downsampled data, NOT interpolated synthetic points
+   - **Key improvement:** Interpolation valid for correlation visualization, but INVALID for Granger inference
+   
+   Implementation details:
+   ```python
+   # services/granger_causality_service.py
+   def _detect_frequency(series) -> int:
+       # Returns median days between observations
+   
+   def _get_resample_rule(freq_days) -> str:
+       # Maps to pandas resample rule (D, W, M, Q, Y)
+   
+   def _get_adaptive_max_lag(freq_days) -> int:
+       # Quarterly: 4 lags (~1 year)
+       # Monthly: 12 lags (~1 year)
+       # Daily: 252 lags (~1 year trading days)
+   ```
+   
+   **Rationale:**
+   - Interpolation creates synthetic points that violate Granger test assumptions
+   - Downsampling preserves statistical validity with real observations only
+   - Power increases as data universe grows (20 quarters → 40 quarters over 5 years)
+   - Clear error messaging when insufficient data for robust inference
+
+4. Add causality endpoint to `main.py`:
    ```python
    @app.post("/api/v1/causality/test")
    async def test_causality(request: CausalityRequest):
        # Fetch historical data (now 1000+ points!)
-       # Run Granger test
+       # Run Granger test with frequency-aware downsampling
        # Return directional causality with confidence
    ```
 
-4. Update dashboard UI to show results
+5. Update dashboard UI to show results
 
 ---
 

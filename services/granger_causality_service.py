@@ -80,7 +80,7 @@ class GrangerCausalityService:
             var1_data = session.query(TimeSeriesData).filter(*filters_var1).order_by(TimeSeriesData.timestamp).all()
             var2_data = session.query(TimeSeriesData).filter(*filters_var2).order_by(TimeSeriesData.timestamp).all()
             
-            # Convert to pandas Series for alignment and interpolation
+            # Convert to pandas Series
             var1_series = pd.Series(
                 index=[dp.timestamp for dp in var1_data],
                 data=[dp.value for dp in var1_data]
@@ -92,27 +92,39 @@ class GrangerCausalityService:
             
             logger.info(f"Raw data counts: {var1.display_name}={len(var1_data)}, {var2.display_name}={len(var2_data)}")
             
-            # Align time series with pandas interpolation (handles different frequencies)
+            # Detect frequencies (median time between observations)
+            var1_freq_days = self._detect_frequency(var1_series)
+            var2_freq_days = self._detect_frequency(var2_series)
+            
+            # Determine target frequency (lowest/longest interval)
+            target_freq_days = max(var1_freq_days, var2_freq_days)
+            
+            # Map frequency to pandas resample rule
+            resample_rule = self._get_resample_rule(target_freq_days)
+            adaptive_max_lag = self._get_adaptive_max_lag(target_freq_days)
+            
+            logger.info(f"Frequencies detected: {var1.display_name}={var1_freq_days}d, {var2.display_name}={var2_freq_days}d")
+            logger.info(f"Downsampling to {resample_rule} (max_lag={adaptive_max_lag})")
+            
+            # Downsample to common frequency (use mean for aggregation)
+            var1_downsampled = var1_series.resample(resample_rule).mean()
+            var2_downsampled = var2_series.resample(resample_rule).mean()
+            
+            # Align on common timestamps (inner join - only real observations)
             aligned_data = pd.DataFrame({
-                'var1': var1_series,
-                'var2': var2_series
-            })
+                'var1': var1_downsampled,
+                'var2': var2_downsampled
+            }).dropna()
             
-            # Sort by timestamp
-            aligned_data = aligned_data.sort_index()
-            
-            # Interpolate missing values using time-based interpolation
-            aligned_data = aligned_data.interpolate(method='time', limit_direction='both')
-            
-            # Drop any remaining NaN values
-            aligned_data = aligned_data.dropna()
-            
-            # Check if we have enough aligned data
-            if len(aligned_data) < self.granger_tester.max_lag + 10:
+            # Check if we have enough data for Granger test
+            min_required = adaptive_max_lag + 10
+            if len(aligned_data) < min_required:
                 raise ValueError(
-                    f"Insufficient aligned data after interpolation: {len(aligned_data)} points "
-                    f"(need {self.granger_tester.max_lag + 10}). "
-                    f"Raw counts: {var1.display_name}={len(var1_data)}, {var2.display_name}={len(var2_data)}"
+                    f"Insufficient data for Granger causality test: {len(aligned_data)} observations "
+                    f"(need {min_required} for {resample_rule} frequency). "
+                    f"Raw counts: {var1.display_name}={len(var1_data)}, {var2.display_name}={len(var2_data)}. "
+                    f"Note: Using real downsampled observations, not interpolated values. "
+                    f"Statistical power will increase as more data is collected over time."
                 )
             
             # Extract aligned values
@@ -120,11 +132,18 @@ class GrangerCausalityService:
             var2_values = aligned_data['var2'].values
             common_timestamps = aligned_data.index.tolist()
             
+            # Update max_lag for this test
+            original_max_lag = self.granger_tester.max_lag
+            self.granger_tester.max_lag = adaptive_max_lag
+            
             logger.info(f"Testing Granger causality: {var1.display_name} ↔ {var2.display_name} "
-                       f"with {len(common_timestamps)} aligned data points")
+                       f"with {len(common_timestamps)} real {resample_rule} observations")
             
             # Test bidirectional causality
             results = self.granger_tester.test_bidirectional(var1_values, var2_values)
+            
+            # Restore original max_lag
+            self.granger_tester.max_lag = original_max_lag
             
             # Interpret results
             xy_result = results['x_causes_y']  # var1 → var2
@@ -155,7 +174,9 @@ class GrangerCausalityService:
                     'lags': yx_result.lags,
                     'significant': yx_result.reject_null,
                     'interpretation': self._interpret_result(var2.display_name, var1.display_name, yx_result)
-                },
+                }frequency': resample_rule,
+                'frequency_note': f'Downsampled to {resample_rule} using real observations (not interpolated)',
+                ',
                 'causal_direction': direction,
                 'sample_size': len(common_timestamps),
                 'date_range': {
@@ -246,3 +267,57 @@ class GrangerCausalityService:
                    f"factor rather than direct causal influence.<br><br>"
                    f"<b>Trading Implication:</b> Exercise caution. The correlation alone may not be "
                    f"actionable for predictive trading strategies.")
+    
+    def _detect_frequency(self, series: pd.Series) -> int:
+        """
+        Detect the frequency of a time series in days
+        
+        Returns median days between observations
+        """
+        if len(series) < 2:
+            return 1  # Default to daily
+        
+        # Calculate time differences
+        time_diffs = series.index.to_series().diff().dropna()
+        median_diff = time_diffs.median()
+        
+        return int(median_diff.total_seconds() / 86400)  # Convert to days
+    
+    def _get_resample_rule(self, freq_days: int) -> str:
+        """
+        Map frequency in days to pandas resample rule
+        
+        Returns appropriate resample string (D, W, M, Q, Y)
+        """
+        if freq_days <= 1:
+            return 'D'  # Daily
+        elif freq_days <= 7:
+            return 'W'  # Weekly
+        elif freq_days <= 31:
+            return 'M'  # Monthly
+        elif freq_days <= 92:
+            return 'Q'  # Quarterly
+        else:
+            return 'Y'  # Yearly
+    
+    def _get_adaptive_max_lag(self, freq_days: int) -> int:
+        """
+        Get appropriate max_lag based on frequency
+        
+        Target: ~1 year lookback across different frequencies
+        Daily: 252 trading days
+        Weekly: 52 weeks
+        Monthly: 12 months
+        Quarterly: 4 quarters
+        Yearly: 1-2 years
+        """
+        if freq_days <= 1:
+            return 252  # ~1 year of trading days
+        elif freq_days <= 7:
+            return 52  # ~1 year of weeks
+        elif freq_days <= 31:
+            return 12  # ~1 year of months
+        elif freq_days <= 92:
+            return 4  # ~1 year of quarters
+        else:
+            return 2  # ~2 years of annual data
