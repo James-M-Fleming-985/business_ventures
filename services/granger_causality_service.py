@@ -110,11 +110,15 @@ class GrangerCausalityService:
             var1_downsampled = var1_series.resample(resample_rule).mean()
             var2_downsampled = var2_series.resample(resample_rule).mean()
             
-            # Align on common timestamps (inner join - only real observations)
+            # Align on common timestamps - use outer join to preserve all timestamps
+            # then forward-fill small gaps (max 2 periods) to avoid losing too much data
             aligned_data = pd.DataFrame({
                 'var1': var1_downsampled,
                 'var2': var2_downsampled
-            }).dropna()
+            })
+            
+            # Forward fill up to 2 periods to handle minor gaps, then drop remaining NaNs
+            aligned_data = aligned_data.fillna(method='ffill', limit=2).dropna()
             
             # Check if we have enough data for Granger test
             min_required = adaptive_max_lag + 10
