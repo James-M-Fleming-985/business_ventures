@@ -122,9 +122,12 @@ class GrangerCausalityService:
                 raise ValueError(
                     f"Insufficient data for Granger causality test: {len(aligned_data)} observations "
                     f"(need {min_required} for {resample_rule} frequency). "
-                    f"Raw counts: {var1.display_name}={len(var1_data)}, {var2.display_name}={len(var2_data)}. "
-                    f"Note: Using real downsampled observations, not interpolated values. "
-                    f"Statistical power will increase as more data is collected over time."
+                    f"\n\nData Summary:\n"
+                    f"• {var1.display_name}: {len(var1_data)} raw observations\n"
+                    f"• {var2.display_name}: {len(var2_data)} raw observations\n"
+                    f"• Aligned at {resample_rule} frequency: {len(aligned_data)} observations\n\n"
+                    f"Note: We use real downsampled data (not interpolated) for statistical validity. "
+                    f"As you collect more data over time, causality testing will become more powerful and reliable."
                 )
             
             # Extract aligned values

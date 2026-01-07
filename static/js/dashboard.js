@@ -983,7 +983,37 @@ function dashboardData() {
                 
             } catch (error) {
                 console.error('Causality test failed:', error);
-                alert('⚠️ Couldn\'t analyze causality for these variables. They may need more overlapping data points.');
+                
+                // Try to extract meaningful error message
+                let errorMessage = '⚠️ Unable to test causality';
+                let errorDetails = '';
+                
+                if (error.response && error.response.data && error.response.data.detail) {
+                    const detail = error.response.data.detail;
+                    
+                    if (detail.includes('Insufficient data')) {
+                        // Extract the specific numbers
+                        const match = detail.match(/(\d+) observations.*need (\d+)/);
+                        if (match) {
+                            const [_, current, needed] = match;
+                            errorMessage = '📊 Not enough data yet';
+                            errorDetails = `\n\nThis pair has ${current} data points but needs ${needed} for reliable analysis.\n\nAs you collect more data over time, statistical power will increase and causality testing will become possible.\n\nTip: Daily data pairs work best with 100+ points, quarterly data needs 20+ points.`;
+                        } else {
+                            errorMessage = '📊 Not enough data yet';
+                            errorDetails = '\n\nThese variables don\'t have enough overlapping observations for reliable causality testing. Keep collecting data and try again later!';
+                        }
+                    } else if (detail.includes('frequency')) {
+                        errorMessage = '📈 Data frequency mismatch';
+                        errorDetails = '\n\nThese variables have different data frequencies (e.g., daily vs quarterly). The system will downsample to match, but needs more observations at the lower frequency.';
+                    } else {
+                        errorMessage = '⚠️ Causality test error';
+                        errorDetails = `\n\n${detail}`;
+                    }
+                } else {
+                    errorDetails = '\n\nThere was a technical issue running the causality test. Please try again or contact support if the problem persists.';
+                }
+                
+                alert(errorMessage + errorDetails);
             } finally {
                 this.isTestingCausality = false;
             }
