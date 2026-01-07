@@ -3,6 +3,7 @@ nixPkgs = ["nodejs_20"]
 
 [phases.build]
 cmds = [
+  "date +%s > .cache-bust",
   "rm -rf dist node_modules/.vite",
   "npm run build"
 ]
