@@ -535,7 +535,7 @@ function App() {
       .catch(err => {
         console.error('Failed to fetch version:', err)
         // Fallback to package.json version - UPDATED TO FORCE CACHE BUST
-        setAppVersion('v1.1.4')
+        setAppVersion('v1.1.5')
       })
   }, [])
 
