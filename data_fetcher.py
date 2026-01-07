@@ -33,7 +33,7 @@ class DataFetcher:
                 "function": "TIME_SERIES_DAILY",
                 "symbol": symbol,
                 "apikey": self.alpha_vantage_key,
-                "outputsize": "compact"  # Last 100 days
+                "outputsize": "full"  # 20+ years of historical data
             }
             
             response = requests.get(url, params=params, timeout=30)
@@ -58,11 +58,12 @@ class DataFetcher:
             return None
     
     def fetch_stock_data_monthly(
-        self, symbol: str, months: int = 60
+        self, symbol: str, months: int = 300
     ) -> Optional[Dict[str, float]]:
         """
         Fetch monthly stock data (end-of-month closing prices).
         Returns dict of {month_start_date: end_of_month_price}
+        Default: 300 months (25 years) for better Granger causality coverage
         """
         if not self.alpha_vantage_key:
             logger.warning("Alpha Vantage API key not configured")
