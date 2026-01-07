@@ -3,8 +3,8 @@ nixPkgs = ["nodejs_20"]
 
 [phases.build]
 cmds = [
-  "ls -la",
-  "npm install", 
+  "rm -rf dist node_modules/.vite",
+  "npm ci --legacy-peer-deps --cache /tmp/empty-cache",
   "npm run build"
 ]
 

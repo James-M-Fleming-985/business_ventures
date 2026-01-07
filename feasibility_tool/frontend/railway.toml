@@ -2,8 +2,12 @@
 builder = "NIXPACKS"
 
 [build.nixpacksSettings]
-installCommand = "npm ci --legacy-peer-deps"
-buildCommand = "rm -rf dist && npm run build"
+installCommand = "npm ci --legacy-peer-deps --cache /tmp/empty-cache"
+buildCommand = "rm -rf dist node_modules/.vite && npm run build"
+
+[build.nixpacksSettings.env]
+NIXPACKS_NO_CACHE = "1"
+VITE_BUILD_TIME = "${RAILWAY_DEPLOYMENT_ID}"
 
 [deploy]
 restartPolicyType = "ON_FAILURE"
