@@ -118,10 +118,13 @@ class GrangerCausalityService:
             })
             
             # Forward fill up to 2 periods to handle minor gaps, then drop remaining NaNs
-            aligned_data = aligned_data.fillna(method='ffill', limit=2).dropna()
+            aligned_data = aligned_data.ffill(limit=2).dropna()
             
             # Check if we have enough data for Granger test
-            min_required = adaptive_max_lag + 10
+            # For yearly data, be less strict (max_lag + 5 instead of + 10)
+            # For higher frequency data, use max_lag + 10
+            min_buffer = 5 if resample_rule == 'Y' else 10
+            min_required = adaptive_max_lag + min_buffer
             if len(aligned_data) < min_required:
                 raise ValueError(
                     f"Insufficient data for Granger causality test: {len(aligned_data)} observations "
