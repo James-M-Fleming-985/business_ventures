@@ -8,10 +8,10 @@ from app.auth import router as auth_router
 from app.payments import router as payments_router
 from app.database import init_db
 
-# Version info
-__version__ = "1.1.0"
-__build_date__ = "2025-12-31"
-__description__ = "Feasibility Platform with Authentication & Payments"
+# Import version from single source of truth
+import sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from version import __version__, __build_date__, __description__
 
 app = FastAPI(
     title="Feasibility Platform API",
