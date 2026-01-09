@@ -435,12 +435,13 @@ async def get_relationship_details(
             }
         
         # Get correlation result (check both directions)
+        # ORDER BY calculated_at DESC to get the most recent calculation
         corr = db.query(CorrelationResult).filter(
             ((CorrelationResult.variable1_id == var1.id) &
              (CorrelationResult.variable2_id == var2.id)) |
             ((CorrelationResult.variable1_id == var2.id) &
              (CorrelationResult.variable2_id == var1.id))
-        ).first()
+        ).order_by(CorrelationResult.calculated_at.desc()).first()
         
         if not corr:
             return {

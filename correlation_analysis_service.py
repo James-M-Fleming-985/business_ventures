@@ -444,16 +444,36 @@ class CorrelationAnalysisService:
                 query = query.filter(CorrelationResult.method == method)
             
             # Get results with relationships eagerly loaded
+            # Order by calculated_at DESC to get most recent first
             from sqlalchemy.orm import joinedload
-            results = (
+            all_results = (
                 query.options(
                     joinedload(CorrelationResult.variable1),
                     joinedload(CorrelationResult.variable2)
                 )
-                .order_by(CorrelationResult.abs_correlation.desc())
-                .limit(limit * 10 if cross_domain else limit)  # Get many more candidates for diversity
+                .order_by(
+                    CorrelationResult.calculated_at.desc()  # Most recent first
+                )
                 .all()
             )
+            
+            # Deduplicate: keep only the most recent correlation for each variable pair
+            # (since we might have multiple calculations over time)
+            seen_pairs = set()
+            deduplicated = []
+            for r in all_results:
+                # Create canonical pair (sorted to handle A-B and B-A as same pair)
+                pair = tuple(sorted([r.variable1_id, r.variable2_id]))
+                if pair not in seen_pairs:
+                    seen_pairs.add(pair)
+                    deduplicated.append(r)
+            
+            # Now sort by absolute correlation strength and limit
+            results = sorted(
+                deduplicated,
+                key=lambda r: r.abs_correlation,
+                reverse=True
+            )[:limit * 10 if cross_domain else limit]
             
             correlations = []
             source_pair_count = {}  # Track how many times each source pair appears
