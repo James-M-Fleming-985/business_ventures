@@ -86,6 +86,7 @@ def comprehensive_calculate(inputs: Dict[str, Any]) -> CalculationResult:
     # ===== ECONOMIC CALCULATIONS =====
     # Get total system length (defaults to L if not specified)
     total_system_length = inputs.get("total_system_length", L)
+    installation_cost_per_m = inputs.get("installation_cost_per_meter", 25.0)
     
     # Calculate cost per meter
     wall_thickness = (Do - Di) / 2
@@ -98,6 +99,7 @@ def comprehensive_calculate(inputs: Dict[str, Any]) -> CalculationResult:
     
     cost_per_meter = mass_per_meter * cost_per_kg * cost_multiplier
     material_cost = cost_per_meter * total_system_length
+    installation_cost = installation_cost_per_m * total_system_length
     
     # ===== DURABILITY CALCULATIONS (needed for lifespan-based economics) =====
     temp_degradation = max(0, (ambient_temp - mat["max_temp"]) / 100) if ambient_temp > mat["max_temp"] else 0
@@ -194,6 +196,16 @@ def comprehensive_calculate(inputs: Dict[str, Any]) -> CalculationResult:
                 f"Total material = £{total_material_cost:.2f}"
             ],
             normalized=max(0, 100 - (material_cost / 500) * 100)
+        ),
+        "installation_cost": ComponentResult(
+            value=installation_cost, unit="£",
+            formula=f"Installation @ £{installation_cost_per_m:.2f}/m",
+            calculation_steps=[
+                f"Installation cost/m = £{installation_cost_per_m:.2f}/m",
+                f"System length = {total_system_length:.1f}m",
+                f"Total installation = £{installation_cost:.2f}"
+            ],
+            normalized=max(0, 100 - (installation_cost / 5000) * 100)
         ),
         "total_cost": ComponentResult(
             value=total_cost, unit="£",

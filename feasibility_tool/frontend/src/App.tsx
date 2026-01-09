@@ -431,9 +431,10 @@ function ProfileShapeVisualization({
                     
                     {/* ROI Analysis */}
                     {(() => {
-                      const baselineUpfront = baseline.result.components.material_cost?.value || 0;
-                      const proposedUpfront = result.components.material_cost?.value || 0;
-                      const extraUpfront = proposedUpfront - baselineUpfront;
+                      const baselineMaterial = baseline.result.components.material_cost?.value || 0;
+                      const proposedMaterial = result.components.material_cost?.value || 0;
+                      const installationCost = result.components.installation_cost?.value || 0;
+                      const extraUpfront = (proposedMaterial - baselineMaterial) + installationCost;
                       const baselineTotal = baseline.result.components.total_cost?.value || 0;
                       const proposedTotal = result.components.total_cost?.value || 0;
                       const annualSavings = (baselineTotal - proposedTotal) / 10;
@@ -972,7 +973,7 @@ function App() {
                   InputProps={{ sx: { fontSize: '0.8rem' } }}
                 />
               </Grid>
-              <Grid item xs={12}>
+              <Grid item xs={6}>
                 <Typography variant="caption">Current System Age - years</Typography>
                 <TextField
                   type="number"
@@ -980,10 +981,24 @@ function App() {
                   onChange={(e) => setInputs({ ...inputs, current_system_age: parseFloat(e.target.value) })}
                   fullWidth
                   size="small"
-                  helperText="How long the current hose has been in service (for maintenance tracking)"
+                  helperText="How long the current hose has been in service"
                   InputProps={{ sx: { fontSize: '0.8rem' } }}
                 />
-                <Typography variant="caption" color="info.main" display="block" sx={{ mt: 1 }}>
+              </Grid>
+              <Grid item xs={6}>
+                <Typography variant="caption">Installation Cost - £/meter</Typography>
+                <TextField
+                  type="number"
+                  value={inputs.installation_cost_per_meter || 25}
+                  onChange={(e) => setInputs({ ...inputs, installation_cost_per_meter: parseFloat(e.target.value) })}
+                  fullWidth
+                  size="small"
+                  helperText="Labor + removal + fitting + downtime"
+                  InputProps={{ sx: { fontSize: '0.8rem' } }}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <Typography variant="caption" color="info.main" display="block">
                   ℹ️ Lifespan is calculated automatically from material properties, environmental conditions, and operating parameters
                 </Typography>
               </Grid>

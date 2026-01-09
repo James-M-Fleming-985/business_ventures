@@ -274,6 +274,15 @@ class HoseOptimizationEngine(FeasibilityEngine):
                 unit="multiplier",
                 description="Override reinforcement cost multiplier (defaults to database values if not provided)"
             ),
+            "installation_cost_per_meter": ParameterSchema(
+                name="Installation Cost Per Meter",
+                type="float",
+                min_value=0.0,
+                max_value=100.0,
+                default=25.0,
+                unit="£/m",
+                description="Labor and installation cost per meter (removal + fitting + downtime)"
+            ),
         }
     
     def get_output_schema(self) -> Dict[str, OutputSchema]:
