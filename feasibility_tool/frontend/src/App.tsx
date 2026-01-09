@@ -271,13 +271,10 @@ function ProfileShapeVisualization({
                       </>
                     )}
                   </>
-                        <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '2px', fontStyle: 'italic' }}>
-                          Lower ΔP & moderate v = better
-                        </div>
-                      </>
-                    )}
-                  </>
                 )}
+              </div>
+            </Html>
+          )}
               </div>
             </Html>
           )}
