@@ -452,7 +452,7 @@ function ProfileShapeVisualization({
                             ) : paybackYears && paybackYears < 0 ? (
                               <span>Immediate savings! ✓</span>
                             ) : (
-                              <span>Payback: {paybackYears?.toFixed(1)} years (>{10}yr) ✗</span>
+                              <span>Payback: {paybackYears?.toFixed(1)} years (&gt;{10}yr) ✗</span>
                             )}
                           </div>
                         </div>
