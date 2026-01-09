@@ -190,63 +190,87 @@ function ProfileShapeVisualization({
               <div style={{ 
                 background: 'rgba(0, 188, 212, 0.95)', 
                 color: 'white', 
-                padding: '8px 12px', 
-                borderRadius: '4px',
+                padding: '10px 14px', 
+                borderRadius: '6px',
                 fontSize: '11px',
                 fontFamily: 'monospace',
                 whiteSpace: 'nowrap',
                 pointerEvents: 'none',
-                boxShadow: '0 2px 10px rgba(0,0,0,0.5)'
+                boxShadow: '0 2px 10px rgba(0,0,0,0.5)',
+                minWidth: '260px'
               }}>
-                {baselineScores ? (
+                {baselineScores && baseline?.result?.components && result?.components ? (
                   <>
-                    <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Performance Score</div>
+                    {/* Header with scores */}
+                    <div style={{ fontWeight: 'bold', marginBottom: '4px', fontSize: '12px' }}>Performance Score</div>
                     <div style={{ fontSize: '10px', opacity: 0.9 }}>Current: {currentScores.performance.toFixed(1)}/100</div>
                     <div style={{ fontSize: '10px', opacity: 0.9 }}>Baseline: {baselineScores.performance.toFixed(1)}/100</div>
-                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.3)', marginTop: '4px', paddingTop: '4px', fontSize: '10px' }}>
-                      {currentScores.performance.toFixed(1)} - {baselineScores.performance.toFixed(1)} = <span style={{ fontWeight: 'bold', fontSize: '12px' }}>ΔP = {(currentScores.performance - baselineScores.performance).toFixed(1)}</span>
+                    <div style={{ fontSize: '10px', marginTop: '2px' }}>
+                      <span style={{ fontWeight: 'bold', fontSize: '12px' }}>ΔP = {(currentScores.performance - baselineScores.performance).toFixed(1)}</span>
                     </div>
-                    {result?.components && (
-                      <>
-                        <div style={{ fontSize: '9px', opacity: 0.8, marginTop: '6px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.3)' }}>
-                          Formula: 0.4×ΔP + 0.2×v + 0.4×Safety
-                        </div>
-                        <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '4px' }}>
-                          v = Q/A = {result.components.velocity?.value.toFixed(2)} {result.components.velocity?.unit}
-                        </div>
-                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
-                          Re = ρvD/μ = {result.components.reynolds?.value.toFixed(0)}
-                        </div>
-                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
-                          ΔP = f(L/D)(ρv²/2) = {result.components.deltaP?.value.toFixed(3)} {result.components.deltaP?.unit}
-                        </div>
-                        <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '2px', fontStyle: 'italic' }}>
-                          Lower ΔP & moderate v = better
-                        </div>
-                      </>
-                    )}
+                    
+                    {/* Current Installation (Baseline) */}
+                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.4)', marginTop: '8px', paddingTop: '6px' }}>
+                      <div style={{ fontWeight: 'bold', fontSize: '10px', opacity: 0.9, marginBottom: '4px' }}>YOUR CURRENT INSTALLATION</div>
+                      <div style={{ fontSize: '10px', opacity: 0.9 }}>
+                        Di: {(baseline.inputs?.Di * 1000 || 15).toFixed(1)}mm, Do: {(baseline.inputs?.Do * 1000 || 21).toFixed(1)}mm
+                      </div>
+                      <div style={{ fontSize: '10px', opacity: 0.9 }}>
+                        Flow: {baseline.inputs?.flow_rate?.toFixed(1) || '2.0'} L/s, P: {baseline.inputs?.operating_pressure?.toFixed(0) || '10'} bar
+                      </div>
+                      <div style={{ fontSize: '10px', opacity: 0.9 }}>
+                        Velocity: {baseline.result.components.velocity?.value.toFixed(2)} m/s
+                      </div>
+                      <div style={{ fontSize: '10px', fontWeight: 'bold' }}>
+                        ΔP: {baseline.result.components.deltaP?.value.toFixed(3)} bar
+                      </div>
+                    </div>
+                    
+                    {/* Proposed Configuration (Current) */}
+                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.4)', marginTop: '8px', paddingTop: '6px' }}>
+                      <div style={{ fontWeight: 'bold', fontSize: '10px', opacity: 0.9, marginBottom: '4px' }}>PROPOSED CONFIGURATION</div>
+                      <div style={{ fontSize: '10px', opacity: 0.9 }}>
+                        Di: {(inputs?.Di * 1000 || 15).toFixed(1)}mm, Do: {(inputs?.Do * 1000 || 21).toFixed(1)}mm
+                      </div>
+                      <div style={{ fontSize: '10px', opacity: 0.9 }}>
+                        Flow: {inputs?.flow_rate?.toFixed(1) || '2.0'} L/s, P: {inputs?.operating_pressure?.toFixed(0) || '10'} bar
+                      </div>
+                      <div style={{ fontSize: '10px', opacity: 0.9 }}>
+                        Velocity: {result.components.velocity?.value.toFixed(2)} m/s
+                      </div>
+                      <div style={{ fontSize: '10px', fontWeight: 'bold' }}>
+                        ΔP: {result.components.deltaP?.value.toFixed(3)} bar
+                      </div>
+                    </div>
+                    
+                    <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '6px', fontStyle: 'italic' }}>
+                      Lower ΔP & moderate velocity = better
+                    </div>
                   </>
                 ) : (
                   <>
                     <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Performance Score</div>
                     <div style={{ fontSize: '16px', marginBottom: '6px', color: '#fff', fontWeight: 'bold' }}>{currentScores.performance.toFixed(1)}/100</div>
-                    <div style={{ fontSize: '9px', opacity: 0.7, marginBottom: '6px', fontStyle: 'italic' }}>
-                      Position = {currentScores.performance.toFixed(1)} - 50 = {animatedScores.performance.toFixed(1)}
-                    </div>
                     {result?.components && (
                       <>
                         <div style={{ fontSize: '9px', opacity: 0.8, marginTop: '6px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.3)' }}>
                           Formula: 0.4×ΔP + 0.2×v + 0.4×Safety
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '4px' }}>
-                          v = Q/A = {result.components.velocity?.value.toFixed(2)} {result.components.velocity?.unit}
+                          Di: {(inputs?.Di * 1000 || 15).toFixed(1)}mm, Do: {(inputs?.Do * 1000 || 21).toFixed(1)}mm
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9 }}>
-                          Re = ρvD/μ = {result.components.reynolds?.value.toFixed(0)}
+                          Velocity: {result.components.velocity?.value.toFixed(2)} m/s
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9 }}>
-                          ΔP = f(L/D)(ρv²/2) = {result.components.deltaP?.value.toFixed(3)} {result.components.deltaP?.unit}
+                          ΔP: {result.components.deltaP?.value.toFixed(3)} bar
                         </div>
+                        <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '4px', fontStyle: 'italic' }}>
+                          Set baseline to see comparison
+                        </div>
+                      </>
+                    )}
+                  </>
                         <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '2px', fontStyle: 'italic' }}>
                           Lower ΔP & moderate v = better
                         </div>
@@ -274,80 +298,87 @@ function ProfileShapeVisualization({
               <div style={{ 
                 background: 'rgba(76, 175, 80, 0.95)', 
                 color: 'white', 
-                padding: '8px 12px', 
-                borderRadius: '4px',
+                padding: '10px 14px', 
+                borderRadius: '6px',
                 fontSize: '11px',
                 fontFamily: 'monospace',
                 whiteSpace: 'nowrap',
                 pointerEvents: 'none',
-                boxShadow: '0 2px 10px rgba(0,0,0,0.5)'
+                boxShadow: '0 2px 10px rgba(0,0,0,0.5)',
+                minWidth: '260px'
               }}>
-                {baselineScores ? (
+                {baselineScores && baseline?.result?.components && result?.components ? (
                   <>
-                    <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Durability Score</div>
+                    {/* Header with scores */}
+                    <div style={{ fontWeight: 'bold', marginBottom: '4px', fontSize: '12px' }}>Durability Score</div>
                     <div style={{ fontSize: '10px', opacity: 0.9 }}>Current: {currentScores.durability.toFixed(1)}/100</div>
                     <div style={{ fontSize: '10px', opacity: 0.9 }}>Baseline: {baselineScores.durability.toFixed(1)}/100</div>
-                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.3)', marginTop: '4px', paddingTop: '4px', fontSize: '10px' }}>
-                      {currentScores.durability.toFixed(1)} - {baselineScores.durability.toFixed(1)} = <span style={{ fontWeight: 'bold', fontSize: '12px' }}>ΔD = {(currentScores.durability - baselineScores.durability).toFixed(1)}</span>
+                    <div style={{ fontSize: '10px', marginTop: '2px' }}>
+                      <span style={{ fontWeight: 'bold', fontSize: '12px' }}>ΔD = {(currentScores.durability - baselineScores.durability).toFixed(1)}</span>
                     </div>
-                    {result?.components?.deltaP && (
-                      <>
-                        <div style={{ fontSize: '9px', opacity: 0.8, marginTop: '6px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.3)' }}>
-                          Formula: (Material×Reinf×100 - Degradation) / Climate
-                        </div>
-                        <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '4px' }}>
-                          Material Factor × Reinforcement Factor
-                        </div>
-                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
-                          - Temp Degradation (if T &gt; T_max)
-                        </div>
-                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
-                          - UV Degradation = (UV/10)×Climate×(1-UV_resist)
-                        </div>
-                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
-                          ΔD = {(currentScores.durability - baselineScores.durability).toFixed(1)} (durability delta)
-                        </div>
-                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
-                          Lifespan = {result.components.lifespan?.value.toFixed(1)}yr
-                        </div>
-                        <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '2px', fontStyle: 'italic' }}>
-                          Higher durability = longer life
-                        </div>
-                      </>
-                    )}
+                    
+                    {/* Current Installation (Baseline) */}
+                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.4)', marginTop: '8px', paddingTop: '6px' }}>
+                      <div style={{ fontWeight: 'bold', fontSize: '10px', opacity: 0.9, marginBottom: '4px' }}>YOUR CURRENT INSTALLATION</div>
+                      <div style={{ fontSize: '10px', opacity: 0.9 }}>
+                        {baseline.inputs?.material_type || 'PVC'} + {baseline.inputs?.reinforcement_type || 'Textile'}
+                      </div>
+                      <div style={{ fontSize: '10px', opacity: 0.9 }}>
+                        Temp: {baseline.inputs?.ambient_temp?.toFixed(0) || '20'}°C, UV: {baseline.inputs?.uv_exposure?.toFixed(1) || '5'} hrs/day
+                      </div>
+                      <div style={{ fontSize: '10px', opacity: 0.9 }}>
+                        Climate: {baseline.inputs?.climate_zone || 'Temperate'}
+                      </div>
+                      <div style={{ fontSize: '10px', fontWeight: 'bold' }}>
+                        Lifespan: {baseline.result.components.lifespan?.value.toFixed(1)} yrs
+                      </div>
+                    </div>
+                    
+                    {/* Proposed Configuration (Current) */}
+                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.4)', marginTop: '8px', paddingTop: '6px' }}>
+                      <div style={{ fontWeight: 'bold', fontSize: '10px', opacity: 0.9, marginBottom: '4px' }}>PROPOSED CONFIGURATION</div>
+                      <div style={{ fontSize: '10px', opacity: 0.9 }}>
+                        {inputs?.material_type || 'PVC'} + {inputs?.reinforcement_type || 'Textile'}
+                      </div>
+                      <div style={{ fontSize: '10px', opacity: 0.9 }}>
+                        Temp: {inputs?.ambient_temp?.toFixed(0) || '20'}°C, UV: {inputs?.uv_exposure?.toFixed(1) || '5'} hrs/day
+                      </div>
+                      <div style={{ fontSize: '10px', opacity: 0.9 }}>
+                        Climate: {inputs?.climate_zone || 'Temperate'}
+                      </div>
+                      <div style={{ fontSize: '10px', fontWeight: 'bold' }}>
+                        Lifespan: {result.components.lifespan?.value.toFixed(1)} yrs
+                      </div>
+                    </div>
+                    
+                    <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '6px', fontStyle: 'italic' }}>
+                      Higher durability = longer lifespan
+                    </div>
                   </>
                 ) : (
                   <>
                     <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Durability Score</div>
                     <div style={{ fontSize: '16px', marginBottom: '6px', color: '#fff', fontWeight: 'bold' }}>{currentScores.durability.toFixed(1)}/100</div>
-                    <div style={{ fontSize: '9px', opacity: 0.7, marginBottom: '6px', fontStyle: 'italic' }}>
-                      Position = {currentScores.durability.toFixed(1)} - 50 = {animatedScores.durability.toFixed(1)}
-                    </div>
-                    {result?.components?.deltaP && (
+                    {result?.components && (
                       <>
                         <div style={{ fontSize: '9px', opacity: 0.8, marginTop: '6px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.3)' }}>
-                          Formula: (Material×Reinf×100 - Degradation) / Climate
+                          Material properties & environmental factors
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '4px' }}>
-                          Material Factor × Reinforcement Factor
+                          {inputs?.material_type || 'PVC'} + {inputs?.reinforcement_type || 'Textile'}
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9 }}>
-                          - Temp Degradation (if T &gt; T_max)
+                          Temp: {inputs?.ambient_temp?.toFixed(0) || '20'}°C, UV: {inputs?.uv_exposure?.toFixed(1) || '5'} hrs/day
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9 }}>
-                          - UV Degradation = (UV/10)×Climate×(1-UV_resist)
+                          Lifespan: {result.components.lifespan?.value.toFixed(1)} yrs
                         </div>
-                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
-                          Durability = {currentScores.durability.toFixed(1)}/100
-                        </div>
-                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
-                          Lifespan = {result.components.lifespan?.value.toFixed(1)}yr
-                        </div>
-                        <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '2px', fontStyle: 'italic' }}>
-                          Higher durability = longer life
+                        <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '4px', fontStyle: 'italic' }}>
+                          Set baseline to see comparison
                         </div>
                       </>
                     )}
+                  </>
                   </>
                 )}
               </div>
