@@ -20,15 +20,9 @@ from pathlib import Path
 VERSION_FILE = Path(__file__).parent / "VERSION"
 __version__ = VERSION_FILE.read_text().strip() if VERSION_FILE.exists() else "2.0.14"
 
-# Read git commit at startup
-import subprocess
-try:
-    GIT_COMMIT = subprocess.run(
-        ['git', 'rev-parse', '--short', 'HEAD'],
-        capture_output=True, text=True, cwd=Path(__file__).parent
-    ).stdout.strip() or 'unknown'
-except Exception:
-    GIT_COMMIT = 'unknown'
+# Read git commit from GIT_COMMIT file (created during build)
+GIT_COMMIT_FILE = Path(__file__).parent / "GIT_COMMIT"
+GIT_COMMIT = GIT_COMMIT_FILE.read_text().strip() if GIT_COMMIT_FILE.exists() else 'unknown'
 
 # Setup logging
 logging.basicConfig(

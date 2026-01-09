@@ -1,5 +1,6 @@
 [build]
 builder = "NIXPACKS"
+buildCommand = "git rev-parse --short HEAD > GIT_COMMIT || echo 'unknown' > GIT_COMMIT"
 watchPatterns = [
   "*.py",
   "*.txt",
