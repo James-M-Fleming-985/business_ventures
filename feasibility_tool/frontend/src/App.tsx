@@ -402,7 +402,10 @@ function ProfileShapeVisualization({
                         Lifespan: {baseline.result.components.lifespan?.value.toFixed(1)} yrs → {Math.ceil(10 / (baseline.result.components.lifespan?.value || 1))}× replacements
                       </div>
                       <div style={{ fontSize: '10px', fontWeight: 'bold' }}>
-                        10yr Total: £{baseline.result.components.total_cost?.value.toFixed(0)}
+                        10yr Total Cost: £{baseline.result.components.total_cost?.value.toFixed(0)}
+                      </div>
+                      <div style={{ fontSize: '9px', opacity: 0.7, fontStyle: 'italic' }}>
+                        (material + energy)
                       </div>
                     </div>
                     
@@ -419,7 +422,10 @@ function ProfileShapeVisualization({
                         Lifespan: {result.components.lifespan?.value.toFixed(1)} yrs → {Math.ceil(10 / (result.components.lifespan?.value || 1))}× replacements
                       </div>
                       <div style={{ fontSize: '10px', fontWeight: 'bold' }}>
-                        10yr Total: £{result.components.total_cost?.value.toFixed(0)}
+                        10yr Total Cost: £{result.components.total_cost?.value.toFixed(0)}
+                      </div>
+                      <div style={{ fontSize: '9px', opacity: 0.7, fontStyle: 'italic' }}>
+                        (material + energy)
                       </div>
                     </div>
                     
@@ -966,7 +972,7 @@ function App() {
                   InputProps={{ sx: { fontSize: '0.8rem' } }}
                 />
               </Grid>
-              <Grid item xs={6}>
+              <Grid item xs={12}>
                 <Typography variant="caption">Current System Age - years</Typography>
                 <TextField
                   type="number"
@@ -974,29 +980,11 @@ function App() {
                   onChange={(e) => setInputs({ ...inputs, current_system_age: parseFloat(e.target.value) })}
                   fullWidth
                   size="small"
-                  helperText="How long current hose has been in service"
+                  helperText="How long the current hose has been in service (for maintenance tracking)"
                   InputProps={{ sx: { fontSize: '0.8rem' } }}
                 />
-              </Grid>
-              <Grid item xs={12}>
-                <Typography variant="caption">Expected Total Lifespan - years</Typography>
-                <Slider
-                  value={inputs.expected_total_lifespan || 5}
-                  min={1}
-                  max={15}
-                  step={0.5}
-                  marks={[
-                    { value: 1, label: '1yr' },
-                    { value: 5, label: '5yr' },
-                    { value: 10, label: '10yr' },
-                    { value: 15, label: '15yr' }
-                  ]}
-                  onChange={(_, val) => setInputs({ ...inputs, expected_total_lifespan: val as number })}
-                  valueLabelDisplay="on"
-                  size="small"
-                />
-                <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
-                  💡 Based on experience: how long do you expect this baseline hose to last before replacement?
+                <Typography variant="caption" color="info.main" display="block" sx={{ mt: 1 }}>
+                  ℹ️ Lifespan is calculated automatically from material properties, environmental conditions, and operating parameters
                 </Typography>
               </Grid>
             </Grid>

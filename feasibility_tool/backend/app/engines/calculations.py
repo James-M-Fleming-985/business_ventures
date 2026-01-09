@@ -110,7 +110,24 @@ def comprehensive_calculate(inputs: Dict[str, Any]) -> CalculationResult:
     
     # ===== LIFESPAN-BASED ECONOMIC CALCULATIONS =====
     # Convert durability score to expected lifespan: 100 = 10 years, 0 = 1 year
-    expected_lifespan_years = max(1, (durability_score / 100) * 10)
+    base_lifespan = (durability_score / 100) * 10
+    
+    # OPERATING STRESS FACTORS that reduce lifespan
+    # 1. Pressure stress: operating near max pressure rating reduces life
+    pressure_stress = operating_pressure / reinf["pressure_rating"]  # 0.0 to 1.0+
+    pressure_degradation = max(0, (pressure_stress - 0.5) * 0.3)  # No penalty <50%, up to 30% at 100%
+    
+    # 2. Velocity erosion: high flow velocity causes wear
+    velocity_stress = v / 3.0  # Ideal velocity ~2-3 m/s
+    erosion_factor = max(0, (velocity_stress - 0.67) * 0.2)  # Penalty for velocity >2 m/s
+    
+    # 3. Usage intensity: 24/7 operation wears faster than intermittent
+    usage_factor = operating_hours / 8760  # Fraction of year in use
+    usage_degradation = usage_factor * 0.1  # Up to 10% reduction for continuous operation
+    
+    # Combined lifespan with all stress factors
+    lifespan_multiplier = 1 - pressure_degradation - erosion_factor - usage_degradation
+    expected_lifespan_years = max(1, base_lifespan * lifespan_multiplier)
     
     # Calculate number of replacements needed over 10-year analysis period
     analysis_period = 10
