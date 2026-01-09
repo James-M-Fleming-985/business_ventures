@@ -373,7 +373,6 @@ function ProfileShapeVisualization({
                       </>
                     )}
                   </>
-                  </>
                 )}
               </div>
             </Html>
