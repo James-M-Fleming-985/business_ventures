@@ -222,7 +222,7 @@ function ProfileShapeVisualization({
                         Velocity: {baseline.result.components.velocity?.value.toFixed(2)} m/s
                       </div>
                       <div style={{ fontSize: '10px', fontWeight: 'bold' }}>
-                        ΔP: {baseline.result.components.deltaP?.value.toFixed(3)} bar
+                        P-Drop: {baseline.result.components.deltaP?.value.toFixed(3)} bar
                       </div>
                     </div>
                     
@@ -239,12 +239,12 @@ function ProfileShapeVisualization({
                         Velocity: {result.components.velocity?.value.toFixed(2)} m/s
                       </div>
                       <div style={{ fontSize: '10px', fontWeight: 'bold' }}>
-                        ΔP: {result.components.deltaP?.value.toFixed(3)} bar
+                        P-Drop: {result.components.deltaP?.value.toFixed(3)} bar
                       </div>
                     </div>
                     
                     <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '6px', fontStyle: 'italic' }}>
-                      Lower ΔP & moderate velocity = better
+                      Lower P-Drop & moderate velocity = better
                     </div>
                   </>
                 ) : (
@@ -263,7 +263,7 @@ function ProfileShapeVisualization({
                           Velocity: {result.components.velocity?.value.toFixed(2)} m/s
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9 }}>
-                          ΔP: {result.components.deltaP?.value.toFixed(3)} bar
+                          P-Drop: {result.components.deltaP?.value.toFixed(3)} bar
                         </div>
                         <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '4px', fontStyle: 'italic' }}>
                           Set baseline to see comparison
