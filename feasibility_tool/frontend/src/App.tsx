@@ -216,8 +216,22 @@ function ProfileShapeVisualization({
                         Di: {(baseline.inputs?.Di * 1000 || 15).toFixed(1)}mm, Do: {(baseline.inputs?.Do * 1000 || 21).toFixed(1)}mm
                       </div>
                       <div style={{ fontSize: '10px', opacity: 0.9 }}>
-                        Flow: {baseline.inputs?.flow_rate?.toFixed(1) || '2.0'} L/s, P: {baseline.inputs?.operating_pressure?.toFixed(0) || '10'} bar
+                        Flow: {baseline.inputs?.flow_rate?.toFixed(1) || '2.0'} L/s
                       </div>
+                      {(() => {
+                        const reinforcementRatings: Record<string, number> = {
+                          'None': 5, 'Textile': 15, 'Wire Braid': 25, 'Aramid': 35, 'Steel Wire': 50
+                        };
+                        const rating = reinforcementRatings[baseline.inputs?.reinforcement_type || 'Textile'] || 15;
+                        const operating = baseline.inputs?.operating_pressure || 10;
+                        const margin = ((rating - operating) / rating * 100);
+                        const icon = margin > 50 ? '✓' : margin > 20 ? '⚠️' : '✗';
+                        return (
+                          <div style={{ fontSize: '10px', opacity: 0.9 }}>
+                            Operating: {operating} bar / Rated: {rating} bar → {margin.toFixed(0)}% {icon}
+                          </div>
+                        );
+                      })()}
                       <div style={{ fontSize: '10px', opacity: 0.9 }}>
                         Velocity: {baseline.result.components.velocity?.value.toFixed(2)} m/s
                       </div>
@@ -233,8 +247,22 @@ function ProfileShapeVisualization({
                         Di: {(inputs?.Di * 1000 || 15).toFixed(1)}mm, Do: {(inputs?.Do * 1000 || 21).toFixed(1)}mm
                       </div>
                       <div style={{ fontSize: '10px', opacity: 0.9 }}>
-                        Flow: {inputs?.flow_rate?.toFixed(1) || '2.0'} L/s, P: {inputs?.operating_pressure?.toFixed(0) || '10'} bar
+                        Flow: {inputs?.flow_rate?.toFixed(1) || '2.0'} L/s
                       </div>
+                      {(() => {
+                        const reinforcementRatings: Record<string, number> = {
+                          'None': 5, 'Textile': 15, 'Wire Braid': 25, 'Aramid': 35, 'Steel Wire': 50
+                        };
+                        const rating = reinforcementRatings[inputs?.reinforcement_type || 'Textile'] || 15;
+                        const operating = inputs?.operating_pressure || 10;
+                        const margin = ((rating - operating) / rating * 100);
+                        const icon = margin > 50 ? '✓' : margin > 20 ? '⚠️' : '✗';
+                        return (
+                          <div style={{ fontSize: '10px', opacity: 0.9 }}>
+                            Operating: {operating} bar / Rated: {rating} bar → {margin.toFixed(0)}% {icon}
+                          </div>
+                        );
+                      })()}
                       <div style={{ fontSize: '10px', opacity: 0.9 }}>
                         Velocity: {result.components.velocity?.value.toFixed(2)} m/s
                       </div>
@@ -244,7 +272,7 @@ function ProfileShapeVisualization({
                     </div>
                     
                     <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '6px', fontStyle: 'italic' }}>
-                      Lower P-Drop & moderate velocity = better
+                      Low P-Drop + high safety margin = better
                     </div>
                   </>
                 ) : (
