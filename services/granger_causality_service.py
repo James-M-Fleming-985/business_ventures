@@ -80,17 +80,23 @@ class GrangerCausalityService:
             var1_data = session.query(TimeSeriesData).filter(*filters_var1).order_by(TimeSeriesData.timestamp).all()
             var2_data = session.query(TimeSeriesData).filter(*filters_var2).order_by(TimeSeriesData.timestamp).all()
             
-            # Convert to pandas Series
+            # Convert to pandas Series with DatetimeIndex
             var1_series = pd.Series(
-                index=[dp.timestamp for dp in var1_data],
+                index=pd.DatetimeIndex([dp.timestamp for dp in var1_data]),
                 data=[dp.value for dp in var1_data]
             )
             var2_series = pd.Series(
-                index=[dp.timestamp for dp in var2_data],
+                index=pd.DatetimeIndex([dp.timestamp for dp in var2_data]),
                 data=[dp.value for dp in var2_data]
             )
             
             logger.info(f"Raw data counts: {var1.display_name}={len(var1_data)}, {var2.display_name}={len(var2_data)}")
+            
+            # Check for missing data
+            if len(var1_data) == 0:
+                raise ValueError(f"No data found for {var1.display_name}")
+            if len(var2_data) == 0:
+                raise ValueError(f"No data found for {var2.display_name}. Try refreshing data first.")
             
             # Detect frequencies (median time between observations)
             var1_freq_days = self._detect_frequency(var1_series)
