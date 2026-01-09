@@ -25,7 +25,7 @@ class DataIngestionService:
     def __init__(self):
         self.fetcher = DataFetcher()
         # Generate standard monthly grid for all data
-        self.standard_grid = get_standard_monthly_grid(months_back=60)
+        self.standard_grid = get_standard_monthly_grid(months_back=300)
     
     def fetch_and_store_all_variables(self) -> dict:
         """
@@ -90,9 +90,9 @@ class DataIngestionService:
                     params = json.loads(var.parameters)
                     symbol = params.get('symbol')
                     
-                    # Fetch monthly data (60 months = 5 years)
+                    # Fetch monthly data (300 months = 25 years for Granger causality)
                     monthly_prices = self.fetcher.fetch_stock_data_monthly(
-                        symbol, months=60
+                        symbol, months=300
                     )
                     
                     if monthly_prices:

@@ -20,6 +20,16 @@ from pathlib import Path
 VERSION_FILE = Path(__file__).parent / "VERSION"
 __version__ = VERSION_FILE.read_text().strip() if VERSION_FILE.exists() else "2.0.14"
 
+# Read git commit at startup
+import subprocess
+try:
+    GIT_COMMIT = subprocess.run(
+        ['git', 'rev-parse', '--short', 'HEAD'],
+        capture_output=True, text=True, cwd=Path(__file__).parent
+    ).stdout.strip() or 'unknown'
+except Exception:
+    GIT_COMMIT = 'unknown'
+
 # Setup logging
 logging.basicConfig(
     level=logging.INFO,
@@ -104,6 +114,7 @@ async def dashboard_page(request: Request):
     return templates.TemplateResponse("dashboard.html", {
         "request": request,
         "version": BUILD_VERSION,
+        "git_commit": GIT_COMMIT,
         "deploy_timestamp": DEPLOY_TIMESTAMP
     })
 

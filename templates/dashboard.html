@@ -431,7 +431,7 @@
 
 <!-- Footer with version info -->
 <footer class="mt-8 pb-6 text-center text-slate-500 text-sm">
-    <p>Causal Affect Platform v{{ version }} | Last deployed: {{ deploy_timestamp[:10] }}</p>
+    <p>Causal Affect Platform v{{ version }} ({{ git_commit }}) | Deployed: {{ deploy_timestamp[:19] }}</p>
 </footer>
 
 {% endblock %}
