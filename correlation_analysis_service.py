@@ -433,47 +433,46 @@ class CorrelationAnalysisService:
             List of top correlation results
         """
         with get_db_session() as session:
-            # CRITICAL: Filter by minimum sample size to avoid misleading correlations
-            # Correlations with n < 30 are statistically unreliable (e.g., r=0.99 from 3 points)
-            query = session.query(CorrelationResult).filter(
+            # CRITICAL: Use subquery to get only the most recent correlation for each pair
+            # This prevents showing outdated correlation values in the UI
+            from sqlalchemy.sql import func
+            from sqlalchemy.orm import joinedload
+            
+            # Subquery to find the most recent calculation for each unique pair
+            # Handle bidirectional pairs (A-B and B-A are the same)
+            subq = session.query(
+                func.least(CorrelationResult.variable1_id, CorrelationResult.variable2_id).label('v1'),
+                func.greatest(CorrelationResult.variable1_id, CorrelationResult.variable2_id).label('v2'),
+                func.max(CorrelationResult.calculated_at).label('max_date')
+            ).group_by(
+                func.least(CorrelationResult.variable1_id, CorrelationResult.variable2_id),
+                func.greatest(CorrelationResult.variable1_id, CorrelationResult.variable2_id)
+            ).subquery()
+            
+            # Join with subquery to get only the most recent records
+            query = session.query(CorrelationResult).join(
+                subq,
+                ((func.least(CorrelationResult.variable1_id, CorrelationResult.variable2_id) == subq.c.v1) &
+                 (func.greatest(CorrelationResult.variable1_id, CorrelationResult.variable2_id) == subq.c.v2) &
+                 (CorrelationResult.calculated_at == subq.c.max_date))
+            ).filter(
                 CorrelationResult.p_value <= min_significance,
-                CorrelationResult.sample_size >= min_sample_size  # NEW: Minimum sample filter
+                CorrelationResult.sample_size >= min_sample_size
             )
             
             if method:
                 query = query.filter(CorrelationResult.method == method)
             
-            # Get results with relationships eagerly loaded
-            # Order by calculated_at DESC to get most recent first
-            from sqlalchemy.orm import joinedload
-            all_results = (
+            # Get results and sort by strength
+            results = (
                 query.options(
                     joinedload(CorrelationResult.variable1),
                     joinedload(CorrelationResult.variable2)
                 )
-                .order_by(
-                    CorrelationResult.calculated_at.desc()  # Most recent first
-                )
+                .order_by(CorrelationResult.abs_correlation.desc())
+                .limit(limit * 10 if cross_domain else limit)
                 .all()
             )
-            
-            # Deduplicate: keep only the most recent correlation for each variable pair
-            # (since we might have multiple calculations over time)
-            seen_pairs = set()
-            deduplicated = []
-            for r in all_results:
-                # Create canonical pair (sorted to handle A-B and B-A as same pair)
-                pair = tuple(sorted([r.variable1_id, r.variable2_id]))
-                if pair not in seen_pairs:
-                    seen_pairs.add(pair)
-                    deduplicated.append(r)
-            
-            # Now sort by absolute correlation strength and limit
-            results = sorted(
-                deduplicated,
-                key=lambda r: r.abs_correlation,
-                reverse=True
-            )[:limit * 10 if cross_domain else limit]
             
             correlations = []
             source_pair_count = {}  # Track how many times each source pair appears
