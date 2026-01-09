@@ -275,9 +275,6 @@ function ProfileShapeVisualization({
               </div>
             </Html>
           )}
-              </div>
-            </Html>
-          )}
           
           <mesh 
             position={[0, animatedScores.durability, 0]}
