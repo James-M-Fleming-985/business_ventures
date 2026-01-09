@@ -384,7 +384,7 @@ function ProfileShapeVisualization({
                     <div style={{ borderTop: '1px solid rgba(255,255,255,0.3)', marginTop: '4px', paddingTop: '4px', fontSize: '10px' }}>
                       {currentScores.economic.toFixed(1)} - {baselineScores.economic.toFixed(1)} = <span style={{ fontWeight: 'bold', fontSize: '12px' }}>ΔE = {(currentScores.economic - baselineScores.economic).toFixed(1)}</span>
                     </div>
-                    {result?.components && baseline?.components && (
+                    {result?.components && (
                       <>
                         <div style={{ fontSize: '9px', opacity: 0.8, marginTop: '6px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.3)' }}>
                           Formula: Score = (1 - Total/£20k) × 100
@@ -393,16 +393,13 @@ function ProfileShapeVisualization({
                           Material = £{result.components.material_cost?.value.toFixed(2)}
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9 }}>
-                          Replacements = {Math.ceil(10 / result.components.lifespan?.value)}× over 10yr
+                          Replacements = {Math.ceil(10 / (result.components.lifespan?.value || 1))}× over 10yr
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9 }}>
                           Total (10yr) = £{result.components.total_cost?.value.toFixed(2)}
                         </div>
                         <div style={{ fontSize: '10px', opacity: 0.9 }}>
                           ΔE = {(currentScores.economic - baselineScores.economic).toFixed(1)} (economic delta)
-                        </div>
-                        <div style={{ fontSize: '10px', opacity: 0.9 }}>
-                          ROI = {((baseline.components.total_cost?.value - result.components.total_cost?.value) / Math.abs(result.components.material_cost?.value - baseline.components.material_cost?.value) * 100).toFixed(0)}% ({Math.abs((result.components.material_cost?.value - baseline.components.material_cost?.value) / ((baseline.components.total_cost?.value - result.components.total_cost?.value) / 10)).toFixed(1)}yr payback)
                         </div>
                         <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '2px', fontStyle: 'italic' }}>
                           Lower cost = higher score
