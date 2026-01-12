@@ -775,7 +775,15 @@ function App() {
                   value={typeof inputs.Di === 'number' ? inputs.Di * 1000 : 25}
                   min={inputSchema.Di?.min_value ? inputSchema.Di.min_value * 1000 : 6}
                   max={inputSchema.Di?.max_value ? inputSchema.Di.max_value * 1000 : 50}
-                  onChange={(_, val) => setInputs({ ...inputs, Di: (val as number) / 1000 })}
+                  onChange={(_, val) => {
+                    const newDi = (val as number) / 1000;
+                    // Ensure Di < Do (inner must be less than outer)
+                    if (newDi >= inputs.Do) {
+                      setInputs({ ...inputs, Di: newDi, Do: newDi + 0.001 }); // Auto-adjust Do
+                    } else {
+                      setInputs({ ...inputs, Di: newDi });
+                    }
+                  }}
                   valueLabelDisplay="on"
                   size="small"
                 />
@@ -786,7 +794,15 @@ function App() {
                   value={typeof inputs.Do === 'number' ? inputs.Do * 1000 : 31}
                   min={inputSchema.Do?.min_value ? inputSchema.Do.min_value * 1000 : 10}
                   max={inputSchema.Do?.max_value ? inputSchema.Do.max_value * 1000 : 60}
-                  onChange={(_, val) => setInputs({ ...inputs, Do: (val as number) / 1000 })}
+                  onChange={(_, val) => {
+                    const newDo = (val as number) / 1000;
+                    // Ensure Do > Di (outer must be greater than inner)
+                    if (newDo <= inputs.Di) {
+                      setInputs({ ...inputs, Do: newDo, Di: newDo - 0.001 }); // Auto-adjust Di
+                    } else {
+                      setInputs({ ...inputs, Do: newDo });
+                    }
+                  }}
                   valueLabelDisplay="on"
                   size="small"
                 />
