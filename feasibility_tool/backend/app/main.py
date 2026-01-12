@@ -14,13 +14,19 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from version import __version__, __build_date__, __description__
 
-# Get git commit hash
+# Get git commit hash - try Railway env var first, then git command
 def get_git_commit():
+    # Railway provides RAILWAY_GIT_COMMIT_SHA
+    railway_sha = os.environ.get('RAILWAY_GIT_COMMIT_SHA')
+    if railway_sha:
+        return railway_sha[:7]  # Short hash
+    
+    # Fallback to git command for local dev
     try:
         return subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD'], 
                                      stderr=subprocess.DEVNULL).decode('ascii').strip()
     except:
-        return 'unknown'
+        return None
 
 __git_commit__ = get_git_commit()
 
