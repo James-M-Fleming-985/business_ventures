@@ -810,7 +810,9 @@ async def test_granger_causality(
             corr.causal_direction = result['causal_direction']
             corr.granger_p_value_xy = result['var1_to_var2']['p_value']
             corr.granger_p_value_yx = result['var2_to_var1']['p_value']
-            corr.granger_lags = result['var1_to_var2']['lags']
+            # Convert lags to int (in case it's a numpy type)
+            lags_value = result['var1_to_var2']['lags']
+            corr.granger_lags = int(lags_value) if lags_value is not None else None
             db.commit()
             
             logger.info(f"Updated correlation {corr.id} with Granger causality results: {result['causal_direction']}")
