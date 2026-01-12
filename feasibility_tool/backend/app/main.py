@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Dict, Any, Optional
 import os
+import subprocess
 from app.engines.base import initialize_engines, EngineRegistry
 from app.auth import router as auth_router
 from app.payments import router as payments_router
@@ -12,6 +13,16 @@ from app.database import init_db
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from version import __version__, __build_date__, __description__
+
+# Get git commit hash
+def get_git_commit():
+    try:
+        return subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD'], 
+                                     stderr=subprocess.DEVNULL).decode('ascii').strip()
+    except:
+        return 'unknown'
+
+__git_commit__ = get_git_commit()
 
 app = FastAPI(
     title="Feasibility Platform API",
@@ -92,6 +103,7 @@ async def get_version():
         success=True,
         data={
             "version": __version__,
+            "git_commit": __git_commit__,
             "build_date": __build_date__,
             "description": __description__
         }

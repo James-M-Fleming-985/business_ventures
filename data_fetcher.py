@@ -7,6 +7,8 @@ import requests
 import os
 from typing import Dict, List, Optional
 from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
+from collections import defaultdict
 import logging
 
 logger = logging.getLogger(__name__)
@@ -20,6 +22,28 @@ class DataFetcher:
         if not self.alpha_vantage_key:
             logger.critical("⚠️  ALPHA_VANTAGE_API_KEY not set - stock data fetching will fail!")
             logger.critical("   Get a free key at: https://www.alphavantage.co/support/#api-key")
+        
+        # Initialize FRED client
+        self.fred_key = os.getenv('FRED_API_KEY')
+        self.fred_client = None
+        if self.fred_key:
+            try:
+                from fredapi import Fred
+                self.fred_client = Fred(api_key=self.fred_key)
+                logger.info("✅ FRED client initialized")
+            except Exception as e:
+                logger.error(f"Failed to initialize FRED client: {e}")
+        else:
+            logger.warning("⚠️  FRED_API_KEY not set - economic data fetching will be limited")
+        
+        # Initialize Google Trends client (no key needed)
+        self.trends_client = None
+        try:
+            from pytrends.request import TrendReq
+            self.trends_client = TrendReq(hl='en-US', tz=360)
+            logger.info("✅ Google Trends client initialized")
+        except Exception as e:
+            logger.error(f"Failed to initialize Google Trends client: {e}")
         
     def fetch_stock_data(self, symbol: str, days: int = 30) -> Optional[List[float]]:
         """Fetch stock price data from Alpha Vantage."""
@@ -637,4 +661,169 @@ class DataFetcher:
             
         except Exception as e:
             logger.error(f"Error fetching GDP data for {country_code}: {e}")
+            return None
+
+    def fetch_google_trends_monthly(self, keyword: str, months: int = 300) -> Optional[Dict[str, float]]:
+        """
+        Fetch Google Trends monthly search volume for a keyword.
+        Returns dict of {"YYYY-MM-01": search_volume}
+        
+        Args:
+            keyword: Search keyword (e.g., "wedding planning", "moving companies")
+            months: Number of months to fetch (default 300 = 25 years)
+        """
+        if not self.trends_client:
+            logger.error("Google Trends client not initialized")
+            return None
+        
+        try:
+            from dateutil.relativedelta import relativedelta
+            
+            end_date = datetime.now()
+            start_date = end_date - relativedelta(months=months)
+            
+            # Build payload
+            timeframe = f"{start_date.strftime('%Y-%m-%d')} {end_date.strftime('%Y-%m-%d')}"
+            self.trends_client.build_payload([keyword], timeframe=timeframe)
+            
+            # Get interest over time
+            df = self.trends_client.interest_over_time()
+            
+            if df is None or df.empty:
+                logger.warning(f"No Google Trends data found for keyword: {keyword}")
+                return None
+            
+            # Convert to monthly dict
+            trends_data = {}
+            for index, row in df.iterrows():
+                # Normalize to first of month
+                month_key = index.strftime('%Y-%m-01')
+                trends_data[month_key] = float(row[keyword])
+            
+            logger.info(f"Fetched {len(trends_data)} months of Google Trends data for '{keyword}'")
+            return trends_data
+            
+        except Exception as e:
+            logger.error(f"Error fetching Google Trends for '{keyword}': {e}")
+            return None
+
+    def fetch_fred_indicator(self, indicator_code: str, months: int = 300) -> Optional[Dict[str, float]]:
+        """
+        Fetch economic indicator from FRED (Federal Reserve Economic Data).
+        Returns dict of {"YYYY-MM-01": indicator_value}
+        
+        Args:
+            indicator_code: FRED indicator code (e.g., "UNRATE" for unemployment)
+            months: Number of months to fetch (default 300 = 25 years)
+        """
+        if not self.fred_client:
+            logger.error("FRED client not initialized (missing FRED_API_KEY)")
+            return None
+        
+        try:
+            from dateutil.relativedelta import relativedelta
+            
+            end_date = datetime.now()
+            start_date = end_date - relativedelta(months=months)
+            
+            # Fetch data
+            series = self.fred_client.get_series(
+                indicator_code,
+                observation_start=start_date.strftime('%Y-%m-%d'),
+                observation_end=end_date.strftime('%Y-%m-%d')
+            )
+            
+            if series is None or series.empty:
+                logger.warning(f"No FRED data found for indicator: {indicator_code}")
+                return None
+            
+            # Convert to monthly dict
+            fred_data = {}
+            for index, value in series.items():
+                # Normalize to first of month
+                month_key = index.strftime('%Y-%m-01')
+                fred_data[month_key] = float(value)
+            
+            logger.info(f"Fetched {len(fred_data)} months of FRED data for '{indicator_code}'")
+            return fred_data
+            
+        except Exception as e:
+            logger.error(f"Error fetching FRED indicator '{indicator_code}': {e}")
+            return None
+
+    def fetch_usgs_earthquakes_monthly(self, region: str = "global", months: int = 300) -> Optional[Dict[str, Dict[str, float]]]:
+        """
+        Fetch earthquake data from USGS and aggregate by month.
+        Returns dict of {"YYYY-MM-01": {"count": X, "avg_magnitude": Y, "max_magnitude": Z}}
+        
+        Args:
+            region: Region filter ("global", "us", "california") - default global
+            months: Number of months to fetch (default 300 = 25 years)
+        """
+        try:
+            from dateutil.relativedelta import relativedelta
+            from collections import defaultdict
+            
+            end_date = datetime.now()
+            start_date = end_date - relativedelta(months=months)
+            
+            # USGS Earthquake API
+            url = "https://earthquake.usgs.gov/fdsnws/event/1/query"
+            params = {
+                'format': 'geojson',
+                'starttime': start_date.strftime('%Y-%m-%d'),
+                'endtime': end_date.strftime('%Y-%m-%d'),
+                'minmagnitude': 4.0,  # Only significant earthquakes
+                'orderby': 'time'
+            }
+            
+            # Add region-specific filters
+            if region == "us":
+                params.update({
+                    'minlatitude': 24.0,
+                    'maxlatitude': 50.0,
+                    'minlongitude': -125.0,
+                    'maxlongitude': -65.0
+                })
+            elif region == "california":
+                params.update({
+                    'minlatitude': 32.5,
+                    'maxlatitude': 42.0,
+                    'minlongitude': -124.5,
+                    'maxlongitude': -114.0
+                })
+            
+            response = requests.get(url, params=params, timeout=30)
+            response.raise_for_status()
+            data = response.json()
+            
+            # Aggregate by month
+            monthly_data = defaultdict(lambda: {'magnitudes': []})
+            
+            for feature in data.get('features', []):
+                props = feature.get('properties', {})
+                timestamp = props.get('time')
+                magnitude = props.get('mag')
+                
+                if timestamp and magnitude:
+                    # Convert timestamp to month key
+                    dt = datetime.fromtimestamp(timestamp / 1000)  # USGS uses milliseconds
+                    month_key = dt.strftime('%Y-%m-01')
+                    monthly_data[month_key]['magnitudes'].append(magnitude)
+            
+            # Calculate aggregates
+            earthquake_data = {}
+            for month_key, data in monthly_data.items():
+                mags = data['magnitudes']
+                earthquake_data[month_key] = {
+                    'count': float(len(mags)),
+                    'avg_magnitude': float(sum(mags) / len(mags)),
+                    'max_magnitude': float(max(mags))
+                }
+            
+            logger.info(f"Fetched {len(earthquake_data)} months of USGS earthquake data ({region})")
+            return earthquake_data
+            
+        except Exception as e:
+            logger.error(f"Error fetching USGS earthquake data: {e}")
             return None

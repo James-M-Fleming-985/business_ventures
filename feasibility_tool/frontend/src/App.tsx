@@ -618,7 +618,9 @@ function App() {
   const [calcDetailsPos, setCalcDetailsPos] = useState({ x: 20, y: 20 })
   const [isDragging, setIsDragging] = useState(false)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
-  const [appVersion, setAppVersion] = useState<string>('loading...')
+  const [frontendVersion, setFrontendVersion] = useState<string>('loading...')
+  const [backendVersion, setBackendVersion] = useState<string>('loading...')
+  const [gitCommit, setGitCommit] = useState<string>('')
 
   // Fetch input schema
   useEffect(() => {
@@ -641,16 +643,26 @@ function App() {
 
   // Fetch version information
   useEffect(() => {
+    // Get frontend version from package.json via import
+    import('../../package.json').then(pkg => {
+      setFrontendVersion(`v${pkg.version}`)
+    }).catch(() => {
+      setFrontendVersion('v1.3.1')
+    })
+    
+    // Get backend version from API
     axios.get(`${API_BASE_URL}/api/version`)
       .then(res => {
         if (res.data.success) {
-          setAppVersion(`v${res.data.data.version}`)
+          setBackendVersion(`v${res.data.data.version}`)
+          if (res.data.data.git_commit) {
+            setGitCommit(res.data.data.git_commit)
+          }
         }
       })
       .catch(err => {
-        console.error('Failed to fetch version:', err)
-        // Fallback to package.json version - UPDATED TO FORCE CACHE BUST
-        setAppVersion('v1.3.0')
+        console.error('Failed to fetch backend version:', err)
+        setBackendVersion('v1.3.1')
       })
   }, [])
 
@@ -1645,7 +1657,8 @@ function App() {
           zIndex: 1000
         }}>
           <Typography variant="caption" color="text.secondary">
-            Feasibility Platform {appVersion} · {new Date().getFullYear()} · Powered by AI
+            Feasibility Platform · FE {frontendVersion} · BE {backendVersion}
+            {gitCommit && ` · ${gitCommit}`} · {new Date().getFullYear()}
           </Typography>
         </Box>
       </Box>
