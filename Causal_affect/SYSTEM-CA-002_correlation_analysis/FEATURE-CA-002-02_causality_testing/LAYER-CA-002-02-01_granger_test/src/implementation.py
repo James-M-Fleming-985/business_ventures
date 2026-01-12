@@ -119,7 +119,8 @@ class GrangerCausalityTest:
         
         # Determine optimal lag if not specified
         if lag is None:
-            lag = self._select_optimal_lag(x_clean, y_clean)
+            # Convert to tuples for lru_cache compatibility (hashable)
+            lag = self._select_optimal_lag(tuple(x_clean), tuple(y_clean))
         else:
             if lag > self.max_lag or lag < 1:
                 raise ValueError(f"lag must be between 1 and {self.max_lag}")

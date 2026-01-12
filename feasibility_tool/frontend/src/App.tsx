@@ -178,6 +178,8 @@ function ProfileShapeVisualization({
             position={[animatedScores.performance, 0, 0]}
             onPointerOver={(e) => { e.stopPropagation(); setHoveredSphere('performance'); }}
             onPointerOut={(e) => { e.stopPropagation(); setHoveredSphere(null); }}
+            onClick={(e) => { e.stopPropagation(); setCalculationDetailsOpen('performance'); }}
+            style={{ cursor: 'pointer' }}
           >
             <sphereGeometry args={[3, 32, 32]} />
             <meshStandardMaterial color="#00bcd4" emissive="#00bcd4" emissiveIntensity={hoveredSphere === 'performance' ? 2.0 : 1.2} />
@@ -308,6 +310,8 @@ function ProfileShapeVisualization({
             position={[0, animatedScores.durability, 0]}
             onPointerOver={(e) => { e.stopPropagation(); setHoveredSphere('durability'); }}
             onPointerOut={(e) => { e.stopPropagation(); setHoveredSphere(null); }}
+            onClick={(e) => { e.stopPropagation(); setCalculationDetailsOpen('durability'); }}
+            style={{ cursor: 'pointer' }}
           >
             <sphereGeometry args={[3, 32, 32]} />
             <meshStandardMaterial color="#4caf50" emissive="#4caf50" emissiveIntensity={hoveredSphere === 'durability' ? 2.0 : 1.2} />
@@ -410,6 +414,8 @@ function ProfileShapeVisualization({
             position={[0, 0, animatedScores.economic]}
             onPointerOver={(e) => { e.stopPropagation(); setHoveredSphere('economic'); }}
             onPointerOut={(e) => { e.stopPropagation(); setHoveredSphere(null); }}
+            onClick={(e) => { e.stopPropagation(); setCalculationDetailsOpen('economic'); }}
+            style={{ cursor: 'pointer' }}
           >
             <sphereGeometry args={[3, 32, 32]} />
             <meshStandardMaterial color="#ff9800" emissive="#ff9800" emissiveIntensity={hoveredSphere === 'economic' ? 2.0 : 1.2} />
@@ -602,6 +608,7 @@ function App() {
   const [baseline, setBaseline] = useState<{ inputs: Record<string, any>, result: CalculationResult } | null>(null)
   const [baselineModalOpen, setBaselineModalOpen] = useState(false)
   const [historyDrawerOpen, setHistoryDrawerOpen] = useState(false)
+  const [calculationDetailsOpen, setCalculationDetailsOpen] = useState<'performance' | 'durability' | 'economic' | null>(null)
   const [explorationHistory, setExplorationHistory] = useState<ExplorationSnapshot[]>([])
   const [visualizationMode, setVisualizationMode] = useState<string>('basic')
   const [targetProfile, setTargetProfile] = useState<string>('Balanced')
@@ -1642,6 +1649,342 @@ function App() {
           </Typography>
         </Box>
       </Box>
+
+      {/* Calculation Details Modal */}
+      {calculationDetailsOpen && result?.components && (
+        <Dialog
+          open={true}
+          onClose={() => setCalculationDetailsOpen(null)}
+          maxWidth="md"
+          fullWidth
+          PaperComponent={({ children, ...props }) => (
+            <Paper
+              {...props}
+              sx={{
+                cursor: 'move',
+                maxHeight: '80vh',
+                overflow: 'auto'
+              }}
+              draggable
+              onDragStart={(e) => {
+                // Allow dragging
+                e.dataTransfer.effectAllowed = 'move';
+              }}
+            >
+              {children}
+            </Paper>
+          )}
+        >
+          <DialogTitle sx={{ 
+            bgcolor: calculationDetailsOpen === 'performance' ? '#00bcd4' : 
+                     calculationDetailsOpen === 'durability' ? '#4caf50' : '#ff9800',
+            color: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between'
+          }}>
+            <span>
+              {calculationDetailsOpen === 'performance' && '⚡ Performance Calculations'}
+              {calculationDetailsOpen === 'durability' && '🛡️ Durability Calculations'}
+              {calculationDetailsOpen === 'economic' && '💰 Economic Calculations'}
+            </span>
+            <IconButton onClick={() => setCalculationDetailsOpen(null)} sx={{ color: 'white' }}>
+              <Close />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent sx={{ mt: 2, fontFamily: 'monospace', fontSize: '12px' }}>
+            {calculationDetailsOpen === 'performance' && (
+              <Box>
+                <Typography variant="h6" gutterBottom>Performance Score: {currentScores?.performance.toFixed(1)}/100</Typography>
+                
+                {/* Safety Margin */}
+                {result.components.safety_margin && (
+                  <Box sx={{ mb: 3, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>Safety Margin</Typography>
+                    <Typography variant="body2">
+                      Operating Pressure: {inputs?.operating_pressure?.toFixed(1) || 10} bar
+                    </Typography>
+                    <Typography variant="body2">
+                      Rated Pressure: {result.components.burst_pressure ? (result.components.burst_pressure.value / 4).toFixed(1) : 'N/A'} bar
+                    </Typography>
+                    <Typography variant="body2">
+                      Safety Margin: {result.components.safety_margin.value.toFixed(1)}%
+                      {result.components.safety_margin.value >= 50 && ' ✓ Safe'}
+                      {result.components.safety_margin.value < 50 && result.components.safety_margin.value >= 20 && ' ⚠️ Caution'}
+                      {result.components.safety_margin.value < 20 && ' ✗ Danger'}
+                    </Typography>
+                    {result.components.safety_margin.calculation_steps && (
+                      <Box sx={{ mt: 1, pl: 2, borderLeft: '2px solid #00bcd4' }}>
+                        {result.components.safety_margin.calculation_steps.map((step: string, i: number) => (
+                          <Typography key={i} variant="caption" sx={{ display: 'block', color: '#666' }}>
+                            {step}
+                          </Typography>
+                        ))}
+                      </Box>
+                    )}
+                  </Box>
+                )}
+                
+                {/* Velocity */}
+                {result.components.velocity && (
+                  <Box sx={{ mb: 3, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>Flow Velocity</Typography>
+                    <Typography variant="body2">
+                      Velocity: {result.components.velocity.value.toFixed(2)} m/s
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontStyle: 'italic', color: '#666' }}>
+                      {result.components.velocity.formula}
+                    </Typography>
+                    {result.components.velocity.calculation_steps && (
+                      <Box sx={{ mt: 1, pl: 2, borderLeft: '2px solid #00bcd4' }}>
+                        {result.components.velocity.calculation_steps.map((step: string, i: number) => (
+                          <Typography key={i} variant="caption" sx={{ display: 'block', color: '#666' }}>
+                            {step}
+                          </Typography>
+                        ))}
+                      </Box>
+                    )}
+                  </Box>
+                )}
+                
+                {/* Pressure Drop */}
+                {result.components.deltaP && (
+                  <Box sx={{ mb: 3, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>Pressure Drop (P-Drop)</Typography>
+                    <Typography variant="body2">
+                      ΔP: {result.components.deltaP.value.toFixed(3)} bar
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontStyle: 'italic', color: '#666' }}>
+                      {result.components.deltaP.formula}
+                    </Typography>
+                    {result.components.deltaP.calculation_steps && (
+                      <Box sx={{ mt: 1, pl: 2, borderLeft: '2px solid #00bcd4' }}>
+                        {result.components.deltaP.calculation_steps.map((step: string, i: number) => (
+                          <Typography key={i} variant="caption" sx={{ display: 'block', color: '#666' }}>
+                            {step}
+                          </Typography>
+                        ))}
+                      </Box>
+                    )}
+                  </Box>
+                )}
+                
+                {/* Overall Score */}
+                <Box sx={{ p: 2, bgcolor: '#e3f2fd', borderRadius: 1 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>Performance Score Formula</Typography>
+                  <Typography variant="body2">
+                    Score = 40% × ΔP + 20% × Velocity + 40% × Safety Margin
+                  </Typography>
+                  <Typography variant="body2" sx={{ mt: 1, fontWeight: 'bold' }}>
+                    Result: {currentScores?.performance.toFixed(1)}/100
+                  </Typography>
+                </Box>
+              </Box>
+            )}
+            
+            {calculationDetailsOpen === 'durability' && (
+              <Box>
+                <Typography variant="h6" gutterBottom>Durability Score: {currentScores?.durability.toFixed(1)}/100</Typography>
+                
+                {/* Material Properties */}
+                <Box sx={{ mb: 3, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>Material Configuration</Typography>
+                  <Typography variant="body2">
+                    Material: {inputs?.material_type || 'PVC'}
+                  </Typography>
+                  <Typography variant="body2">
+                    Reinforcement: {inputs?.reinforcement_type || 'Textile'}
+                  </Typography>
+                  <Typography variant="body2">
+                    Inner Diameter: {(inputs?.Di * 1000 || 15).toFixed(1)} mm
+                  </Typography>
+                  <Typography variant="body2">
+                    Outer Diameter: {(inputs?.Do * 1000 || 21).toFixed(1)} mm
+                  </Typography>
+                </Box>
+                
+                {/* Environmental Factors */}
+                <Box sx={{ mb: 3, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>Environmental Factors</Typography>
+                  <Typography variant="body2">
+                    Ambient Temperature: {inputs?.ambient_temp?.toFixed(0) || '20'}°C
+                  </Typography>
+                  <Typography variant="body2">
+                    UV Exposure: {inputs?.uv_exposure?.toFixed(1) || '5'} hrs/day
+                  </Typography>
+                  <Typography variant="body2">
+                    Climate Zone: {inputs?.climate_zone || 'Temperate'}
+                  </Typography>
+                </Box>
+                
+                {/* Lifespan */}
+                {result.components.lifespan && (
+                  <Box sx={{ mb: 3, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>Expected Lifespan</Typography>
+                    <Typography variant="body2">
+                      Lifespan: {result.components.lifespan.value.toFixed(1)} years
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontStyle: 'italic', color: '#666' }}>
+                      {result.components.lifespan.formula}
+                    </Typography>
+                    {result.components.lifespan.calculation_steps && (
+                      <Box sx={{ mt: 1, pl: 2, borderLeft: '2px solid #4caf50' }}>
+                        {result.components.lifespan.calculation_steps.map((step: string, i: number) => (
+                          <Typography key={i} variant="caption" sx={{ display: 'block', color: '#666' }}>
+                            {step}
+                          </Typography>
+                        ))}
+                      </Box>
+                    )}
+                  </Box>
+                )}
+              </Box>
+            )}
+            
+            {calculationDetailsOpen === 'economic' && (
+              <Box>
+                <Typography variant="h6" gutterBottom>Economic Score: {currentScores?.economic.toFixed(1)}/100</Typography>
+                
+                {/* Material Cost */}
+                {result.components.material_cost && (
+                  <Box sx={{ mb: 3, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>Material Cost</Typography>
+                    <Typography variant="body2">
+                      Total: £{result.components.material_cost.value.toFixed(2)}
+                    </Typography>
+                    <Typography variant="body2">
+                      Per Meter: £{(result.components.material_cost.value / (inputs?.total_system_length || 100)).toFixed(2)}/m
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontStyle: 'italic', color: '#666' }}>
+                      {result.components.material_cost.formula}
+                    </Typography>
+                    {result.components.material_cost.calculation_steps && (
+                      <Box sx={{ mt: 1, pl: 2, borderLeft: '2px solid #ff9800' }}>
+                        {result.components.material_cost.calculation_steps.map((step: string, i: number) => (
+                          <Typography key={i} variant="caption" sx={{ display: 'block', color: '#666' }}>
+                            {step}
+                          </Typography>
+                        ))}
+                      </Box>
+                    )}
+                  </Box>
+                )}
+                
+                {/* Installation Cost */}
+                {result.components.installation_cost && (
+                  <Box sx={{ mb: 3, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>Installation Cost</Typography>
+                    <Typography variant="body2">
+                      Total: £{result.components.installation_cost.value.toFixed(2)}
+                    </Typography>
+                    <Typography variant="body2">
+                      Per Meter: £{(inputs?.installation_cost_per_meter || 0).toFixed(2)}/m
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontStyle: 'italic', color: '#666' }}>
+                      {result.components.installation_cost.formula}
+                    </Typography>
+                  </Box>
+                )}
+                
+                {/* Lifespan & Replacements */}
+                {result.components.lifespan && (
+                  <Box sx={{ mb: 3, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>Lifespan & Replacements</Typography>
+                    <Typography variant="body2">
+                      Expected Lifespan: {result.components.lifespan.value.toFixed(1)} years
+                    </Typography>
+                    <Typography variant="body2">
+                      Replacements (10yr): {Math.ceil(10 / (result.components.lifespan.value || 1))}×
+                    </Typography>
+                  </Box>
+                )}
+                
+                {/* Energy Cost */}
+                {result.components.energy_cost && (
+                  <Box sx={{ mb: 3, p: 2, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>Energy Cost (10yr)</Typography>
+                    <Typography variant="body2">
+                      Total: £{result.components.energy_cost.value.toFixed(2)}
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontStyle: 'italic', color: '#666' }}>
+                      {result.components.energy_cost.formula}
+                    </Typography>
+                    {result.components.energy_cost.calculation_steps && (
+                      <Box sx={{ mt: 1, pl: 2, borderLeft: '2px solid #ff9800' }}>
+                        {result.components.energy_cost.calculation_steps.map((step: string, i: number) => (
+                          <Typography key={i} variant="caption" sx={{ display: 'block', color: '#666' }}>
+                            {step}
+                          </Typography>
+                        ))}
+                      </Box>
+                    )}
+                  </Box>
+                )}
+                
+                {/* Total Cost */}
+                {result.components.total_cost && (
+                  <Box sx={{ p: 2, bgcolor: '#fff3e0', borderRadius: 1 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>Total 10-Year Cost</Typography>
+                    <Typography variant="body2">
+                      £{result.components.total_cost.value.toFixed(0)} (material + energy)
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontStyle: 'italic', color: '#666' }}>
+                      {result.components.total_cost.formula}
+                    </Typography>
+                    {result.components.total_cost.calculation_steps && (
+                      <Box sx={{ mt: 1, pl: 2, borderLeft: '2px solid #ff9800' }}>
+                        {result.components.total_cost.calculation_steps.map((step: string, i: number) => (
+                          <Typography key={i} variant="caption" sx={{ display: 'block', color: '#666' }}>
+                            {step}
+                          </Typography>
+                        ))}
+                      </Box>
+                    )}
+                  </Box>
+                )}
+                
+                {/* ROI Analysis (if baseline exists) */}
+                {baseline?.result?.components && (
+                  <Box sx={{ mt: 3, p: 2, bgcolor: '#e8f5e9', borderRadius: 1 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>ROI Analysis vs Baseline</Typography>
+                    {(() => {
+                      const baselineMaterial = baseline.result.components.material_cost?.value || 0;
+                      const proposedMaterial = result.components.material_cost?.value || 0;
+                      const installationCost = result.components.installation_cost?.value || 0;
+                      const extraUpfront = (proposedMaterial - baselineMaterial) + installationCost;
+                      const baselineTotal = baseline.result.components.total_cost?.value || 0;
+                      const proposedTotal = result.components.total_cost?.value || 0;
+                      const annualSavings = (baselineTotal - proposedTotal) / 10;
+                      const paybackYears = annualSavings > 0 ? extraUpfront / annualSavings : null;
+                      
+                      return (
+                        <>
+                          <Typography variant="body2">
+                            Extra Upfront Cost: £{extraUpfront.toFixed(0)}
+                          </Typography>
+                          <Typography variant="body2">
+                            Annual Savings: £{annualSavings.toFixed(0)}/yr
+                          </Typography>
+                          {paybackYears !== null && paybackYears > 0 && (
+                            <Typography variant="body2" sx={{ fontWeight: 'bold', color: paybackYears < 10 ? '#2e7d32' : '#d32f2f' }}>
+                              Payback Period: {paybackYears.toFixed(1)} years {paybackYears < 10 ? '✓ Good' : '✗ Exceeds 10yr'}
+                            </Typography>
+                          )}
+                          {annualSavings <= 0 && (
+                            <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#d32f2f' }}>
+                              ⚠️ No savings - baseline is cheaper
+                            </Typography>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </Box>
+                )}
+              </Box>
+            )}
+          </DialogContent>
+        </Dialog>
+      )}
     </ThemeProvider>
   )
 }
