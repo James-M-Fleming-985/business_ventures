@@ -60,6 +60,9 @@ class DataIngestionService:
         stats.update(self._fetch_gdp_data())
         stats.update(self._fetch_arxiv_data())
         stats.update(self._fetch_clinical_trials_data())
+        stats.update(self._fetch_google_trends_data())
+        stats.update(self._fetch_fred_data())
+        stats.update(self._fetch_usgs_earthquakes_data())
         
         # Update job status
         with get_db_session() as session:
@@ -492,6 +495,227 @@ class DataIngestionService:
         
         logger.info(f"Clinical trials: {success_count} variables, {data_points} data points")
         return {'trials_fetched': success_count, 'trials_data_points': data_points}
+    
+    def _fetch_google_trends_data(self) -> dict:
+        """Fetch Google Trends data for all trend variables"""
+        logger.info("Fetching Google Trends data...")
+        
+        with get_db_session() as session:
+            trends_vars = session.query(VariableMetadata).filter(
+                VariableMetadata.source == 'google_trends',
+                VariableMetadata.is_active == True
+            ).all()
+            
+            success_count = 0
+            data_points = 0
+            
+            for var in trends_vars:
+                try:
+                    params = json.loads(var.parameters)
+                    keyword = params.get('keyword')
+                    
+                    # Fetch monthly data (300 months = 25 years)
+                    monthly_trends = self.fetcher.fetch_google_trends_monthly(
+                        keyword, months=300
+                    )
+                    
+                    if monthly_trends:
+                        # NORMALIZE to standard grid
+                        fill_method = get_fill_strategy_for_variable_type(
+                            'google_trends', var.name
+                        )
+                        aligned_data = normalize_to_standard_grid(
+                            monthly_trends,
+                            self.standard_grid,
+                            fill_method=fill_method
+                        )
+                        
+                        logger.info(
+                            f"{keyword}: {len(monthly_trends)} raw points "
+                            f"-> {len(aligned_data)} aligned points"
+                        )
+                        
+                        # Store aligned data points
+                        for date_str, volume in aligned_data.items():
+                            timestamp = datetime.strptime(date_str, "%Y-%m-%d")
+                            
+                            existing = session.query(TimeSeriesData).filter(
+                                TimeSeriesData.variable_id == var.id,
+                                TimeSeriesData.timestamp == timestamp
+                            ).first()
+                            
+                            if not existing:
+                                data_point = TimeSeriesData(
+                                    variable_id=var.id,
+                                    timestamp=timestamp,
+                                    value=float(volume),
+                                    fetched_at=datetime.utcnow()
+                                )
+                                session.add(data_point)
+                                data_points += 1
+                        
+                        success_count += 1
+                        self._update_api_status(session, 'google_trends', 'active')
+                        
+                except Exception as e:
+                    logger.error(f"Error fetching Google Trends {var.name}: {e}")
+                    self._update_api_status(session, 'google_trends', 'failed', str(e))
+            
+            session.commit()
+        
+        logger.info(f"Google Trends: {success_count} variables, {data_points} data points")
+        return {'trends_fetched': success_count, 'trends_data_points': data_points}
+    
+    def _fetch_fred_data(self) -> dict:
+        """Fetch FRED economic indicator data for all FRED variables"""
+        logger.info("Fetching FRED economic data...")
+        
+        with get_db_session() as session:
+            fred_vars = session.query(VariableMetadata).filter(
+                VariableMetadata.source == 'fred',
+                VariableMetadata.is_active == True
+            ).all()
+            
+            success_count = 0
+            data_points = 0
+            
+            for var in fred_vars:
+                try:
+                    params = json.loads(var.parameters)
+                    indicator_code = params.get('indicator_code')
+                    
+                    # Fetch monthly data (300 months = 25 years)
+                    monthly_data = self.fetcher.fetch_fred_indicator(
+                        indicator_code, months=300
+                    )
+                    
+                    if monthly_data:
+                        # NORMALIZE to standard grid
+                        fill_method = get_fill_strategy_for_variable_type(
+                            'fred', var.name
+                        )
+                        aligned_data = normalize_to_standard_grid(
+                            monthly_data,
+                            self.standard_grid,
+                            fill_method=fill_method
+                        )
+                        
+                        logger.info(
+                            f"{indicator_code}: {len(monthly_data)} raw points "
+                            f"-> {len(aligned_data)} aligned points"
+                        )
+                        
+                        # Store aligned data points
+                        for date_str, value in aligned_data.items():
+                            timestamp = datetime.strptime(date_str, "%Y-%m-%d")
+                            
+                            existing = session.query(TimeSeriesData).filter(
+                                TimeSeriesData.variable_id == var.id,
+                                TimeSeriesData.timestamp == timestamp
+                            ).first()
+                            
+                            if not existing:
+                                data_point = TimeSeriesData(
+                                    variable_id=var.id,
+                                    timestamp=timestamp,
+                                    value=float(value),
+                                    fetched_at=datetime.utcnow()
+                                )
+                                session.add(data_point)
+                                data_points += 1
+                        
+                        success_count += 1
+                        self._update_api_status(session, 'fred', 'active')
+                        
+                except Exception as e:
+                    logger.error(f"Error fetching FRED data {var.name}: {e}")
+                    self._update_api_status(session, 'fred', 'failed', str(e))
+            
+            session.commit()
+        
+        logger.info(f"FRED: {success_count} variables, {data_points} data points")
+        return {'fred_fetched': success_count, 'fred_data_points': data_points}
+    
+    def _fetch_usgs_earthquakes_data(self) -> dict:
+        """Fetch USGS earthquake data with count/magnitude aggregation"""
+        logger.info("Fetching USGS earthquake data (enhanced)...")
+        
+        with get_db_session() as session:
+            # Get all USGS variables (count, avg_magnitude, max_magnitude)
+            usgs_vars = session.query(VariableMetadata).filter(
+                VariableMetadata.source == 'usgs_enhanced',
+                VariableMetadata.is_active == True
+            ).all()
+            
+            if not usgs_vars:
+                return {'usgs_enhanced_fetched': 0}
+            
+            success_count = 0
+            data_points = 0
+            
+            # Fetch earthquake data once (aggregated)
+            try:
+                monthly_earthquakes = self.fetcher.fetch_usgs_earthquakes_monthly(
+                    region='global', months=300
+                )
+                
+                if monthly_earthquakes:
+                    # For each variable (count, avg_magnitude, max_magnitude)
+                    for var in usgs_vars:
+                        params = json.loads(var.parameters)
+                        metric = params.get('metric')  # 'count', 'avg_magnitude', or 'max_magnitude'
+                        
+                        # Extract specific metric from aggregated data
+                        metric_data = {}
+                        for date_str, values in monthly_earthquakes.items():
+                            metric_data[date_str] = values.get(metric, 0.0)
+                        
+                        # NORMALIZE to standard grid
+                        fill_method = get_fill_strategy_for_variable_type(
+                            'usgs_enhanced', var.name
+                        )
+                        aligned_data = normalize_to_standard_grid(
+                            metric_data,
+                            self.standard_grid,
+                            fill_method=fill_method
+                        )
+                        
+                        logger.info(
+                            f"USGS {metric}: {len(metric_data)} raw points "
+                            f"-> {len(aligned_data)} aligned points"
+                        )
+                        
+                        # Store aligned data points
+                        for date_str, value in aligned_data.items():
+                            timestamp = datetime.strptime(date_str, "%Y-%m-%d")
+                            
+                            existing = session.query(TimeSeriesData).filter(
+                                TimeSeriesData.variable_id == var.id,
+                                TimeSeriesData.timestamp == timestamp
+                            ).first()
+                            
+                            if not existing:
+                                data_point = TimeSeriesData(
+                                    variable_id=var.id,
+                                    timestamp=timestamp,
+                                    value=float(value),
+                                    fetched_at=datetime.utcnow()
+                                )
+                                session.add(data_point)
+                                data_points += 1
+                        
+                        success_count += 1
+                    
+                    self._update_api_status(session, 'usgs_enhanced', 'active')
+                    
+            except Exception as e:
+                logger.error(f"Error fetching USGS enhanced data: {e}")
+                self._update_api_status(session, 'usgs_enhanced', 'failed', str(e))
+            
+            session.commit()
+        
+        logger.info(f"USGS Enhanced: {success_count} variables, {data_points} data points")
+        return {'usgs_enhanced_fetched': success_count, 'usgs_enhanced_data_points': data_points}
     
     def _update_api_status(self, session, source: str, status: str, error: str = None):
         """Update API status in database"""

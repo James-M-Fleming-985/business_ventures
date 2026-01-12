@@ -8,6 +8,7 @@ import axios from 'axios'
 import * as THREE from 'three'
 import EngineSelector from './components/EngineSelector'
 import VisualizationModeSelector from './components/VisualizationModeSelector'
+import packageJson from '../package.json'
 
 // Use VITE_API_URL and add protocol if missing (same as AuthContext)
 let API_BASE_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -643,12 +644,8 @@ function App() {
 
   // Fetch version information
   useEffect(() => {
-    // Get frontend version from package.json via import
-    import('../../package.json').then(pkg => {
-      setFrontendVersion(`v${pkg.version}`)
-    }).catch(() => {
-      setFrontendVersion('v1.3.1')
-    })
+    // Set frontend version from package.json (imported at top)
+    setFrontendVersion(`v${packageJson.version}`)
     
     // Get backend version from API
     axios.get(`${API_BASE_URL}/api/version`)

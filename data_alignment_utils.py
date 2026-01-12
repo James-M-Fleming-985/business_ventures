@@ -144,7 +144,7 @@ def get_fill_strategy_for_variable_type(
         return 'interpolate'
     
     # Event counts: forward fill with zero
-    if source in ['usgs', 'nasa_eonet']:
+    if source in ['usgs', 'nasa_eonet', 'usgs_enhanced']:
         return 'ffill'
     
     # Paper counts: interpolate
@@ -154,6 +154,14 @@ def get_fill_strategy_for_variable_type(
     # Clinical trials: forward fill
     if source == 'clinicaltrials':
         return 'ffill'
+    
+    # Google Trends: interpolate (smooth consumer behavior trends)
+    if source == 'google_trends':
+        return 'interpolate'
+    
+    # FRED economic indicators: interpolate (smooth economic transitions)
+    if source == 'fred':
+        return 'interpolate'
     
     # Default: forward fill (conservative)
     return 'ffill'
