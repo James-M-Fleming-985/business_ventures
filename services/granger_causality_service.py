@@ -168,36 +168,37 @@ class GrangerCausalityService:
             # Determine overall causal direction
             direction = self._determine_direction(xy_result, yx_result)
             
+            # Convert numpy types to Python types for JSON serialization
             return {
                 'var1': {
-                    'id': var1_id,
-                    'name': var1.display_name
+                    'id': int(var1_id),
+                    'name': str(var1.display_name)
                 },
                 'var2': {
-                    'id': var2_id,
-                    'name': var2.display_name
+                    'id': int(var2_id),
+                    'name': str(var2.display_name)
                 },
                 'var1_to_var2': {
-                    'p_value': xy_result.p_value,
-                    'test_statistic': xy_result.test_statistic,
-                    'lags': xy_result.lags,
-                    'significant': xy_result.reject_null,
+                    'p_value': float(xy_result.p_value),
+                    'test_statistic': float(xy_result.test_statistic),
+                    'lags': int(xy_result.lags) if isinstance(xy_result.lags, (int, np.integer)) else xy_result.lags,
+                    'significant': bool(xy_result.reject_null),
                     'interpretation': self._interpret_result(var1.display_name, var2.display_name, xy_result)
                 },
                 'var2_to_var1': {
-                    'p_value': yx_result.p_value,
-                    'test_statistic': yx_result.test_statistic,
-                    'lags': yx_result.lags,
-                    'significant': yx_result.reject_null,
+                    'p_value': float(yx_result.p_value),
+                    'test_statistic': float(yx_result.test_statistic),
+                    'lags': int(yx_result.lags) if isinstance(yx_result.lags, (int, np.integer)) else yx_result.lags,
+                    'significant': bool(yx_result.reject_null),
                     'interpretation': self._interpret_result(var2.display_name, var1.display_name, yx_result)
                 },
-                'frequency': resample_rule,
+                'frequency': str(resample_rule),
                 'frequency_note': f'Downsampled to {resample_rule} using real observations (not interpolated)',
-                'causal_direction': direction,
-                'sample_size': len(common_timestamps),
+                'causal_direction': str(direction),
+                'sample_size': int(len(common_timestamps)),
                 'date_range': {
-                    'start': common_timestamps[0].strftime('%Y-%m-%d'),
-                    'end': common_timestamps[-1].strftime('%Y-%m-%d')
+                    'start': pd.Timestamp(common_timestamps[0]).strftime('%Y-%m-%d'),
+                    'end': pd.Timestamp(common_timestamps[-1]).strftime('%Y-%m-%d')
                 },
                 'explanation': self._generate_explanation(var1.display_name, var2.display_name, 
                                                          xy_result, yx_result, direction)
