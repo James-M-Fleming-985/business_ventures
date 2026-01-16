@@ -179,8 +179,7 @@ function ProfileShapeVisualization({
             position={[animatedScores.performance, 0, 0]}
             onPointerOver={(e) => { e.stopPropagation(); setHoveredSphere('performance'); }}
             onPointerOut={(e) => { e.stopPropagation(); setHoveredSphere(null); }}
-            onClick={(e) => { e.stopPropagation(); setCalculationDetailsOpen('performance'); }}
-            style={{ cursor: 'pointer' }}
+            onClick={(e) => { e.stopPropagation(); setCalculationDetailsOpen('performance'); console.log('Performance sphere clicked'); }}
           >
             <sphereGeometry args={[3, 32, 32]} />
             <meshStandardMaterial color="#00bcd4" emissive="#00bcd4" emissiveIntensity={hoveredSphere === 'performance' ? 2.0 : 1.2} />
@@ -311,8 +310,7 @@ function ProfileShapeVisualization({
             position={[0, animatedScores.durability, 0]}
             onPointerOver={(e) => { e.stopPropagation(); setHoveredSphere('durability'); }}
             onPointerOut={(e) => { e.stopPropagation(); setHoveredSphere(null); }}
-            onClick={(e) => { e.stopPropagation(); setCalculationDetailsOpen('durability'); }}
-            style={{ cursor: 'pointer' }}
+            onClick={(e) => { e.stopPropagation(); setCalculationDetailsOpen('durability'); console.log('Durability sphere clicked'); }}
           >
             <sphereGeometry args={[3, 32, 32]} />
             <meshStandardMaterial color="#4caf50" emissive="#4caf50" emissiveIntensity={hoveredSphere === 'durability' ? 2.0 : 1.2} />
@@ -415,8 +413,7 @@ function ProfileShapeVisualization({
             position={[0, 0, animatedScores.economic]}
             onPointerOver={(e) => { e.stopPropagation(); setHoveredSphere('economic'); }}
             onPointerOut={(e) => { e.stopPropagation(); setHoveredSphere(null); }}
-            onClick={(e) => { e.stopPropagation(); setCalculationDetailsOpen('economic'); }}
-            style={{ cursor: 'pointer' }}
+            onClick={(e) => { e.stopPropagation(); setCalculationDetailsOpen('economic'); console.log('Economic sphere clicked'); }}
           >
             <sphereGeometry args={[3, 32, 32]} />
             <meshStandardMaterial color="#ff9800" emissive="#ff9800" emissiveIntensity={hoveredSphere === 'economic' ? 2.0 : 1.2} />
