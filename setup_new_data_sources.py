@@ -63,9 +63,9 @@ def setup_google_trends_variables():
     for keyword in keywords:
         trends_variables.append({
             'name': f'Google Trends: {keyword.title()}',
-            'description': f'Google search volume for "{keyword}" keyword',
+            'display_name': f'Google Trends: {keyword.title()}',
             'source': 'google_trends',
-            'variable_type': 'consumer_signal',
+            'data_type': 'time_series',
             'parameters': json.dumps({'keyword': keyword}),
             'unit': 'search_volume',
             'is_active': True
@@ -163,12 +163,12 @@ def setup_fred_variables():
     ]
     
     fred_variables = []
-    for code, description, unit in indicators:
+    for code, desc, unit in indicators:
         fred_variables.append({
-            'name': f'FRED: {description}',
-            'description': f'{description} ({code})',
+            'name': f'FRED: {desc}',
+            'display_name': f'FRED: {desc}',
             'source': 'fred',
-            'variable_type': 'economic_indicator',
+            'data_type': 'time_series',
             'parameters': json.dumps({'indicator_code': code}),
             'unit': unit,
             'is_active': True
@@ -200,27 +200,27 @@ def setup_usgs_enhanced_variables():
     usgs_variables = [
         {
             'name': 'USGS: Earthquake Count (Global)',
-            'description': 'Monthly count of earthquakes magnitude > 4.0',
+            'display_name': 'USGS: Earthquake Count (Global)',
             'source': 'usgs_enhanced',
-            'variable_type': 'natural_event',
+            'data_type': 'count',
             'parameters': json.dumps({'region': 'global', 'metric': 'count'}),
             'unit': 'count',
             'is_active': True
         },
         {
             'name': 'USGS: Earthquake Avg Magnitude (Global)',
-            'description': 'Average earthquake magnitude per month',
+            'display_name': 'USGS: Earthquake Avg Magnitude (Global)',
             'source': 'usgs_enhanced',
-            'variable_type': 'natural_event',
+            'data_type': 'time_series',
             'parameters': json.dumps({'region': 'global', 'metric': 'avg_magnitude'}),
             'unit': 'magnitude',
             'is_active': True
         },
         {
             'name': 'USGS: Earthquake Max Magnitude (Global)',
-            'description': 'Maximum earthquake magnitude per month',
+            'display_name': 'USGS: Earthquake Max Magnitude (Global)',
             'source': 'usgs_enhanced',
-            'variable_type': 'natural_event',
+            'data_type': 'time_series',
             'parameters': json.dumps({'region': 'global', 'metric': 'max_magnitude'}),
             'unit': 'magnitude',
             'is_active': True
