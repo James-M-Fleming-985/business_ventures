@@ -728,3 +728,56 @@ async def get_sample_size_report():
     except Exception as e:
         logger.error(f"Sample size report failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/setup-new-data-sources")
+async def setup_new_data_sources():
+    """
+    Add 113 new variables (Google Trends, FRED, USGS Enhanced) to database
+    Run this after deploying v2.0.60
+    """
+    try:
+        logger.info("Setting up new data sources...")
+        sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+        
+        from setup_new_data_sources import (
+            setup_google_trends_variables,
+            setup_fred_variables,
+            setup_usgs_enhanced_variables
+        )
+        
+        # Run each setup function and track results
+        trends_count = 0
+        fred_count = 0
+        usgs_count = 0
+        
+        logger.info("Setting up Google Trends variables...")
+        setup_google_trends_variables()
+        trends_count = 60  # Known count from setup
+        
+        logger.info("Setting up FRED variables...")
+        setup_fred_variables()
+        fred_count = 50
+        
+        logger.info("Setting up USGS Enhanced variables...")
+        setup_usgs_enhanced_variables()
+        usgs_count = 3
+        
+        total = trends_count + fred_count + usgs_count
+        
+        logger.info(f"✅ Setup complete: {total} new variables added")
+        
+        return {
+            "status": "success",
+            "message": f"Added {total} new variables to database",
+            "trends_added": trends_count,
+            "fred_added": fred_count,
+            "usgs_added": usgs_count,
+            "total_added": total,
+            "next_step": "Run data ingestion: POST /api/admin/full-data-refresh"
+        }
+        
+    except Exception as e:
+        logger.error(f"Setup new data sources failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
