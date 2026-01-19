@@ -509,10 +509,16 @@ class DataIngestionService:
             success_count = 0
             data_points = 0
             
-            for var in trends_vars:
+            for idx, var in enumerate(trends_vars):
                 try:
                     params = json.loads(var.parameters)
                     keyword = params.get('keyword')
+                    
+                    # Add 5-second delay between requests to avoid rate limiting
+                    if idx > 0:
+                        import time
+                        logger.info(f"Waiting 5 seconds before next Google Trends request...")
+                        time.sleep(5)
                     
                     # Fetch monthly data (300 months = 25 years)
                     monthly_trends = self.fetcher.fetch_google_trends_monthly(

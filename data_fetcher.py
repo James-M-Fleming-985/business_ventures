@@ -678,30 +678,56 @@ class DataFetcher:
         
         try:
             from dateutil.relativedelta import relativedelta
+            import time
             
             end_date = datetime.now()
             start_date = end_date - relativedelta(months=months)
             
-            # Build payload
+            # Build payload with retry logic for rate limiting
             timeframe = f"{start_date.strftime('%Y-%m-%d')} {end_date.strftime('%Y-%m-%d')}"
-            self.trends_client.build_payload([keyword], timeframe=timeframe)
             
-            # Get interest over time
-            df = self.trends_client.interest_over_time()
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    # Add delay to avoid rate limiting
+                    if attempt > 0:
+                        wait_time = (attempt + 1) * 10  # 10s, 20s, 30s
+                        logger.info(f"Waiting {wait_time}s before retry {attempt + 1}...")
+                        time.sleep(wait_time)
+                    
+                    # Reinitialize client on retry to get fresh connection
+                    if attempt > 0:
+                        from pytrends.request import TrendReq
+                        self.trends_client = TrendReq(hl='en-US', tz=360, timeout=(10, 25))
+                    
+                    self.trends_client.build_payload([keyword], timeframe=timeframe)
+                    
+                    # Get interest over time
+                    df = self.trends_client.interest_over_time()
+                    
+                    if df is None or df.empty:
+                        logger.warning(f"No Google Trends data found for keyword: {keyword}")
+                        return None
+                    
+                    # Convert to monthly dict
+                    trends_data = {}
+                    for index, row in df.iterrows():
+                        # Normalize to first of month
+                        month_key = index.strftime('%Y-%m-01')
+                        trends_data[month_key] = float(row[keyword])
+                    
+                    logger.info(f"Fetched {len(trends_data)} months of Google Trends data for '{keyword}'")
+                    return trends_data
+                    
+                except Exception as e:
+                    if '429' in str(e) and attempt < max_retries - 1:
+                        logger.warning(f"Rate limited on attempt {attempt + 1}, will retry...")
+                        continue
+                    else:
+                        raise
             
-            if df is None or df.empty:
-                logger.warning(f"No Google Trends data found for keyword: {keyword}")
-                return None
-            
-            # Convert to monthly dict
-            trends_data = {}
-            for index, row in df.iterrows():
-                # Normalize to first of month
-                month_key = index.strftime('%Y-%m-01')
-                trends_data[month_key] = float(row[keyword])
-            
-            logger.info(f"Fetched {len(trends_data)} months of Google Trends data for '{keyword}'")
-            return trends_data
+            logger.error(f"Failed after {max_retries} attempts")
+            return None
             
         except Exception as e:
             logger.error(f"Error fetching Google Trends for '{keyword}': {e}")
