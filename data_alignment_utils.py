@@ -131,37 +131,62 @@ def get_fill_strategy_for_variable_type(
 ) -> str:
     """
     Determine best fill strategy based on variable type.
+    Uses the centralized data_source_registry for consistency.
     
     Returns:
-        'ffill', 'interpolate', or 'none'
+        'ffill', 'interpolate', 'bfill', 'zero', or 'none'
     """
-    # Economic indicators: forward fill (values change slowly)
-    if source in ['worldbank', 'fred']:
-        return 'ffill'
+    # Try to use centralized registry first
+    try:
+        from data_source_registry import get_fill_strategy
+        strategy = get_fill_strategy(source)
+        if strategy:
+            return strategy
+    except ImportError:
+        pass  # Fall back to hardcoded strategies
     
-    # Stock prices: interpolate (smooth transitions)
-    if source == 'alpha_vantage':
+    # Fallback: hardcoded strategies (keep in sync with registry!)
+    # =========================================================================
+    # LAYER 1: FAST (Behavioral) - Interpolate for smooth trends
+    # =========================================================================
+    if source == 'wikipedia':
         return 'interpolate'
     
-    # Event counts: forward fill with zero
-    if source in ['usgs', 'nasa_eonet', 'usgs_enhanced']:
-        return 'ffill'
-    
-    # Paper counts: interpolate
-    if source == 'arxiv':
+    if source == 'reddit':
         return 'interpolate'
     
-    # Clinical trials: forward fill
-    if source == 'clinicaltrials':
-        return 'ffill'
+    if source == 'github':
+        return 'ffill'  # Stars are cumulative
     
-    # Google Trends: interpolate (smooth consumer behavior trends)
     if source == 'google_trends':
         return 'interpolate'
     
-    # FRED economic indicators: interpolate (smooth economic transitions)
+    # =========================================================================
+    # LAYER 2: MEDIUM (Market/Operational)
+    # =========================================================================
+    if source == 'alpha_vantage':
+        return 'interpolate'
+    
     if source == 'fred':
         return 'interpolate'
+    
+    if source == 'arxiv':
+        return 'interpolate'
+    
+    if source == 'clinicaltrials':
+        return 'ffill'
+    
+    if source in ['usgs', 'usgs_enhanced']:
+        return 'ffill'
+    
+    if source == 'nasa_eonet':
+        return 'ffill'
+    
+    # =========================================================================
+    # LAYER 3: SLOW (Structural)
+    # =========================================================================
+    if source == 'worldbank':
+        return 'ffill'  # Annual data, forward fill
     
     # Default: forward fill (conservative)
     return 'ffill'

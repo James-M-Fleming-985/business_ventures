@@ -781,3 +781,116 @@ async def setup_new_data_sources():
         logger.error(f"Setup new data sources failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@router.post("/setup-layer1-fast-signals")
+async def setup_layer1_fast_signals():
+    """
+    Add Layer 1 (Fast/Behavioral) variables to database.
+    Wikipedia Pageviews API is FREE with no rate limits - replaces Google Trends!
+    
+    Layer 1 signals move faster than market/economic data (Layer 2/3),
+    enabling early signal detection in the temporal cascade.
+    """
+    try:
+        logger.info("Setting up Layer 1: Fast Behavioral Signals...")
+        sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+        
+        from setup_layer1_fast_signals import setup_wikipedia_variables
+        
+        result = setup_wikipedia_variables()
+        
+        logger.info(f"✅ Layer 1 setup complete: {result['added']} new variables")
+        
+        return {
+            "status": "success",
+            "message": f"Added {result['added']} Wikipedia pageview variables",
+            "added": result['added'],
+            "skipped": result['skipped'],
+            "layer": "Layer 1 - Fast/Behavioral",
+            "data_source": "Wikipedia Pageviews API (FREE, no rate limits)",
+            "next_steps": [
+                "1. Deploy to Railway: git push",
+                "2. Fetch data: POST /api/admin/fetch-data",
+                "3. Recalculate correlations: POST /api/admin/calculate-correlations"
+            ]
+        }
+        
+    except Exception as e:
+        logger.error(f"Layer 1 setup failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/validate-data-universe")
+async def validate_data_universe_endpoint():
+    """
+    Validate data universe consistency.
+    
+    Checks:
+    - All sources are registered in data_source_registry
+    - Timestamps are on standard monthly grid (first of month)
+    - Data coverage by layer
+    - Variables with no data
+    
+    Returns detailed report with issues and recommendations.
+    """
+    try:
+        logger.info("Running data universe validation...")
+        sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+        
+        from validate_data_universe import validate_data_universe
+        
+        report = validate_data_universe()
+        
+        logger.info(f"Validation complete. Status: {report['status']}")
+        
+        return report
+        
+    except Exception as e:
+        logger.error(f"Validation failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/data-sources")
+async def list_data_sources():
+    """
+    List all registered data sources with configuration.
+    Shows layer, fill strategy, API requirements, and status.
+    """
+    try:
+        from data_source_registry import DATA_SOURCES, get_active_sources, SignalLayer
+        
+        sources_by_layer = {}
+        for layer in SignalLayer:
+            layer_sources = [
+                {
+                    "name": s.name,
+                    "display_name": s.display_name,
+                    "fill_strategy": s.fill_strategy.value,
+                    "update_frequency": s.update_frequency.value,
+                    "requires_api_key": s.requires_api_key,
+                    "is_active": s.is_active,
+                    "notes": s.notes
+                }
+                for s in DATA_SOURCES.values()
+                if s.layer == layer
+            ]
+            if layer_sources:
+                sources_by_layer[layer.name] = layer_sources
+        
+        active_count = len(get_active_sources())
+        total_count = len(DATA_SOURCES)
+        
+        return {
+            "total_sources": total_count,
+            "active_sources": active_count,
+            "sources_by_layer": sources_by_layer,
+            "standard_grid": {
+                "frequency": "monthly",
+                "day_of_month": 1,
+                "description": "All data normalized to first-of-month timestamps"
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to list data sources: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))

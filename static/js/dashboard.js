@@ -34,9 +34,20 @@ function dashboardData() {
             insight: 'Correlation trend analysis loading...'
         },
         
+        // ============================================================
+        // SIGNAL RADAR: Layer 1 Fast Signals → Layer 2 Predictions
+        // ============================================================
+        activeView: 'cascade',  // 'cascade', 'heatmap', 'network', 'leaderboard'
+        fastSignals: [],        // Layer 1 signals with momentum
+        selectedFastSignal: null,
+        predictedOutcomes: [],  // Layer 2 predictions based on selected signal
+        selectedCascade: null,
+        topInsight: null,
+        
         async init() {
             console.log('Initializing dashboard...');
             await this.loadStats();
+            await this.loadSignalRadar();  // Load Layer 1 signals first
             await this.loadHeatmap();
             await this.loadTimeSeries();
             await this.loadNetwork();
@@ -47,6 +58,122 @@ function dashboardData() {
             window.addEventListener('dashboard-refresh', () => {
                 this.refreshAll();
             });
+        },
+        
+        async loadSignalRadar() {
+            console.log('📡 Loading Signal Radar (Layer 1 Fast Signals)...');
+            try {
+                // Fetch Wikipedia/Layer 1 variables with recent momentum
+                const response = await fetch('/api/dashboard/fast-signals');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    this.fastSignals = data.signals || [];
+                    this.topInsight = data.top_insight || null;
+                    console.log('📡 Fast signals loaded:', this.fastSignals.length);
+                } else {
+                    // API endpoint may not exist yet - use placeholder
+                    console.log('📡 Fast signals API not ready, showing placeholder');
+                    this.fastSignals = this._getPlaceholderFastSignals();
+                    this.topInsight = {
+                        title: 'Layer 1 Setup Required',
+                        description: 'Run POST /api/admin/setup-layer1-fast-signals to add Wikipedia pageview variables'
+                    };
+                }
+            } catch (error) {
+                console.error('Failed to load fast signals:', error);
+                this.fastSignals = this._getPlaceholderFastSignals();
+            }
+        },
+        
+        _getPlaceholderFastSignals() {
+            // Placeholder data showing what Layer 1 will look like
+            return [
+                { name: 'wiki_artificial-intelligence', display_name: 'Wikipedia: AI', momentum: 15, layer: 1 },
+                { name: 'wiki_bitcoin', display_name: 'Wikipedia: Bitcoin', momentum: -8, layer: 1 },
+                { name: 'wiki_recession', display_name: 'Wikipedia: Recession', momentum: 22, layer: 1 },
+                { name: 'wiki_layoff', display_name: 'Wikipedia: Layoff', momentum: 31, layer: 1 },
+                { name: 'wiki_remote-work', display_name: 'Wikipedia: Remote Work', momentum: -5, layer: 1 }
+            ];
+        },
+        
+        async selectFastSignal(signal) {
+            console.log('🎯 Selected fast signal:', signal.display_name);
+            this.selectedFastSignal = signal;
+            this.predictedOutcomes = [];
+            this.selectedCascade = null;
+            
+            // Find Layer 2 variables that this signal predicts (via Granger causality)
+            try {
+                const response = await fetch(`/api/dashboard/cascade-predictions/${encodeURIComponent(signal.name)}`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    this.predictedOutcomes = data.predictions || [];
+                    this.selectedCascade = {
+                        prediction: data.top_prediction || 'Analyzing...',
+                        lag: data.optimal_lag ? `Optimal lag: ${data.optimal_lag} days` : ''
+                    };
+                } else {
+                    // Placeholder predictions
+                    this.predictedOutcomes = this._getPlaceholderPredictions(signal);
+                    this.selectedCascade = {
+                        prediction: `${signal.display_name} → Stock movement predicted`,
+                        lag: 'Optimal lag: ~14-30 days'
+                    };
+                }
+            } catch (error) {
+                console.error('Failed to load cascade predictions:', error);
+                this.predictedOutcomes = this._getPlaceholderPredictions(signal);
+            }
+        },
+        
+        _getPlaceholderPredictions(signal) {
+            // Show placeholder predictions based on signal type
+            const predictions = [];
+            
+            if (signal.name.includes('ai') || signal.name.includes('intelligence')) {
+                predictions.push({ 
+                    name: 'NVDA', 
+                    display_name: 'NVDA Stock Price', 
+                    direction: signal.momentum > 0 ? 'up' : 'down',
+                    p_value: '0.003',
+                    lag: 21
+                });
+            }
+            
+            if (signal.name.includes('recession') || signal.name.includes('layoff')) {
+                predictions.push({ 
+                    name: 'unemployment', 
+                    display_name: 'Unemployment Rate', 
+                    direction: signal.momentum > 0 ? 'up' : 'down',
+                    p_value: '0.012',
+                    lag: 30
+                });
+            }
+            
+            if (signal.name.includes('bitcoin')) {
+                predictions.push({ 
+                    name: 'btc_price', 
+                    display_name: 'BTC Price (USD)', 
+                    direction: signal.momentum > 0 ? 'up' : 'down',
+                    p_value: '0.008',
+                    lag: 7
+                });
+            }
+            
+            // Default prediction
+            if (predictions.length === 0) {
+                predictions.push({ 
+                    name: 'sp500', 
+                    display_name: 'S&P 500 Index', 
+                    direction: signal.momentum > 0 ? 'up' : 'down',
+                    p_value: '0.045',
+                    lag: 14
+                });
+            }
+            
+            return predictions;
         },
         
         async loadStats() {

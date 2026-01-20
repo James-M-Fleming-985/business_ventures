@@ -343,3 +343,163 @@ async def get_relationship_details(var1: str, var2: str):
             "std_y": float(np.std(y_data))
         }
     }
+
+@router.get("/fast-signals")
+async def get_fast_signals():
+    """
+    Get Layer 1 Fast Signals with momentum indicators.
+    These are behavioral signals (Wikipedia pageviews, Reddit activity, etc.)
+    that move faster than market/economic data.
+    """
+    from database import get_db_session
+    from models import VariableMetadata, TimeSeriesData
+    from sqlalchemy import func, desc
+    
+    signals = []
+    
+    try:
+        with get_db_session() as db:
+            # Get all Layer 1 (Wikipedia) variables
+            layer1_vars = db.query(VariableMetadata).filter(
+                VariableMetadata.source == 'wikipedia',
+                VariableMetadata.is_active == True
+            ).all()
+            
+            for var in layer1_vars:
+                # Get recent data points to calculate momentum
+                recent_data = db.query(TimeSeriesData).filter(
+                    TimeSeriesData.variable_id == var.id
+                ).order_by(desc(TimeSeriesData.timestamp)).limit(6).all()
+                
+                if len(recent_data) >= 2:
+                    # Calculate month-over-month momentum
+                    current = recent_data[0].value
+                    previous = recent_data[1].value
+                    momentum = ((current - previous) / max(previous, 1)) * 100
+                else:
+                    momentum = 0
+                
+                signals.append({
+                    'name': var.name,
+                    'display_name': var.display_name,
+                    'momentum': round(momentum, 1),
+                    'layer': 1,
+                    'source': var.source,
+                    'has_data': len(recent_data) > 0
+                })
+            
+            # Sort by absolute momentum (most active first)
+            signals.sort(key=lambda x: abs(x['momentum']), reverse=True)
+            
+            # Generate top insight
+            top_insight = None
+            if signals:
+                top_signal = signals[0]
+                direction = 'surging' if top_signal['momentum'] > 10 else 'rising' if top_signal['momentum'] > 0 else 'declining'
+                top_insight = {
+                    'title': f"Top Signal: {top_signal['display_name']}",
+                    'description': f"{top_signal['display_name']} is {direction} with {abs(top_signal['momentum']):.1f}% momentum. "
+                                   f"This Layer 1 behavioral signal may predict upcoming Layer 2 market movements."
+                }
+            
+            return {
+                'signals': signals[:10],  # Top 10 most active
+                'total_layer1_variables': len(layer1_vars),
+                'top_insight': top_insight
+            }
+            
+    except Exception as e:
+        import logging
+        logging.error(f"Failed to load fast signals: {e}")
+        
+        # Return placeholder if database query fails
+        return {
+            'signals': [],
+            'total_layer1_variables': 0,
+            'top_insight': {
+                'title': 'Layer 1 Setup Required',
+                'description': 'Run POST /api/admin/setup-layer1-fast-signals to add Wikipedia pageview variables for early signal detection.'
+            }
+        }
+
+
+@router.get("/cascade-predictions/{signal_name}")
+async def get_cascade_predictions(signal_name: str):
+    """
+    Get Layer 2/3 variables that the selected Layer 1 signal predicts.
+    Uses Granger causality results to find predictive relationships.
+    """
+    from database import get_db_session
+    from models import VariableMetadata, CorrelationResult
+    from sqlalchemy import or_, and_, desc
+    
+    predictions = []
+    
+    try:
+        with get_db_session() as db:
+            # Find the Layer 1 variable
+            layer1_var = db.query(VariableMetadata).filter(
+                VariableMetadata.name == signal_name
+            ).first()
+            
+            if not layer1_var:
+                return {'predictions': [], 'top_prediction': None, 'optimal_lag': None}
+            
+            # Find correlations where this variable has Granger causality
+            # (meaning Layer 1 signal → Layer 2/3 outcome)
+            causality_results = db.query(CorrelationResult).filter(
+                or_(
+                    and_(
+                        CorrelationResult.variable1_id == layer1_var.id,
+                        CorrelationResult.granger_p_value_xy != None,
+                        CorrelationResult.granger_p_value_xy < 0.05
+                    ),
+                    and_(
+                        CorrelationResult.variable2_id == layer1_var.id,
+                        CorrelationResult.granger_p_value_yx != None,
+                        CorrelationResult.granger_p_value_yx < 0.05
+                    )
+                ),
+                CorrelationResult.is_significant == True
+            ).order_by(desc(CorrelationResult.abs_correlation)).limit(5).all()
+            
+            for result in causality_results:
+                # Determine which variable is the outcome
+                if result.variable1_id == layer1_var.id:
+                    outcome_var = result.variable2
+                    p_value = result.granger_p_value_xy
+                else:
+                    outcome_var = result.variable1
+                    p_value = result.granger_p_value_yx
+                
+                # Skip if outcome is also Layer 1
+                if outcome_var.source == 'wikipedia':
+                    continue
+                
+                predictions.append({
+                    'name': outcome_var.name,
+                    'display_name': outcome_var.display_name,
+                    'direction': 'up' if result.correlation_value > 0 else 'down',
+                    'p_value': f"{p_value:.4f}",
+                    'lag': result.granger_lags or 14,
+                    'correlation': result.correlation_value
+                })
+            
+            # Generate top prediction summary
+            top_prediction = None
+            optimal_lag = None
+            if predictions:
+                top = predictions[0]
+                top_prediction = f"{layer1_var.display_name} → {top['display_name']} ({top['direction'].upper()})"
+                optimal_lag = top['lag']
+            
+            return {
+                'predictions': predictions,
+                'top_prediction': top_prediction,
+                'optimal_lag': optimal_lag
+            }
+            
+    except Exception as e:
+        import logging
+        logging.error(f"Failed to load cascade predictions: {e}")
+        return {'predictions': [], 'top_prediction': None, 'optimal_lag': None}

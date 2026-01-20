@@ -679,55 +679,67 @@ class DataFetcher:
         try:
             from dateutil.relativedelta import relativedelta
             import time
+            import pandas as pd
+            
+            # Split into smaller chunks to avoid rate limiting
+            # Google Trends allows max 5 years per request without issues
+            chunk_months = 60  # 5 years per chunk
+            all_data = {}
             
             end_date = datetime.now()
-            start_date = end_date - relativedelta(months=months)
+            remaining_months = months
+            current_end = end_date
             
-            # Build payload with retry logic for rate limiting
-            timeframe = f"{start_date.strftime('%Y-%m-%d')} {end_date.strftime('%Y-%m-%d')}"
+            while remaining_months > 0:
+                chunk_size = min(chunk_months, remaining_months)
+                current_start = current_end - relativedelta(months=chunk_size)
+                
+                timeframe = f"{current_start.strftime('%Y-%m-%d')} {current_end.strftime('%Y-%m-%d')}"
+                
+                max_retries = 3
+                for attempt in range(max_retries):
+                    try:
+                        # Add delay between chunks to avoid rate limiting
+                        if len(all_data) > 0:
+                            time.sleep(3)  # 3 seconds between chunks
+                        
+                        # Reinitialize client on retry
+                        if attempt > 0:
+                            wait_time = (attempt + 1) * 10
+                            logger.info(f"Waiting {wait_time}s before retry {attempt + 1}...")
+                            time.sleep(wait_time)
+                            from pytrends.request import TrendReq
+                            self.trends_client = TrendReq(hl='en-US', tz=360, timeout=(10, 25))
+                        
+                        self.trends_client.build_payload([keyword], timeframe=timeframe)
+                        df = self.trends_client.interest_over_time()
+                        
+                        if df is not None and not df.empty:
+                            for index, row in df.iterrows():
+                                month_key = index.strftime('%Y-%m-01')
+                                all_data[month_key] = float(row[keyword])
+                        
+                        break  # Success, move to next chunk
+                        
+                    except Exception as e:
+                        if '429' in str(e) and attempt < max_retries - 1:
+                            logger.warning(f"Rate limited on attempt {attempt + 1} for chunk, will retry...")
+                            continue
+                        elif attempt == max_retries - 1:
+                            logger.error(f"Failed to fetch chunk after {max_retries} attempts: {e}")
+                            # Continue to next chunk rather than failing completely
+                            break
+                
+                # Move to next chunk
+                remaining_months -= chunk_size
+                current_end = current_start - relativedelta(days=1)
             
-            max_retries = 3
-            for attempt in range(max_retries):
-                try:
-                    # Add delay to avoid rate limiting
-                    if attempt > 0:
-                        wait_time = (attempt + 1) * 10  # 10s, 20s, 30s
-                        logger.info(f"Waiting {wait_time}s before retry {attempt + 1}...")
-                        time.sleep(wait_time)
-                    
-                    # Reinitialize client on retry to get fresh connection
-                    if attempt > 0:
-                        from pytrends.request import TrendReq
-                        self.trends_client = TrendReq(hl='en-US', tz=360, timeout=(10, 25))
-                    
-                    self.trends_client.build_payload([keyword], timeframe=timeframe)
-                    
-                    # Get interest over time
-                    df = self.trends_client.interest_over_time()
-                    
-                    if df is None or df.empty:
-                        logger.warning(f"No Google Trends data found for keyword: {keyword}")
-                        return None
-                    
-                    # Convert to monthly dict
-                    trends_data = {}
-                    for index, row in df.iterrows():
-                        # Normalize to first of month
-                        month_key = index.strftime('%Y-%m-01')
-                        trends_data[month_key] = float(row[keyword])
-                    
-                    logger.info(f"Fetched {len(trends_data)} months of Google Trends data for '{keyword}'")
-                    return trends_data
-                    
-                except Exception as e:
-                    if '429' in str(e) and attempt < max_retries - 1:
-                        logger.warning(f"Rate limited on attempt {attempt + 1}, will retry...")
-                        continue
-                    else:
-                        raise
-            
-            logger.error(f"Failed after {max_retries} attempts")
-            return None
+            if all_data:
+                logger.info(f"Fetched {len(all_data)} months of Google Trends data for '{keyword}' across {months//chunk_months + 1} chunks")
+                return all_data
+            else:
+                logger.warning(f"No Google Trends data found for keyword: {keyword}")
+                return None
             
         except Exception as e:
             logger.error(f"Error fetching Google Trends for '{keyword}': {e}")
@@ -852,4 +864,161 @@ class DataFetcher:
             
         except Exception as e:
             logger.error(f"Error fetching USGS earthquake data: {e}")
+            return None
+    def fetch_wikipedia_pageviews_monthly(self, article: str, months: int = 60) -> Optional[Dict[str, float]]:
+        """
+        Fetch Wikipedia pageviews data (LAYER 1: FAST BEHAVIORAL SIGNALS).
+        Returns dict of {"YYYY-MM-01": monthly_pageviews}
+        
+        This is a FREE API with no rate limits - replaces Google Trends!
+        
+        Args:
+            article: Wikipedia article title (e.g., "Bitcoin", "Artificial_intelligence")
+            months: Number of months to fetch (default 60 = 5 years)
+        
+        Returns:
+            Dict mapping month to total pageviews for that month
+        """
+        try:
+            from dateutil.relativedelta import relativedelta
+            from collections import defaultdict
+            
+            end_date = datetime.now()
+            start_date = end_date - relativedelta(months=months)
+            
+            # Wikipedia Pageviews API (free, no rate limits)
+            # https://wikimedia.org/api/rest_v1/metrics/pageviews/
+            url = f"https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/all-agents/{article}/monthly/{start_date.strftime('%Y%m')}01/{end_date.strftime('%Y%m')}01"
+            
+            headers = {
+                'User-Agent': 'CausalAffectPlatform/1.0 (business_ventures; data analysis)'
+            }
+            
+            response = requests.get(url, headers=headers, timeout=30)
+            
+            if response.status_code == 404:
+                logger.warning(f"Wikipedia article not found: {article}")
+                return None
+            
+            response.raise_for_status()
+            data = response.json()
+            
+            # Parse monthly data
+            pageview_data = {}
+            for item in data.get('items', []):
+                # Format: YYYYMMDDHH -> YYYY-MM-01
+                timestamp_str = item.get('timestamp', '')
+                if len(timestamp_str) >= 8:
+                    year = timestamp_str[:4]
+                    month = timestamp_str[4:6]
+                    month_key = f"{year}-{month}-01"
+                    pageview_data[month_key] = float(item.get('views', 0))
+            
+            logger.info(f"Fetched {len(pageview_data)} months of Wikipedia pageviews for '{article}'")
+            return pageview_data
+            
+        except Exception as e:
+            logger.error(f"Error fetching Wikipedia pageviews for '{article}': {e}")
+            return None
+
+    def fetch_reddit_activity_monthly(self, subreddit: str, months: int = 60) -> Optional[Dict[str, Dict[str, float]]]:
+        """
+        Fetch Reddit activity metrics (LAYER 1: FAST BEHAVIORAL SIGNALS).
+        Uses Pushshift/Reddit API to get post/comment counts.
+        
+        Args:
+            subreddit: Subreddit name (e.g., "personalfinance", "technology")
+            months: Number of months to fetch
+        
+        Returns:
+            Dict mapping month to {posts: X, comments: Y, score_avg: Z}
+            
+        NOTE: Reddit API has restrictions. For production, consider:
+        - Reddit Developer Account (free, 100 requests/minute)
+        - Pullpush.io (pushshift.io replacement)
+        """
+        try:
+            # For now, use Reddit's public JSON endpoint
+            # This is rate-limited but works for basic data
+            url = f"https://www.reddit.com/r/{subreddit}/top.json?t=all&limit=100"
+            
+            headers = {
+                'User-Agent': 'CausalAffectPlatform/1.0'
+            }
+            
+            response = requests.get(url, headers=headers, timeout=30)
+            
+            if response.status_code == 429:
+                logger.warning(f"Reddit rate limit hit for r/{subreddit}")
+                return None
+            
+            response.raise_for_status()
+            data = response.json()
+            
+            # This is a simplified implementation - for full history would need Pushshift
+            # For now, return None and log that full implementation is needed
+            logger.info(f"Reddit API connected for r/{subreddit} - full implementation pending")
+            
+            # Return placeholder indicating API works but needs full implementation
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error fetching Reddit data for r/{subreddit}: {e}")
+            return None
+
+    def fetch_github_repo_stars_monthly(self, repo: str, months: int = 60) -> Optional[Dict[str, float]]:
+        """
+        Fetch GitHub repository star history (LAYER 1: FAST BEHAVIORAL SIGNALS).
+        Uses GitHub API to track star growth over time.
+        
+        Args:
+            repo: Repository in format "owner/repo" (e.g., "facebook/react")
+            months: Number of months to fetch
+        
+        Returns:
+            Dict mapping month to cumulative star count
+            
+        NOTE: GitHub API is rate-limited (60 requests/hour unauthenticated)
+        For production, use GITHUB_TOKEN for 5000 requests/hour
+        """
+        try:
+            github_token = os.getenv('GITHUB_TOKEN')
+            
+            headers = {
+                'Accept': 'application/vnd.github.v3+json',
+                'User-Agent': 'CausalAffectPlatform/1.0'
+            }
+            
+            if github_token:
+                headers['Authorization'] = f'token {github_token}'
+            
+            # Get repo info
+            url = f"https://api.github.com/repos/{repo}"
+            response = requests.get(url, headers=headers, timeout=30)
+            
+            if response.status_code == 404:
+                logger.warning(f"GitHub repo not found: {repo}")
+                return None
+            
+            if response.status_code == 403:
+                logger.warning(f"GitHub rate limit hit for {repo}")
+                return None
+            
+            response.raise_for_status()
+            data = response.json()
+            
+            current_stars = data.get('stargazers_count', 0)
+            created_at = datetime.strptime(data.get('created_at', '2020-01-01T00:00:00Z')[:10], '%Y-%m-%d')
+            
+            # Note: Full star history requires GitHub GraphQL API with pagination
+            # For now, return current stars as a point-in-time snapshot
+            today = datetime.now()
+            month_key = today.strftime('%Y-%m-01')
+            
+            logger.info(f"GitHub {repo}: {current_stars} stars (snapshot)")
+            
+            return {month_key: float(current_stars)}
+            
+        except Exception as e:
+            logger.error(f"Error fetching GitHub stars for '{repo}': {e}")
             return None

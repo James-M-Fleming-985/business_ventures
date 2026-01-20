@@ -63,6 +63,7 @@ class DataIngestionService:
         stats.update(self._fetch_google_trends_data())
         stats.update(self._fetch_fred_data())
         stats.update(self._fetch_usgs_earthquakes_data())
+        stats.update(self._fetch_wikipedia_pageviews_data())
         
         # Update job status
         with get_db_session() as session:
@@ -722,6 +723,93 @@ class DataIngestionService:
         
         logger.info(f"USGS Enhanced: {success_count} variables, {data_points} data points")
         return {'usgs_enhanced_fetched': success_count, 'usgs_enhanced_data_points': data_points}
+    
+    def _fetch_wikipedia_pageviews_data(self) -> dict:
+        """
+        Fetch Wikipedia pageviews data (LAYER 1: FAST BEHAVIORAL SIGNALS).
+        This replaces Google Trends which is blocked by rate limits.
+        Wikipedia Pageviews API is FREE with no rate limits!
+        """
+        logger.info("Fetching Wikipedia pageviews data (Layer 1 - Fast Signals)...")
+        
+        with get_db_session() as session:
+            wiki_vars = session.query(VariableMetadata).filter(
+                VariableMetadata.source == 'wikipedia',
+                VariableMetadata.is_active == True
+            ).all()
+            
+            if not wiki_vars:
+                logger.info("No Wikipedia variables found - skipping")
+                return {'wikipedia_fetched': 0, 'wikipedia_data_points': 0}
+            
+            success_count = 0
+            data_points = 0
+            
+            for idx, var in enumerate(wiki_vars):
+                try:
+                    params = json.loads(var.parameters) if var.parameters else {}
+                    article = params.get('article')
+                    
+                    if not article:
+                        logger.warning(f"No article specified for {var.name}")
+                        continue
+                    
+                    # Small delay between requests to be polite to Wikipedia API
+                    if idx > 0:
+                        import time
+                        time.sleep(0.5)  # 500ms delay
+                    
+                    # Fetch monthly pageviews (60 months = 5 years)
+                    monthly_pageviews = self.fetcher.fetch_wikipedia_pageviews_monthly(
+                        article, months=60
+                    )
+                    
+                    if monthly_pageviews:
+                        # NORMALIZE to standard grid
+                        fill_method = get_fill_strategy_for_variable_type(
+                            'wikipedia', var.name
+                        )
+                        aligned_data = normalize_to_standard_grid(
+                            monthly_pageviews,
+                            self.standard_grid,
+                            fill_method=fill_method
+                        )
+                        
+                        logger.info(
+                            f"Wikipedia '{article}': {len(monthly_pageviews)} raw points "
+                            f"-> {len(aligned_data)} aligned points"
+                        )
+                        
+                        # Store aligned data points
+                        for date_str, views in aligned_data.items():
+                            timestamp = datetime.strptime(date_str, "%Y-%m-%d")
+                            
+                            existing = session.query(TimeSeriesData).filter(
+                                TimeSeriesData.variable_id == var.id,
+                                TimeSeriesData.timestamp == timestamp
+                            ).first()
+                            
+                            if not existing:
+                                data_point = TimeSeriesData(
+                                    variable_id=var.id,
+                                    timestamp=timestamp,
+                                    value=float(views),
+                                    fetched_at=datetime.utcnow()
+                                )
+                                session.add(data_point)
+                                data_points += 1
+                        
+                        success_count += 1
+                        self._update_api_status(session, 'wikipedia', 'active')
+                        
+                except Exception as e:
+                    logger.error(f"Error fetching Wikipedia pageviews {var.name}: {e}")
+                    self._update_api_status(session, 'wikipedia', 'failed', str(e))
+            
+            session.commit()
+        
+        logger.info(f"Wikipedia: {success_count} variables, {data_points} data points")
+        return {'wikipedia_fetched': success_count, 'wikipedia_data_points': data_points}
     
     def _update_api_status(self, session, source: str, status: str, error: str = None):
         """Update API status in database"""
