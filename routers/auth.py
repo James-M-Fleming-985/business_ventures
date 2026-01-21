@@ -218,3 +218,58 @@ async def update_user_role(
     logger.info(f"User {target_user.email} role changed to {role} by {current_user.email}")
     
     return {"message": f"User role updated to {role}"}
+
+
+@router.put("/users/{user_id}/subscription")
+async def update_user_subscription(
+    user_id: int,
+    tier: str = Form(...),
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """Update user subscription tier (admin only)"""
+    valid_tiers = ['free', 'basic', 'pro', 'enterprise']
+    if tier not in valid_tiers:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid tier. Must be one of: {valid_tiers}"
+        )
+    
+    # Find user
+    target_user = db.query(User).filter(User.id == user_id).first()
+    if not target_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    target_user.subscription_tier = tier
+    db.commit()
+    
+    logger.info(f"User {target_user.email} subscription changed to {tier} by {current_user.email}")
+    
+    return {"message": f"User subscription updated to {tier}"}
+
+
+@router.post("/fix-superuser")
+async def fix_superuser_tier(
+    current_user: User = Depends(require_auth),
+    db: Session = Depends(get_db)
+):
+    """Fix first user to have enterprise tier (one-time fix)"""
+    # Only the first user (id=1) who is superuser can use this
+    if current_user.id != 1 or not current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the first superuser can use this endpoint"
+        )
+    
+    if current_user.subscription_tier == 'enterprise':
+        return {"message": "Already on enterprise tier", "tier": "enterprise"}
+    
+    current_user.subscription_tier = 'enterprise'
+    db.commit()
+    
+    logger.info(f"Fixed superuser {current_user.email} to enterprise tier")
+    
+    return {"message": "Upgraded to enterprise tier", "tier": "enterprise"}
