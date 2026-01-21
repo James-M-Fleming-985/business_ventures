@@ -839,6 +839,8 @@ async def get_fast_signals(db: Session = Depends(get_db)):
     that move faster than market/economic data.
     """
     from sqlalchemy import func, desc
+    from datetime import datetime
+    import calendar
     
     signals = []
     
@@ -849,17 +851,38 @@ async def get_fast_signals(db: Session = Depends(get_db)):
             VariableMetadata.is_active == True
         ).all()
         
+        # Calculate days elapsed in current month for rate normalization
+        now = datetime.utcnow()
+        current_month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        days_in_current_month = calendar.monthrange(now.year, now.month)[1]
+        days_elapsed = now.day
+        
         for var in layer1_vars:
-            # Get recent data points to calculate momentum
+            # Get recent data points including current partial month
             recent_data = db.query(TimeSeriesData).filter(
                 TimeSeriesData.variable_id == var.id
             ).order_by(desc(TimeSeriesData.timestamp)).limit(6).all()
             
             if len(recent_data) >= 2:
-                # Calculate month-over-month momentum
-                current = recent_data[0].value
-                previous = recent_data[1].value
-                momentum = ((current - previous) / max(previous, 1)) * 100
+                current_value = recent_data[0].value
+                current_date = recent_data[0].timestamp
+                previous_value = recent_data[1].value
+                previous_date = recent_data[1].timestamp
+                
+                # Check if current data is from this month (partial)
+                is_current_month = (current_date.year == now.year and 
+                                   current_date.month == now.month)
+                
+                if is_current_month and days_elapsed < days_in_current_month:
+                    # Normalize current partial month to daily rate, then project to full month
+                    daily_rate_current = current_value / max(days_elapsed, 1)
+                    projected_current = daily_rate_current * days_in_current_month
+                    
+                    # Calculate momentum using projected full-month value
+                    momentum = ((projected_current - previous_value) / max(previous_value, 1)) * 100
+                else:
+                    # Both are complete months - direct comparison
+                    momentum = ((current_value - previous_value) / max(previous_value, 1)) * 100
             else:
                 momentum = 0
             
