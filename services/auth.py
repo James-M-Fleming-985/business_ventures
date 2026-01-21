@@ -1,13 +1,8 @@
-"""
-Authentication Service for Causal Affect Platform
-JWT-based authentication with role-based access control
-"""
-
 import os
 import secrets
+import bcrypt
 from datetime import datetime, timedelta
 from typing import Optional
-from passlib.context import CryptContext
 from jose import JWTError, jwt
 from fastapi import Depends, HTTPException, status, Request, Response
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -25,30 +20,25 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
 REFRESH_TOKEN_EXPIRE_DAYS = 30
 
-# Password hashing - truncate_error=False allows bcrypt to work with passlib
-pwd_context = CryptContext(
-    schemes=["bcrypt"],
-    deprecated="auto",
-    bcrypt__rounds=12
-)
-
 # Bearer token security
 security = HTTPBearer(auto_error=False)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against its hash"""
-    return pwd_context.verify(plain_password, hashed_password)
+    password_bytes = plain_password.encode('utf-8')
+    hash_bytes = hashed_password.encode('utf-8')
+    return bcrypt.checkpw(password_bytes, hash_bytes)
 
 
 def hash_password(password: str) -> str:
     """Hash a password for storage"""
-    # Ensure password is a string and truncate if needed for bcrypt
-    if isinstance(password, bytes):
-        password = password.decode('utf-8')
     # Truncate to 72 bytes for bcrypt compatibility
     password = password[:72]
-    return pwd_context.hash(password)
+    password_bytes = password.encode('utf-8')
+    salt = bcrypt.gensalt(rounds=12)
+    hashed = bcrypt.hashpw(password_bytes, salt)
+    return hashed.decode('utf-8')
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
