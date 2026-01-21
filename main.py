@@ -206,7 +206,9 @@ async def dashboard_page(request: Request):
                 "email": user.email,
                 "display_name": user.display_name,
                 "role": user.role,
-                "is_admin": user.is_admin
+                "is_admin": user.is_admin,
+                "is_superuser": user.is_superuser,
+                "subscription_tier": user.subscription_tier
             }
         })
     finally:
