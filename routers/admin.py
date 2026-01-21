@@ -985,6 +985,55 @@ async def debug_db_data(variable_name: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/debug-granger/{variable_name}")
+async def debug_granger_results(variable_name: str):
+    """Debug: Check Granger results for a specific variable"""
+    try:
+        from database import get_db_session
+        from models import VariableMetadata, CorrelationResult
+        from sqlalchemy import or_
+        
+        with get_db_session() as session:
+            var = session.query(VariableMetadata).filter(VariableMetadata.name == variable_name).first()
+            if not var:
+                return {"error": f"Variable {variable_name} not found"}
+            
+            # Find all correlations with Granger results
+            granger_results = session.query(CorrelationResult).filter(
+                or_(
+                    CorrelationResult.variable1_id == var.id,
+                    CorrelationResult.variable2_id == var.id
+                ),
+                or_(
+                    CorrelationResult.granger_p_value_xy != None,
+                    CorrelationResult.granger_p_value_yx != None
+                )
+            ).all()
+            
+            results = []
+            for r in granger_results:
+                other_var = r.variable2 if r.variable1_id == var.id else r.variable1
+                results.append({
+                    "other_variable": other_var.name,
+                    "other_display": other_var.display_name,
+                    "correlation": r.correlation_value,
+                    "is_significant": r.is_significant,
+                    "granger_xy": r.granger_p_value_xy,
+                    "granger_yx": r.granger_p_value_yx,
+                    "lags": r.granger_lags
+                })
+            
+            return {
+                "variable": variable_name,
+                "granger_results_count": len(results),
+                "results": results[:10]  # First 10
+            }
+            
+    except Exception as e:
+        logger.error(f"Debug Granger failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/fetch-wikipedia")
 async def fetch_wikipedia_only():
     """
