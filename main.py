@@ -83,6 +83,22 @@ app.add_middleware(
 
 
 # ============================================================================
+# STARTUP EVENT - Initialize Database
+# ============================================================================
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database tables on startup."""
+    try:
+        from database import engine
+        from models import Base
+        Base.metadata.create_all(bind=engine)
+        logger.info("✅ Database tables initialized")
+    except Exception as e:
+        logger.error(f"Failed to initialize database: {e}")
+
+
+# ============================================================================
 # HEALTH CHECK
 # ============================================================================
 
