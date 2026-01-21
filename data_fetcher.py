@@ -1068,12 +1068,12 @@ class DataFetcher:
     
     def fetch_reddit_historical(self, subreddit: str, days: int = 90) -> Optional[Dict[str, Dict[str, float]]]:
         """
-        Fetch historical Reddit data using Pullpush.io API (formerly Pushshift).
-        This provides access to historical Reddit data beyond the 100-post limit.
+        Fetch extended Reddit data by combining multiple listings (new, hot, top).
+        This provides more data than a single listing's 100-post limit.
         
         Args:
             subreddit: Subreddit name
-            days: Number of days of history (can go back years)
+            days: Number of days of history
         
         Returns:
             Dict mapping date to {posts: X, total_score: Y, total_comments: Z}
@@ -1085,52 +1085,66 @@ class DataFetcher:
                 'User-Agent': 'CausalAffectPlatform/2.0 (research)'
             }
             
-            # Calculate date range
-            end_date = datetime.utcnow()
-            start_date = end_date - timedelta(days=days)
+            cutoff_date = datetime.utcnow() - timedelta(days=days)
+            all_posts = {}  # Use dict to dedupe by post ID
             
-            # Pullpush.io API endpoint
-            url = f"https://api.pullpush.io/reddit/search/submission"
+            # Fetch from multiple listings to get more coverage
+            listings = [
+                ('new', None),
+                ('top', 'month'),
+                ('top', 'year'),
+            ]
             
-            params = {
-                'subreddit': subreddit,
-                'after': int(start_date.timestamp()),
-                'before': int(end_date.timestamp()),
-                'size': 500,  # Max per request
-                'sort': 'created_utc',
-                'sort_type': 'asc'
-            }
+            for listing_type, time_filter in listings:
+                try:
+                    url = f"https://www.reddit.com/r/{subreddit}/{listing_type}.json?limit=100"
+                    if time_filter:
+                        url += f"&t={time_filter}"
+                    
+                    response = requests.get(url, headers=headers, timeout=30)
+                    
+                    if response.status_code != 200:
+                        continue
+                    
+                    data = response.json()
+                    
+                    for post in data.get('data', {}).get('children', []):
+                        post_data = post.get('data', {})
+                        post_id = post_data.get('id')
+                        if post_id:
+                            all_posts[post_id] = post_data
+                    
+                    # Rate limiting
+                    import time
+                    time.sleep(1)
+                    
+                except Exception as e:
+                    logger.warning(f"Failed to fetch {listing_type} for r/{subreddit}: {e}")
+                    continue
             
-            response = requests.get(url, headers=headers, params=params, timeout=60)
-            
-            if response.status_code != 200:
-                logger.warning(f"Pullpush API returned {response.status_code} for r/{subreddit}")
-                return None
-            
-            data = response.json()
-            posts = data.get('data', [])
-            
-            if not posts:
-                logger.info(f"No historical data from Pullpush for r/{subreddit}")
+            if not all_posts:
                 return None
             
             # Aggregate by date
             daily_data = defaultdict(lambda: {'posts': 0, 'total_score': 0, 'total_comments': 0})
             
-            for post in posts:
-                created_utc = post.get('created_utc', 0)
+            for post_id, post_data in all_posts.items():
+                created_utc = post_data.get('created_utc', 0)
                 post_time = datetime.utcfromtimestamp(created_utc)
-                date_key = post_time.strftime('%Y-%m-%d')
                 
+                if post_time < cutoff_date:
+                    continue
+                
+                date_key = post_time.strftime('%Y-%m-%d')
                 daily_data[date_key]['posts'] += 1
-                daily_data[date_key]['total_score'] += post.get('score', 0)
-                daily_data[date_key]['total_comments'] += post.get('num_comments', 0)
+                daily_data[date_key]['total_score'] += post_data.get('score', 0)
+                daily_data[date_key]['total_comments'] += post_data.get('num_comments', 0)
             
-            logger.info(f"Pullpush: {len(daily_data)} days of data for r/{subreddit} ({len(posts)} posts)")
+            logger.info(f"Extended fetch: {len(daily_data)} days of data for r/{subreddit} ({len(all_posts)} unique posts)")
             return dict(daily_data) if daily_data else None
             
         except Exception as e:
-            logger.error(f"Error fetching Pullpush data for r/{subreddit}: {e}")
+            logger.error(f"Error fetching extended Reddit data for r/{subreddit}: {e}")
             return None
 
     def fetch_github_repo_stars_monthly(self, repo: str, months: int = 60) -> Optional[Dict[str, float]]:

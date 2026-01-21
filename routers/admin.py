@@ -1181,8 +1181,8 @@ async def setup_reddit_variables_endpoint():
 @router.post("/fetch-reddit-historical")
 async def fetch_reddit_historical():
     """
-    Fetch historical Reddit data using Pullpush.io API.
-    This provides 90 days of historical data for proper momentum calculation.
+    Fetch extended Reddit data by combining multiple listings (new, hot, top).
+    This provides more data points for proper momentum calculation.
     """
     try:
         from database import get_db_session

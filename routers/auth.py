@@ -256,20 +256,75 @@ async def fix_superuser_tier(
     current_user: User = Depends(require_auth),
     db: Session = Depends(get_db)
 ):
-    """Fix first user to have enterprise tier (one-time fix)"""
-    # Only the first user (id=1) who is superuser can use this
-    if current_user.id != 1 or not current_user.is_superuser:
+    """Fix superuser to have enterprise tier"""
+    # Any superuser can use this to upgrade themselves
+    if not current_user.is_superuser:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only the first superuser can use this endpoint"
+            detail=f"Only superusers can use this endpoint. Your role is: {current_user.role}"
         )
     
     if current_user.subscription_tier == 'enterprise':
-        return {"message": "Already on enterprise tier", "tier": "enterprise"}
+        return {"message": "Already on enterprise tier", "tier": "enterprise", "role": current_user.role}
     
     current_user.subscription_tier = 'enterprise'
     db.commit()
+    db.refresh(current_user)
     
     logger.info(f"Fixed superuser {current_user.email} to enterprise tier")
     
-    return {"message": "Upgraded to enterprise tier", "tier": "enterprise"}
+    return {
+        "message": "Upgraded to enterprise tier",
+        "tier": current_user.subscription_tier,
+        "role": current_user.role,
+        "user_id": current_user.id
+    }
+
+
+@router.get("/debug-me")
+async def debug_me(
+    current_user: User = Depends(require_auth),
+    db: Session = Depends(get_db)
+):
+    """Debug endpoint to see full user info"""
+    return {
+        "id": current_user.id,
+        "email": current_user.email,
+        "display_name": current_user.display_name,
+        "role": current_user.role,
+        "subscription_tier": current_user.subscription_tier,
+        "is_admin": current_user.is_admin,
+        "is_superuser": current_user.is_superuser,
+        "is_active": current_user.is_active,
+        "is_verified": current_user.is_verified
+    }
+
+
+@router.post("/promote-owner")
+async def promote_owner(
+    current_user: User = Depends(require_auth),
+    db: Session = Depends(get_db)
+):
+    """One-time endpoint to promote jamesmfleming@outlook.com to superuser"""
+    # Only allow for the legitimate owner email
+    if current_user.email != "jamesmfleming@outlook.com":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This endpoint is only for the platform owner"
+        )
+    
+    # Update role and subscription
+    current_user.role = 'superuser'
+    current_user.subscription_tier = 'enterprise'
+    current_user.is_verified = True
+    db.commit()
+    db.refresh(current_user)
+    
+    logger.info(f"Promoted {current_user.email} to superuser with enterprise tier")
+    
+    return {
+        "message": "🎉 You have been promoted to superuser with enterprise access!",
+        "role": current_user.role,
+        "subscription_tier": current_user.subscription_tier,
+        "is_superuser": current_user.is_superuser
+    }
