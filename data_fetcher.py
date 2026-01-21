@@ -978,50 +978,93 @@ class DataFetcher:
             logger.error(f"Error fetching Wikipedia pageviews for '{article}': {e}")
             return None
 
-    def fetch_reddit_activity_monthly(self, subreddit: str, months: int = 60) -> Optional[Dict[str, Dict[str, float]]]:
+    def fetch_reddit_activity_daily(self, subreddit: str, days: int = 30) -> Optional[Dict[str, Dict[str, float]]]:
         """
-        Fetch Reddit activity metrics (LAYER 1: FAST BEHAVIORAL SIGNALS).
-        Uses Pushshift/Reddit API to get post/comment counts.
+        Fetch Reddit subreddit activity (LAYER 1: FAST BEHAVIORAL SIGNALS).
+        Uses Reddit's public JSON API to get recent post activity.
         
         Args:
-            subreddit: Subreddit name (e.g., "personalfinance", "technology")
-            months: Number of months to fetch
+            subreddit: Subreddit name (e.g., "layoffs", "personalfinance")
+            days: Number of days of history (up to 30 days from API)
         
         Returns:
-            Dict mapping month to {posts: X, comments: Y, score_avg: Z}
+            Dict mapping date to {posts: X, total_score: Y, total_comments: Z}
             
-        NOTE: Reddit API has restrictions. For production, consider:
-        - Reddit Developer Account (free, 100 requests/minute)
-        - Pullpush.io (pushshift.io replacement)
+        NOTE: Reddit public API limitations:
+        - Max 100 posts per request
+        - Rate limited (60 req/min with proper User-Agent)
+        - Only recent posts available (use Pullpush for full history)
         """
         try:
-            # For now, use Reddit's public JSON endpoint
-            # This is rate-limited but works for basic data
-            url = f"https://www.reddit.com/r/{subreddit}/top.json?t=all&limit=100"
-            
+            # Fetch recent posts from subreddit
             headers = {
-                'User-Agent': 'CausalAffectPlatform/1.0'
+                'User-Agent': 'CausalAffectPlatform/2.0 (business_ventures; causal analysis research)'
             }
             
+            # Get new posts
+            url = f"https://www.reddit.com/r/{subreddit}/new.json?limit=100"
             response = requests.get(url, headers=headers, timeout=30)
             
             if response.status_code == 429:
                 logger.warning(f"Reddit rate limit hit for r/{subreddit}")
                 return None
             
+            if response.status_code == 403:
+                logger.warning(f"Reddit access forbidden for r/{subreddit} (may be private)")
+                return None
+            
+            if response.status_code == 404:
+                logger.warning(f"Reddit subreddit not found: r/{subreddit}")
+                return None
+            
             response.raise_for_status()
             data = response.json()
             
-            # This is a simplified implementation - for full history would need Pushshift
-            # For now, return None and log that full implementation is needed
-            logger.info(f"Reddit API connected for r/{subreddit} - full implementation pending")
+            # Aggregate posts by date
+            daily_data = defaultdict(lambda: {'posts': 0, 'total_score': 0, 'total_comments': 0})
             
-            # Return placeholder indicating API works but needs full implementation
-            return None
+            cutoff_date = datetime.utcnow() - timedelta(days=days)
+            
+            for post in data.get('data', {}).get('children', []):
+                post_data = post.get('data', {})
+                created_utc = post_data.get('created_utc', 0)
+                post_time = datetime.utcfromtimestamp(created_utc)
+                
+                if post_time < cutoff_date:
+                    continue
+                
+                date_key = post_time.strftime('%Y-%m-%d')
+                daily_data[date_key]['posts'] += 1
+                daily_data[date_key]['total_score'] += post_data.get('score', 0)
+                daily_data[date_key]['total_comments'] += post_data.get('num_comments', 0)
+            
+            logger.info(f"Fetched {len(daily_data)} days of Reddit activity for r/{subreddit}")
+            return dict(daily_data) if daily_data else None
             
         except Exception as e:
             logger.error(f"Error fetching Reddit data for r/{subreddit}: {e}")
             return None
+    
+    def fetch_reddit_activity_monthly(self, subreddit: str, months: int = 60) -> Optional[Dict[str, Dict[str, float]]]:
+        """
+        Legacy monthly aggregation - calls daily and aggregates.
+        For full historical data, would need Pullpush.io integration.
+        """
+        daily_data = self.fetch_reddit_activity_daily(subreddit, days=min(30, months * 30))
+        
+        if not daily_data:
+            return None
+        
+        # Aggregate to monthly
+        monthly_data = defaultdict(lambda: {'posts': 0, 'total_score': 0, 'total_comments': 0})
+        
+        for date_key, values in daily_data.items():
+            month_key = date_key[:7] + "-01"  # "2026-01-15" -> "2026-01-01"
+            monthly_data[month_key]['posts'] += values['posts']
+            monthly_data[month_key]['total_score'] += values['total_score']
+            monthly_data[month_key]['total_comments'] += values['total_comments']
+        
+        return dict(monthly_data)
 
     def fetch_github_repo_stars_monthly(self, repo: str, months: int = 60) -> Optional[Dict[str, float]]:
         """

@@ -805,6 +805,89 @@ class DataIngestionService:
         logger.info(f"Wikipedia: {success_count} variables, {data_points} new data points")
         return {'wikipedia_fetched': success_count, 'wikipedia_data_points': data_points}
     
+    def _fetch_reddit_activity_data(self) -> dict:
+        """
+        Fetch Reddit subreddit activity (LAYER 1: FAST BEHAVIORAL SIGNALS).
+        Cross-validates Wikipedia signals for higher confidence.
+        Reddit API: Free with rate limits (60 req/min with proper User-Agent)
+        """
+        logger.info("Fetching Reddit DAILY activity data (Layer 1 - Fast Signals)...")
+        
+        with get_db_session() as session:
+            reddit_vars = session.query(VariableMetadata).filter(
+                VariableMetadata.source == 'reddit',
+                VariableMetadata.is_active == True
+            ).all()
+            
+            if not reddit_vars:
+                logger.info("No Reddit variables found - skipping")
+                return {'reddit_fetched': 0, 'reddit_data_points': 0}
+            
+            success_count = 0
+            data_points = 0
+            
+            for idx, var in enumerate(reddit_vars):
+                try:
+                    params = json.loads(var.parameters) if var.parameters else {}
+                    subreddit = params.get('subreddit')
+                    
+                    if not subreddit:
+                        logger.warning(f"No subreddit specified for {var.name}")
+                        continue
+                    
+                    # Rate limit: 2 second delay between Reddit requests
+                    if idx > 0:
+                        import time
+                        time.sleep(2.0)  # Reddit is more rate-limited
+                    
+                    # Fetch daily activity (30 days available from API)
+                    daily_activity = self.fetcher.fetch_reddit_activity_daily(
+                        subreddit, days=30
+                    )
+                    
+                    if daily_activity:
+                        logger.info(
+                            f"Reddit r/{subreddit}: {len(daily_activity)} daily points"
+                        )
+                        
+                        # Store post count as the primary metric
+                        for date_str, activity in daily_activity.items():
+                            timestamp = datetime.strptime(date_str, "%Y-%m-%d")
+                            posts = activity.get('posts', 0)
+                            
+                            existing = session.query(TimeSeriesData).filter(
+                                TimeSeriesData.variable_id == var.id,
+                                TimeSeriesData.timestamp == timestamp
+                            ).first()
+                            
+                            if existing:
+                                if existing.value != float(posts):
+                                    existing.value = float(posts)
+                                    existing.fetched_at = datetime.utcnow()
+                            else:
+                                data_point = TimeSeriesData(
+                                    variable_id=var.id,
+                                    timestamp=timestamp,
+                                    value=float(posts),
+                                    fetched_at=datetime.utcnow()
+                                )
+                                session.add(data_point)
+                                data_points += 1
+                        
+                        success_count += 1
+                        self._update_api_status(session, 'reddit', 'active')
+                    else:
+                        logger.warning(f"No data returned for r/{subreddit}")
+                        
+                except Exception as e:
+                    logger.error(f"Error fetching Reddit r/{subreddit}: {e}")
+                    self._update_api_status(session, 'reddit', 'failed', str(e))
+            
+            session.commit()
+        
+        logger.info(f"Reddit: {success_count} subreddits, {data_points} new data points")
+        return {'reddit_fetched': success_count, 'reddit_data_points': data_points}
+    
     def _update_api_status(self, session, source: str, status: str, error: str = None):
         """Update API status in database"""
         api_status = session.query(APIStatus).filter(

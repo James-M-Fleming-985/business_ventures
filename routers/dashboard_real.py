@@ -831,22 +831,112 @@ async def test_granger_causality(
 # SIGNAL RADAR: Layer 1 Fast Signals → Layer 2 Predictions
 # =============================================================================
 
+# Cross-validation mapping: related signals across different sources
+SIGNAL_CROSS_VALIDATION = {
+    # Employment signals
+    "wiki_layoff": ["reddit_layoffs", "reddit_recruitinghell", "reddit_antiwork"],
+    "wiki_job-hunting": ["reddit_jobs", "reddit_careerguidance"],
+    "wiki_resignation": ["reddit_antiwork"],
+    "wiki_unemployment": ["reddit_layoffs", "reddit_povertyfinance"],
+    
+    # Finance signals
+    "wiki_recession": ["reddit_personalfinance", "reddit_povertyfinance"],
+    "wiki_inflation": ["reddit_personalfinance", "reddit_povertyfinance"],
+    "wiki_stock-market": ["reddit_stocks", "reddit_investing", "reddit_wallstreetbets"],
+    
+    # Crypto signals
+    "wiki_bitcoin": ["reddit_bitcoin", "reddit_cryptocurrency"],
+    "wiki_cryptocurrency": ["reddit_cryptocurrency"],
+    "wiki_ethereum": ["reddit_ethereum", "reddit_cryptocurrency"],
+    
+    # Tech signals
+    "wiki_artificial-intelligence": ["reddit_machinelearning", "reddit_artificial", "reddit_technology"],
+    "wiki_chatgpt": ["reddit_machinelearning", "reddit_artificial"],
+    
+    # Housing signals
+    "wiki_real-estate": ["reddit_realestate", "reddit_rebubble", "reddit_firsttimehomebuyer"],
+    "wiki_mortgage": ["reddit_realestate", "reddit_firsttimehomebuyer"],
+}
+
+
+def calculate_signal_confidence(signal_name: str, signal_momentum: float, 
+                                 all_signals: dict, db) -> dict:
+    """
+    Calculate multi-source confidence for a signal.
+    When Wikipedia AND Reddit agree on direction, confidence is higher.
+    
+    Returns:
+        {
+            'score': 0.0-1.0,
+            'sources': ['wikipedia', 'reddit'],
+            'agreement': 'strong'|'moderate'|'weak'|'single-source',
+            'corroborating': ['reddit_layoffs', ...]
+        }
+    """
+    related_signals = SIGNAL_CROSS_VALIDATION.get(signal_name, [])
+    
+    if not related_signals:
+        return {
+            'score': 0.5,  # Single source = moderate confidence
+            'sources': ['wikipedia'],
+            'agreement': 'single-source',
+            'corroborating': []
+        }
+    
+    # Check if related signals agree on direction
+    agreeing = []
+    disagreeing = []
+    
+    for related in related_signals:
+        if related in all_signals:
+            related_momentum = all_signals[related]['momentum']
+            # Same direction?
+            if (signal_momentum > 5 and related_momentum > 5) or \
+               (signal_momentum < -5 and related_momentum < -5):
+                agreeing.append(related)
+            elif (signal_momentum > 5 and related_momentum < -5) or \
+                 (signal_momentum < -5 and related_momentum > 5):
+                disagreeing.append(related)
+    
+    # Calculate confidence score
+    if len(agreeing) >= 2:
+        score = 0.9  # High confidence - multiple sources agree
+        agreement = 'strong'
+    elif len(agreeing) == 1:
+        score = 0.75  # Good confidence - two sources agree
+        agreement = 'moderate'
+    elif len(disagreeing) > 0:
+        score = 0.3  # Low confidence - sources disagree
+        agreement = 'conflicting'
+    else:
+        score = 0.5  # Moderate - single source, no validation available yet
+        agreement = 'single-source'
+    
+    return {
+        'score': score,
+        'sources': ['wikipedia', 'reddit'] if agreeing else ['wikipedia'],
+        'agreement': agreement,
+        'corroborating': agreeing
+    }
+
+
 @router.get("/fast-signals")
 async def get_fast_signals(db: Session = Depends(get_db)):
     """
     Get Layer 1 Fast Signals with REAL-TIME momentum indicators.
-    Uses daily Wikipedia data to calculate week-over-week momentum.
-    These are behavioral signals that move faster than market/economic data.
+    Uses daily Wikipedia + Reddit data for week-over-week momentum.
+    Multi-source confidence scoring when signals agree.
     """
     from sqlalchemy import func, desc
     from datetime import datetime, timedelta
     
     signals = []
+    all_signals_dict = {}  # For cross-validation lookup
     
     try:
-        # Get all Layer 1 (Wikipedia) variables
+        # Get all Layer 1 variables (Wikipedia + Reddit)
         layer1_vars = db.query(VariableMetadata).filter(
-            VariableMetadata.source == 'wikipedia',
+            VariableMetadata.source.in_(['wikipedia', 'reddit']),
             VariableMetadata.is_active == True
         ).all()
         
@@ -888,24 +978,52 @@ async def get_fast_signals(db: Session = Depends(get_db)):
                 'has_data': len(recent_data) > 0,
                 'data_points': len(recent_data)
             })
+            
+            # Store for cross-validation lookup
+            all_signals_dict[var.name] = {
+                'momentum': round(momentum, 1),
+                'source': var.source
+            }
+        
+        # Add confidence scores using cross-validation
+        for signal in signals:
+            confidence = calculate_signal_confidence(
+                signal['name'], 
+                signal['momentum'],
+                all_signals_dict,
+                db
+            )
+            signal['confidence'] = confidence
         
         # Sort by absolute momentum (most active first)
         signals.sort(key=lambda x: abs(x['momentum']), reverse=True)
+        
+        # Count sources
+        wiki_count = len([s for s in signals if s['source'] == 'wikipedia'])
+        reddit_count = len([s for s in signals if s['source'] == 'reddit'])
+        high_confidence = len([s for s in signals if s.get('confidence', {}).get('score', 0) >= 0.75])
         
         # Generate top insight
         top_insight = None
         if signals:
             top_signal = signals[0]
             direction = 'surging' if top_signal['momentum'] > 10 else 'rising' if top_signal['momentum'] > 0 else 'declining'
+            conf = top_signal.get('confidence', {})
+            conf_text = f" (confidence: {conf.get('agreement', 'single-source')})" if conf else ""
             top_insight = {
                 'title': f"Top Signal: {top_signal['display_name']}",
-                'description': f"{top_signal['display_name']} is {direction} with {abs(top_signal['momentum']):.1f}% momentum. "
+                'description': f"{top_signal['display_name']} is {direction} with {abs(top_signal['momentum']):.1f}% momentum{conf_text}. "
                                f"This Layer 1 behavioral signal may predict upcoming Layer 2 market movements."
             }
         
         return {
-            'signals': signals[:10],  # Top 10 most active
+            'signals': signals[:15],  # Top 15 most active
             'total_layer1_variables': len(layer1_vars),
+            'sources': {
+                'wikipedia': wiki_count,
+                'reddit': reddit_count
+            },
+            'high_confidence_signals': high_confidence,
             'top_insight': top_insight
         }
             

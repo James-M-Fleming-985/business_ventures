@@ -927,3 +927,57 @@ async def fetch_wikipedia_only():
     except Exception as e:
         logger.error(f"Wikipedia fetch failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/fetch-reddit")
+async def fetch_reddit_only():
+    """
+    Quick fetch: Reddit subreddit activity only (Layer 1 fast signals).
+    Cross-validates Wikipedia signals for higher confidence.
+    
+    Reddit API: Free with rate limits (60 req/min with proper User-Agent)
+    """
+    try:
+        logger.info("Quick fetch: Reddit subreddit activity only...")
+        sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+        
+        from data_ingestion_service import DataIngestionService
+        
+        service = DataIngestionService()
+        result = service._fetch_reddit_activity_data()
+        
+        logger.info(f"Reddit quick fetch complete: {result}")
+        
+        return {
+            "status": "success",
+            "message": f"Fetched {result.get('reddit_fetched', 0)} Reddit subreddits",
+            "data_points_added": result.get('reddit_data_points', 0),
+            "layer": "Layer 1 - Fast/Behavioral",
+            "next_step": "Check /api/dashboard/fast-signals for multi-source confidence"
+        }
+        
+    except Exception as e:
+        logger.error(f"Reddit fetch failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/setup-reddit-variables")
+async def setup_reddit_variables_endpoint():
+    """Add Reddit subreddit variables to database for Layer 1 fast signals"""
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+        from setup_layer1_fast_signals import setup_reddit_variables, REDDIT_SUBREDDITS
+        
+        result = setup_reddit_variables()
+        
+        return {
+            "status": "success",
+            "variables_added": result.get('added', 0),
+            "variables_skipped": result.get('skipped', 0),
+            "total_subreddits": len(REDDIT_SUBREDDITS),
+            "message": f"Added {result.get('added', 0)} Reddit subreddit variables",
+            "next_step": "POST /api/admin/fetch-reddit to populate data"
+        }
+    except Exception as e:
+        logger.error(f"Reddit setup failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))

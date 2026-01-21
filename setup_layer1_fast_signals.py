@@ -84,6 +84,44 @@ WIKIPEDIA_ARTICLES = [
 ]
 
 
+# ==============================================================================
+# LAYER 1: FAST BEHAVIORAL SIGNALS - Reddit Subreddit Activity
+# ==============================================================================
+# Cross-validation source for Wikipedia signals
+# When BOTH Wikipedia AND Reddit show spikes, confidence is higher!
+
+REDDIT_SUBREDDITS = [
+    # EMPLOYMENT & CAREER (cross-validates: wiki_layoff, wiki_job-hunting)
+    {"subreddit": "layoffs", "display_name": "Reddit: r/layoffs", "category": "employment"},
+    {"subreddit": "recruitinghell", "display_name": "Reddit: r/recruitinghell", "category": "employment"},
+    {"subreddit": "antiwork", "display_name": "Reddit: r/antiwork", "category": "employment"},
+    {"subreddit": "jobs", "display_name": "Reddit: r/jobs", "category": "employment"},
+    {"subreddit": "careerguidance", "display_name": "Reddit: r/careerguidance", "category": "employment"},
+    
+    # FINANCE & ECONOMY (cross-validates: wiki_recession, wiki_inflation)
+    {"subreddit": "personalfinance", "display_name": "Reddit: r/personalfinance", "category": "finance"},
+    {"subreddit": "povertyfinance", "display_name": "Reddit: r/povertyfinance", "category": "finance"},
+    {"subreddit": "investing", "display_name": "Reddit: r/investing", "category": "finance"},
+    {"subreddit": "stocks", "display_name": "Reddit: r/stocks", "category": "finance"},
+    {"subreddit": "wallstreetbets", "display_name": "Reddit: r/wallstreetbets", "category": "finance"},
+    
+    # CRYPTO (cross-validates: wiki_bitcoin, wiki_cryptocurrency)
+    {"subreddit": "cryptocurrency", "display_name": "Reddit: r/cryptocurrency", "category": "crypto"},
+    {"subreddit": "bitcoin", "display_name": "Reddit: r/bitcoin", "category": "crypto"},
+    {"subreddit": "ethereum", "display_name": "Reddit: r/ethereum", "category": "crypto"},
+    
+    # TECHNOLOGY (cross-validates: wiki_artificial-intelligence)
+    {"subreddit": "technology", "display_name": "Reddit: r/technology", "category": "technology"},
+    {"subreddit": "MachineLearning", "display_name": "Reddit: r/MachineLearning", "category": "technology"},
+    {"subreddit": "artificial", "display_name": "Reddit: r/artificial", "category": "technology"},
+    
+    # HOUSING (cross-validates: wiki_real-estate, wiki_mortgage)
+    {"subreddit": "REBubble", "display_name": "Reddit: r/REBubble", "category": "housing"},
+    {"subreddit": "RealEstate", "display_name": "Reddit: r/RealEstate", "category": "housing"},
+    {"subreddit": "FirstTimeHomeBuyer", "display_name": "Reddit: r/FirstTimeHomeBuyer", "category": "housing"},
+]
+
+
 def setup_wikipedia_variables():
     """Add Wikipedia pageviews variables to database"""
     print("=" * 60)
@@ -147,5 +185,63 @@ def setup_wikipedia_variables():
     return {"added": added, "skipped": skipped}
 
 
+def setup_reddit_variables():
+    """Add Reddit subreddit activity variables to database"""
+    print("=" * 60)
+    print("SETTING UP LAYER 1: REDDIT BEHAVIORAL SIGNALS")
+    print("=" * 60)
+    print(f"Adding {len(REDDIT_SUBREDDITS)} Reddit subreddit variables...")
+    print()
+    
+    added = 0
+    skipped = 0
+    
+    with get_db_session() as session:
+        for reddit in REDDIT_SUBREDDITS:
+            # Create unique variable name
+            var_name = f"reddit_{reddit['subreddit'].lower()}"
+            
+            # Check if already exists
+            existing = session.query(VariableMetadata).filter(
+                VariableMetadata.name == var_name
+            ).first()
+            
+            if existing:
+                print(f"  ⏭️  Skipping (exists): {reddit['display_name']}")
+                skipped += 1
+                continue
+            
+            # Create variable metadata
+            var = VariableMetadata(
+                name=var_name,
+                display_name=reddit['display_name'],
+                unit="posts",
+                data_type="time_series",
+                source="reddit",
+                api_endpoint="https://reddit.com/",
+                update_frequency="daily",
+                parameters=json.dumps({
+                    "subreddit": reddit['subreddit'],
+                    "category": reddit['category']
+                }),
+                is_active=True,
+                created_at=datetime.utcnow()
+            )
+            
+            session.add(var)
+            added += 1
+            print(f"  ✅ Added: {reddit['display_name']}")
+        
+        session.commit()
+    
+    print()
+    print("=" * 60)
+    print(f"SUMMARY: Added {added} Reddit variables, skipped {skipped} existing")
+    print("=" * 60)
+    
+    return {"added": added, "skipped": skipped}
+
+
 if __name__ == "__main__":
     setup_wikipedia_variables()
+    setup_reddit_variables()
