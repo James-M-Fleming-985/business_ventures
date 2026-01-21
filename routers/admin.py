@@ -1034,6 +1034,55 @@ async def debug_granger_results(variable_name: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/significant-granger")
+async def get_significant_granger():
+    """List all significant Granger causality pairs (p < 0.05)"""
+    try:
+        from database import get_db_session
+        from models import CorrelationResult
+        from sqlalchemy import or_
+        
+        with get_db_session() as session:
+            # Find all correlations with significant Granger
+            sig_results = session.query(CorrelationResult).filter(
+                or_(
+                    CorrelationResult.granger_p_value_xy < 0.05,
+                    CorrelationResult.granger_p_value_yx < 0.05
+                )
+            ).all()
+            
+            results = []
+            for r in sig_results:
+                if r.granger_p_value_xy and r.granger_p_value_xy < 0.05:
+                    results.append({
+                        "cause": r.variable1.display_name if r.variable1 else "Unknown",
+                        "cause_name": r.variable1.name if r.variable1 else None,
+                        "effect": r.variable2.display_name if r.variable2 else "Unknown",
+                        "effect_name": r.variable2.name if r.variable2 else None,
+                        "p_value": r.granger_p_value_xy,
+                        "correlation": r.correlation_value,
+                        "direction": "X->Y"
+                    })
+                if r.granger_p_value_yx and r.granger_p_value_yx < 0.05:
+                    results.append({
+                        "cause": r.variable2.display_name if r.variable2 else "Unknown",
+                        "cause_name": r.variable2.name if r.variable2 else None,
+                        "effect": r.variable1.display_name if r.variable1 else "Unknown",
+                        "effect_name": r.variable1.name if r.variable1 else None,
+                        "p_value": r.granger_p_value_yx,
+                        "correlation": r.correlation_value,
+                        "direction": "Y->X"
+                    })
+            
+            # Sort by p_value
+            results.sort(key=lambda x: x["p_value"])
+            
+            return {
+                "total_significant": len(results),
+                "results": results[:25]  # Top 25
+            }
+
+
 @router.post("/fetch-wikipedia")
 async def fetch_wikipedia_only():
     """
