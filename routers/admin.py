@@ -1178,6 +1178,98 @@ async def setup_reddit_variables_endpoint():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/fetch-reddit-historical")
+async def fetch_reddit_historical():
+    """
+    Fetch historical Reddit data using Pullpush.io API.
+    This provides 90 days of historical data for proper momentum calculation.
+    """
+    try:
+        from database import get_db_session
+        from models import VariableMetadata, TimeSeriesData
+        from data_fetcher import DataFetcher
+        from datetime import datetime
+        
+        fetcher = DataFetcher()
+        total_points = 0
+        success_count = 0
+        
+        with get_db_session() as session:
+            # Get all Reddit variables
+            reddit_vars = session.query(VariableMetadata).filter(
+                VariableMetadata.source == 'reddit',
+                VariableMetadata.is_active == True
+            ).all()
+            
+            logger.info(f"Fetching historical data for {len(reddit_vars)} Reddit variables")
+            
+            for var in reddit_vars:
+                try:
+                    import json
+                    params = json.loads(var.parameters) if var.parameters else {}
+                    subreddit = params.get('subreddit')
+                    
+                    if not subreddit:
+                        continue
+                    
+                    # Use Pullpush for 90 days of history
+                    historical_data = fetcher.fetch_reddit_historical(subreddit, days=90)
+                    
+                    if not historical_data:
+                        continue
+                    
+                    # Store the data
+                    for date_str, values in historical_data.items():
+                        timestamp = datetime.strptime(date_str, "%Y-%m-%d")
+                        
+                        # Check for existing
+                        existing = session.query(TimeSeriesData).filter(
+                            TimeSeriesData.variable_id == var.id,
+                            TimeSeriesData.timestamp == timestamp
+                        ).first()
+                        
+                        # Use post count as the value
+                        value = float(values.get('posts', 0))
+                        
+                        if existing:
+                            if existing.value != value:
+                                existing.value = value
+                                existing.fetched_at = datetime.utcnow()
+                        else:
+                            data_point = TimeSeriesData(
+                                variable_id=var.id,
+                                timestamp=timestamp,
+                                value=value,
+                                fetched_at=datetime.utcnow()
+                            )
+                            session.add(data_point)
+                            total_points += 1
+                    
+                    success_count += 1
+                    
+                    # Small delay between requests
+                    import time
+                    time.sleep(1)
+                    
+                except Exception as e:
+                    logger.warning(f"Failed to fetch historical for {var.name}: {e}")
+                    continue
+            
+            session.commit()
+        
+        return {
+            "status": "success",
+            "message": f"Fetched historical data for {success_count} subreddits",
+            "data_points_added": total_points,
+            "source": "Pullpush.io (90 days)",
+            "next_step": "Reddit signals should now have enough data for momentum"
+        }
+        
+    except Exception as e:
+        logger.error(f"Reddit historical fetch failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/calculate-granger")
 async def calculate_granger_causality(background_tasks: BackgroundTasks):
     """
