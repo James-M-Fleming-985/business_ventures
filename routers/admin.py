@@ -947,10 +947,10 @@ async def debug_db_data(variable_name: str):
     """Debug: Check what data is actually stored in DB for a variable"""
     try:
         from database import get_db_session
-        from models import Variable, TimeSeriesData
+        from models import VariableMetadata, TimeSeriesData
         
         with get_db_session() as session:
-            var = session.query(Variable).filter(Variable.name == variable_name).first()
+            var = session.query(VariableMetadata).filter(VariableMetadata.name == variable_name).first()
             if not var:
                 return {"error": f"Variable {variable_name} not found"}
             
