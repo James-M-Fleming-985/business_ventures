@@ -894,3 +894,36 @@ async def list_data_sources():
     except Exception as e:
         logger.error(f"Failed to list data sources: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/fetch-wikipedia")
+async def fetch_wikipedia_only():
+    """
+    Quick fetch: Wikipedia data only (skips other sources).
+    Use this to rapidly populate Layer 1 fast signals without waiting
+    for the full data ingestion job.
+    
+    Wikipedia API is FREE with no rate limits!
+    """
+    try:
+        logger.info("Quick fetch: Wikipedia daily pageviews only...")
+        sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+        
+        from data_ingestion_service import DataIngestionService
+        
+        service = DataIngestionService()
+        result = service._fetch_wikipedia_pageviews_data()
+        
+        logger.info(f"Wikipedia quick fetch complete: {result}")
+        
+        return {
+            "status": "success",
+            "message": f"Fetched {result.get('wikipedia_fetched', 0)} Wikipedia variables",
+            "data_points_added": result.get('wikipedia_data_points', 0),
+            "layer": "Layer 1 - Fast/Behavioral",
+            "next_step": "Check /api/dashboard/fast-signals for momentum data"
+        }
+        
+    except Exception as e:
+        logger.error(f"Wikipedia fetch failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
