@@ -1091,6 +1091,8 @@ async def get_cascade_predictions(signal_name: str, db: Session = Depends(get_db
             return {'predictions': [], 'top_prediction': None, 'optimal_lag': None}
         
         # Try to find empirical Granger causality first
+        # Note: We only require the Granger p-value to be significant (< 0.05)
+        # The is_significant flag is for correlation significance, not Granger
         causality_results = db.query(CorrelationResult).filter(
             or_(
                 and_(
@@ -1103,8 +1105,7 @@ async def get_cascade_predictions(signal_name: str, db: Session = Depends(get_db
                     CorrelationResult.granger_p_value_yx != None,
                     CorrelationResult.granger_p_value_yx < 0.05
                 )
-            ),
-            CorrelationResult.is_significant == True
+            )
         ).order_by(desc(CorrelationResult.abs_correlation)).limit(5).all()
         
         for result in causality_results:
