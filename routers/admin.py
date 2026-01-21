@@ -1255,7 +1255,8 @@ def _run_granger_background(job_id: str):
             tested = 0
             significant = 0
             
-            for corr in l1_l2_pairs[:50]:  # Limit to 50 pairs for speed
+            # Test all pairs (no limit) - each test is fast with aligned data
+            for corr in l1_l2_pairs:
                 try:
                     _active_jobs[job_id]['stage'] = f'testing_pair_{tested+1}'
                     
