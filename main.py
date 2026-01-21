@@ -4,7 +4,7 @@ Integrates CA-002 (Correlation Analysis) and CA-003 (Drift Forecasting)
 Version: 2.0.14
 """
 
-from fastapi import FastAPI, HTTPException, Depends, status, Request
+from fastapi import FastAPI, HTTPException, Depends, status, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, HTMLResponse, FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -42,6 +42,7 @@ from correlation_analyzer import CorrelationAnalyzer
 # Import dashboard router - USING REAL DATA VERSION
 from routers import dashboard_real as dashboard  # NO MOCK DATA
 from routers import admin  # Database initialization endpoints
+from routers import auth  # Authentication endpoints
 
 # Build version - automatically read from VERSION file
 BUILD_VERSION = __version__
@@ -69,6 +70,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # Include routers
 app.include_router(dashboard.router)
 app.include_router(admin.router)  # Admin endpoints for database management
+app.include_router(auth.router)  # Authentication endpoints
 
 # CORS Configuration
 app.add_middleware(
@@ -96,21 +98,83 @@ async def health_check():
     }
 
 
-@app.get("/", tags=["Health"])
-async def root():
-    """Root endpoint - redirects to dashboard."""
-    return RedirectResponse(url="/dashboard", status_code=307)
+@app.get("/", tags=["Pages"])
+async def root(request: Request):
+    """Root endpoint - show landing page for unauthenticated, dashboard for authenticated."""
+    from services.auth import get_current_user
+    from sqlalchemy.orm import Session
+    from database import SessionLocal
+    
+    # Check if user is authenticated via cookie
+    token = request.cookies.get("access_token")
+    if token:
+        # User has token, redirect to dashboard
+        return RedirectResponse(url="/dashboard", status_code=307)
+    
+    # Show landing page for unauthenticated users
+    return templates.TemplateResponse("landing.html", {"request": request})
+
+
+@app.get("/login", response_class=HTMLResponse, tags=["Pages"])
+async def login_page(request: Request):
+    """Serve the login page."""
+    # If already authenticated, redirect to dashboard
+    token = request.cookies.get("access_token")
+    if token:
+        return RedirectResponse(url="/dashboard", status_code=307)
+    return templates.TemplateResponse("login.html", {"request": request})
+
+
+@app.get("/register", response_class=HTMLResponse, tags=["Pages"])
+async def register_page(request: Request):
+    """Serve the registration page."""
+    # If already authenticated, redirect to dashboard
+    token = request.cookies.get("access_token")
+    if token:
+        return RedirectResponse(url="/dashboard", status_code=307)
+    return templates.TemplateResponse("register.html", {"request": request})
+
+
+@app.get("/logout", tags=["Pages"])
+async def logout_page(response: Response):
+    """Log out and redirect to landing page."""
+    from services.auth import clear_auth_cookies
+    clear_auth_cookies(response)
+    return RedirectResponse(url="/", status_code=307)
 
 
 @app.get("/dashboard", response_class=HTMLResponse, tags=["Dashboard"])
 async def dashboard_page(request: Request):
-    """Serve the main dashboard UI."""
-    return templates.TemplateResponse("dashboard.html", {
-        "request": request,
-        "version": BUILD_VERSION,
-        "git_commit": GIT_COMMIT,
-        "deploy_timestamp": DEPLOY_TIMESTAMP
-    })
+    """Serve the main dashboard UI - requires authentication."""
+    from services.auth import get_current_user_from_cookie
+    from database import SessionLocal
+    
+    # Check authentication
+    token = request.cookies.get("access_token")
+    if not token:
+        return RedirectResponse(url="/login", status_code=307)
+    
+    # Verify token is valid
+    db = SessionLocal()
+    try:
+        user = await get_current_user_from_cookie(request, db)
+        if not user:
+            return RedirectResponse(url="/login", status_code=307)
+        
+        return templates.TemplateResponse("dashboard.html", {
+            "request": request,
+            "version": BUILD_VERSION,
+            "git_commit": GIT_COMMIT,
+            "deploy_timestamp": DEPLOY_TIMESTAMP,
+            "user": {
+                "email": user.email,
+                "display_name": user.display_name,
+                "role": user.role,
+                "is_admin": user.is_admin
+            }
+        })
+    finally:
+        db.close()
 
 
 @app.get("/favicon.ico")

@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Causal Affect Platform - Discover Hidden Market Correlations</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff', 100: '#e0f2fe', 200: '#bae6fd',
+                            300: '#7dd3fc', 400: '#38bdf8', 500: '#0ea5e9',
+                            600: '#0284c7', 700: '#0369a1', 800: '#075985', 900: '#0c4a6e',
+                        },
+                        accent: {
+                            50: '#fdf4ff', 100: '#fae8ff', 200: '#f5d0fe',
+                            300: '#f0abfc', 400: '#e879f9', 500: '#d946ef',
+                            600: '#c026d3', 700: '#a21caf', 800: '#86198f', 900: '#701a75',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #0c4a6e 0%, #1e1b4b 50%, #701a75 100%);
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        .float { animation: float 6s ease-in-out infinite; }
+        .float-delay { animation: float 6s ease-in-out 2s infinite; }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen text-white">
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 glass">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-primary-500 to-accent-500 rounded-lg flex items-center justify-center">
+                        <i data-lucide="activity" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <span class="text-xl font-bold">Causal Affect</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="#features" class="text-slate-300 hover:text-white transition">Features</a>
+                    <a href="#pricing" class="text-slate-300 hover:text-white transition">Pricing</a>
+                    <a href="/login" class="px-4 py-2 text-slate-300 hover:text-white transition">Login</a>
+                    <a href="/register" class="px-6 py-2 bg-gradient-to-r from-primary-500 to-accent-500 rounded-lg font-semibold hover:opacity-90 transition">
+                        Get Started
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="pt-32 pb-20 px-6">
+        <div class="container mx-auto text-center">
+            <div class="max-w-4xl mx-auto">
+                <h1 class="text-5xl md:text-7xl font-bold mb-6 leading-tight">
+                    Discover <span class="bg-gradient-to-r from-primary-400 to-accent-400 bg-clip-text text-transparent">Hidden Correlations</span> in Market Data
+                </h1>
+                <p class="text-xl text-slate-300 mb-10 max-w-2xl mx-auto">
+                    AI-powered platform that analyzes 61+ economic indicators to find unexpected relationships and predict market movements before they happen.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <a href="/register" class="px-8 py-4 bg-gradient-to-r from-primary-500 to-accent-500 rounded-xl font-bold text-lg hover:opacity-90 transition shadow-lg shadow-primary-500/30">
+                        Start Free Trial
+                        <i data-lucide="arrow-right" class="w-5 h-5 inline ml-2"></i>
+                    </a>
+                    <a href="#demo" class="px-8 py-4 glass rounded-xl font-bold text-lg hover:bg-white/10 transition">
+                        <i data-lucide="play-circle" class="w-5 h-5 inline mr-2"></i>
+                        Watch Demo
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Floating Stats -->
+            <div class="mt-20 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
+                <div class="glass rounded-xl p-6 float">
+                    <div class="text-4xl font-bold text-primary-400">61+</div>
+                    <div class="text-slate-400">Data Variables</div>
+                </div>
+                <div class="glass rounded-xl p-6 float-delay">
+                    <div class="text-4xl font-bold text-accent-400">3,721</div>
+                    <div class="text-slate-400">Correlations</div>
+                </div>
+                <div class="glass rounded-xl p-6 float">
+                    <div class="text-4xl font-bold text-green-400">6</div>
+                    <div class="text-slate-400">Data Sources</div>
+                </div>
+                <div class="glass rounded-xl p-6 float-delay">
+                    <div class="text-4xl font-bold text-blue-400">24/7</div>
+                    <div class="text-slate-400">Live Updates</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-20 px-6">
+        <div class="container mx-auto">
+            <h2 class="text-4xl font-bold text-center mb-4">Powerful Features</h2>
+            <p class="text-slate-400 text-center mb-16 max-w-2xl mx-auto">
+                Everything you need to discover, analyze, and act on hidden market correlations
+            </p>
+            
+            <div class="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                <!-- Feature 1 -->
+                <div class="glass rounded-2xl p-8 hover:bg-white/10 transition">
+                    <div class="w-14 h-14 bg-primary-500/20 rounded-xl flex items-center justify-center mb-6">
+                        <i data-lucide="radar" class="w-7 h-7 text-primary-400"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Signal Radar</h3>
+                    <p class="text-slate-400">
+                        Real-time detection of fast-moving market signals that predict larger trends. Layer 1 signals → Layer 2 predictions.
+                    </p>
+                </div>
+                
+                <!-- Feature 2 -->
+                <div class="glass rounded-2xl p-8 hover:bg-white/10 transition">
+                    <div class="w-14 h-14 bg-accent-500/20 rounded-xl flex items-center justify-center mb-6">
+                        <i data-lucide="git-branch" class="w-7 h-7 text-accent-400"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Granger Causality</h3>
+                    <p class="text-slate-400">
+                        Advanced statistical analysis to determine which variables actually cause movements in others, not just correlate.
+                    </p>
+                </div>
+                
+                <!-- Feature 3 -->
+                <div class="glass rounded-2xl p-8 hover:bg-white/10 transition">
+                    <div class="w-14 h-14 bg-green-500/20 rounded-xl flex items-center justify-center mb-6">
+                        <i data-lucide="trending-up" class="w-7 h-7 text-green-400"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Drift Forecasting</h3>
+                    <p class="text-slate-400">
+                        Monitor how correlations change over time. Get alerts when established relationships start breaking down.
+                    </p>
+                </div>
+                
+                <!-- Feature 4 -->
+                <div class="glass rounded-2xl p-8 hover:bg-white/10 transition">
+                    <div class="w-14 h-14 bg-blue-500/20 rounded-xl flex items-center justify-center mb-6">
+                        <i data-lucide="grid-3x3" class="w-7 h-7 text-blue-400"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Correlation Heatmaps</h3>
+                    <p class="text-slate-400">
+                        Interactive visualizations to explore relationships between any combination of variables across domains.
+                    </p>
+                </div>
+                
+                <!-- Feature 5 -->
+                <div class="glass rounded-2xl p-8 hover:bg-white/10 transition">
+                    <div class="w-14 h-14 bg-amber-500/20 rounded-xl flex items-center justify-center mb-6">
+                        <i data-lucide="bell" class="w-7 h-7 text-amber-400"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Smart Alerts</h3>
+                    <p class="text-slate-400">
+                        Custom alerts when correlations strengthen, weaken, or when new opportunities emerge in your watchlist.
+                    </p>
+                </div>
+                
+                <!-- Feature 6 -->
+                <div class="glass rounded-2xl p-8 hover:bg-white/10 transition">
+                    <div class="w-14 h-14 bg-rose-500/20 rounded-xl flex items-center justify-center mb-6">
+                        <i data-lucide="file-text" class="w-7 h-7 text-rose-400"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Export & Reports</h3>
+                    <p class="text-slate-400">
+                        Generate professional reports and export data in multiple formats for your research and presentations.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="py-20 px-6">
+        <div class="container mx-auto">
+            <h2 class="text-4xl font-bold text-center mb-4">Simple Pricing</h2>
+            <p class="text-slate-400 text-center mb-16 max-w-2xl mx-auto">
+                Start free, upgrade when you're ready
+            </p>
+            
+            <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                <!-- Free Tier -->
+                <div class="glass rounded-2xl p-8">
+                    <h3 class="text-xl font-bold mb-2">Free</h3>
+                    <div class="text-4xl font-bold mb-6">£0<span class="text-lg text-slate-400">/month</span></div>
+                    <ul class="space-y-3 mb-8 text-slate-300">
+                        <li class="flex items-center"><i data-lucide="check" class="w-5 h-5 text-green-400 mr-2"></i>10 correlations/day</li>
+                        <li class="flex items-center"><i data-lucide="check" class="w-5 h-5 text-green-400 mr-2"></i>Basic heatmap</li>
+                        <li class="flex items-center"><i data-lucide="check" class="w-5 h-5 text-green-400 mr-2"></i>7-day history</li>
+                        <li class="flex items-center text-slate-500"><i data-lucide="x" class="w-5 h-5 mr-2"></i>Signal Radar</li>
+                        <li class="flex items-center text-slate-500"><i data-lucide="x" class="w-5 h-5 mr-2"></i>Alerts</li>
+                    </ul>
+                    <a href="/register" class="block text-center py-3 border border-slate-600 rounded-lg hover:bg-slate-800 transition">
+                        Get Started
+                    </a>
+                </div>
+                
+                <!-- Pro Tier -->
+                <div class="glass rounded-2xl p-8 border-2 border-primary-500 relative">
+                    <div class="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-primary-500 rounded-full text-sm font-bold">
+                        Popular
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">Pro</h3>
+                    <div class="text-4xl font-bold mb-6">£29<span class="text-lg text-slate-400">/month</span></div>
+                    <ul class="space-y-3 mb-8 text-slate-300">
+                        <li class="flex items-center"><i data-lucide="check" class="w-5 h-5 text-green-400 mr-2"></i>Unlimited correlations</li>
+                        <li class="flex items-center"><i data-lucide="check" class="w-5 h-5 text-green-400 mr-2"></i>Full heatmap access</li>
+                        <li class="flex items-center"><i data-lucide="check" class="w-5 h-5 text-green-400 mr-2"></i>1-year history</li>
+                        <li class="flex items-center"><i data-lucide="check" class="w-5 h-5 text-green-400 mr-2"></i>Signal Radar</li>
+                        <li class="flex items-center"><i data-lucide="check" class="w-5 h-5 text-green-400 mr-2"></i>Email alerts</li>
+                    </ul>
+                    <a href="/register?plan=pro" class="block text-center py-3 bg-gradient-to-r from-primary-500 to-accent-500 rounded-lg font-bold hover:opacity-90 transition">
+                        Start Free Trial
+                    </a>
+                </div>
+                
+                <!-- Enterprise Tier -->
+                <div class="glass rounded-2xl p-8">
+                    <h3 class="text-xl font-bold mb-2">Enterprise</h3>
+                    <div class="text-4xl font-bold mb-6">£99<span class="text-lg text-slate-400">/month</span></div>
+                    <ul class="space-y-3 mb-8 text-slate-300">
+                        <li class="flex items-center"><i data-lucide="check" class="w-5 h-5 text-green-400 mr-2"></i>Everything in Pro</li>
+                        <li class="flex items-center"><i data-lucide="check" class="w-5 h-5 text-green-400 mr-2"></i>Granger Causality</li>
+                        <li class="flex items-center"><i data-lucide="check" class="w-5 h-5 text-green-400 mr-2"></i>API access</li>
+                        <li class="flex items-center"><i data-lucide="check" class="w-5 h-5 text-green-400 mr-2"></i>Custom variables</li>
+                        <li class="flex items-center"><i data-lucide="check" class="w-5 h-5 text-green-400 mr-2"></i>Priority support</li>
+                    </ul>
+                    <a href="/register?plan=enterprise" class="block text-center py-3 border border-slate-600 rounded-lg hover:bg-slate-800 transition">
+                        Contact Sales
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-20 px-6">
+        <div class="container mx-auto">
+            <div class="glass rounded-3xl p-12 text-center max-w-4xl mx-auto">
+                <h2 class="text-4xl font-bold mb-4">Ready to discover hidden opportunities?</h2>
+                <p class="text-slate-400 mb-8">Join thousands of analysts using Causal Affect to find market insights.</p>
+                <a href="/register" class="inline-block px-8 py-4 bg-gradient-to-r from-primary-500 to-accent-500 rounded-xl font-bold text-lg hover:opacity-90 transition">
+                    Start Your Free Trial
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-12 px-6 border-t border-white/10">
+        <div class="container mx-auto">
+            <div class="flex flex-col md:flex-row items-center justify-between">
+                <div class="flex items-center space-x-3 mb-4 md:mb-0">
+                    <div class="w-8 h-8 bg-gradient-to-br from-primary-500 to-accent-500 rounded-lg flex items-center justify-center">
+                        <i data-lucide="activity" class="w-4 h-4 text-white"></i>
+                    </div>
+                    <span class="font-bold">Causal Affect</span>
+                </div>
+                <div class="text-slate-500 text-sm">
+                    © 2026 Causal Affect. All rights reserved.
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

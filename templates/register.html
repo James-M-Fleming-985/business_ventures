@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account - Causal Affect Platform</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff', 100: '#e0f2fe', 200: '#bae6fd',
+                            300: '#7dd3fc', 400: '#38bdf8', 500: '#0ea5e9',
+                            600: '#0284c7', 700: '#0369a1', 800: '#075985', 900: '#0c4a6e',
+                        },
+                        accent: {
+                            50: '#fdf4ff', 100: '#fae8ff', 200: '#f5d0fe',
+                            300: '#f0abfc', 400: '#e879f9', 500: '#d946ef',
+                            600: '#c026d3', 700: '#a21caf', 800: '#86198f', 900: '#701a75',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #0c4a6e 0%, #1e1b4b 50%, #701a75 100%);
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen flex items-center justify-center px-4 py-12">
+    <div class="w-full max-w-md">
+        <!-- Logo -->
+        <div class="text-center mb-8">
+            <a href="/" class="inline-flex items-center space-x-3">
+                <div class="w-12 h-12 bg-gradient-to-br from-primary-500 to-accent-500 rounded-xl flex items-center justify-center">
+                    <i data-lucide="activity" class="w-7 h-7 text-white"></i>
+                </div>
+                <span class="text-2xl font-bold text-white">Causal Affect</span>
+            </a>
+        </div>
+
+        <!-- Register Card -->
+        <div class="glass rounded-2xl p-8">
+            <h1 class="text-2xl font-bold text-white text-center mb-2">Create your account</h1>
+            <p class="text-slate-400 text-center mb-8">Start discovering hidden correlations today</p>
+
+            <!-- Error Message -->
+            <div id="error-message" class="hidden mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-300 text-sm">
+                <i data-lucide="alert-circle" class="w-4 h-4 inline mr-2"></i>
+                <span id="error-text">An error occurred</span>
+            </div>
+
+            <!-- Success Message -->
+            <div id="success-message" class="hidden mb-6 p-4 bg-green-500/20 border border-green-500/50 rounded-lg text-green-300 text-sm">
+                <i data-lucide="check-circle" class="w-4 h-4 inline mr-2"></i>
+                <span id="success-text">Account created! Redirecting...</span>
+            </div>
+
+            <!-- First User Notice -->
+            <div id="first-user-notice" class="hidden mb-6 p-4 bg-amber-500/20 border border-amber-500/50 rounded-lg text-amber-300 text-sm">
+                <i data-lucide="crown" class="w-4 h-4 inline mr-2"></i>
+                <span>You'll be the first user and will receive superuser privileges!</span>
+            </div>
+
+            <form id="register-form" class="space-y-5">
+                <!-- Display Name -->
+                <div>
+                    <label for="display_name" class="block text-sm font-medium text-slate-300 mb-2">Display Name</label>
+                    <div class="relative">
+                        <input type="text" id="display_name" name="display_name" required
+                               class="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                               placeholder="John Doe">
+                        <i data-lucide="user" class="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500"></i>
+                    </div>
+                </div>
+
+                <!-- Email -->
+                <div>
+                    <label for="email" class="block text-sm font-medium text-slate-300 mb-2">Email</label>
+                    <div class="relative">
+                        <input type="email" id="email" name="email" required
+                               class="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                               placeholder="you@example.com">
+                        <i data-lucide="mail" class="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500"></i>
+                    </div>
+                </div>
+
+                <!-- Password -->
+                <div>
+                    <label for="password" class="block text-sm font-medium text-slate-300 mb-2">Password</label>
+                    <div class="relative">
+                        <input type="password" id="password" name="password" required minlength="8"
+                               class="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                               placeholder="••••••••">
+                        <button type="button" onclick="togglePassword('password')" class="absolute right-3 top-1/2 -translate-y-1/2">
+                            <i id="password-toggle-icon" data-lucide="eye" class="w-5 h-5 text-slate-500 hover:text-slate-300"></i>
+                        </button>
+                    </div>
+                    <p class="mt-1 text-xs text-slate-500">Minimum 8 characters</p>
+                </div>
+
+                <!-- Confirm Password -->
+                <div>
+                    <label for="confirm_password" class="block text-sm font-medium text-slate-300 mb-2">Confirm Password</label>
+                    <div class="relative">
+                        <input type="password" id="confirm_password" name="confirm_password" required
+                               class="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                               placeholder="••••••••">
+                        <i data-lucide="lock" class="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500"></i>
+                    </div>
+                </div>
+
+                <!-- Terms -->
+                <div class="flex items-start">
+                    <input type="checkbox" id="terms" name="terms" required
+                           class="w-4 h-4 mt-1 rounded bg-slate-800 border-slate-600 text-primary-500 focus:ring-primary-500">
+                    <label for="terms" class="ml-2 text-sm text-slate-400">
+                        I agree to the <a href="/terms" class="text-primary-400 hover:text-primary-300">Terms of Service</a> 
+                        and <a href="/privacy" class="text-primary-400 hover:text-primary-300">Privacy Policy</a>
+                    </label>
+                </div>
+
+                <!-- Submit -->
+                <button type="submit" id="register-btn"
+                        class="w-full py-3 bg-gradient-to-r from-primary-500 to-accent-500 rounded-lg font-bold text-white hover:opacity-90 transition flex items-center justify-center">
+                    <span id="register-btn-text">Create Account</span>
+                    <i id="register-spinner" data-lucide="loader-2" class="hidden w-5 h-5 ml-2 animate-spin"></i>
+                </button>
+            </form>
+
+            <!-- Divider -->
+            <div class="relative my-8">
+                <div class="absolute inset-0 flex items-center">
+                    <div class="w-full border-t border-slate-700"></div>
+                </div>
+                <div class="relative flex justify-center text-sm">
+                    <span class="px-4 bg-transparent text-slate-500">or</span>
+                </div>
+            </div>
+
+            <!-- Login Link -->
+            <p class="text-center text-slate-400">
+                Already have an account?
+                <a href="/login" class="text-primary-400 hover:text-primary-300 font-medium">Sign in</a>
+            </p>
+        </div>
+
+        <!-- Footer -->
+        <p class="text-center text-slate-500 text-sm mt-8">
+            © 2026 Causal Affect. All rights reserved.
+        </p>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // Check if first user
+        async function checkFirstUser() {
+            try {
+                const response = await fetch('/api/auth/check-first-user');
+                const data = await response.json();
+                if (data.is_first_user) {
+                    document.getElementById('first-user-notice').classList.remove('hidden');
+                }
+            } catch (e) {
+                console.log('Could not check first user status');
+            }
+        }
+        checkFirstUser();
+
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById('password-toggle-icon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.setAttribute('data-lucide', 'eye-off');
+            } else {
+                input.type = 'password';
+                icon.setAttribute('data-lucide', 'eye');
+            }
+            lucide.createIcons();
+        }
+
+        document.getElementById('register-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const btn = document.getElementById('register-btn');
+            const btnText = document.getElementById('register-btn-text');
+            const spinner = document.getElementById('register-spinner');
+            const errorDiv = document.getElementById('error-message');
+            const errorText = document.getElementById('error-text');
+            const successDiv = document.getElementById('success-message');
+            
+            // Validate passwords match
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm_password').value;
+            
+            if (password !== confirmPassword) {
+                errorText.textContent = 'Passwords do not match';
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+            
+            // Reset states
+            errorDiv.classList.add('hidden');
+            successDiv.classList.add('hidden');
+            btn.disabled = true;
+            btnText.textContent = 'Creating account...';
+            spinner.classList.remove('hidden');
+            
+            const formData = new FormData(this);
+            
+            try {
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams(formData)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('success-text').textContent = data.message || 'Account created! Redirecting...';
+                    successDiv.classList.remove('hidden');
+                    setTimeout(() => {
+                        window.location.href = data.redirect || '/dashboard';
+                    }, 1500);
+                } else {
+                    errorText.textContent = data.detail || 'Registration failed';
+                    errorDiv.classList.remove('hidden');
+                    btn.disabled = false;
+                    btnText.textContent = 'Create Account';
+                    spinner.classList.add('hidden');
+                }
+            } catch (error) {
+                errorText.textContent = 'Network error. Please try again.';
+                errorDiv.classList.remove('hidden');
+                btn.disabled = false;
+                btnText.textContent = 'Create Account';
+                spinner.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>

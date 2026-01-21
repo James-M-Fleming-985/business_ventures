@@ -178,3 +178,56 @@ class APIStatus(Base):
     
     def __repr__(self):
         return f"<APIStatus {self.source} {self.status}>"
+
+
+class User(Base):
+    """User accounts with role-based access control"""
+    __tablename__ = 'users'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    email = Column(String(255), nullable=False, unique=True, index=True)
+    password_hash = Column(String(255), nullable=False)
+    display_name = Column(String(100))
+    
+    # Roles: 'superuser', 'admin', 'subscriber', 'free'
+    role = Column(String(50), nullable=False, default='free')
+    
+    # Subscription status
+    subscription_tier = Column(String(50), default='free')  # 'free', 'basic', 'pro', 'enterprise'
+    subscription_expires_at = Column(DateTime)
+    stripe_customer_id = Column(String(255))  # For Stripe integration
+    
+    # Account status
+    is_active = Column(Boolean, default=True)
+    is_verified = Column(Boolean, default=False)
+    verification_token = Column(String(255))
+    
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    last_login_at = Column(DateTime)
+    
+    # Indexes
+    __table_args__ = (
+        Index('ix_users_role', 'role'),
+        Index('ix_users_subscription', 'subscription_tier', 'subscription_expires_at'),
+    )
+    
+    def __repr__(self):
+        return f"<User {self.email} ({self.role})>"
+    
+    @property
+    def is_superuser(self):
+        return self.role == 'superuser'
+    
+    @property
+    def is_admin(self):
+        return self.role in ('superuser', 'admin')
+    
+    @property
+    def has_active_subscription(self):
+        if self.subscription_tier == 'free':
+            return True
+        if self.subscription_expires_at is None:
+            return False
+        return self.subscription_expires_at > datetime.utcnow()
