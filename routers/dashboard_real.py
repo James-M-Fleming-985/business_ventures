@@ -982,3 +982,40 @@ async def get_cascade_predictions(signal_name: str, db: Session = Depends(get_db
     except Exception as e:
         logger.error(f"Failed to load cascade predictions: {e}")
         return {'predictions': [], 'top_prediction': None, 'optimal_lag': None}
+
+
+@router.get("/variable-data/{variable_name}")
+async def get_variable_data(variable_name: str, db: Session = Depends(get_db)):
+    """
+    Debug endpoint: Get raw data for a specific variable.
+    Useful for diagnosing momentum calculation issues.
+    """
+    from sqlalchemy import desc
+    
+    try:
+        var = db.query(VariableMetadata).filter(
+            VariableMetadata.name == variable_name
+        ).first()
+        
+        if not var:
+            return {"error": f"Variable not found: {variable_name}"}
+        
+        data = db.query(TimeSeriesData).filter(
+            TimeSeriesData.variable_id == var.id
+        ).order_by(desc(TimeSeriesData.timestamp)).limit(12).all()
+        
+        return {
+            "variable": var.name,
+            "display_name": var.display_name,
+            "source": var.source,
+            "data_points": len(data),
+            "recent_values": [
+                {
+                    "date": dp.timestamp.strftime("%Y-%m-%d"),
+                    "value": float(dp.value)
+                }
+                for dp in data
+            ]
+        }
+    except Exception as e:
+        return {"error": str(e)}
