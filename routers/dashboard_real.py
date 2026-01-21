@@ -1093,6 +1093,10 @@ async def get_cascade_predictions(signal_name: str, db: Session = Depends(get_db
         # Try to find empirical Granger causality first
         # Note: We only require the Granger p-value to be significant (< 0.05)
         # The is_significant flag is for correlation significance, not Granger
+        
+        # Case 1: This signal PREDICTS other variables
+        # If signal is var1: granger_xy means var1→var2 (signal→other)
+        # If signal is var2: granger_yx means var2→var1 (signal→other)
         causality_results = db.query(CorrelationResult).filter(
             or_(
                 and_(
@@ -1129,6 +1133,44 @@ async def get_cascade_predictions(signal_name: str, db: Session = Depends(get_db
                 'source': 'granger'
             })
         
+        # Case 2: Find what PREDICTS this signal (leading indicators)
+        # If signal is var1: granger_yx means var2→var1 (other→signal)
+        # If signal is var2: granger_xy means var1→var2 (other→signal)
+        leading_indicators = []
+        leading_results = db.query(CorrelationResult).filter(
+            or_(
+                and_(
+                    CorrelationResult.variable1_id == layer1_var.id,
+                    CorrelationResult.granger_p_value_yx != None,
+                    CorrelationResult.granger_p_value_yx < 0.05
+                ),
+                and_(
+                    CorrelationResult.variable2_id == layer1_var.id,
+                    CorrelationResult.granger_p_value_xy != None,
+                    CorrelationResult.granger_p_value_xy < 0.05
+                )
+            )
+        ).order_by(desc(CorrelationResult.abs_correlation)).limit(3).all()
+        
+        for result in leading_results:
+            if result.variable1_id == layer1_var.id:
+                predictor_var = result.variable2
+                p_value = result.granger_p_value_yx
+            else:
+                predictor_var = result.variable1
+                p_value = result.granger_p_value_xy
+            
+            if predictor_var.source == 'wikipedia':
+                continue
+            
+            leading_indicators.append({
+                'name': predictor_var.name,
+                'display_name': predictor_var.display_name,
+                'direction': 'up' if result.correlation_value > 0 else 'down',
+                'p_value': f"{p_value:.4f}",
+                'correlation': result.correlation_value
+            })
+        
         # NO THEORETICAL FALLBACK - Only show empirically validated predictions
         # If no Granger results, show helpful message about running analysis
         
@@ -1139,14 +1181,19 @@ async def get_cascade_predictions(signal_name: str, db: Session = Depends(get_db
             top = predictions[0]
             top_prediction = f"{layer1_var.display_name} → {top['display_name']} ({top['direction'].upper()}) p={top['p_value']}"
             optimal_lag = top['lag']
+        elif leading_indicators:
+            # No predictions, but this signal is PREDICTED BY something
+            top = leading_indicators[0]
+            top_prediction = f"Lagging indicator: {top['display_name']} → {layer1_var.display_name}"
         else:
             top_prediction = "No empirical predictions yet - run Granger analysis after data fetch"
         
         return {
             'predictions': predictions,
+            'leading_indicators': leading_indicators,
             'top_prediction': top_prediction,
             'optimal_lag': optimal_lag,
-            'note': 'Only showing Granger-validated predictions (p < 0.05)' if predictions else 'Fetch Wikipedia monthly data, then run correlations and Granger analysis'
+            'note': 'Granger-validated predictions (p < 0.05)' if predictions else ('This signal is a lagging indicator' if leading_indicators else 'Fetch Wikipedia monthly data, then run correlations and Granger analysis')
         }
         
     except Exception as e:
