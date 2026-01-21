@@ -1128,23 +1128,24 @@ async def get_cascade_predictions(signal_name: str, db: Session = Depends(get_db
                 'source': 'granger'
             })
         
-        # If no Granger results, use curated theoretical mappings
-        if not predictions:
-            predictions = _get_theoretical_predictions(signal_name, layer1_var, db)
+        # NO THEORETICAL FALLBACK - Only show empirically validated predictions
+        # If no Granger results, show helpful message about running analysis
         
         # Generate top prediction summary
         top_prediction = None
         optimal_lag = None
         if predictions:
             top = predictions[0]
-            source_note = " (theoretical)" if top.get('source') == 'theoretical' else ""
-            top_prediction = f"{layer1_var.display_name} → {top['display_name']} ({top['direction'].upper()}){source_note}"
+            top_prediction = f"{layer1_var.display_name} → {top['display_name']} ({top['direction'].upper()}) p={top['p_value']}"
             optimal_lag = top['lag']
+        else:
+            top_prediction = "No empirical predictions yet - run Granger analysis after data fetch"
         
         return {
             'predictions': predictions,
             'top_prediction': top_prediction,
-            'optimal_lag': optimal_lag
+            'optimal_lag': optimal_lag,
+            'note': 'Only showing Granger-validated predictions (p < 0.05)' if predictions else 'Fetch Wikipedia monthly data, then run correlations and Granger analysis'
         }
         
     except Exception as e:

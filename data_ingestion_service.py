@@ -727,10 +727,14 @@ class DataIngestionService:
     def _fetch_wikipedia_pageviews_data(self) -> dict:
         """
         Fetch Wikipedia pageviews data (LAYER 1: FAST BEHAVIORAL SIGNALS).
-        Uses DAILY data for real-time momentum signals.
+        
+        Fetches BOTH:
+        - DAILY data (90 days) for real-time momentum in Signal Radar
+        - MONTHLY data (5 years) for Granger causality correlation with Layer 2
+        
         Wikipedia Pageviews API is FREE with no rate limits!
         """
-        logger.info("Fetching Wikipedia DAILY pageviews data (Layer 1 - Fast Signals)...")
+        logger.info("Fetching Wikipedia pageviews data (daily + monthly for Granger)...")
         
         with get_db_session() as session:
             wiki_vars = session.query(VariableMetadata).filter(
@@ -757,20 +761,22 @@ class DataIngestionService:
                     # Small delay between requests to be polite to Wikipedia API
                     if idx > 0:
                         import time
-                        time.sleep(0.3)  # 300ms delay
+                        time.sleep(0.5)  # 500ms delay between articles
                     
-                    # Fetch DAILY pageviews (90 days for real-time momentum)
-                    daily_pageviews = self.fetcher.fetch_wikipedia_pageviews_daily(
-                        article, days=90
+                    # ============================================================
+                    # FETCH MONTHLY DATA (5 years) - For Granger Causality
+                    # This aligns with Layer 2 monthly data for correlation analysis
+                    # ============================================================
+                    monthly_pageviews = self.fetcher.fetch_wikipedia_pageviews_monthly(
+                        article, months=60  # 5 years
                     )
                     
-                    if daily_pageviews:
+                    if monthly_pageviews:
                         logger.info(
-                            f"Wikipedia '{article}': {len(daily_pageviews)} daily points"
+                            f"Wikipedia '{article}': {len(monthly_pageviews)} monthly points (for Granger)"
                         )
                         
-                        # Store daily data points directly (no monthly normalization needed)
-                        for date_str, views in daily_pageviews.items():
+                        for date_str, views in monthly_pageviews.items():
                             timestamp = datetime.strptime(date_str, "%Y-%m-%d")
                             
                             existing = session.query(TimeSeriesData).filter(
@@ -779,7 +785,6 @@ class DataIngestionService:
                             ).first()
                             
                             if existing:
-                                # Update if value changed
                                 if existing.value != float(views):
                                     existing.value = float(views)
                                     existing.fetched_at = datetime.utcnow()
@@ -795,6 +800,45 @@ class DataIngestionService:
                         
                         success_count += 1
                         self._update_api_status(session, 'wikipedia', 'active')
+                    
+                    # Small delay before daily fetch
+                    import time
+                    time.sleep(0.3)
+                    
+                    # ============================================================
+                    # FETCH DAILY DATA (90 days) - For Real-time Momentum
+                    # This powers the Signal Radar week-over-week momentum display
+                    # ============================================================
+                    daily_pageviews = self.fetcher.fetch_wikipedia_pageviews_daily(
+                        article, days=90
+                    )
+                    
+                    if daily_pageviews:
+                        logger.info(
+                            f"Wikipedia '{article}': {len(daily_pageviews)} daily points (for momentum)"
+                        )
+                        
+                        for date_str, views in daily_pageviews.items():
+                            timestamp = datetime.strptime(date_str, "%Y-%m-%d")
+                            
+                            existing = session.query(TimeSeriesData).filter(
+                                TimeSeriesData.variable_id == var.id,
+                                TimeSeriesData.timestamp == timestamp
+                            ).first()
+                            
+                            if existing:
+                                if existing.value != float(views):
+                                    existing.value = float(views)
+                                    existing.fetched_at = datetime.utcnow()
+                            else:
+                                data_point = TimeSeriesData(
+                                    variable_id=var.id,
+                                    timestamp=timestamp,
+                                    value=float(views),
+                                    fetched_at=datetime.utcnow()
+                                )
+                                session.add(data_point)
+                                data_points += 1
                         
                 except Exception as e:
                     logger.error(f"Error fetching Wikipedia pageviews {var.name}: {e}")
@@ -802,7 +846,7 @@ class DataIngestionService:
             
             session.commit()
         
-        logger.info(f"Wikipedia: {success_count} variables, {data_points} new data points")
+        logger.info(f"Wikipedia: {success_count} variables, {data_points} new data points (daily+monthly)")
         return {'wikipedia_fetched': success_count, 'wikipedia_data_points': data_points}
     
     def _fetch_reddit_activity_data(self) -> dict:
