@@ -44,49 +44,58 @@ async def register(
     db: Session = Depends(get_db)
 ):
     """Register a new user - first user becomes superuser"""
-    # Validate email format
-    email = email.lower().strip()
-    if not email or '@' not in email:
+    try:
+        # Validate email format
+        email = email.lower().strip()
+        if not email or '@' not in email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid email address"
+            )
+        
+        # Validate password
+        if len(password) < 8:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Password must be at least 8 characters"
+            )
+        
+        # Check if email already exists
+        existing_user = get_user_by_email(db, email)
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email already registered"
+            )
+        
+        # Create user (first user gets superuser role automatically)
+        user = create_user(db, email, password, display_name)
+        
+        # Set auth cookies
+        set_auth_cookies(response, user)
+        
+        message = "Account created successfully!"
+        if user.is_superuser:
+            message = "🎉 Welcome! You are the first user and have been granted superuser privileges."
+        
+        return {
+            "message": message,
+            "user": {
+                "id": user.id,
+                "email": user.email,
+                "display_name": user.display_name,
+                "role": user.role
+            },
+            "redirect": "/dashboard"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Registration error: {e}", exc_info=True)
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid email address"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Registration failed: {str(e)}"
         )
-    
-    # Validate password
-    if len(password) < 8:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Password must be at least 8 characters"
-        )
-    
-    # Check if email already exists
-    existing_user = get_user_by_email(db, email)
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
-        )
-    
-    # Create user (first user gets superuser role automatically)
-    user = create_user(db, email, password, display_name)
-    
-    # Set auth cookies
-    set_auth_cookies(response, user)
-    
-    message = "Account created successfully!"
-    if user.is_superuser:
-        message = "🎉 Welcome! You are the first user and have been granted superuser privileges."
-    
-    return {
-        "message": message,
-        "user": {
-            "id": user.id,
-            "email": user.email,
-            "display_name": user.display_name,
-            "role": user.role
-        },
-        "redirect": "/dashboard"
-    }
 
 
 @router.post("/login")
