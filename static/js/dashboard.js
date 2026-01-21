@@ -39,6 +39,8 @@ function dashboardData() {
         // ============================================================
         activeView: 'cascade',  // 'cascade', 'heatmap', 'network', 'leaderboard'
         fastSignals: [],        // Layer 1 signals with momentum
+        filteredSignals: [],    // Filtered version based on dropdown
+        signalFilter: 'top10',  // Filter: top10, top20, rising, falling, all
         selectedFastSignal: null,
         predictedOutcomes: [],  // Layer 2 predictions based on selected signal
         selectedCascade: null,
@@ -71,10 +73,12 @@ function dashboardData() {
                     this.fastSignals = data.signals || [];
                     this.topInsight = data.top_insight || null;
                     console.log('📡 Fast signals loaded:', this.fastSignals.length);
+                    this.filterSignals();  // Apply initial filter
                 } else {
                     // API endpoint may not exist yet - use placeholder
                     console.log('📡 Fast signals API not ready, showing placeholder');
                     this.fastSignals = this._getPlaceholderFastSignals();
+                    this.filterSignals();
                     this.topInsight = {
                         title: 'Layer 1 Setup Required',
                         description: 'Run POST /api/admin/setup-layer1-fast-signals to add Wikipedia pageview variables'
@@ -83,7 +87,34 @@ function dashboardData() {
             } catch (error) {
                 console.error('Failed to load fast signals:', error);
                 this.fastSignals = this._getPlaceholderFastSignals();
+                this.filterSignals();
             }
+        },
+        
+        filterSignals() {
+            // Apply filter based on dropdown selection
+            let filtered = [...this.fastSignals];
+            
+            switch(this.signalFilter) {
+                case 'rising':
+                    filtered = filtered.filter(s => s.momentum > 0);
+                    break;
+                case 'falling':
+                    filtered = filtered.filter(s => s.momentum < 0);
+                    break;
+                case 'top10':
+                    filtered = filtered.slice(0, 10);
+                    break;
+                case 'top20':
+                    filtered = filtered.slice(0, 20);
+                    break;
+                case 'all':
+                default:
+                    break;
+            }
+            
+            this.filteredSignals = filtered;
+            console.log(`📡 Filtered signals (${this.signalFilter}):`, filtered.length);
         },
         
         _getPlaceholderFastSignals() {

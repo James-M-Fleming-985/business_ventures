@@ -25,6 +25,34 @@ router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 templates = Jinja2Templates(directory="templates")
 
 
+# ==============================================================================
+# Signal Descriptions for Info Tooltips
+# ==============================================================================
+def _get_signal_description(var_name: str, source: str) -> str:
+    """Get human-readable description for a signal variable"""
+    try:
+        from setup_layer1_fast_signals import WIKIPEDIA_ARTICLES, REDDIT_SUBREDDITS
+        
+        if source == 'wikipedia':
+            # Extract article name from var_name (e.g., wiki_layoff -> Layoff)
+            article_key = var_name.replace('wiki_', '').replace('-', '_')
+            for item in WIKIPEDIA_ARTICLES:
+                if item['article'].lower().replace('_', '-') == article_key.replace('_', '-'):
+                    return item.get('description', f"Wikipedia pageviews for {item['display_name']}")
+            return f"Wikipedia pageviews tracking public interest. Higher views may indicate trending topics."
+        
+        elif source == 'reddit':
+            subreddit_name = var_name.replace('reddit_', '')
+            for item in REDDIT_SUBREDDITS:
+                if item['subreddit'].lower() == subreddit_name.lower():
+                    return f"Reddit r/{item['subreddit']} activity. Tracks posts and engagement in this community."
+            return f"Reddit subreddit activity tracking community discussions and sentiment."
+        
+        return "Behavioral signal tracking public interest patterns."
+    except:
+        return "Fast behavioral signal for early trend detection."
+
+
 @router.get("/stats")
 async def get_dashboard_stats(db: Session = Depends(get_db)):
     """Get real statistics from database - NO MOCK DATA"""
@@ -976,7 +1004,8 @@ async def get_fast_signals(db: Session = Depends(get_db)):
                 'layer': 1,
                 'source': var.source,
                 'has_data': len(recent_data) > 0,
-                'data_points': len(recent_data)
+                'data_points': len(recent_data),
+                'description': _get_signal_description(var.name, var.source)
             })
             
             # Store for cross-validation lookup

@@ -981,3 +981,133 @@ async def setup_reddit_variables_endpoint():
     except Exception as e:
         logger.error(f"Reddit setup failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/calculate-granger")
+async def calculate_granger_causality(background_tasks: BackgroundTasks):
+    """
+    Run Granger causality on Layer 1 → Layer 2 correlations.
+    This identifies which fast signals actually PREDICT market outcomes.
+    """
+    try:
+        job_id = f"granger_{int(datetime.utcnow().timestamp())}"
+        
+        _active_jobs[job_id] = {
+            'job_id': job_id,
+            'type': 'granger_causality',
+            'status': 'queued',
+            'stage': 'initializing',
+            'created_at': datetime.utcnow().isoformat(),
+            'updated_at': datetime.utcnow().isoformat()
+        }
+        
+        background_tasks.add_task(_run_granger_background, job_id)
+        
+        return {
+            "status": "queued",
+            "message": "Granger causality calculation started",
+            "job_id": job_id,
+            "poll_url": f"/api/admin/job-status/{job_id}"
+        }
+    except Exception as e:
+        logger.error(f"Failed to queue Granger calc: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+def _run_granger_background(job_id: str):
+    """Background task for Granger causality calculation on Layer 1 → Layer 2"""
+    try:
+        _active_jobs[job_id]['status'] = 'running'
+        _active_jobs[job_id]['stage'] = 'loading_correlations'
+        _active_jobs[job_id]['updated_at'] = datetime.utcnow().isoformat()
+        
+        sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+        from services.granger_causality_service import GrangerCausalityService
+        from database import get_db_session
+        from models import CorrelationResult, VariableMetadata
+        
+        granger_service = GrangerCausalityService(max_lag=12, confidence_level=0.05)
+        
+        with get_db_session() as db:
+            # Get Layer 1 variables (wikipedia, reddit)
+            layer1_vars = db.query(VariableMetadata).filter(
+                VariableMetadata.source.in_(['wikipedia', 'reddit']),
+                VariableMetadata.is_active == True
+            ).all()
+            layer1_ids = {v.id for v in layer1_vars}
+            
+            # Get Layer 2 variables (not Layer 1)
+            layer2_vars = db.query(VariableMetadata).filter(
+                ~VariableMetadata.source.in_(['wikipedia', 'reddit']),
+                VariableMetadata.is_active == True
+            ).all()
+            layer2_ids = {v.id for v in layer2_vars}
+            
+            logger.info(f"Granger: {len(layer1_ids)} Layer 1 vars, {len(layer2_ids)} Layer 2 vars")
+            
+            # Find cross-layer correlations (Layer 1 ↔ Layer 2)
+            cross_correlations = db.query(CorrelationResult).filter(
+                CorrelationResult.is_significant == True,
+                CorrelationResult.abs_correlation >= 0.3
+            ).all()
+            
+            # Filter to Layer 1 ↔ Layer 2 pairs only
+            l1_l2_pairs = []
+            for corr in cross_correlations:
+                if (corr.variable1_id in layer1_ids and corr.variable2_id in layer2_ids) or \
+                   (corr.variable2_id in layer1_ids and corr.variable1_id in layer2_ids):
+                    l1_l2_pairs.append(corr)
+            
+            logger.info(f"Found {len(l1_l2_pairs)} Layer 1 ↔ Layer 2 correlations for Granger testing")
+            _active_jobs[job_id]['stage'] = f'testing_{len(l1_l2_pairs)}_pairs'
+            
+            tested = 0
+            significant = 0
+            
+            for corr in l1_l2_pairs[:50]:  # Limit to 50 pairs for speed
+                try:
+                    _active_jobs[job_id]['stage'] = f'testing_pair_{tested+1}'
+                    
+                    # Run Granger test
+                    result = granger_service.test_causality(
+                        corr.variable1_id, 
+                        corr.variable2_id
+                    )
+                    
+                    # Update correlation with Granger results
+                    if result.get('var1_to_var2', {}).get('p_value'):
+                        corr.granger_p_value_xy = result['var1_to_var2']['p_value']
+                    if result.get('var2_to_var1', {}).get('p_value'):
+                        corr.granger_p_value_yx = result['var2_to_var1']['p_value']
+                    if result.get('optimal_lag'):
+                        corr.granger_lags = result['optimal_lag']
+                    
+                    if result.get('var1_to_var2', {}).get('significant') or \
+                       result.get('var2_to_var1', {}).get('significant'):
+                        significant += 1
+                    
+                    tested += 1
+                    
+                except Exception as e:
+                    logger.warning(f"Granger test failed for pair: {e}")
+                    continue
+            
+            db.commit()
+        
+        _active_jobs[job_id]['status'] = 'completed'
+        _active_jobs[job_id]['stage'] = 'done'
+        _active_jobs[job_id]['result'] = {
+            'pairs_tested': tested,
+            'significant_causality': significant,
+            'layer1_variables': len(layer1_ids),
+            'layer2_variables': len(layer2_ids)
+        }
+        _active_jobs[job_id]['updated_at'] = datetime.utcnow().isoformat()
+        
+        logger.info(f"Granger complete: {tested} tested, {significant} significant")
+        
+    except Exception as e:
+        logger.error(f"Granger calc failed: {e}", exc_info=True)
+        _active_jobs[job_id]['status'] = 'failed'
+        _active_jobs[job_id]['error'] = str(e)
+        _active_jobs[job_id]['updated_at'] = datetime.utcnow().isoformat()
