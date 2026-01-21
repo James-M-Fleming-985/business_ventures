@@ -896,6 +896,95 @@ async def list_data_sources():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/debug-wikipedia-fetch")
+async def debug_wikipedia_fetch():
+    """
+    Debug endpoint: Test the Wikipedia fetch for a single article 
+    to verify monthly + daily data retrieval is working.
+    """
+    try:
+        from data_fetcher import DataFetcher
+        f = DataFetcher()
+        
+        article = "Layoff"
+        
+        # Test monthly
+        monthly = f.fetch_wikipedia_pageviews_monthly(article, months=60)
+        monthly_info = None
+        if monthly:
+            sorted_dates = sorted(monthly.keys())
+            monthly_info = {
+                "count": len(monthly),
+                "date_range": f"{sorted_dates[0]} to {sorted_dates[-1]}",
+                "sample": dict(list(monthly.items())[:3])
+            }
+        
+        # Test daily
+        daily = f.fetch_wikipedia_pageviews_daily(article, days=90)
+        daily_info = None
+        if daily:
+            sorted_dates = sorted(daily.items())
+            daily_info = {
+                "count": len(daily),
+                "date_range": f"{sorted_dates[0][0]} to {sorted_dates[-1][0]}",
+                "sample": dict(list(daily.items())[:3])
+            }
+        
+        return {
+            "article": article,
+            "monthly_fetch": monthly_info,
+            "daily_fetch": daily_info,
+            "status": "success" if monthly and daily else "partial" if monthly or daily else "failed"
+        }
+        
+    except Exception as e:
+        logger.error(f"Debug fetch failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/debug-db-data/{variable_name}")
+async def debug_db_data(variable_name: str):
+    """Debug: Check what data is actually stored in DB for a variable"""
+    try:
+        from database import get_db_session
+        from models import Variable, TimeSeriesData
+        
+        with get_db_session() as session:
+            var = session.query(Variable).filter(Variable.name == variable_name).first()
+            if not var:
+                return {"error": f"Variable {variable_name} not found"}
+            
+            # Get all data points
+            data = session.query(TimeSeriesData).filter(
+                TimeSeriesData.variable_id == var.id
+            ).order_by(TimeSeriesData.timestamp).all()
+            
+            if not data:
+                return {"variable": variable_name, "data_points": 0, "message": "No data"}
+            
+            # Analyze the dates
+            dates = [d.timestamp.strftime("%Y-%m-%d") for d in data]
+            values = [(d.timestamp.strftime("%Y-%m-%d"), d.value) for d in data]
+            
+            # Check for monthly vs daily
+            monthly_count = sum(1 for d in dates if d.endswith("-01"))
+            daily_count = len(dates) - monthly_count
+            
+            return {
+                "variable": variable_name,
+                "variable_id": var.id,
+                "total_data_points": len(data),
+                "monthly_points": monthly_count,
+                "daily_points": daily_count,
+                "first_5": values[:5],
+                "last_5": values[-5:]
+            }
+            
+    except Exception as e:
+        logger.error(f"Debug DB failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/fetch-wikipedia")
 async def fetch_wikipedia_only():
     """
@@ -906,7 +995,7 @@ async def fetch_wikipedia_only():
     Wikipedia API is FREE with no rate limits!
     """
     try:
-        logger.info("Quick fetch: Wikipedia daily pageviews only...")
+        logger.info("Quick fetch: Wikipedia daily+monthly pageviews...")
         sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
         
         from data_ingestion_service import DataIngestionService
