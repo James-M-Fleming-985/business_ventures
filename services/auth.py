@@ -25,8 +25,12 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
 REFRESH_TOKEN_EXPIRE_DAYS = 30
 
-# Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Password hashing - truncate_error=False allows bcrypt to work with passlib
+pwd_context = CryptContext(
+    schemes=["bcrypt"],
+    deprecated="auto",
+    bcrypt__rounds=12
+)
 
 # Bearer token security
 security = HTTPBearer(auto_error=False)
@@ -39,6 +43,11 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def hash_password(password: str) -> str:
     """Hash a password for storage"""
+    # Ensure password is a string and truncate if needed for bcrypt
+    if isinstance(password, bytes):
+        password = password.decode('utf-8')
+    # Truncate to 72 bytes for bcrypt compatibility
+    password = password[:72]
     return pwd_context.hash(password)
 
 
@@ -82,6 +91,13 @@ def create_user(db: Session, email: str, password: str, display_name: str = None
     """Create a new user - first user becomes superuser"""
     email = email.lower().strip()
     
+    # Debug: log password length
+    logger.info(f"Creating user {email}, password length: {len(password)}")
+    
+    # Validate password length for bcrypt (max 72 bytes)
+    if len(password.encode('utf-8')) > 72:
+        password = password[:72]
+    
     # Check if this is the first user
     user_count = db.query(User).count()
     role = 'superuser' if user_count == 0 else 'free'
@@ -92,7 +108,7 @@ def create_user(db: Session, email: str, password: str, display_name: str = None
         display_name=display_name or email.split('@')[0],
         role=role,
         subscription_tier='enterprise' if role == 'superuser' else 'free',
-        is_verified=True if role == 'superuser' else False,  # Superuser auto-verified
+        is_verified=True if role == 'superuser' else False,
         verification_token=secrets.token_urlsafe(32) if role != 'superuser' else None
     )
     
