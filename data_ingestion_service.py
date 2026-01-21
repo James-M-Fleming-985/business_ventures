@@ -727,10 +727,10 @@ class DataIngestionService:
     def _fetch_wikipedia_pageviews_data(self) -> dict:
         """
         Fetch Wikipedia pageviews data (LAYER 1: FAST BEHAVIORAL SIGNALS).
-        This replaces Google Trends which is blocked by rate limits.
+        Uses DAILY data for real-time momentum signals.
         Wikipedia Pageviews API is FREE with no rate limits!
         """
-        logger.info("Fetching Wikipedia pageviews data (Layer 1 - Fast Signals)...")
+        logger.info("Fetching Wikipedia DAILY pageviews data (Layer 1 - Fast Signals)...")
         
         with get_db_session() as session:
             wiki_vars = session.query(VariableMetadata).filter(
@@ -757,31 +757,20 @@ class DataIngestionService:
                     # Small delay between requests to be polite to Wikipedia API
                     if idx > 0:
                         import time
-                        time.sleep(0.5)  # 500ms delay
+                        time.sleep(0.3)  # 300ms delay
                     
-                    # Fetch monthly pageviews (60 months = 5 years)
-                    monthly_pageviews = self.fetcher.fetch_wikipedia_pageviews_monthly(
-                        article, months=60
+                    # Fetch DAILY pageviews (90 days for real-time momentum)
+                    daily_pageviews = self.fetcher.fetch_wikipedia_pageviews_daily(
+                        article, days=90
                     )
                     
-                    if monthly_pageviews:
-                        # NORMALIZE to standard grid
-                        fill_method = get_fill_strategy_for_variable_type(
-                            'wikipedia', var.name
-                        )
-                        aligned_data = normalize_to_standard_grid(
-                            monthly_pageviews,
-                            self.standard_grid,
-                            fill_method=fill_method
-                        )
-                        
+                    if daily_pageviews:
                         logger.info(
-                            f"Wikipedia '{article}': {len(monthly_pageviews)} raw points "
-                            f"-> {len(aligned_data)} aligned points"
+                            f"Wikipedia '{article}': {len(daily_pageviews)} daily points"
                         )
                         
-                        # Store aligned data points
-                        for date_str, views in aligned_data.items():
+                        # Store daily data points directly (no monthly normalization needed)
+                        for date_str, views in daily_pageviews.items():
                             timestamp = datetime.strptime(date_str, "%Y-%m-%d")
                             
                             existing = session.query(TimeSeriesData).filter(
@@ -789,7 +778,12 @@ class DataIngestionService:
                                 TimeSeriesData.timestamp == timestamp
                             ).first()
                             
-                            if not existing:
+                            if existing:
+                                # Update if value changed
+                                if existing.value != float(views):
+                                    existing.value = float(views)
+                                    existing.fetched_at = datetime.utcnow()
+                            else:
                                 data_point = TimeSeriesData(
                                     variable_id=var.id,
                                     timestamp=timestamp,
@@ -808,7 +802,7 @@ class DataIngestionService:
             
             session.commit()
         
-        logger.info(f"Wikipedia: {success_count} variables, {data_points} data points")
+        logger.info(f"Wikipedia: {success_count} variables, {data_points} new data points")
         return {'wikipedia_fetched': success_count, 'wikipedia_data_points': data_points}
     
     def _update_api_status(self, session, source: str, status: str, error: str = None):

@@ -834,13 +834,12 @@ async def test_granger_causality(
 @router.get("/fast-signals")
 async def get_fast_signals(db: Session = Depends(get_db)):
     """
-    Get Layer 1 Fast Signals with momentum indicators.
-    These are behavioral signals (Wikipedia pageviews, Reddit activity, etc.)
-    that move faster than market/economic data.
+    Get Layer 1 Fast Signals with REAL-TIME momentum indicators.
+    Uses daily Wikipedia data to calculate week-over-week momentum.
+    These are behavioral signals that move faster than market/economic data.
     """
     from sqlalchemy import func, desc
-    from datetime import datetime
-    import calendar
+    from datetime import datetime, timedelta
     
     signals = []
     
@@ -851,38 +850,32 @@ async def get_fast_signals(db: Session = Depends(get_db)):
             VariableMetadata.is_active == True
         ).all()
         
-        # Calculate days elapsed in current month for rate normalization
+        # Define time windows for week-over-week comparison
         now = datetime.utcnow()
-        current_month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        days_in_current_month = calendar.monthrange(now.year, now.month)[1]
-        days_elapsed = now.day
+        week_ago = now - timedelta(days=7)
+        two_weeks_ago = now - timedelta(days=14)
         
         for var in layer1_vars:
-            # Get recent data points including current partial month
+            # Get last 14 days of data for week-over-week comparison
             recent_data = db.query(TimeSeriesData).filter(
-                TimeSeriesData.variable_id == var.id
-            ).order_by(desc(TimeSeriesData.timestamp)).limit(6).all()
+                TimeSeriesData.variable_id == var.id,
+                TimeSeriesData.timestamp >= two_weeks_ago
+            ).order_by(desc(TimeSeriesData.timestamp)).all()
             
-            if len(recent_data) >= 2:
-                current_value = recent_data[0].value
-                current_date = recent_data[0].timestamp
-                previous_value = recent_data[1].value
-                previous_date = recent_data[1].timestamp
+            if len(recent_data) >= 7:
+                # Split into this week vs last week
+                this_week = [dp.value for dp in recent_data if dp.timestamp >= week_ago]
+                last_week = [dp.value for dp in recent_data if dp.timestamp < week_ago]
                 
-                # Check if current data is from this month (partial)
-                is_current_month = (current_date.year == now.year and 
-                                   current_date.month == now.month)
-                
-                if is_current_month and days_elapsed < days_in_current_month:
-                    # Normalize current partial month to daily rate, then project to full month
-                    daily_rate_current = current_value / max(days_elapsed, 1)
-                    projected_current = daily_rate_current * days_in_current_month
+                if this_week and last_week:
+                    # Calculate average daily views for each week
+                    this_week_avg = sum(this_week) / len(this_week)
+                    last_week_avg = sum(last_week) / len(last_week)
                     
-                    # Calculate momentum using projected full-month value
-                    momentum = ((projected_current - previous_value) / max(previous_value, 1)) * 100
+                    # Week-over-week momentum
+                    momentum = ((this_week_avg - last_week_avg) / max(last_week_avg, 1)) * 100
                 else:
-                    # Both are complete months - direct comparison
-                    momentum = ((current_value - previous_value) / max(previous_value, 1)) * 100
+                    momentum = 0
             else:
                 momentum = 0
             
@@ -892,7 +885,8 @@ async def get_fast_signals(db: Session = Depends(get_db)):
                 'momentum': round(momentum, 1),
                 'layer': 1,
                 'source': var.source,
-                'has_data': len(recent_data) > 0
+                'has_data': len(recent_data) > 0,
+                'data_points': len(recent_data)
             })
         
         # Sort by absolute momentum (most active first)

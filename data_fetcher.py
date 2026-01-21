@@ -865,6 +865,63 @@ class DataFetcher:
         except Exception as e:
             logger.error(f"Error fetching USGS earthquake data: {e}")
             return None
+
+    def fetch_wikipedia_pageviews_daily(self, article: str, days: int = 90) -> Optional[Dict[str, float]]:
+        """
+        Fetch Wikipedia DAILY pageviews (LAYER 1: FAST REAL-TIME SIGNALS).
+        Returns dict of {"YYYY-MM-DD": daily_pageviews}
+        
+        Daily data is more real-time than monthly - updated within 24-48 hours.
+        This is a FREE API with no rate limits!
+        
+        Args:
+            article: Wikipedia article title (e.g., "Bitcoin", "Artificial_intelligence")
+            days: Number of days to fetch (default 90 = 3 months)
+        
+        Returns:
+            Dict mapping date to daily pageviews
+        """
+        try:
+            from dateutil.relativedelta import relativedelta
+            
+            end_date = datetime.now() - timedelta(days=1)  # Yesterday (today's data not ready)
+            start_date = end_date - timedelta(days=days)
+            
+            # Wikipedia Pageviews API with DAILY granularity
+            url = f"https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/all-agents/{article}/daily/{start_date.strftime('%Y%m%d')}/{end_date.strftime('%Y%m%d')}"
+            
+            headers = {
+                'User-Agent': 'CausalAffectPlatform/1.0 (business_ventures; data analysis)'
+            }
+            
+            response = requests.get(url, headers=headers, timeout=30)
+            
+            if response.status_code == 404:
+                logger.warning(f"Wikipedia article not found: {article}")
+                return None
+            
+            response.raise_for_status()
+            data = response.json()
+            
+            # Parse daily data
+            pageview_data = {}
+            for item in data.get('items', []):
+                # Format: YYYYMMDDHH -> YYYY-MM-DD
+                timestamp_str = item.get('timestamp', '')
+                if len(timestamp_str) >= 8:
+                    year = timestamp_str[:4]
+                    month = timestamp_str[4:6]
+                    day = timestamp_str[6:8]
+                    date_key = f"{year}-{month}-{day}"
+                    pageview_data[date_key] = float(item.get('views', 0))
+            
+            logger.info(f"Fetched {len(pageview_data)} days of Wikipedia pageviews for '{article}'")
+            return pageview_data
+            
+        except Exception as e:
+            logger.error(f"Error fetching Wikipedia daily pageviews for '{article}': {e}")
+            return None
+
     def fetch_wikipedia_pageviews_monthly(self, article: str, months: int = 60) -> Optional[Dict[str, float]]:
         """
         Fetch Wikipedia pageviews data (LAYER 1: FAST BEHAVIORAL SIGNALS).
