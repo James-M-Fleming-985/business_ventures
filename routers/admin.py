@@ -1013,6 +1013,7 @@ async def debug_granger_results(variable_name: str):
             results = []
             for r in granger_results:
                 other_var = r.variable2 if r.variable1_id == var.id else r.variable1
+                is_var1 = r.variable1_id == var.id
                 results.append({
                     "other_variable": other_var.name,
                     "other_display": other_var.display_name,
@@ -1020,7 +1021,10 @@ async def debug_granger_results(variable_name: str):
                     "is_significant": r.is_significant,
                     "granger_xy": r.granger_p_value_xy,
                     "granger_yx": r.granger_p_value_yx,
-                    "lags": r.granger_lags
+                    "lags": r.granger_lags,
+                    "is_var1": is_var1,
+                    "var1_id": r.variable1_id,
+                    "var2_id": r.variable2_id
                 })
             
             return {
