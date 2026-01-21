@@ -1081,6 +1081,10 @@ async def get_significant_granger():
                 "total_significant": len(results),
                 "results": results[:25]  # Top 25
             }
+            
+    except Exception as e:
+        logger.error(f"Significant Granger query failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/fetch-wikipedia")
