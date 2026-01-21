@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subscribe - Causal Affect Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://js.stripe.com/v3/"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { 400: '#60a5fa', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8' },
+                        accent: { 400: '#a78bfa', 500: '#8b5cf6' },
+                        slate: { 700: '#334155', 800: '#1e293b', 900: '#0f172a' }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+    <!-- Header -->
+    <nav class="bg-slate-800 border-b border-slate-700">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <a href="/" class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-primary-500 to-accent-500 rounded-lg flex items-center justify-center">
+                        <i data-lucide="activity" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <span class="text-xl font-bold">Causal Affect</span>
+                </a>
+                <a href="/dashboard" class="text-slate-400 hover:text-white transition flex items-center space-x-2">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                    <span>Back to Dashboard</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 py-12">
+        <!-- Current Status -->
+        <div id="current-status" class="mb-12 p-6 bg-slate-800/50 rounded-xl border border-slate-700">
+            <h2 class="text-lg font-semibold mb-4">Current Subscription</h2>
+            <div class="flex items-center justify-between">
+                <div>
+                    <span id="current-tier" class="text-2xl font-bold text-primary-400">Loading...</span>
+                    <p id="status-details" class="text-slate-400 mt-1">Checking subscription status...</p>
+                </div>
+                <button id="manage-btn" onclick="openBillingPortal()" 
+                        class="hidden px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition">
+                    Manage Subscription
+                </button>
+            </div>
+        </div>
+
+        <!-- Heading -->
+        <div class="text-center mb-12">
+            <h1 class="text-4xl font-bold mb-4">Choose Your Plan</h1>
+            <p class="text-slate-400 text-lg">Unlock powerful correlation and causality analysis</p>
+        </div>
+
+        <!-- Billing Toggle -->
+        <div class="flex justify-center mb-10">
+            <div class="bg-slate-800 rounded-full p-1 flex">
+                <button id="monthly-btn" onclick="setBillingPeriod('monthly')"
+                        class="px-6 py-2 rounded-full text-sm font-medium transition bg-primary-600 text-white">
+                    Monthly
+                </button>
+                <button id="yearly-btn" onclick="setBillingPeriod('yearly')"
+                        class="px-6 py-2 rounded-full text-sm font-medium transition text-slate-400 hover:text-white">
+                    Yearly <span class="text-green-400 text-xs">Save 17%</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Pricing Cards -->
+        <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            <!-- Free Tier -->
+            <div class="bg-slate-800/50 rounded-2xl p-8 border border-slate-700">
+                <div class="text-center mb-6">
+                    <h3 class="text-xl font-bold mb-2">Free</h3>
+                    <div class="text-4xl font-bold">£0</div>
+                    <p class="text-slate-400 text-sm mt-2">Forever free</p>
+                </div>
+                <ul class="space-y-3 mb-8">
+                    <li class="flex items-center text-slate-300">
+                        <i data-lucide="check" class="w-5 h-5 text-green-400 mr-3"></i>
+                        View correlation heatmap
+                    </li>
+                    <li class="flex items-center text-slate-300">
+                        <i data-lucide="check" class="w-5 h-5 text-green-400 mr-3"></i>
+                        5 variable pairs/day
+                    </li>
+                    <li class="flex items-center text-slate-300">
+                        <i data-lucide="check" class="w-5 h-5 text-green-400 mr-3"></i>
+                        7-day data history
+                    </li>
+                    <li class="flex items-center text-slate-500">
+                        <i data-lucide="x" class="w-5 h-5 text-slate-600 mr-3"></i>
+                        <span class="line-through">Granger causality</span>
+                    </li>
+                    <li class="flex items-center text-slate-500">
+                        <i data-lucide="x" class="w-5 h-5 text-slate-600 mr-3"></i>
+                        <span class="line-through">API access</span>
+                    </li>
+                </ul>
+                <button disabled class="w-full py-3 bg-slate-700 rounded-lg font-semibold text-slate-400 cursor-not-allowed">
+                    Current Plan
+                </button>
+            </div>
+
+            <!-- Pro Tier -->
+            <div class="bg-gradient-to-b from-primary-900/50 to-slate-800/50 rounded-2xl p-8 border-2 border-primary-500 relative">
+                <div class="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-primary-500 rounded-full text-xs font-bold">
+                    POPULAR
+                </div>
+                <div class="text-center mb-6">
+                    <h3 class="text-xl font-bold mb-2">Pro</h3>
+                    <div class="text-4xl font-bold">
+                        <span id="pro-price">£29</span>
+                        <span class="text-lg text-slate-400" id="pro-period">/mo</span>
+                    </div>
+                    <p class="text-slate-400 text-sm mt-2" id="pro-savings"></p>
+                </div>
+                <ul class="space-y-3 mb-8">
+                    <li class="flex items-center text-slate-300">
+                        <i data-lucide="check" class="w-5 h-5 text-green-400 mr-3"></i>
+                        Full correlation analysis
+                    </li>
+                    <li class="flex items-center text-slate-300">
+                        <i data-lucide="check" class="w-5 h-5 text-green-400 mr-3"></i>
+                        Unlimited variable pairs
+                    </li>
+                    <li class="flex items-center text-slate-300">
+                        <i data-lucide="check" class="w-5 h-5 text-green-400 mr-3"></i>
+                        1-year data history
+                    </li>
+                    <li class="flex items-center text-slate-300">
+                        <i data-lucide="check" class="w-5 h-5 text-green-400 mr-3"></i>
+                        Granger causality analysis
+                    </li>
+                    <li class="flex items-center text-slate-300">
+                        <i data-lucide="check" class="w-5 h-5 text-green-400 mr-3"></i>
+                        API access (1K req/day)
+                    </li>
+                </ul>
+                <button onclick="subscribe('pro')" id="pro-subscribe-btn"
+                        class="w-full py-3 bg-gradient-to-r from-primary-500 to-accent-500 rounded-lg font-bold text-white hover:opacity-90 transition">
+                    Subscribe to Pro
+                </button>
+            </div>
+
+            <!-- Enterprise Tier -->
+            <div class="bg-slate-800/50 rounded-2xl p-8 border border-slate-700">
+                <div class="text-center mb-6">
+                    <h3 class="text-xl font-bold mb-2">Enterprise</h3>
+                    <div class="text-4xl font-bold">
+                        <span id="enterprise-price">£99</span>
+                        <span class="text-lg text-slate-400" id="enterprise-period">/mo</span>
+                    </div>
+                    <p class="text-slate-400 text-sm mt-2" id="enterprise-savings"></p>
+                </div>
+                <ul class="space-y-3 mb-8">
+                    <li class="flex items-center text-slate-300">
+                        <i data-lucide="check" class="w-5 h-5 text-green-400 mr-3"></i>
+                        Everything in Pro
+                    </li>
+                    <li class="flex items-center text-slate-300">
+                        <i data-lucide="check" class="w-5 h-5 text-green-400 mr-3"></i>
+                        5-year data history
+                    </li>
+                    <li class="flex items-center text-slate-300">
+                        <i data-lucide="check" class="w-5 h-5 text-green-400 mr-3"></i>
+                        Drift forecasting
+                    </li>
+                    <li class="flex items-center text-slate-300">
+                        <i data-lucide="check" class="w-5 h-5 text-green-400 mr-3"></i>
+                        Custom data sources
+                    </li>
+                    <li class="flex items-center text-slate-300">
+                        <i data-lucide="check" class="w-5 h-5 text-green-400 mr-3"></i>
+                        Unlimited API access
+                    </li>
+                </ul>
+                <button onclick="subscribe('enterprise')" id="enterprise-subscribe-btn"
+                        class="w-full py-3 bg-slate-700 hover:bg-slate-600 rounded-lg font-semibold text-white transition">
+                    Subscribe to Enterprise
+                </button>
+            </div>
+        </div>
+
+        <!-- Error Message -->
+        <div id="error-message" class="hidden mt-8 max-w-md mx-auto p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-300 text-center">
+            <i data-lucide="alert-circle" class="w-5 h-5 inline mr-2"></i>
+            <span id="error-text">An error occurred</span>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-auto py-8 border-t border-slate-800">
+        <div class="container mx-auto px-6 text-center text-slate-500 text-sm">
+            <p>Secure payments powered by <strong>Stripe</strong></p>
+            <p class="mt-2">Cancel anytime • 30-day money-back guarantee</p>
+        </div>
+    </footer>
+
+    <script>
+        let billingPeriod = 'monthly';
+        let stripe = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            lucide.createIcons();
+            await loadConfig();
+            await loadStatus();
+        });
+
+        async function loadConfig() {
+            try {
+                const response = await fetch('/api/subscription/config');
+                const config = await response.json();
+                
+                if (config.publishable_key) {
+                    stripe = Stripe(config.publishable_key);
+                }
+            } catch (error) {
+                console.error('Failed to load config:', error);
+            }
+        }
+
+        async function loadStatus() {
+            try {
+                const response = await fetch('/api/subscription/status');
+                if (response.status === 401) {
+                    // Not logged in
+                    document.getElementById('current-tier').textContent = 'Not logged in';
+                    document.getElementById('status-details').textContent = 'Please log in to subscribe';
+                    return;
+                }
+                
+                const status = await response.json();
+                const tierEl = document.getElementById('current-tier');
+                const detailsEl = document.getElementById('status-details');
+                const manageBtn = document.getElementById('manage-btn');
+                
+                tierEl.textContent = status.tier.charAt(0).toUpperCase() + status.tier.slice(1);
+                
+                if (status.tier === 'free') {
+                    detailsEl.textContent = 'Upgrade to unlock all features';
+                } else {
+                    if (status.days_remaining !== null) {
+                        detailsEl.textContent = `${status.days_remaining} days remaining`;
+                    } else {
+                        detailsEl.textContent = 'Active subscription';
+                    }
+                    manageBtn.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Failed to load status:', error);
+                document.getElementById('current-tier').textContent = 'Error';
+                document.getElementById('status-details').textContent = 'Could not load subscription status';
+            }
+        }
+
+        function setBillingPeriod(period) {
+            billingPeriod = period;
+            
+            const monthlyBtn = document.getElementById('monthly-btn');
+            const yearlyBtn = document.getElementById('yearly-btn');
+            
+            if (period === 'monthly') {
+                monthlyBtn.classList.add('bg-primary-600', 'text-white');
+                monthlyBtn.classList.remove('text-slate-400');
+                yearlyBtn.classList.remove('bg-primary-600', 'text-white');
+                yearlyBtn.classList.add('text-slate-400');
+                
+                document.getElementById('pro-price').textContent = '£29';
+                document.getElementById('pro-period').textContent = '/mo';
+                document.getElementById('pro-savings').textContent = '';
+                
+                document.getElementById('enterprise-price').textContent = '£99';
+                document.getElementById('enterprise-period').textContent = '/mo';
+                document.getElementById('enterprise-savings').textContent = '';
+            } else {
+                yearlyBtn.classList.add('bg-primary-600', 'text-white');
+                yearlyBtn.classList.remove('text-slate-400');
+                monthlyBtn.classList.remove('bg-primary-600', 'text-white');
+                monthlyBtn.classList.add('text-slate-400');
+                
+                document.getElementById('pro-price').textContent = '£290';
+                document.getElementById('pro-period').textContent = '/yr';
+                document.getElementById('pro-savings').textContent = 'Save £58 per year';
+                
+                document.getElementById('enterprise-price').textContent = '£990';
+                document.getElementById('enterprise-period').textContent = '/yr';
+                document.getElementById('enterprise-savings').textContent = 'Save £198 per year';
+            }
+        }
+
+        async function subscribe(tier) {
+            const errorEl = document.getElementById('error-message');
+            const errorText = document.getElementById('error-text');
+            errorEl.classList.add('hidden');
+            
+            try {
+                const response = await fetch(`/api/subscription/checkout?tier=${tier}&billing_period=${billingPeriod}`, {
+                    method: 'POST'
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to create checkout session');
+                }
+                
+                const result = await response.json();
+                
+                if (result.checkout_url) {
+                    window.location.href = result.checkout_url;
+                } else {
+                    throw new Error('No checkout URL returned');
+                }
+            } catch (error) {
+                errorText.textContent = error.message;
+                errorEl.classList.remove('hidden');
+            }
+        }
+
+        async function openBillingPortal() {
+            try {
+                const response = await fetch('/api/subscription/portal');
+                if (!response.ok) {
+                    throw new Error('Failed to open billing portal');
+                }
+                
+                const result = await response.json();
+                window.location.href = result.portal_url;
+            } catch (error) {
+                const errorEl = document.getElementById('error-message');
+                const errorText = document.getElementById('error-text');
+                errorText.textContent = error.message;
+                errorEl.classList.remove('hidden');
+            }
+        }
+    </script>
+</body>
+</html>

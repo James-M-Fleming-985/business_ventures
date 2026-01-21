@@ -43,6 +43,7 @@ from correlation_analyzer import CorrelationAnalyzer
 from routers import dashboard_real as dashboard  # NO MOCK DATA
 from routers import admin  # Database initialization endpoints
 from routers import auth  # Authentication endpoints
+from routers import subscription  # Stripe subscription endpoints
 
 # Build version - automatically read from VERSION file
 BUILD_VERSION = __version__
@@ -71,6 +72,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.include_router(dashboard.router)
 app.include_router(admin.router)  # Admin endpoints for database management
 app.include_router(auth.router)  # Authentication endpoints
+app.include_router(subscription.router)  # Stripe subscription endpoints
 
 # CORS Configuration
 app.add_middleware(
@@ -157,6 +159,24 @@ async def logout_page(response: Response):
     from services.auth import clear_auth_cookies
     clear_auth_cookies(response)
     return RedirectResponse(url="/", status_code=307)
+
+
+@app.get("/subscription", response_class=HTMLResponse, tags=["Pages"])
+async def subscription_page(request: Request):
+    """Serve the subscription page."""
+    return templates.TemplateResponse("subscription.html", {"request": request})
+
+
+@app.get("/subscription/success", response_class=HTMLResponse, tags=["Pages"])
+async def subscription_success_page(request: Request):
+    """Subscription success page - redirect to dashboard."""
+    return RedirectResponse(url="/dashboard?subscription=success", status_code=307)
+
+
+@app.get("/subscription/cancel", response_class=HTMLResponse, tags=["Pages"])
+async def subscription_cancel_page(request: Request):
+    """Subscription cancelled page - redirect to subscription."""
+    return RedirectResponse(url="/subscription?cancelled=true", status_code=307)
 
 
 @app.get("/dashboard", response_class=HTMLResponse, tags=["Dashboard"])

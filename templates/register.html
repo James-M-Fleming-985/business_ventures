@@ -79,7 +79,7 @@
                 <div>
                     <label for="display_name" class="block text-sm font-medium text-slate-300 mb-2">Display Name</label>
                     <div class="relative">
-                        <input type="text" id="display_name" name="display_name" required
+                        <input type="text" id="display_name" name="display_name" required autocomplete="name"
                                class="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                placeholder="John Doe">
                         <i data-lucide="user" class="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500"></i>
@@ -90,7 +90,7 @@
                 <div>
                     <label for="email" class="block text-sm font-medium text-slate-300 mb-2">Email</label>
                     <div class="relative">
-                        <input type="email" id="email" name="email" required
+                        <input type="email" id="email" name="email" required autocomplete="email"
                                class="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                placeholder="you@example.com">
                         <i data-lucide="mail" class="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500"></i>
@@ -101,7 +101,7 @@
                 <div>
                     <label for="password" class="block text-sm font-medium text-slate-300 mb-2">Password</label>
                     <div class="relative">
-                        <input type="password" id="password" name="password" required minlength="8"
+                        <input type="password" id="password" name="password" required minlength="8" autocomplete="new-password"
                                class="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                placeholder="••••••••">
                         <button type="button" onclick="togglePassword('password')" class="absolute right-3 top-1/2 -translate-y-1/2">
@@ -115,7 +115,7 @@
                 <div>
                     <label for="confirm_password" class="block text-sm font-medium text-slate-300 mb-2">Confirm Password</label>
                     <div class="relative">
-                        <input type="password" id="confirm_password" name="confirm_password" required
+                        <input type="password" id="confirm_password" name="confirm_password" required autocomplete="new-password"
                                class="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                placeholder="••••••••">
                         <i data-lucide="lock" class="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500"></i>
