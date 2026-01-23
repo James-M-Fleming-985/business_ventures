@@ -3,7 +3,7 @@ API Router for Signal Radar and Composite Signal Aggregation
 Handles endpoints for retrieving and analyzing fast-moving behavioral signals
 """
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 import sys
@@ -27,6 +27,8 @@ try:
 except ImportError as e:
     print(f"Warning: Could not import composite_signal_aggregator: {e}")
     aggregate_signals = None
+
+from .signal_data_service import get_signal_service, SignalDataService
 
 router = APIRouter(prefix="/api/signal-radar", tags=["signal-radar"])
 
@@ -53,7 +55,8 @@ async def get_matching_modes() -> Dict[str, Any]:
 async def get_composite_signals(
     matching_mode: str = Query(default="simple", description="Keyword matching mode: simple, fuzzy, or sophisticated"),
     min_momentum: float = Query(default=30.0, description="Minimum momentum threshold (%)"),
-    min_sources: int = Query(default=1, description="Minimum number of sources required")
+    min_sources: int = Query(default=1, description="Minimum number of sources required"),
+    signal_service: SignalDataService = Depends(get_signal_service)
 ) -> Dict[str, Any]:
     """
     Get aggregated composite signals from multiple sources.
@@ -76,12 +79,11 @@ async def get_composite_signals(
         raise HTTPException(status_code=500, detail="Aggregator not available")
     
     try:
-        # TODO: Replace this with actual data retrieval from your system
-        # This should query CA-001 TimescaleDB for trending signals
-        raw_signals = _get_raw_signals_from_database()
-        
-        # Filter by minimum momentum
-        raw_signals = [s for s in raw_signals if abs(s.momentum) >= min_momentum]
+        # Get trending signals from database
+        raw_signals = await signal_service.get_trending_signals(
+            min_momentum=min_momentum,
+            lookback_days=7
+        )
         
         # Convert matching mode string to enum
         try:
@@ -190,7 +192,8 @@ async def get_signal_detail(
 async def run_granger_analysis(
     keyword: str,
     target_variable: str,
-    matching_mode: str = Query(default="simple")
+    matching_mode: str = Query(default="simple"),
+    signal_service: SignalDataService = Depends(get_signal_service)
 ) -> Dict[str, Any]:
     """
     Run Granger causality analysis for a composite signal.
@@ -229,26 +232,26 @@ async def run_granger_analysis(
                 detail="No time series data available for this signal"
             )
         
-        # TODO: Implement actual Granger causality test using composite_timeseries
-        # This should call the granger test from FEATURE-CA-002-02
-        # For now, return placeholder
+        # Run actual Granger causality test
+        granger_results = await signal_service.run_granger_analysis(
+            signal_keyword=matching_signal.keyword,
+            composite_timeseries=matching_signal.composite_timeseries,
+            target_variable=target_variable
+        )
+        
+        # Determine prediction direction based on r_value
+        direction = "down" if granger_results["r_value"] < 0 else "up"
+        strength = "strong" if abs(granger_results["r_value"]) > 0.7 else "moderate"
         
         result = {
             "keyword": matching_signal.keyword.title(),
             "target": target_variable,
-            "granger_results": {
-                "f_statistic": 28.4,  # TODO: Replace with actual test
-                "p_value": 0.00001,
-                "r_value": -0.72,
-                "optimal_lag": 15,
-                "n_observations": 487,
-                "is_causal": True
-            },
+            "granger_results": granger_results,
             "prediction": {
-                "direction": "down",
-                "magnitude": -12.0,
-                "lag_days": 15,
-                "confidence": "Very High"
+                "direction": direction,
+                "magnitude": abs(granger_results["r_value"]) * 100,  # Scale to percentage
+                "lag_days": granger_results["optimal_lag"],
+                "confidence": granger_results["confidence"]
             },
             "metadata": {
                 "source_count": matching_signal.source_count,
@@ -263,52 +266,3 @@ async def run_granger_analysis(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error running Granger analysis: {str(e)}")
-
-
-def _get_raw_signals_from_database() -> List[SourceSignal]:
-    """
-    Retrieve raw signals from database.
-    
-    TODO: Replace this placeholder with actual database queries to CA-001 TimescaleDB
-    This should query for trending signals from all sources.
-    
-    Returns:
-        List of SourceSignal objects
-    """
-    # Placeholder data - replace with actual DB queries
-    import numpy as np
-    
-    return [
-        SourceSignal(
-            keyword="Layoff",
-            source="wikipedia",
-            momentum=64.6,
-            data_points=500,
-            timestamp=datetime.utcnow().isoformat(),
-            raw_data=np.random.randn(500)
-        ),
-        SourceSignal(
-            keyword="layoff",
-            source="twitter",
-            momentum=72.1,
-            data_points=1200,
-            timestamp=datetime.utcnow().isoformat(),
-            raw_data=np.random.randn(500)
-        ),
-        SourceSignal(
-            keyword="layoffs",
-            source="reddit",
-            momentum=60.3,
-            data_points=800,
-            timestamp=datetime.utcnow().isoformat(),
-            raw_data=np.random.randn(500)
-        ),
-        SourceSignal(
-            keyword="unemployment",
-            source="google_trends",
-            momentum=45.8,
-            data_points=600,
-            timestamp=datetime.utcnow().isoformat(),
-            raw_data=np.random.randn(500)
-        ),
-    ]
