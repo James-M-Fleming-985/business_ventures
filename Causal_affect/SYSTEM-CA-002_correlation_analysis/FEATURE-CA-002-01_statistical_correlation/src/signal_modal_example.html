@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Signal Radar Modal - Example</title>
+    <style>
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 30px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 800px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover {
+            color: #000;
+        }
+        
+        .modal-header {
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .signal-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 0;
+        }
+        
+        .confidence-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+        
+        .confidence-very-high { background: #22c55e; color: white; }
+        .confidence-high { background: #3b82f6; color: white; }
+        .confidence-moderate { background: #f59e0b; color: white; }
+        .confidence-low { background: #6b7280; color: white; }
+        
+        .matching-mode-section {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .matching-mode-label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #374151;
+        }
+        
+        .matching-mode-select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+        }
+        
+        .matching-mode-help {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 5px;
+        }
+        
+        .source-breakdown {
+            margin: 20px 0;
+        }
+        
+        .source-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            margin: 8px 0;
+            background: #f9fafb;
+            border-radius: 6px;
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .source-name {
+            font-weight: 600;
+            width: 150px;
+        }
+        
+        .source-momentum {
+            font-size: 18px;
+            font-weight: bold;
+            width: 100px;
+            color: #059669;
+        }
+        
+        .source-weight {
+            color: #6b7280;
+            font-size: 14px;
+        }
+        
+        .agreement-section {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .granger-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #eee;
+        }
+        
+        .granger-button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+        }
+        
+        .granger-button:hover {
+            background: #2563eb;
+        }
+        
+        .granger-button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        
+        .granger-results {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f0fdf4;
+            border: 1px solid #86efac;
+            border-radius: 6px;
+            display: none;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #6b7280;
+            text-transform: uppercase;
+        }
+        
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #111827;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Example Signal Card (what user clicks) -->
+<div class="signal-card" onclick="openSignalModal('layoff')" style="padding: 20px; border: 2px solid #eee; border-radius: 8px; cursor: pointer; max-width: 300px;">
+    <h3 style="margin: 0;">🎯 Layoff Signal</h3>
+    <div style="font-size: 24px; font-weight: bold; color: #059669;">+64.2%</div>
+    <div style="color: #f59e0b;">⭐⭐⭐⭐ Very High</div>
+    <div style="font-size: 14px; color: #6b7280;">4 sources validated</div>
+    <div style="font-size: 12px; color: #9ca3af; margin-top: 5px;">Updated 2 min ago</div>
+</div>
+
+<!-- Signal Detail Modal -->
+<div id="signalModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        
+        <div class="modal-header">
+            <h2 class="signal-title">
+                🎯 Layoff Signal
+                <span class="confidence-badge confidence-very-high">⭐⭐⭐⭐ Very High Confidence</span>
+            </h2>
+            <div style="font-size: 32px; font-weight: bold; color: #059669; margin-top: 10px;">+64.2% Momentum</div>
+        </div>
+        
+        <!-- Matching Mode Selector -->
+        <div class="matching-mode-section">
+            <div class="matching-mode-label">
+                🔍 Keyword Matching Mode
+            </div>
+            <select id="matchingModeSelect" class="matching-mode-select" onchange="updateMatchingMode()">
+                <option value="simple" selected>Simple (Exact Match) ✓ Implemented</option>
+                <option value="fuzzy" disabled>Fuzzy Matching (Coming Soon)</option>
+                <option value="sophisticated" disabled>ML Semantic Matching (Coming Soon)</option>
+            </select>
+            <div class="matching-mode-help">
+                💡 <strong>Simple mode:</strong> Groups signals with identical keywords (case-insensitive). 
+                Future modes will enable fuzzy and ML-based semantic matching.
+            </div>
+        </div>
+        
+        <!-- Source Breakdown -->
+        <div class="source-breakdown">
+            <h3>Source Breakdown</h3>
+            <div class="source-item">
+                <span class="source-name">📖 Wikipedia</span>
+                <span class="source-momentum">+64.6%</span>
+                <span class="source-weight">(35% weight)</span>
+            </div>
+            <div class="source-item">
+                <span class="source-name">🐦 Twitter</span>
+                <span class="source-momentum">+72.1%</span>
+                <span class="source-weight">(15% weight)</span>
+            </div>
+            <div class="source-item">
+                <span class="source-name">👽 Reddit</span>
+                <span class="source-momentum">+60.3%</span>
+                <span class="source-weight">(20% weight)</span>
+            </div>
+            <div class="source-item">
+                <span class="source-name">📊 Google Trends</span>
+                <span class="source-momentum">+45.8%</span>
+                <span class="source-weight">(30% weight)</span>
+            </div>
+        </div>
+        
+        <!-- Agreement Score -->
+        <div class="agreement-section">
+            <h4 style="margin: 0 0 10px 0;">Source Agreement: 94%</h4>
+            <p style="margin: 0; font-size: 14px;">
+                All 4 sources show positive momentum with low variance. 
+                This indicates a real behavioral trend, not noise.
+            </p>
+        </div>
+        
+        <!-- Granger Analysis Section -->
+        <div class="granger-section">
+            <h3>Run Predictive Analysis</h3>
+            <p style="color: #6b7280; font-size: 14px;">
+                Click below to run Granger causality tests and see what this signal predicts.
+            </p>
+            <button class="granger-button" onclick="runGrangerAnalysis()">
+                ▶️ Run Granger Causality Analysis
+            </button>
+            
+            <!-- Results (shown after clicking) -->
+            <div id="grangerResults" class="granger-results">
+                <h4 style="margin: 0 0 15px 0;">📊 Prediction Results</h4>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">F-Statistic</div>
+                        <div class="stat-value">28.4</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">P-Value</div>
+                        <div class="stat-value">&lt; 0.0001</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Correlation (r)</div>
+                        <div class="stat-value">-0.72</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Optimal Lag</div>
+                        <div class="stat-value">15 days</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Data Points</div>
+                        <div class="stat-value">487</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Confidence</div>
+                        <div class="stat-value">99.9%</div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 20px; padding: 15px; background: white; border-radius: 6px;">
+                    <h4 style="margin: 0 0 10px 0;">🎯 Predicted Outcome</h4>
+                    <p style="margin: 0; font-size: 16px;">
+                        <strong>HR Software Stocks</strong> predicted to drop <strong style="color: #dc2626;">-12%</strong> 
+                        in the next <strong>15 days</strong>
+                    </p>
+                    <p style="margin: 10px 0 0 0; font-size: 14px; color: #6b7280;">
+                        High confidence causal relationship detected. Historical accuracy: 76% win rate.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function openSignalModal(keyword) {
+    document.getElementById('signalModal').style.display = 'block';
+    // In real implementation, fetch fresh data via API here
+}
+
+function closeModal() {
+    document.getElementById('signalModal').style.display = 'none';
+}
+
+function updateMatchingMode() {
+    const mode = document.getElementById('matchingModeSelect').value;
+    console.log('Matching mode changed to:', mode);
+    // In real implementation, re-aggregate signals with new mode
+    // and refresh the source breakdown
+}
+
+function runGrangerAnalysis() {
+    const button = event.target;
+    button.disabled = true;
+    button.textContent = '⏳ Running Analysis...';
+    
+    // Simulate API call
+    setTimeout(() => {
+        button.textContent = '✓ Analysis Complete';
+        document.getElementById('grangerResults').style.display = 'block';
+    }, 2000);
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('signalModal');
+    if (event.target == modal) {
+        closeModal();
+    }
+}
+</script>
+
+</body>
+</html>
