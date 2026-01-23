@@ -8,6 +8,7 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime
 import sys
 from pathlib import Path
+from sqlalchemy.ext.asyncio import AsyncSession
 
 # Add parent directories to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
@@ -28,7 +29,8 @@ except ImportError as e:
     print(f"Warning: Could not import composite_signal_aggregator: {e}")
     aggregate_signals = None
 
-from .signal_data_service import get_signal_service, SignalDataService
+from .signal_data_service import get_signal_service
+from .database import get_db
 
 router = APIRouter(prefix="/api/signal-radar", tags=["signal-radar"])
 
@@ -56,7 +58,7 @@ async def get_composite_signals(
     matching_mode: str = Query(default="simple", description="Keyword matching mode: simple, fuzzy, or sophisticated"),
     min_momentum: float = Query(default=30.0, description="Minimum momentum threshold (%)"),
     min_sources: int = Query(default=1, description="Minimum number of sources required"),
-    signal_service: SignalDataService = Depends(get_signal_service)
+    db: AsyncSession = Depends(get_db)
 ) -> Dict[str, Any]:
     """
     Get aggregated composite signals from multiple sources.
@@ -79,6 +81,9 @@ async def get_composite_signals(
         raise HTTPException(status_code=500, detail="Aggregator not available")
     
     try:
+        # Get signal service with database session
+        signal_service = get_signal_service(db)
+        
         # Get trending signals from database
         raw_signals = await signal_service.get_trending_signals(
             min_momentum=min_momentum,
@@ -140,7 +145,8 @@ async def get_composite_signals(
 @router.get("/signals/{keyword}/details")
 async def get_signal_detail(
     keyword: str,
-    matching_mode: str = Query(default="simple")
+    matching_mode: str = Query(default="simple"),
+    db: AsyncSession = Depends(get_db)
 ) -> Dict[str, Any]:
     """
     Get detailed breakdown of a specific composite signal for modal display.
@@ -159,8 +165,11 @@ async def get_signal_detail(
         Detailed signal information for modal display
     """
     try:
+        # Get signal service with database session
+        signal_service = get_signal_service(db)
+        
         # Get all composites
-        raw_signals = _get_raw_signals_from_database()
+        raw_signals = await signal_service.get_trending_signals()
         mode_enum = MatchingMode(matching_mode.lower())
         composites = aggregate_signals(raw_signals, matching_mode=mode_enum)
         
@@ -193,7 +202,7 @@ async def run_granger_analysis(
     keyword: str,
     target_variable: str,
     matching_mode: str = Query(default="simple"),
-    signal_service: SignalDataService = Depends(get_signal_service)
+    db: AsyncSession = Depends(get_db)
 ) -> Dict[str, Any]:
     """
     Run Granger causality analysis for a composite signal.
@@ -209,8 +218,11 @@ async def run_granger_analysis(
         Granger test results with predictions
     """
     try:
+        # Get signal service with database session
+        signal_service = get_signal_service(db)
+        
         # Get the composite signal
-        raw_signals = _get_raw_signals_from_database()
+        raw_signals = await signal_service.get_trending_signals()
         mode_enum = MatchingMode(matching_mode.lower())
         composites = aggregate_signals(raw_signals, matching_mode=mode_enum)
         

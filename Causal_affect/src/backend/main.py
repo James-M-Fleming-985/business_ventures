@@ -17,6 +17,8 @@ from app.features import (
     export_router
 )
 from app.signal_radar_router import router as signal_radar_router
+from app.database import init_db, close_db
+from app.config import settings
 
 # Configure logging
 logging.basicConfig(
@@ -37,7 +39,7 @@ app = FastAPI(
 # CORS middleware - configure based on your deployment
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # TODO: Restrict in production
+    allow_origins=settings.cors_origins.split(","),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -52,12 +54,24 @@ app.include_router(analysis_router)
 app.include_router(notification_router)
 app.include_router(export_router)
 
-@app.on_startup
+@app.on_event("startup")
 async def startup_event():
     """Initialize application on startup."""
     logger.info("🚀 Starting Causal Affect application...")
+    try:
+        await init_db()
+        logger.info("✅ Database initialized")
+    except Exception as e:
+        logger.error(f"❌ Database initialization failed: {e}")
     logger.info("📊 Signal Radar endpoints registered")
     logger.info("✅ Application ready")
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Cleanup on shutdown."""
+    logger.info("Shutting down...")
+    await close_db()
+    logger.info("Database connections closed")
 
 @app.get("/")
 async def root():
