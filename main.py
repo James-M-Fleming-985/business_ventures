@@ -47,7 +47,13 @@ from routers import subscription  # Stripe subscription endpoints
 
 # Import Signal Radar router from Causal_affect
 try:
-    sys.path.insert(0, str(causal_affect_path / "src" / "backend" / "app"))
+    # Add necessary paths for Signal Radar imports
+    signal_radar_app_path = causal_affect_path / "src" / "backend" / "app"
+    signal_radar_backend_path = causal_affect_path / "src" / "backend"
+    sys.path.insert(0, str(signal_radar_backend_path))
+    sys.path.insert(0, str(signal_radar_app_path))
+    
+    # Import the router
     from signal_radar_router import router as signal_radar_router
     logger.info("✅ Signal Radar router imported successfully")
 except ImportError as e:
