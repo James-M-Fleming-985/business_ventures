@@ -63,20 +63,66 @@ function dashboardData() {
         },
         
         async loadSignalRadar() {
-            console.log('📡 Loading Signal Radar (Layer 1 Fast Signals)...');
+            console.log('📡 Loading Signal Radar (Composite Multi-Source Signals)...');
             try {
-                // Fetch Wikipedia/Layer 1 variables with recent momentum
+                // Fetch composite signals from multiple sources (Wikipedia, Reddit, Twitter, Google Trends)
+                const response = await fetch('/api/signal-radar/signals/composite?matching_mode=simple&min_momentum=15&min_sources=1');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Transform composite signals to match expected format
+                    this.fastSignals = (data.signals || []).map(signal => ({
+                        name: `composite_${signal.keyword.toLowerCase().replace(/\s+/g, '-')}`,
+                        display_name: signal.keyword,
+                        momentum: signal.composite_momentum,
+                        layer: 1,
+                        source: 'composite',
+                        sources: signal.sources || [],
+                        source_count: signal.source_count,
+                        agreement_score: signal.agreement_score,
+                        confidence: signal.confidence,
+                        has_data: true,
+                        data_points: signal.total_data_points || 0,
+                        has_predictions: true,
+                        description: `Multi-source signal from ${signal.source_count} source${signal.source_count !== 1 ? 's' : ''}: ${(signal.sources || []).join(', ')}`
+                    }));
+                    
+                    this.topInsight = {
+                        title: 'Composite Signal Aggregation Active',
+                        description: `Analyzing ${this.fastSignals.length} multi-source behavioral signals with weighted averaging`
+                    };
+                    
+                    console.log('📡 Composite signals loaded:', this.fastSignals.length);
+                    this.filterSignals();
+                } else if (response.status === 404) {
+                    // Fall back to old endpoint if new one isn't deployed yet
+                    console.log('📡 Composite signals not available, falling back to single-source...');
+                    await this.loadFastSignalsFallback();
+                } else {
+                    throw new Error(`API error: ${response.status}`);
+                }
+            } catch (error) {
+                console.error('Failed to load composite signals:', error);
+                // Try fallback
+                await this.loadFastSignalsFallback();
+            }
+        },
+        
+        async loadFastSignalsFallback() {
+            try {
+                // Fallback to Wikipedia-only signals
                 const response = await fetch('/api/dashboard/fast-signals');
                 
                 if (response.ok) {
                     const data = await response.json();
                     this.fastSignals = data.signals || [];
                     this.topInsight = data.top_insight || null;
-                    console.log('📡 Fast signals loaded:', this.fastSignals.length);
-                    this.filterSignals();  // Apply initial filter
+                    console.log('📡 Fast signals loaded (single-source):', this.fastSignals.length);
+                    this.filterSignals();
                 } else {
-                    // API endpoint may not exist yet - use placeholder
-                    console.log('📡 Fast signals API not ready, showing placeholder');
+                    // Ultimate fallback to placeholder
+                    console.log('📡 API not ready, showing placeholder');
                     this.fastSignals = this._getPlaceholderFastSignals();
                     this.filterSignals();
                     this.topInsight = {
@@ -85,7 +131,7 @@ function dashboardData() {
                     };
                 }
             } catch (error) {
-                console.error('Failed to load fast signals:', error);
+                console.error('Fallback failed:', error);
                 this.fastSignals = this._getPlaceholderFastSignals();
                 this.filterSignals();
             }

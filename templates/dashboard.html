@@ -104,7 +104,7 @@
                         <option value="all">Show All</option>
                     </select>
                 </div>
-                <p class="text-xs text-slate-500 mb-3">Wikipedia pageviews, behavioral momentum</p>
+                <p class="text-xs text-slate-500 mb-3">Multi-source composite signals, weighted aggregation</p>
                 
                 <div class="space-y-2 max-h-96 overflow-y-auto" x-show="filteredSignals.length > 0">
                     <template x-for="signal in filteredSignals" :key="signal.name">
@@ -114,6 +114,10 @@
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center space-x-2">
                                     <span class="text-sm font-medium truncate" x-text="signal.display_name"></span>
+                                    <!-- Source Count Badge -->
+                                    <span x-show="signal.source_count > 1" 
+                                          class="px-1.5 py-0.5 bg-blue-500/20 text-blue-300 rounded text-xs font-medium"
+                                          x-text="signal.source_count + ' sources'"></span>
                                     <!-- Info Icon with Tooltip (positioned to the right to avoid top clipping) -->
                                     <div class="relative inline-block group" @click.stop>
                                         <div class="w-4 h-4 rounded-full bg-blue-500/20 flex items-center justify-center cursor-help hover:bg-blue-500/40 transition">
@@ -124,8 +128,9 @@
                                             <div class="font-semibold text-primary-400 mb-1" x-text="signal.display_name"></div>
                                             <div x-text="signal.description || 'Behavioral signal tracking public interest and search momentum. Higher values indicate increased attention.'"></div>
                                             <div class="mt-2 pt-2 border-t border-slate-600 text-slate-400">
-                                                <span class="block">Source: <span x-text="signal.source || 'Wikipedia'"></span></span>
-                                                <span class="block">Update: <span x-text="signal.update_frequency || 'Daily'"></span></span>
+                                                <span class="block">Sources: <span x-text="signal.source_count || 1"></span></span>
+                                                <span x-show="signal.sources" class="block text-xs" x-text="(signal.sources || []).join(', ')"></span>
+                                                <span x-show="signal.agreement_score" class="block">Agreement: <span x-text="Math.round(signal.agreement_score) + '%'"></span></span>
                                             </div>
                                         </div>
                                     </div>
@@ -143,10 +148,12 @@
                                      :class="signal.momentum > 0 ? 'bg-green-500' : 'bg-red-500'"
                                      :style="`width: ${Math.min(Math.abs(signal.momentum), 100)}%`"></div>
                             </div>
-                            <!-- Confidence indicator if available -->
-                            <div x-show="signal.confidence?.score >= 0.75" class="mt-1 flex items-center space-x-1">
-                                <i data-lucide="shield-check" class="w-3 h-3 text-green-400"></i>
-                                <span class="text-xs text-green-400">High confidence</span>
+                            <!-- Confidence indicator -->
+                            <div x-show="signal.confidence >= 3" class="mt-1 flex items-center space-x-1">
+                                <template x-for="i in signal.confidence" :key="i">
+                                    <i data-lucide="star" class="w-3 h-3 text-yellow-400 fill-yellow-400"></i>
+                                </template>
+                                <span class="text-xs text-yellow-400 ml-1" x-text="`${signal.confidence}★`"></span>
                             </div>
                         </div>
                     </template>
