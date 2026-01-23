@@ -45,6 +45,15 @@ from routers import admin  # Database initialization endpoints
 from routers import auth  # Authentication endpoints
 from routers import subscription  # Stripe subscription endpoints
 
+# Import Signal Radar router from Causal_affect
+try:
+    sys.path.insert(0, str(causal_affect_path / "src" / "backend" / "app"))
+    from signal_radar_router import router as signal_radar_router
+    logger.info("✅ Signal Radar router imported successfully")
+except ImportError as e:
+    logger.warning(f"⚠️  Could not import Signal Radar router: {e}")
+    signal_radar_router = None
+
 # Build version - automatically read from VERSION file
 BUILD_VERSION = __version__
 DEPLOY_TIMESTAMP = datetime.utcnow().isoformat()
@@ -73,6 +82,13 @@ app.include_router(dashboard.router)
 app.include_router(admin.router)  # Admin endpoints for database management
 app.include_router(auth.router)  # Authentication endpoints
 app.include_router(subscription.router)  # Stripe subscription endpoints
+
+# Include Signal Radar if available
+if signal_radar_router is not None:
+    app.include_router(signal_radar_router)
+    logger.info("✅ Signal Radar endpoints registered at /api/signal-radar")
+else:
+    logger.warning("⚠️  Signal Radar endpoints not available")
 
 # CORS Configuration
 app.add_middleware(
