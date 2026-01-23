@@ -29,8 +29,19 @@ except ImportError as e:
     print(f"Warning: Could not import composite_signal_aggregator: {e}")
     aggregate_signals = None
 
-from .signal_data_service import get_signal_service
-from .database import get_db
+# Try relative imports first, then fall back to direct imports
+try:
+    from .signal_data_service import get_signal_service
+    from .database import get_db
+except ImportError:
+    # Fallback for when module is imported from outside the package
+    try:
+        from signal_data_service import get_signal_service
+        from database import get_db
+    except ImportError as e:
+        print(f"Warning: Could not import signal dependencies: {e}")
+        get_signal_service = None
+        get_db = None
 
 router = APIRouter(prefix="/api/signal-radar", tags=["signal-radar"])
 

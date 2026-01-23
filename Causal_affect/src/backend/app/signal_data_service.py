@@ -36,7 +36,20 @@ try:
 except ImportError:
     CausalityOrchestrator = None
 
-from .config import settings
+# Try relative import first, fallback to absolute
+try:
+    from .config import settings
+except ImportError:
+    try:
+        from config import settings
+    except ImportError:
+        # Create a minimal settings object if imports fail
+        class Settings:
+            signal_min_momentum = 30.0
+            signal_lookback_days = 7
+            signal_min_data_points = 10
+            granger_min_observations = 50
+        settings = Settings()
 
 logger = logging.getLogger(__name__)
 
