@@ -272,9 +272,10 @@ class FeatureOrchestrator:
             target_variable: Optional target for directed tests
             
         Returns:
-            Dictionary of Granger test results
+            Dictionary of Granger test results with correlation data
         """
         try:
+            from scipy import stats
             results = {}
             
             if target_variable and target_variable in data.columns:
@@ -285,11 +286,28 @@ class FeatureOrchestrator:
                             data[[col, target_variable]].values,
                             [col, target_variable]
                         )
+                        
+                        # Calculate correlation coefficient for this pair
+                        x_clean = data[col].dropna()
+                        y_clean = data[target_variable].dropna()
+                        # Align the series (remove indices where either is NaN)
+                        valid_idx = x_clean.index.intersection(y_clean.index)
+                        x_aligned = data.loc[valid_idx, col]
+                        y_aligned = data.loc[valid_idx, target_variable]
+                        
+                        if len(x_aligned) >= 2:
+                            r_value, corr_p_value = stats.pearsonr(x_aligned, y_aligned)
+                        else:
+                            r_value, corr_p_value = 0.0, 1.0
+                        
                         results[f"{col}_to_{target_variable}"] = {
                             'statistic': test_result.test_statistic,
                             'p_value': test_result.p_value,
                             'optimal_lag': test_result.optimal_lag,
-                            'is_causal': test_result.is_causal
+                            'is_causal': test_result.is_causal,
+                            'r_value': float(r_value),
+                            'n_observations': len(x_aligned),
+                            'correlation_p_value': float(corr_p_value)
                         }
             else:
                 # Test all pairwise combinations
@@ -301,14 +319,31 @@ class FeatureOrchestrator:
                         test_result = self.granger_test.test_causality(
                             test_data, [col1, col2]
                         )
+                        
+                        # Calculate correlation coefficient for this pair
+                        x_clean = data[col1].dropna()
+                        y_clean = data[col2].dropna()
+                        # Align the series (remove indices where either is NaN)
+                        valid_idx = x_clean.index.intersection(y_clean.index)
+                        x_aligned = data.loc[valid_idx, col1]
+                        y_aligned = data.loc[valid_idx, col2]
+                        
+                        if len(x_aligned) >= 2:
+                            r_value, corr_p_value = stats.pearsonr(x_aligned, y_aligned)
+                        else:
+                            r_value, corr_p_value = 0.0, 1.0
+                        
                         results[f"{col1}_to_{col2}"] = {
                             'statistic': test_result.test_statistic,
                             'p_value': test_result.p_value,
                             'optimal_lag': test_result.optimal_lag,
-                            'is_causal': test_result.is_causal
+                            'is_causal': test_result.is_causal,
+                            'r_value': float(r_value),
+                            'n_observations': len(x_aligned),
+                            'correlation_p_value': float(corr_p_value)
                         }
             
-            logger.info(f"Completed {len(results)} Granger causality tests")
+            logger.info(f"Completed {len(results)} Granger causality tests with correlation data")
             return results
             
         except Exception as e:
