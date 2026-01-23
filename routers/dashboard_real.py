@@ -949,13 +949,20 @@ def calculate_signal_confidence(signal_name: str, signal_momentum: float,
 
 
 @router.get("/fast-signals")
-async def get_fast_signals(db: Session = Depends(get_db)):
+async def get_fast_signals(
+    only_predictive: bool = Query(True, description="Only show signals with empirical forward predictions"),
+    db: Session = Depends(get_db)
+):
     """
     Get Layer 1 Fast Signals with REAL-TIME momentum indicators.
     Uses daily Wikipedia + Reddit data for week-over-week momentum.
     Multi-source confidence scoring when signals agree.
+    
+    By default, only shows signals that have empirically-validated Granger 
+    causality predictions (i.e., this signal predicts a Layer 2 outcome).
+    Set only_predictive=false to see all signals including lagging indicators.
     """
-    from sqlalchemy import func, desc
+    from sqlalchemy import func, desc, or_, and_
     from datetime import datetime, timedelta
     
     signals = []
@@ -968,12 +975,48 @@ async def get_fast_signals(db: Session = Depends(get_db)):
             VariableMetadata.is_active == True
         ).all()
         
+        # Build set of signal IDs that have forward Granger predictions
+        # (i.e., this signal → some outcome with p < 0.05)
+        predictive_signal_ids = set()
+        if only_predictive:
+            # Find signals where they are var1 and granger_xy is significant
+            # OR they are var2 and granger_yx is significant
+            for var in layer1_vars:
+                has_prediction = db.query(CorrelationResult).filter(
+                    or_(
+                        and_(
+                            CorrelationResult.variable1_id == var.id,
+                            CorrelationResult.granger_p_value_xy != None,
+                            CorrelationResult.granger_p_value_xy < 0.05
+                        ),
+                        and_(
+                            CorrelationResult.variable2_id == var.id,
+                            CorrelationResult.granger_p_value_yx != None,
+                            CorrelationResult.granger_p_value_yx < 0.05
+                        )
+                    )
+                ).first()
+                
+                if has_prediction:
+                    # Verify it predicts a non-Wikipedia variable (Layer 2)
+                    if has_prediction.variable1_id == var.id:
+                        other_var = has_prediction.variable2
+                    else:
+                        other_var = has_prediction.variable1
+                    
+                    if other_var and other_var.source != 'wikipedia':
+                        predictive_signal_ids.add(var.id)
+        
         # Define time windows for week-over-week comparison
         now = datetime.utcnow()
         week_ago = now - timedelta(days=7)
         two_weeks_ago = now - timedelta(days=14)
         
         for var in layer1_vars:
+            # Skip signals without forward predictions if only_predictive is True
+            if only_predictive and var.id not in predictive_signal_ids:
+                continue
+                
             # Get last 14 days of data for week-over-week comparison
             recent_data = db.query(TimeSeriesData).filter(
                 TimeSeriesData.variable_id == var.id,
@@ -997,6 +1040,9 @@ async def get_fast_signals(db: Session = Depends(get_db)):
             else:
                 momentum = 0
             
+            # Mark if this signal has predictive power
+            has_predictions = var.id in predictive_signal_ids if only_predictive else True
+            
             signals.append({
                 'name': var.name,
                 'display_name': var.display_name,
@@ -1005,6 +1051,7 @@ async def get_fast_signals(db: Session = Depends(get_db)):
                 'source': var.source,
                 'has_data': len(recent_data) > 0,
                 'data_points': len(recent_data),
+                'has_predictions': has_predictions,
                 'description': _get_signal_description(var.name, var.source)
             })
             
@@ -1042,18 +1089,24 @@ async def get_fast_signals(db: Session = Depends(get_db)):
             top_insight = {
                 'title': f"Top Signal: {top_signal['display_name']}",
                 'description': f"{top_signal['display_name']} is {direction} with {abs(top_signal['momentum']):.1f}% momentum{conf_text}. "
-                               f"This Layer 1 behavioral signal may predict upcoming Layer 2 market movements."
+                               f"This Layer 1 signal has empirically-validated predictions for Layer 2 market movements."
             }
         
+        # Count signals with/without predictions
+        predictive_count = len(predictive_signal_ids)
+        
         return {
-            'signals': signals[:15],  # Top 15 most active
+            'signals': signals[:15],  # Top 15 most active predictive signals
             'total_layer1_variables': len(layer1_vars),
+            'predictive_signals': predictive_count,
+            'showing_only_predictive': only_predictive,
             'sources': {
                 'wikipedia': wiki_count,
                 'reddit': reddit_count
             },
             'high_confidence_signals': high_confidence,
-            'top_insight': top_insight
+            'top_insight': top_insight,
+            'note': f"Showing {len(signals)} signals with Granger-validated predictions" if only_predictive else f"Showing all {len(signals)} Layer 1 signals"
         }
             
     except Exception as e:
