@@ -140,22 +140,54 @@ function dashboardData() {
                 
                 if (response.ok) {
                     const data = await response.json();
-                    this.predictedOutcomes = data.predictions || [];
-                    this.selectedCascade = {
-                        prediction: data.top_prediction || 'Analyzing...',
-                        lag: data.optimal_lag ? `Optimal lag: ${data.optimal_lag} days` : ''
-                    };
+                    
+                    // Check if signal PREDICTS outcomes (normal case)
+                    if (data.predictions && data.predictions.length > 0) {
+                        this.predictedOutcomes = data.predictions;
+                        this.selectedCascade = {
+                            prediction: data.top_prediction || 'Analyzing...',
+                            lag: data.optimal_lag ? `Optimal lag: ${data.optimal_lag} days` : ''
+                        };
+                    } 
+                    // Check if signal IS PREDICTED BY something (lagging indicator)
+                    else if (data.leading_indicators && data.leading_indicators.length > 0) {
+                        // Show what predicts this signal (reverse direction)
+                        this.predictedOutcomes = data.leading_indicators.map(li => ({
+                            ...li,
+                            display_name: li.display_name,
+                            direction: li.direction,
+                            p_value: li.p_value,
+                            lag: 14,  // Default lag for display
+                            is_leading: true  // Mark as leading indicator
+                        }));
+                        this.selectedCascade = {
+                            prediction: data.top_prediction || 'Lagging indicator',
+                            lag: data.note || 'This signal follows market movements'
+                        };
+                    }
+                    // No Granger results at all
+                    else {
+                        this.predictedOutcomes = [];
+                        this.selectedCascade = {
+                            prediction: data.top_prediction || 'No empirical predictions yet',
+                            lag: data.note || 'Run Granger analysis after data fetch'
+                        };
+                    }
                 } else {
-                    // Placeholder predictions
-                    this.predictedOutcomes = this._getPlaceholderPredictions(signal);
+                    // API error - show message
+                    this.predictedOutcomes = [];
                     this.selectedCascade = {
-                        prediction: `${signal.display_name} → Stock movement predicted`,
-                        lag: 'Optimal lag: ~14-30 days'
+                        prediction: 'API error loading predictions',
+                        lag: 'Try refreshing the page'
                     };
                 }
             } catch (error) {
                 console.error('Failed to load cascade predictions:', error);
-                this.predictedOutcomes = this._getPlaceholderPredictions(signal);
+                this.predictedOutcomes = [];
+                this.selectedCascade = {
+                    prediction: 'Failed to load predictions',
+                    lag: error.message || 'Network error'
+                };
             }
         },
         
