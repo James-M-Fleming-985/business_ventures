@@ -1176,13 +1176,22 @@ async def get_cascade_predictions(signal_name: str, db: Session = Depends(get_db
             if outcome_var.source == 'wikipedia':
                 continue
             
+            # Calculate R² and confidence level
+            r = result.correlation_value
+            r_squared = r ** 2
+            confidence = 'high' if p_value < 0.01 else 'medium' if p_value < 0.05 else 'low'
+            
             predictions.append({
                 'name': outcome_var.name,
                 'display_name': outcome_var.display_name,
-                'direction': 'up' if result.correlation_value > 0 else 'down',
+                'direction': 'up' if r > 0 else 'down',
+                'r': round(r, 4),
+                'r_squared': round(r_squared, 4),
                 'p_value': f"{p_value:.4f}",
                 'lag': result.granger_lags or 14,
-                'correlation': result.correlation_value,
+                'correlation': r,  # Keep for backward compatibility
+                'sample_size': result.sample_size,
+                'confidence': confidence,
                 'source': 'granger'
             })
         
@@ -1216,12 +1225,21 @@ async def get_cascade_predictions(signal_name: str, db: Session = Depends(get_db
             if predictor_var.source == 'wikipedia':
                 continue
             
+            # Calculate R² and confidence level
+            r = result.correlation_value
+            r_squared = r ** 2
+            confidence = 'high' if p_value < 0.01 else 'medium' if p_value < 0.05 else 'low'
+            
             leading_indicators.append({
                 'name': predictor_var.name,
                 'display_name': predictor_var.display_name,
-                'direction': 'up' if result.correlation_value > 0 else 'down',
+                'direction': 'up' if r > 0 else 'down',
+                'r': round(r, 4),
+                'r_squared': round(r_squared, 4),
                 'p_value': f"{p_value:.4f}",
-                'correlation': result.correlation_value
+                'correlation': r,  # Keep for backward compatibility
+                'sample_size': result.sample_size,
+                'confidence': confidence
             })
         
         # NO THEORETICAL FALLBACK - Only show empirically validated predictions

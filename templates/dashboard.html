@@ -114,19 +114,19 @@
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center space-x-2">
                                     <span class="text-sm font-medium truncate" x-text="signal.display_name"></span>
-                                    <!-- Info Icon with Tooltip -->
+                                    <!-- Info Icon with Tooltip (positioned to the right to avoid top clipping) -->
                                     <div class="relative inline-block group" @click.stop>
                                         <div class="w-4 h-4 rounded-full bg-blue-500/20 flex items-center justify-center cursor-help hover:bg-blue-500/40 transition">
                                             <span class="text-xs font-bold text-blue-400">i</span>
                                         </div>
-                                        <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-slate-700 text-xs text-slate-200 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none w-64 z-50 border border-slate-600">
+                                        <div class="fixed z-[100] px-3 py-2 bg-slate-700 text-xs text-slate-200 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none w-64 border border-slate-600"
+                                             :style="`left: ${$el.previousElementSibling.getBoundingClientRect().right + 8}px; top: ${Math.max(8, $el.previousElementSibling.getBoundingClientRect().top - 20)}px;`">
                                             <div class="font-semibold text-primary-400 mb-1" x-text="signal.display_name"></div>
                                             <div x-text="signal.description || 'Behavioral signal tracking public interest and search momentum. Higher values indicate increased attention.'"></div>
                                             <div class="mt-2 pt-2 border-t border-slate-600 text-slate-400">
                                                 <span class="block">Source: <span x-text="signal.source || 'Wikipedia'"></span></span>
                                                 <span class="block">Update: <span x-text="signal.update_frequency || 'Daily'"></span></span>
                                             </div>
-                                            <div class="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-700"></div>
                                         </div>
                                     </div>
                                 </div>
