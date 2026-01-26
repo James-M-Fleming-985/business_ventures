@@ -5,7 +5,10 @@ Main application entry point with all feature routers
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 import logging
+from pathlib import Path
 
 # Import routers
 from app.health import router as health_router
@@ -54,6 +57,13 @@ app.include_router(analysis_router)
 app.include_router(notification_router)
 app.include_router(export_router)
 
+# Serve static files for React frontend
+static_dir = Path(__file__).parent / "static"
+if static_dir.exists():
+    app.mount("/assets", StaticFiles(directory=str(static_dir / "assets")), name="assets")
+    logger.info(f"📁 Serving static files from {static_dir}")
+
+
 @app.on_event("startup")
 async def startup_event():
     """Initialize application on startup."""
@@ -75,7 +85,12 @@ async def shutdown_event():
 
 @app.get("/")
 async def root():
-    """Root endpoint with API information."""
+    """Root endpoint - serve React app."""
+    static_dir = Path(__file__).parent / "static"
+    index_file = static_dir / "index.html"
+    if index_file.exists():
+        return FileResponse(index_file)
+    # Fallback to API info if no frontend
     return {
         "application": "Causal Affect",
         "version": "2.0.0",
@@ -90,6 +105,20 @@ async def root():
         },
         "status": "operational"
     }
+
+# Catch-all route for React Router (must be last)
+@app.get("/{full_path:path}")
+async def serve_react_app(full_path: str):
+    """Serve React app for all routes not handled by API."""
+    # Don't intercept API routes
+    if full_path.startswith("api/") or full_path.startswith("docs") or full_path.startswith("redoc"):
+        return {"error": "Not found"}
+    
+    static_dir = Path(__file__).parent / "static"
+    index_file = static_dir / "index.html"
+    if index_file.exists():
+        return FileResponse(index_file)
+    return {"error": "Frontend not found"}
 
 if __name__ == "__main__":
     import uvicorn
