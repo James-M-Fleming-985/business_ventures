@@ -3,6 +3,8 @@ API Router for Signal Radar and Composite Signal Aggregation
 Handles endpoints for retrieving and analyzing fast-moving behavioral signals
 """
 
+from __future__ import annotations
+
 from fastapi import APIRouter, HTTPException, Query, Depends
 from typing import List, Dict, Any, Optional
 from datetime import datetime
