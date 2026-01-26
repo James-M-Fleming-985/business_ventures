@@ -71,7 +71,7 @@ async def get_composite_signals(
     matching_mode: str = Query(default="simple", description="Keyword matching mode: simple, fuzzy, or sophisticated"),
     min_momentum: float = Query(default=30.0, description="Minimum momentum threshold (%)"),
     min_sources: int = Query(default=1, description="Minimum number of sources required"),
-    db: AsyncSession = Depends(get_db)
+    db = Depends(get_db)
 ) -> Dict[str, Any]:
     """
     Get aggregated composite signals from multiple sources.
@@ -159,7 +159,7 @@ async def get_composite_signals(
 async def get_signal_detail(
     keyword: str,
     matching_mode: str = Query(default="simple"),
-    db: AsyncSession = Depends(get_db)
+    db = Depends(get_db)
 ) -> Dict[str, Any]:
     """
     Get detailed breakdown of a specific composite signal for modal display.
@@ -215,7 +215,7 @@ async def run_granger_analysis(
     keyword: str,
     target_variable: str,
     matching_mode: str = Query(default="simple"),
-    db: AsyncSession = Depends(get_db)
+    db = Depends(get_db)
 ) -> Dict[str, Any]:
     """
     Run Granger causality analysis for a composite signal.
