@@ -7,6 +7,8 @@ This module handles dynamic keyword discovery - keywords are NOT pre-configured,
 they emerge from real-time human behavior across data sources.
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any
 from collections import defaultdict
