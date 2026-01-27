@@ -57,9 +57,6 @@ function dashboardData() {
             confidence_level: '',
             sources: []
         },
-        signalGrangerTarget: 'sp500',
-        signalGrangerResults: null,
-        isRunningSignalGranger: false,
         
         async init() {
             console.log('Initializing dashboard...');
@@ -306,11 +303,8 @@ function dashboardData() {
         async openSignalModal(signal) {
             console.log('📋 Opening signal modal for:', signal.display_name);
             
-            // Also select the signal in the list
-            this.selectedFastSignal = signal;
-            
-            // Reset previous Granger results
-            this.signalGrangerResults = null;
+            // Also select the signal in the list (triggers RHS Granger results)
+            this.selectFastSignal(signal);
             
             // Set basic data from the signal
             this.signalModalData = {
@@ -354,7 +348,7 @@ function dashboardData() {
             }
         },
         
-        // Calculate star rating for F-statistic
+        // Calculate star rating for F-statistic (used in RHS outcome cards)
         getGrangerStars(fStat) {
             if (!fStat) return 0;
             if (fStat >= 10) return 5;
@@ -363,51 +357,6 @@ function dashboardData() {
             if (fStat >= 3) return 2;
             if (fStat >= 1) return 1;
             return 0;
-        },
-        
-        // Run Granger analysis for the selected signal
-        async runSignalGranger() {
-            console.log('⚡ Running Granger analysis for:', this.signalModalData.keyword);
-            this.isRunningSignalGranger = true;
-            this.signalGrangerResults = null;
-            
-            try {
-                const keyword = encodeURIComponent(this.signalModalData.keyword);
-                const target = encodeURIComponent(this.signalGrangerTarget);
-                
-                const response = await fetch(
-                    `/api/signal-radar/signals/${keyword}/granger?target_variable=${target}`,
-                    { method: 'POST' }
-                );
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    console.log('⚡ Granger results:', data);
-                    
-                    // Extract the granger_results from the response
-                    this.signalGrangerResults = {
-                        f_statistic: data.granger_results?.f_statistic || 0,
-                        p_value: data.granger_results?.p_value || 1,
-                        r_value: data.granger_results?.r_value || 0,
-                        optimal_lag: data.granger_results?.optimal_lag || data.prediction?.lag_days || 0,
-                        n_observations: data.granger_results?.n_observations || 0,
-                        is_causal: data.granger_results?.is_causal || false,
-                        confidence: data.granger_results?.confidence || data.prediction?.confidence || 'Low'
-                    };
-                    
-                    // Re-initialize Lucide icons for new star icons
-                    setTimeout(() => lucide.createIcons(), 100);
-                } else {
-                    const errorData = await response.json();
-                    console.error('Granger API error:', errorData);
-                    alert(`Granger analysis failed: ${errorData.detail || 'Unknown error'}`);
-                }
-            } catch (error) {
-                console.error('Failed to run Granger analysis:', error);
-                alert('Failed to run Granger analysis. Please try again.');
-            } finally {
-                this.isRunningSignalGranger = false;
-            }
         },
         
         async loadStats() {
