@@ -5,14 +5,22 @@ from typing import Optional
 from pydantic_settings import BaseSettings
 
 
+def get_async_database_url() -> str:
+    """Convert DATABASE_URL to async format for asyncpg."""
+    url = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/causal_affect")
+    # Railway may provide postgres:// or postgresql://, asyncpg needs postgresql+asyncpg://
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+    elif url.startswith("postgresql://") and "+asyncpg" not in url:
+        url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    return url
+
+
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
     
     # Database
-    database_url: str = os.getenv(
-        "DATABASE_URL",
-        "postgresql+asyncpg://postgres:postgres@localhost:5432/causal_affect"
-    )
+    database_url: str = get_async_database_url()
     
     # API Settings
     api_host: str = os.getenv("API_HOST", "0.0.0.0")
