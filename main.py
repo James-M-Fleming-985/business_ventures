@@ -107,17 +107,54 @@ app.add_middleware(
 
 
 # ============================================================================
-# STARTUP EVENT - Initialize Database
+# STARTUP EVENT - Initialize Database and Fetch Fresh Data
 # ============================================================================
+
+async def fetch_fresh_data_background():
+    """Background task to fetch fresh Wikipedia/Reddit data on startup."""
+    import asyncio
+    await asyncio.sleep(5)  # Wait for app to fully start
+    
+    try:
+        logger.info("🔄 Auto-fetching fresh Layer 1 data on startup...")
+        
+        # Import and run data ingestion
+        from data_ingestion_service import DataIngestionService
+        service = DataIngestionService()
+        
+        # Fetch Wikipedia data (free, no rate limits)
+        wiki_result = service._fetch_wikipedia_pageviews_data()
+        logger.info(f"✅ Wikipedia fetch: {wiki_result.get('wikipedia_fetched', 0)} variables, {wiki_result.get('wikipedia_data_points', 0)} data points")
+        
+        # Optionally fetch Reddit data
+        try:
+            reddit_result = service._fetch_reddit_activity_data()
+            logger.info(f"✅ Reddit fetch: {reddit_result.get('reddit_fetched', 0)} variables")
+        except Exception as e:
+            logger.warning(f"Reddit fetch skipped: {e}")
+        
+        logger.info("✅ Startup data fetch complete - Layer 1 signals ready")
+        
+    except Exception as e:
+        logger.error(f"Startup data fetch failed: {e}")
+        # Don't crash the app - it can still work with stale data
+
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize database tables on startup."""
+    """Initialize database tables and fetch fresh data on startup."""
+    import asyncio
+    
     try:
         from database import engine
         from models import Base
         Base.metadata.create_all(bind=engine)
         logger.info("✅ Database tables initialized")
+        
+        # Start background data fetch (non-blocking)
+        asyncio.create_task(fetch_fresh_data_background())
+        logger.info("🔄 Background data fetch scheduled")
+        
     except Exception as e:
         logger.error(f"Failed to initialize database: {e}")
 
