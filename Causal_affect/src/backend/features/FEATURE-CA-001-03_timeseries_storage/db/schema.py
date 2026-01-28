@@ -1,7 +1,7 @@
 """Database schema definitions for time-series data."""
 
 from sqlalchemy import (
-    Table, Column, Integer, String, Float, DateTime,
+    Table, Column, Integer, String, Float, DateTime, Boolean,
     Index, text, MetaData
 )
 from sqlalchemy.dialects.postgresql import JSONB
@@ -32,6 +32,35 @@ timeseries_data_table = Table(
         nullable=False,
         server_default=text("'{}'::jsonb")
     ),
+    Column(
+        "metadata",
+        JSONB,
+        nullable=True,
+        server_default=text("'{}'::jsonb")
+    ),
+    Column(
+        "created_at",
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now()
+    )
+)
+
+
+# Granger causality analysis results table
+granger_results_table = Table(
+    "granger_results",
+    metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("keyword", String(255), nullable=False, index=True),
+    Column("target_variable", String(100), nullable=False, index=True),
+    Column("f_statistic", Float, nullable=False),
+    Column("p_value", Float, nullable=False),
+    Column("r_value", Float, nullable=False),
+    Column("optimal_lag", Integer, nullable=False),
+    Column("n_observations", Integer, nullable=False),
+    Column("is_causal", Boolean, nullable=False, default=False),
+    Column("confidence", String(50), nullable=False),
     Column(
         "metadata",
         JSONB,

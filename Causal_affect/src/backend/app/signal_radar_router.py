@@ -5,7 +5,7 @@ Handles endpoints for retrieving and analyzing fast-moving behavioral signals
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, Query, Depends
+from fastapi import APIRouter, HTTPException, Query, Depends, Request
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 import sys
@@ -213,7 +213,7 @@ async def get_signal_detail(
 @router.post("/signals/{keyword}/granger")
 async def run_granger_analysis(
     keyword: str,
-    target_variable: str,
+    request: Request,
     matching_mode: str = Query(default="simple"),
     db = Depends(get_db)
 ) -> Dict[str, Any]:
@@ -224,13 +224,18 @@ async def run_granger_analysis(
     
     Args:
         keyword: The signal keyword to analyze
-        target_variable: What to predict (e.g., "HR_software_stocks")
+        request: Request body with target and store_result flag
         matching_mode: Matching mode used for aggregation
         
     Returns:
         Granger test results with predictions
     """
     try:
+        # Parse request body
+        body = await request.json()
+        target_variable = body.get("target", "sp500")
+        store_result = body.get("store_result", False)
+        
         # Get signal service with database session
         signal_service = get_signal_service(db)
         
@@ -268,13 +273,51 @@ async def run_granger_analysis(
         direction = "down" if granger_results["r_value"] < 0 else "up"
         strength = "strong" if abs(granger_results["r_value"]) > 0.7 else "moderate"
         
+        # Store results in database if requested
+        stored = False
+        if store_result:
+            try:
+                from sqlalchemy import text
+                insert_query = text("""
+                    INSERT INTO granger_results 
+                    (keyword, target_variable, f_statistic, p_value, r_value, 
+                     optimal_lag, n_observations, is_causal, confidence, created_at)
+                    VALUES (:keyword, :target, :f_stat, :p_val, :r_val, 
+                            :lag, :n_obs, :is_causal, :conf, :created_at)
+                """)
+                await db.execute(insert_query, {
+                    "keyword": matching_signal.keyword,
+                    "target": target_variable,
+                    "f_stat": granger_results.get("f_statistic", 0),
+                    "p_val": granger_results.get("p_value", 1),
+                    "r_val": granger_results.get("r_value", 0),
+                    "lag": granger_results.get("optimal_lag", 0),
+                    "n_obs": granger_results.get("n_observations", 0),
+                    "is_causal": granger_results.get("is_causal", False),
+                    "conf": granger_results.get("confidence", "Low"),
+                    "created_at": datetime.utcnow()
+                })
+                await db.commit()
+                stored = True
+            except Exception as e:
+                # If table doesn't exist or insert fails, continue without storing
+                print(f"Could not store Granger result: {e}")
+                stored = False
+        
         result = {
             "keyword": matching_signal.keyword.title(),
             "target": target_variable,
-            "granger_results": granger_results,
+            "f_statistic": granger_results.get("f_statistic", 0),
+            "p_value": granger_results.get("p_value", 1),
+            "r_value": granger_results.get("r_value", 0),
+            "optimal_lag": granger_results.get("optimal_lag", 0),
+            "n_observations": granger_results.get("n_observations", 0),
+            "is_causal": granger_results.get("is_causal", False),
+            "confidence": granger_results.get("confidence", "Low"),
+            "stored": stored,
             "prediction": {
                 "direction": direction,
-                "magnitude": abs(granger_results["r_value"]) * 100,  # Scale to percentage
+                "magnitude": abs(granger_results["r_value"]) * 100,
                 "lag_days": granger_results["optimal_lag"],
                 "confidence": granger_results["confidence"]
             },

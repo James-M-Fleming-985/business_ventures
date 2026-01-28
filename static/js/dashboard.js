@@ -58,6 +58,11 @@ function dashboardData() {
             sources: []
         },
         
+        // Granger Analysis State (for modal)
+        signalGrangerTarget: 'sp500',
+        signalGrangerResults: null,
+        isRunningSignalGranger: false,
+        
         async init() {
             console.log('Initializing dashboard...');
             await this.loadStats();
@@ -87,17 +92,21 @@ function dashboardData() {
                     this.fastSignals = (data.signals || []).map(signal => ({
                         name: `composite_${signal.keyword.toLowerCase().replace(/\s+/g, '-')}`,
                         display_name: signal.keyword,
-                        momentum: signal.composite_momentum,
+                        momentum: signal.momentum,  // API returns 'momentum' not 'composite_momentum'
                         layer: 1,
                         source: 'composite',
-                        sources: signal.sources || [],
+                        sources: (signal.sources || []).map(s => ({
+                            name: s.name || s.source_name,  // Handle both field names
+                            momentum: s.momentum
+                        })),
                         source_count: signal.source_count,
                         agreement_score: signal.agreement_score,
-                        confidence: signal.confidence,
+                        confidence: signal.confidence_stars || signal.confidence || 0,
+                        confidence_level: signal.confidence_level || '',
                         has_data: true,
                         data_points: signal.total_data_points || 0,
-                        has_predictions: true,
-                        description: `Multi-source signal from ${signal.source_count} source${signal.source_count !== 1 ? 's' : ''}: ${(signal.sources || []).join(', ')}`
+                        has_predictions: false,  // Don't auto-load Granger - user must click Run Granger
+                        description: `Multi-source signal from ${signal.source_count} source${signal.source_count !== 1 ? 's' : ''}`
                     }));
                     
                     this.topInsight = {
@@ -303,10 +312,15 @@ function dashboardData() {
         async openSignalModal(signal) {
             console.log('📋 Opening signal modal for:', signal.display_name);
             
-            // Also select the signal in the list (triggers RHS Granger results)
-            this.selectFastSignal(signal);
+            // Select signal visually but DON'T auto-run Granger (set flag)
+            this.selectedFastSignal = signal;
+            this.predictedOutcomes = [];  // Clear - user must click Run Granger
+            this.selectedCascade = {
+                prediction: 'Click "Run Granger" to analyze',
+                lag: ''
+            };
             
-            // Set basic data from the signal
+            // Set basic data from the signal (already mapped in loadSignalRadar)
             this.signalModalData = {
                 keyword: signal.display_name,
                 momentum: signal.momentum,
@@ -316,6 +330,11 @@ function dashboardData() {
                 confidence_level: signal.confidence_level || '',
                 sources: signal.sources || []
             };
+            
+            // Reset Granger state for modal
+            this.signalGrangerTarget = 'sp500';
+            this.signalGrangerResults = null;
+            this.isRunningSignalGranger = false;
             
             // Open the modal
             this.signalModalOpen = true;
@@ -332,15 +351,27 @@ function dashboardData() {
                     const details = await response.json();
                     console.log('📋 Signal details loaded:', details);
                     
+                    // Map sources from API format (source_name) to display format (name)
+                    const mappedSources = (details.sources || []).map(s => ({
+                        name: s.source_name || s.name,
+                        momentum: s.momentum,
+                        weight_percent: s.weight_percent,
+                        data_points: s.data_points
+                    }));
+                    
                     // Update modal data with full details
                     this.signalModalData = {
-                        ...this.signalModalData,
                         keyword: details.keyword || signal.display_name,
-                        sources: details.sources || signal.sources || [],
+                        momentum: details.composite_momentum || signal.momentum,
+                        source_count: details.source_count || signal.source_count || 1,
                         agreement_score: details.agreement_score || signal.agreement_score || 0,
                         confidence: details.confidence_stars || signal.confidence || 0,
-                        confidence_level: details.confidence_level || ''
+                        confidence_level: details.confidence_level || '',
+                        sources: mappedSources
                     };
+                    
+                    // Re-initialize icons after data update
+                    setTimeout(() => lucide.createIcons(), 100);
                 }
             } catch (error) {
                 console.error('Failed to load signal details:', error);
@@ -357,6 +388,76 @@ function dashboardData() {
             if (fStat >= 3) return 2;
             if (fStat >= 1) return 1;
             return 0;
+        },
+        
+        // ============================================================
+        // RUN GRANGER ANALYSIS: Called from modal "Run Granger" button
+        // ============================================================
+        async runSignalGranger() {
+            if (!this.signalModalData.keyword) {
+                console.error('No signal selected for Granger analysis');
+                return;
+            }
+            
+            console.log('🔬 Running Granger analysis for:', this.signalModalData.keyword, 'vs', this.signalGrangerTarget);
+            
+            this.isRunningSignalGranger = true;
+            this.signalGrangerResults = null;
+            
+            try {
+                const keyword = encodeURIComponent(this.signalModalData.keyword);
+                const response = await fetch(`/api/signal-radar/signals/${keyword}/granger`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        target: this.signalGrangerTarget,
+                        store_result: true  // Tell backend to store in DB
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('🔬 Granger results:', data);
+                    
+                    // Store results for display in modal
+                    this.signalGrangerResults = {
+                        f_statistic: data.f_statistic || 0,
+                        p_value: data.p_value || 1,
+                        r_value: data.r_value || 0,
+                        optimal_lag: data.optimal_lag || 0,
+                        n_observations: data.n_observations || 0,
+                        is_causal: data.is_causal || false,
+                        confidence: data.confidence || 'Low',
+                        stars: this.getGrangerStars(data.f_statistic),
+                        target_name: this.getTargetDisplayName(this.signalGrangerTarget),
+                        stored: data.stored || false,
+                        timestamp: new Date().toISOString()
+                    };
+                    
+                    // Re-init icons for stars
+                    setTimeout(() => lucide.createIcons(), 100);
+                } else {
+                    console.error('Granger API error:', response.status);
+                    this.signalGrangerResults = { error: 'Failed to run analysis' };
+                }
+            } catch (error) {
+                console.error('Failed to run Granger analysis:', error);
+                this.signalGrangerResults = { error: error.message };
+            } finally {
+                this.isRunningSignalGranger = false;
+            }
+        },
+        
+        // Get display name for target variable
+        getTargetDisplayName(targetCode) {
+            const names = {
+                'sp500': 'S&P 500',
+                'hr_software': 'HR Software Stocks',
+                'tech': 'Tech Sector',
+                'unemployment': 'Unemployment Rate',
+                'gdp': 'GDP Growth'
+            };
+            return names[targetCode] || targetCode;
         },
         
         async loadStats() {
