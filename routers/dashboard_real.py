@@ -1123,6 +1123,115 @@ async def get_fast_signals(
         }
 
 
+@router.get("/signal-details/{keyword}")
+async def get_signal_details(keyword: str, db: Session = Depends(get_db)):
+    """
+    Get detailed breakdown for a specific signal.
+    Returns source breakdown, momentum, and confidence metrics.
+    """
+    from datetime import datetime, timedelta
+    from sqlalchemy import desc
+    
+    try:
+        # Normalize keyword for lookup (spaces to underscores, lowercase)
+        keyword_normalized = keyword.lower().replace(' ', '_').replace('-', '_')
+        
+        # Find matching variables across sources
+        sources_data = []
+        composite_momentum = 0
+        source_count = 0
+        
+        for source in ['wikipedia', 'reddit']:
+            # Try different name patterns
+            name_patterns = [
+                f"{source[:4]}_{keyword_normalized}",
+                f"{source}_{keyword_normalized}", 
+                f"{source[:4]}_{keyword.lower().replace(' ', '-')}"
+            ]
+            
+            var = None
+            for pattern in name_patterns:
+                var = db.query(VariableMetadata).filter(
+                    VariableMetadata.name == pattern,
+                    VariableMetadata.is_active == True
+                ).first()
+                if var:
+                    break
+            
+            if var:
+                # Get momentum from recent data
+                now = datetime.utcnow()
+                week_ago = now - timedelta(days=7)
+                two_weeks_ago = now - timedelta(days=14)
+                
+                recent_data = db.query(TimeSeriesData).filter(
+                    TimeSeriesData.variable_id == var.id,
+                    TimeSeriesData.timestamp >= two_weeks_ago
+                ).order_by(desc(TimeSeriesData.timestamp)).all()
+                
+                momentum = 0
+                if len(recent_data) >= 7:
+                    this_week = [dp.value for dp in recent_data if dp.timestamp >= week_ago]
+                    last_week = [dp.value for dp in recent_data if dp.timestamp < week_ago]
+                    
+                    if this_week and last_week:
+                        this_week_avg = sum(this_week) / len(this_week)
+                        last_week_avg = sum(last_week) / len(last_week)
+                        momentum = ((this_week_avg - last_week_avg) / max(last_week_avg, 1)) * 100
+                
+                sources_data.append({
+                    'source_name': source.capitalize(),
+                    'name': source.capitalize(),
+                    'momentum': round(momentum, 1),
+                    'data_points': len(recent_data),
+                    'weight_percent': 50  # Equal weight for now
+                })
+                composite_momentum += momentum
+                source_count += 1
+        
+        # Calculate composite metrics
+        if source_count > 0:
+            composite_momentum = composite_momentum / source_count
+        
+        # Calculate agreement score
+        agreement_score = 100  # Default for single source
+        if source_count >= 2:
+            momentums = [s['momentum'] for s in sources_data]
+            if all(m > 0 for m in momentums) or all(m < 0 for m in momentums):
+                agreement_score = 100
+            elif all(m == 0 for m in momentums):
+                agreement_score = 100
+            else:
+                agreement_score = 50  # Disagreement
+        
+        # Calculate confidence stars (1-5 based on source count and data)
+        confidence_stars = min(source_count + 1, 5)
+        if any(s['data_points'] >= 14 for s in sources_data):
+            confidence_stars = min(confidence_stars + 1, 5)
+        
+        return {
+            'keyword': keyword,
+            'composite_momentum': round(composite_momentum, 1),
+            'source_count': source_count,
+            'agreement_score': agreement_score,
+            'confidence_stars': confidence_stars,
+            'confidence_level': 'high' if source_count >= 2 and agreement_score >= 75 else 'single-source',
+            'sources': sources_data
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to get signal details for {keyword}: {e}")
+        return {
+            'keyword': keyword,
+            'composite_momentum': 0,
+            'source_count': 1,
+            'agreement_score': 100,
+            'confidence_stars': 2,
+            'confidence_level': 'single-source',
+            'sources': []
+        }
+
+
 @router.get("/cascade-predictions/{signal_name}")
 async def get_cascade_predictions(signal_name: str, db: Session = Depends(get_db)):
     """

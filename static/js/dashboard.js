@@ -368,12 +368,10 @@ function dashboardData() {
             setTimeout(() => lucide.createIcons(), 100);
             
             // Try to fetch detailed breakdown from API
-            // Use signal.name for API lookup (e.g., "wiki_chatgpt" -> extract "chatgpt")
+            // Use signal.display_name for API lookup (e.g., "ChatGPT")
             try {
-                // Extract keyword from name (e.g., wiki_chatgpt -> chatgpt)
-                let keyword = signal.name.replace(/^wiki_/, '').replace(/^reddit_/, '').replace(/-/g, ' ');
-                keyword = encodeURIComponent(keyword);
-                const response = await fetch(`/api/signal-radar/signals/${keyword}/details`);
+                const keyword = encodeURIComponent(signal.display_name);
+                const response = await fetch(`/api/dashboard/signal-details/${keyword}`);
                 
                 if (response.ok) {
                     const details = await response.json();
