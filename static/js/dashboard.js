@@ -137,22 +137,32 @@ function dashboardData() {
                 if (response.ok) {
                     const data = await response.json();
                     // Map fallback signals to expected format (same as composite signals)
-                    this.fastSignals = (data.signals || []).map(signal => ({
-                        name: signal.name,
-                        display_name: signal.display_name,
-                        momentum: signal.momentum,
-                        layer: 1,
-                        source: signal.source,
-                        sources: [{name: signal.source, momentum: signal.momentum}],  // Single source
-                        source_count: 1,
-                        agreement_score: 100,  // Single source = 100% agreement
-                        confidence: signal.confidence?.score ? Math.round(signal.confidence.score * 5) : 0,
-                        confidence_level: signal.confidence?.agreement || '',
-                        has_data: signal.has_data,
-                        data_points: signal.data_points || 0,
-                        has_predictions: signal.has_predictions,
-                        description: signal.description
-                    }));
+                    this.fastSignals = (data.signals || []).map(signal => {
+                        // Strip source prefix from display_name (e.g., "Wikipedia: ChatGPT" -> "ChatGPT")
+                        let cleanName = signal.display_name || signal.name;
+                        if (cleanName.startsWith('Wikipedia: ')) {
+                            cleanName = cleanName.replace('Wikipedia: ', '');
+                        } else if (cleanName.startsWith('Reddit: ')) {
+                            cleanName = cleanName.replace('Reddit: ', '');
+                        }
+                        
+                        return {
+                            name: signal.name,
+                            display_name: cleanName,
+                            momentum: signal.momentum,
+                            layer: 1,
+                            source: signal.source,
+                            sources: [{name: signal.source, momentum: signal.momentum}],  // Single source
+                            source_count: 1,
+                            agreement_score: 100,  // Single source = 100% agreement
+                            confidence: signal.confidence?.score ? Math.round(signal.confidence.score * 5) : 0,
+                            confidence_level: signal.confidence?.agreement || 'single-source',
+                            has_data: signal.has_data,
+                            data_points: signal.data_points || 0,
+                            has_predictions: signal.has_predictions,
+                            description: signal.description
+                        };
+                    });
                     this.topInsight = data.top_insight || null;
                     console.log('📡 Fast signals loaded (single-source):', this.fastSignals.length);
                     this.filterSignals();
@@ -358,8 +368,11 @@ function dashboardData() {
             setTimeout(() => lucide.createIcons(), 100);
             
             // Try to fetch detailed breakdown from API
+            // Use signal.name for API lookup (e.g., "wiki_chatgpt" -> extract "chatgpt")
             try {
-                const keyword = encodeURIComponent(signal.display_name);
+                // Extract keyword from name (e.g., wiki_chatgpt -> chatgpt)
+                let keyword = signal.name.replace(/^wiki_/, '').replace(/^reddit_/, '').replace(/-/g, ' ');
+                keyword = encodeURIComponent(keyword);
                 const response = await fetch(`/api/signal-radar/signals/${keyword}/details`);
                 
                 if (response.ok) {

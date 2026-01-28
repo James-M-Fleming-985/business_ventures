@@ -150,9 +150,9 @@
                                      :style="`width: ${Math.min(Math.abs(signal.momentum), 100)}%`"></div>
                             </div>
                             <!-- Confidence indicator -->
-                            <div x-show="signal.confidence >= 3" class="mt-1 flex items-center space-x-1">
-                                <template x-for="i in signal.confidence" :key="i">
-                                    <i data-lucide="star" class="w-3 h-3 text-yellow-400 fill-yellow-400"></i>
+                            <div x-show="signal.confidence >= 3" class="mt-1 flex items-center space-x-0.5">
+                                <template x-for="starNum in signal.confidence" :key="starNum">
+                                    <span class="text-xs text-yellow-400">★</span>
                                 </template>
                                 <span class="text-xs text-yellow-400 ml-1" x-text="`${signal.confidence}★`"></span>
                             </div>
@@ -225,12 +225,11 @@
                             </div>
                             <!-- F-stat stars row -->
                             <div class="flex items-center justify-between mt-2">
-                                <div class="flex items-center space-x-1" x-show="outcome.f_statistic">
+                                <div class="flex items-center space-x-0.5" x-show="outcome.f_statistic">
                                     <span class="text-xs text-slate-500">F=</span>
                                     <span class="text-xs font-mono text-primary-400" x-text="outcome.f_statistic?.toFixed(1) || ''"></span>
-                                    <template x-for="i in 5" :key="i">
-                                        <i data-lucide="star" class="w-3 h-3"
-                                           :class="i <= getGrangerStars(outcome.f_statistic) ? 'text-yellow-400 fill-yellow-400' : 'text-slate-700'"></i>
+                                    <template x-for="starNum in 5" :key="starNum">
+                                        <span class="text-xs" :class="starNum <= getGrangerStars(outcome.f_statistic) ? 'text-yellow-400' : 'text-slate-700'">★</span>
                                     </template>
                                 </div>
                                 <span class="text-xs" 
@@ -714,9 +713,11 @@
                 <!-- Confidence Stars -->
                 <div x-show="signalModalData.confidence >= 1" class="flex items-center justify-center space-x-2 p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/30">
                     <span class="text-sm text-yellow-300 mr-2">Confidence:</span>
-                    <template x-for="i in 5" :key="i">
-                        <i data-lucide="star" class="w-5 h-5"
-                           :class="i <= signalModalData.confidence ? 'text-yellow-400 fill-yellow-400' : 'text-slate-600'"></i>
+                    <template x-for="starIndex in 5" :key="starIndex">
+                        <span class="inline-block w-5 h-5"
+                              :class="starIndex <= signalModalData.confidence ? 'text-yellow-400' : 'text-slate-600'">
+                            ★
+                        </span>
                     </template>
                     <span class="text-sm text-yellow-400 ml-2" x-text="signalModalData.confidence_level || ''"></span>
                 </div>
