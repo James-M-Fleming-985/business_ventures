@@ -136,7 +136,23 @@ function dashboardData() {
                 
                 if (response.ok) {
                     const data = await response.json();
-                    this.fastSignals = data.signals || [];
+                    // Map fallback signals to expected format (same as composite signals)
+                    this.fastSignals = (data.signals || []).map(signal => ({
+                        name: signal.name,
+                        display_name: signal.display_name,
+                        momentum: signal.momentum,
+                        layer: 1,
+                        source: signal.source,
+                        sources: [{name: signal.source, momentum: signal.momentum}],  // Single source
+                        source_count: 1,
+                        agreement_score: 100,  // Single source = 100% agreement
+                        confidence: signal.confidence?.score ? Math.round(signal.confidence.score * 5) : 0,
+                        confidence_level: signal.confidence?.agreement || '',
+                        has_data: signal.has_data,
+                        data_points: signal.data_points || 0,
+                        has_predictions: signal.has_predictions,
+                        description: signal.description
+                    }));
                     this.topInsight = data.top_insight || null;
                     console.log('📡 Fast signals loaded (single-source):', this.fastSignals.length);
                     this.filterSignals();
@@ -310,6 +326,7 @@ function dashboardData() {
         // ============================================================
         async openSignalModal(signal) {
             console.log('📋 Opening signal modal for:', signal.display_name);
+            console.log('📋 Signal data:', JSON.stringify(signal, null, 2));
             
             // Select signal visually but DON'T auto-run Granger (set flag)
             this.selectedFastSignal = signal;

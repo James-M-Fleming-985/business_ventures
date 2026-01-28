@@ -1181,18 +1181,29 @@ async def get_cascade_predictions(signal_name: str, db: Session = Depends(get_db
             r_squared = r ** 2
             confidence = 'high' if p_value < 0.01 else 'medium' if p_value < 0.05 else 'low'
             
+            # Estimate F-statistic from R² and sample size
+            # F = (R² / k) / ((1 - R²) / (n - k - 1)) where k=1 for simple case
+            n = result.sample_size or 30
+            if r_squared < 1 and n > 2:
+                f_statistic = (r_squared * (n - 2)) / max(1 - r_squared, 0.0001)
+            else:
+                f_statistic = 0
+            
             predictions.append({
                 'name': outcome_var.name,
                 'display_name': outcome_var.display_name,
                 'direction': 'up' if r > 0 else 'down',
                 'r': round(r, 4),
+                'r_value': round(r, 4),  # Add r_value for frontend compatibility
                 'r_squared': round(r_squared, 4),
+                'f_statistic': round(f_statistic, 2),  # Add F-statistic
                 'p_value': f"{p_value:.4f}",
                 'lag': result.granger_lags or 14,
                 'correlation': r,  # Keep for backward compatibility
                 'sample_size': result.sample_size,
                 'confidence': confidence,
-                'source': 'granger'
+                'source': 'granger',
+                'is_causal': p_value < 0.05  # Add is_causal flag
             })
         
         # Case 2: Find what PREDICTS this signal (leading indicators)
@@ -1230,16 +1241,26 @@ async def get_cascade_predictions(signal_name: str, db: Session = Depends(get_db
             r_squared = r ** 2
             confidence = 'high' if p_value < 0.01 else 'medium' if p_value < 0.05 else 'low'
             
+            # Estimate F-statistic from R² and sample size
+            n = result.sample_size or 30
+            if r_squared < 1 and n > 2:
+                f_statistic = (r_squared * (n - 2)) / max(1 - r_squared, 0.0001)
+            else:
+                f_statistic = 0
+            
             leading_indicators.append({
                 'name': predictor_var.name,
                 'display_name': predictor_var.display_name,
                 'direction': 'up' if r > 0 else 'down',
                 'r': round(r, 4),
+                'r_value': round(r, 4),  # Add r_value for frontend compatibility
                 'r_squared': round(r_squared, 4),
+                'f_statistic': round(f_statistic, 2),  # Add F-statistic
                 'p_value': f"{p_value:.4f}",
                 'correlation': r,  # Keep for backward compatibility
                 'sample_size': result.sample_size,
-                'confidence': confidence
+                'confidence': confidence,
+                'is_causal': p_value < 0.05  # Add is_causal flag
             })
         
         # NO THEORETICAL FALLBACK - Only show empirically validated predictions
