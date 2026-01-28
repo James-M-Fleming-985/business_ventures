@@ -59,7 +59,6 @@ function dashboardData() {
         },
         
         // Granger Analysis State (for modal)
-        signalGrangerTarget: 'sp500',
         signalGrangerResults: null,
         isRunningSignalGranger: false,
         
@@ -332,7 +331,6 @@ function dashboardData() {
             };
             
             // Reset Granger state for modal
-            this.signalGrangerTarget = 'sp500';
             this.signalGrangerResults = null;
             this.isRunningSignalGranger = false;
             
@@ -391,7 +389,8 @@ function dashboardData() {
         },
         
         // ============================================================
-        // RUN GRANGER ANALYSIS: Called from modal "Run Granger" button
+        // RUN GRANGER ANALYSIS: Test FMV against ALL MVs in database
+        // Results populate the RHS outcome panel
         // ============================================================
         async runSignalGranger() {
             if (!this.signalModalData.keyword) {
@@ -399,42 +398,72 @@ function dashboardData() {
                 return;
             }
             
-            console.log('🔬 Running Granger analysis for:', this.signalModalData.keyword, 'vs', this.signalGrangerTarget);
+            console.log('🔬 Running Granger analysis for:', this.signalModalData.keyword, 'against all MVs');
             
             this.isRunningSignalGranger = true;
             this.signalGrangerResults = null;
+            this.predictedOutcomes = [];  // Clear previous results
             
             try {
+                // Use the cascade-predictions endpoint which tests against all MVs
                 const keyword = encodeURIComponent(this.signalModalData.keyword);
-                const response = await fetch(`/api/signal-radar/signals/${keyword}/granger`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        target: this.signalGrangerTarget,
-                        store_result: true  // Tell backend to store in DB
-                    })
-                });
+                const response = await fetch(`/api/dashboard/cascade-predictions/${keyword}`);
                 
                 if (response.ok) {
                     const data = await response.json();
-                    console.log('🔬 Granger results:', data);
+                    console.log('🔬 Granger results (all MVs):', data);
                     
-                    // Store results for display in modal
-                    this.signalGrangerResults = {
-                        f_statistic: data.f_statistic || 0,
-                        p_value: data.p_value || 1,
-                        r_value: data.r_value || 0,
-                        optimal_lag: data.optimal_lag || 0,
-                        n_observations: data.n_observations || 0,
-                        is_causal: data.is_causal || false,
-                        confidence: data.confidence || 'Low',
-                        stars: this.getGrangerStars(data.f_statistic),
-                        target_name: this.getTargetDisplayName(this.signalGrangerTarget),
-                        stored: data.stored || false,
-                        timestamp: new Date().toISOString()
-                    };
+                    // Populate RHS panel with predictions
+                    if (data.predictions && data.predictions.length > 0) {
+                        this.predictedOutcomes = data.predictions;
+                        this.selectedCascade = {
+                            prediction: data.top_prediction || 'Analysis complete',
+                            lag: data.optimal_lag ? `Optimal lag: ${data.optimal_lag} days` : ''
+                        };
+                        
+                        // Store summary for modal display
+                        this.signalGrangerResults = {
+                            total_tested: data.total_tested || data.predictions.length,
+                            causal_count: data.predictions.filter(p => p.is_causal || p.p_value < 0.05).length,
+                            predictions: data.predictions,
+                            top_prediction: data.top_prediction,
+                            stored: true,
+                            timestamp: new Date().toISOString()
+                        };
+                    } else if (data.leading_indicators && data.leading_indicators.length > 0) {
+                        // This signal is predicted BY other signals (lagging indicator)
+                        this.predictedOutcomes = data.leading_indicators.map(li => ({
+                            ...li,
+                            display_name: li.display_name,
+                            direction: li.direction,
+                            p_value: li.p_value,
+                            lag: 14,
+                            is_leading: true
+                        }));
+                        this.selectedCascade = {
+                            prediction: data.top_prediction || 'Lagging indicator',
+                            lag: data.note || 'This signal follows market movements'
+                        };
+                        this.signalGrangerResults = {
+                            is_lagging: true,
+                            leading_count: data.leading_indicators.length,
+                            note: 'This signal is predicted BY other variables',
+                            stored: true
+                        };
+                    } else {
+                        // No significant Granger relationships found
+                        this.predictedOutcomes = [];
+                        this.selectedCascade = {
+                            prediction: 'No significant predictions found',
+                            lag: 'Insufficient data or no causal relationships detected'
+                        };
+                        this.signalGrangerResults = {
+                            no_results: true,
+                            note: 'No significant Granger causality detected with any market variable'
+                        };
+                    }
                     
-                    // Re-init icons for stars
+                    // Re-init icons
                     setTimeout(() => lucide.createIcons(), 100);
                 } else {
                     console.error('Granger API error:', response.status);
@@ -446,18 +475,6 @@ function dashboardData() {
             } finally {
                 this.isRunningSignalGranger = false;
             }
-        },
-        
-        // Get display name for target variable
-        getTargetDisplayName(targetCode) {
-            const names = {
-                'sp500': 'S&P 500',
-                'hr_software': 'HR Software Stocks',
-                'tech': 'Tech Sector',
-                'unemployment': 'Unemployment Rate',
-                'gdp': 'GDP Growth'
-            };
-            return names[targetCode] || targetCode;
         },
         
         async loadStats() {
