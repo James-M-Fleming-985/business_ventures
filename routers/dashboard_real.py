@@ -1128,66 +1128,104 @@ async def get_signal_details(keyword: str, db: Session = Depends(get_db)):
     """
     Get detailed breakdown for a specific signal.
     Returns source breakdown, momentum, and confidence metrics.
+    Uses SIGNAL_CROSS_VALIDATION to find related Reddit sources.
     """
     from datetime import datetime, timedelta
     from sqlalchemy import desc
     
     try:
-        # Normalize keyword for lookup (spaces to underscores, lowercase)
+        # Normalize keyword for lookup
         keyword_normalized = keyword.lower().replace(' ', '_').replace('-', '_')
+        keyword_dashed = keyword.lower().replace(' ', '-').replace('_', '-')
         
-        # Find matching variables across sources
         sources_data = []
         composite_momentum = 0
         source_count = 0
         
-        for source in ['wikipedia', 'reddit']:
-            # Try different name patterns
-            name_patterns = [
-                f"{source[:4]}_{keyword_normalized}",
-                f"{source}_{keyword_normalized}", 
-                f"{source[:4]}_{keyword.lower().replace(' ', '-')}"
-            ]
+        # 1. Try to find Wikipedia source
+        wiki_patterns = [
+            f"wiki_{keyword_normalized}",
+            f"wiki_{keyword_dashed}",
+            f"wikipedia_{keyword_normalized}"
+        ]
+        
+        wiki_var = None
+        for pattern in wiki_patterns:
+            wiki_var = db.query(VariableMetadata).filter(
+                VariableMetadata.name == pattern,
+                VariableMetadata.is_active == True
+            ).first()
+            if wiki_var:
+                break
+        
+        if wiki_var:
+            # Get momentum from recent data
+            now = datetime.utcnow()
+            week_ago = now - timedelta(days=7)
+            two_weeks_ago = now - timedelta(days=14)
             
-            var = None
-            for pattern in name_patterns:
-                var = db.query(VariableMetadata).filter(
-                    VariableMetadata.name == pattern,
+            recent_data = db.query(TimeSeriesData).filter(
+                TimeSeriesData.variable_id == wiki_var.id,
+                TimeSeriesData.timestamp >= two_weeks_ago
+            ).order_by(desc(TimeSeriesData.timestamp)).all()
+            
+            momentum = 0
+            if len(recent_data) >= 7:
+                this_week = [dp.value for dp in recent_data if dp.timestamp >= week_ago]
+                last_week = [dp.value for dp in recent_data if dp.timestamp < week_ago]
+                
+                if this_week and last_week:
+                    this_week_avg = sum(this_week) / len(this_week)
+                    last_week_avg = sum(last_week) / len(last_week)
+                    momentum = ((this_week_avg - last_week_avg) / max(last_week_avg, 1)) * 100
+            
+            sources_data.append({
+                'source_name': 'Wikipedia',
+                'name': 'Wikipedia',
+                'momentum': round(momentum, 1),
+                'data_points': len(recent_data),
+                'weight_percent': 50
+            })
+            composite_momentum += momentum
+            source_count += 1
+            
+            # 2. Find related Reddit sources using SIGNAL_CROSS_VALIDATION
+            related_reddit = SIGNAL_CROSS_VALIDATION.get(wiki_var.name, [])
+            
+            for reddit_name in related_reddit:
+                reddit_var = db.query(VariableMetadata).filter(
+                    VariableMetadata.name == reddit_name,
                     VariableMetadata.is_active == True
                 ).first()
-                if var:
-                    break
-            
-            if var:
-                # Get momentum from recent data
-                now = datetime.utcnow()
-                week_ago = now - timedelta(days=7)
-                two_weeks_ago = now - timedelta(days=14)
                 
-                recent_data = db.query(TimeSeriesData).filter(
-                    TimeSeriesData.variable_id == var.id,
-                    TimeSeriesData.timestamp >= two_weeks_ago
-                ).order_by(desc(TimeSeriesData.timestamp)).all()
-                
-                momentum = 0
-                if len(recent_data) >= 7:
-                    this_week = [dp.value for dp in recent_data if dp.timestamp >= week_ago]
-                    last_week = [dp.value for dp in recent_data if dp.timestamp < week_ago]
+                if reddit_var:
+                    reddit_data = db.query(TimeSeriesData).filter(
+                        TimeSeriesData.variable_id == reddit_var.id,
+                        TimeSeriesData.timestamp >= two_weeks_ago
+                    ).order_by(desc(TimeSeriesData.timestamp)).all()
                     
-                    if this_week and last_week:
-                        this_week_avg = sum(this_week) / len(this_week)
-                        last_week_avg = sum(last_week) / len(last_week)
-                        momentum = ((this_week_avg - last_week_avg) / max(last_week_avg, 1)) * 100
-                
-                sources_data.append({
-                    'source_name': source.capitalize(),
-                    'name': source.capitalize(),
-                    'momentum': round(momentum, 1),
-                    'data_points': len(recent_data),
-                    'weight_percent': 50  # Equal weight for now
-                })
-                composite_momentum += momentum
-                source_count += 1
+                    reddit_momentum = 0
+                    if len(reddit_data) >= 7:
+                        this_week = [dp.value for dp in reddit_data if dp.timestamp >= week_ago]
+                        last_week = [dp.value for dp in reddit_data if dp.timestamp < week_ago]
+                        
+                        if this_week and last_week:
+                            this_week_avg = sum(this_week) / len(this_week)
+                            last_week_avg = sum(last_week) / len(last_week)
+                            reddit_momentum = ((this_week_avg - last_week_avg) / max(last_week_avg, 1)) * 100
+                    
+                    # Extract subreddit name for display
+                    subreddit = reddit_name.replace('reddit_', 'r/')
+                    
+                    sources_data.append({
+                        'source_name': f'Reddit {subreddit}',
+                        'name': f'Reddit {subreddit}',
+                        'momentum': round(reddit_momentum, 1),
+                        'data_points': len(reddit_data),
+                        'weight_percent': 50 // len(related_reddit) if related_reddit else 50
+                    })
+                    composite_momentum += reddit_momentum
+                    source_count += 1
         
         # Calculate composite metrics
         if source_count > 0:

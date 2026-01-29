@@ -118,6 +118,16 @@ async def fetch_fresh_data_background():
     try:
         logger.info("🔄 Auto-fetching fresh Layer 1 data on startup...")
         
+        # First, ensure Wikipedia and Reddit variables exist in database
+        try:
+            from setup_layer1_fast_signals import setup_wikipedia_variables, setup_reddit_variables
+            logger.info("🔧 Setting up Layer 1 variables (Wikipedia + Reddit)...")
+            setup_wikipedia_variables()
+            setup_reddit_variables()
+            logger.info("✅ Layer 1 variables configured")
+        except Exception as setup_err:
+            logger.warning(f"Variable setup skipped: {setup_err}")
+        
         # Import and run data ingestion
         from data_ingestion_service import DataIngestionService
         service = DataIngestionService()
@@ -126,10 +136,10 @@ async def fetch_fresh_data_background():
         wiki_result = service._fetch_wikipedia_pageviews_data()
         logger.info(f"✅ Wikipedia fetch: {wiki_result.get('wikipedia_fetched', 0)} variables, {wiki_result.get('wikipedia_data_points', 0)} data points")
         
-        # Optionally fetch Reddit data
+        # Fetch Reddit data
         try:
             reddit_result = service._fetch_reddit_activity_data()
-            logger.info(f"✅ Reddit fetch: {reddit_result.get('reddit_fetched', 0)} variables")
+            logger.info(f"✅ Reddit fetch: {reddit_result.get('reddit_fetched', 0)} variables, {reddit_result.get('reddit_data_points', 0)} data points")
         except Exception as e:
             logger.warning(f"Reddit fetch skipped: {e}")
         
