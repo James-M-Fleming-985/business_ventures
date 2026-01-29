@@ -159,12 +159,12 @@
                                      :class="signal.momentum > 0 ? 'bg-green-500' : 'bg-red-500'"
                                      :style="`width: ${Math.min(Math.abs(signal.momentum), 100)}%`"></div>
                             </div>
-                            <!-- Confidence indicator -->
-                            <div x-show="signal.confidence >= 3" class="mt-1 flex items-center space-x-0.5">
-                                <template x-for="starNum in signal.confidence" :key="starNum">
+                            <!-- Confidence indicator - always show at least 1 star -->
+                            <div class="mt-1 flex items-center space-x-0.5">
+                                <template x-for="starNum in Math.max(1, signal.confidence || 1)" :key="starNum">
                                     <span class="text-xs text-yellow-400">★</span>
                                 </template>
-                                <span class="text-xs text-yellow-400 ml-1" x-text="`${signal.confidence}★`"></span>
+                                <span class="text-xs text-yellow-400 ml-1" x-text="`${Math.max(1, signal.confidence || 1)}★`"></span>
                             </div>
                         </div>
                     </template>
