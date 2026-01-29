@@ -79,49 +79,40 @@ function dashboardData() {
         },
         
         async loadSignalRadar() {
-            console.log('📡 Loading Signal Radar...');
+            console.log('📡 Loading Signal Radar (Composite Signals)...');
             try {
-                // Load signals directly from fast-signals endpoint
-                // (Composite multi-source aggregation is done server-side)
-                const response = await fetch('/api/dashboard/fast-signals?only_predictive=false');
+                // Load composite signals from fast-signals endpoint
+                // Server aggregates by keyword across all sources (Wikipedia, Reddit, etc.)
+                const response = await fetch('/api/dashboard/fast-signals');
                 
                 if (response.ok) {
                     const data = await response.json();
                     
-                    // Map signals to expected format
-                    this.fastSignals = (data.signals || []).map(signal => {
-                        // Strip source prefix from display_name
-                        let cleanName = signal.display_name || signal.name;
-                        if (cleanName.startsWith('Wikipedia: ')) {
-                            cleanName = cleanName.replace('Wikipedia: ', '');
-                        } else if (cleanName.startsWith('Reddit: ')) {
-                            cleanName = cleanName.replace('Reddit: ', '');
-                        }
-                        
-                        return {
-                            name: signal.name,
-                            display_name: cleanName,
-                            momentum: signal.momentum,
-                            layer: 1,
-                            source: signal.source,
-                            sources: [{name: signal.source, momentum: signal.momentum}],
-                            source_count: 1,
-                            agreement_score: 100,
-                            confidence: signal.confidence?.score ? Math.round(signal.confidence.score * 5) : 3,
-                            confidence_level: signal.confidence?.agreement || 'single-source',
-                            has_data: signal.has_data,
-                            data_points: signal.data_points || 0,
-                            has_predictions: signal.has_predictions,
-                            description: signal.description
-                        };
-                    });
+                    // Map signals - server already returns composite format
+                    this.fastSignals = (data.signals || []).map(signal => ({
+                        name: signal.name,
+                        display_name: signal.display_name,
+                        momentum: signal.momentum,
+                        layer: 1,
+                        source: signal.source,
+                        sources: signal.sources || [{name: signal.source, momentum: signal.momentum}],
+                        source_count: signal.source_count || 1,
+                        agreement_score: signal.agreement_score || 100,
+                        confidence: signal.confidence?.stars || 3,
+                        confidence_level: signal.confidence?.agreement || 'single-source',
+                        has_data: signal.has_data,
+                        data_points: signal.data_points || 0,
+                        has_predictions: signal.has_predictions,
+                        description: signal.description
+                    }));
                     
                     this.topInsight = data.top_insight || {
-                        title: 'Layer 1 Signals Active',
-                        description: `Analyzing ${this.fastSignals.length} behavioral signals`
+                        title: 'Composite Signals Active',
+                        description: `Analyzing ${this.fastSignals.length} signals aggregated from multiple sources`
                     };
                     
-                    console.log('📡 Fast signals loaded:', this.fastSignals.length);
+                    console.log('📡 Composite signals loaded:', this.fastSignals.length, 
+                                'multi-source:', data.multi_source_signals || 0);
                     this.filterSignals();
                 } else {
                     throw new Error(`API error: ${response.status}`);

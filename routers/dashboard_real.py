@@ -950,163 +950,214 @@ def calculate_signal_confidence(signal_name: str, signal_momentum: float,
 
 @router.get("/fast-signals")
 async def get_fast_signals(
-    only_predictive: bool = Query(True, description="Only show signals with empirical forward predictions"),
+    only_predictive: bool = Query(False, description="Only show signals with empirical forward predictions"),
     db: Session = Depends(get_db)
 ):
     """
     Get Layer 1 Fast Signals with REAL-TIME momentum indicators.
-    Uses daily Wikipedia + Reddit data for week-over-week momentum.
-    Multi-source confidence scoring when signals agree.
     
-    By default, only shows signals that have empirically-validated Granger 
-    causality predictions (i.e., this signal predicts a Layer 2 outcome).
-    Set only_predictive=false to see all signals including lagging indicators.
+    COMPOSITE AGGREGATION: Signals are grouped by KEYWORD across all sources.
+    Each keyword (e.g., "Stock Market") aggregates data from multiple sources
+    (Wikipedia, Reddit subreddits, etc.) into a single composite signal.
+    
+    Returns:
+    - Composite momentum (weighted average across sources)
+    - Source count (how many sources contribute to this signal)  
+    - Agreement score (do sources agree on direction?)
+    - Confidence stars (based on source count + agreement)
     """
     from sqlalchemy import func, desc, or_, and_
     from datetime import datetime, timedelta
     
-    signals = []
-    all_signals_dict = {}  # For cross-validation lookup
-    
     try:
-        # Get all Layer 1 variables (Wikipedia + Reddit)
+        # Get ALL Layer 1 variables (Wikipedia + Reddit + others)
         layer1_vars = db.query(VariableMetadata).filter(
             VariableMetadata.source.in_(['wikipedia', 'reddit']),
             VariableMetadata.is_active == True
         ).all()
         
-        # Build set of signal IDs that have forward Granger predictions
-        # (i.e., this signal → some outcome with p < 0.05)
-        predictive_signal_ids = set()
-        if only_predictive:
-            # Find signals where they are var1 and granger_xy is significant
-            # OR they are var2 and granger_yx is significant
-            for var in layer1_vars:
-                has_prediction = db.query(CorrelationResult).filter(
-                    or_(
-                        and_(
-                            CorrelationResult.variable1_id == var.id,
-                            CorrelationResult.granger_p_value_xy != None,
-                            CorrelationResult.granger_p_value_xy < 0.05
-                        ),
-                        and_(
-                            CorrelationResult.variable2_id == var.id,
-                            CorrelationResult.granger_p_value_yx != None,
-                            CorrelationResult.granger_p_value_yx < 0.05
-                        )
-                    )
-                ).first()
-                
-                if has_prediction:
-                    # Verify it predicts a non-Wikipedia variable (Layer 2)
-                    if has_prediction.variable1_id == var.id:
-                        other_var = has_prediction.variable2
-                    else:
-                        other_var = has_prediction.variable1
-                    
-                    if other_var and other_var.source != 'wikipedia':
-                        predictive_signal_ids.add(var.id)
-        
-        # Define time windows for week-over-week comparison
+        # Time windows for momentum calculation
         now = datetime.utcnow()
         week_ago = now - timedelta(days=7)
         two_weeks_ago = now - timedelta(days=14)
         
+        # Calculate momentum for each variable
+        var_momentum = {}
         for var in layer1_vars:
-            # Skip signals without forward predictions if only_predictive is True
-            if only_predictive and var.id not in predictive_signal_ids:
-                continue
-                
-            # Get last 14 days of data for week-over-week comparison
             recent_data = db.query(TimeSeriesData).filter(
                 TimeSeriesData.variable_id == var.id,
                 TimeSeriesData.timestamp >= two_weeks_ago
             ).order_by(desc(TimeSeriesData.timestamp)).all()
             
+            momentum = 0
             if len(recent_data) >= 7:
-                # Split into this week vs last week
                 this_week = [dp.value for dp in recent_data if dp.timestamp >= week_ago]
                 last_week = [dp.value for dp in recent_data if dp.timestamp < week_ago]
                 
                 if this_week and last_week:
-                    # Calculate average daily views for each week
                     this_week_avg = sum(this_week) / len(this_week)
                     last_week_avg = sum(last_week) / len(last_week)
-                    
-                    # Week-over-week momentum
                     momentum = ((this_week_avg - last_week_avg) / max(last_week_avg, 1)) * 100
-                else:
-                    momentum = 0
-            else:
-                momentum = 0
             
-            # Mark if this signal has predictive power
-            has_predictions = var.id in predictive_signal_ids if only_predictive else True
-            
-            signals.append({
-                'name': var.name,
-                'display_name': var.display_name,
+            var_momentum[var.id] = {
+                'var': var,
                 'momentum': round(momentum, 1),
-                'layer': 1,
-                'source': var.source,
-                'has_data': len(recent_data) > 0,
-                'data_points': len(recent_data),
-                'has_predictions': has_predictions,
-                'description': _get_signal_description(var.name, var.source)
-            })
-            
-            # Store for cross-validation lookup
-            all_signals_dict[var.name] = {
-                'momentum': round(momentum, 1),
-                'source': var.source
+                'data_points': len(recent_data)
             }
         
-        # Add confidence scores using cross-validation
-        for signal in signals:
-            confidence = calculate_signal_confidence(
-                signal['name'], 
-                signal['momentum'],
-                all_signals_dict,
-                db
-            )
-            signal['confidence'] = confidence
+        # Group by KEYWORD using SIGNAL_CROSS_VALIDATION mapping
+        # This maps wiki_xxx -> [reddit_yyy, reddit_zzz, ...]
+        keyword_groups = {}
+        
+        for var_id, data in var_momentum.items():
+            var = data['var']
+            
+            if var.source == 'wikipedia':
+                # Extract keyword from wiki_xxx name
+                keyword = var.name.replace('wiki_', '').replace('-', ' ').title()
+                
+                if keyword not in keyword_groups:
+                    keyword_groups[keyword] = {
+                        'keyword': keyword,
+                        'sources': [],
+                        'primary_var': var
+                    }
+                
+                keyword_groups[keyword]['sources'].append({
+                    'name': 'Wikipedia',
+                    'source_type': 'wikipedia',
+                    'var_name': var.name,
+                    'momentum': data['momentum'],
+                    'data_points': data['data_points']
+                })
+                
+                # Add related Reddit sources from cross-validation mapping
+                related_reddit = SIGNAL_CROSS_VALIDATION.get(var.name, [])
+                for reddit_name in related_reddit:
+                    # Find matching Reddit variable
+                    reddit_var = next((v for v in layer1_vars if v.name == reddit_name), None)
+                    if reddit_var and reddit_var.id in var_momentum:
+                        reddit_data = var_momentum[reddit_var.id]
+                        subreddit = reddit_name.replace('reddit_', 'r/')
+                        keyword_groups[keyword]['sources'].append({
+                            'name': f'Reddit {subreddit}',
+                            'source_type': 'reddit',
+                            'var_name': reddit_name,
+                            'momentum': reddit_data['momentum'],
+                            'data_points': reddit_data['data_points']
+                        })
+        
+        # Also add standalone Reddit signals that aren't mapped
+        used_reddit_vars = set()
+        for kg in keyword_groups.values():
+            for src in kg['sources']:
+                if src['source_type'] == 'reddit':
+                    used_reddit_vars.add(src['var_name'])
+        
+        for var_id, data in var_momentum.items():
+            var = data['var']
+            if var.source == 'reddit' and var.name not in used_reddit_vars:
+                # Standalone Reddit signal - create its own keyword
+                subreddit = var.name.replace('reddit_', '')
+                keyword = f"r/{subreddit}".title()
+                
+                if keyword not in keyword_groups:
+                    keyword_groups[keyword] = {
+                        'keyword': keyword,
+                        'sources': [],
+                        'primary_var': var
+                    }
+                    keyword_groups[keyword]['sources'].append({
+                        'name': f'Reddit r/{subreddit}',
+                        'source_type': 'reddit',
+                        'var_name': var.name,
+                        'momentum': data['momentum'],
+                        'data_points': data['data_points']
+                    })
+        
+        # Build composite signals from keyword groups
+        signals = []
+        for keyword, group in keyword_groups.items():
+            sources = group['sources']
+            source_count = len(sources)
+            
+            if source_count == 0:
+                continue
+            
+            # Calculate composite momentum (weighted average)
+            total_momentum = sum(s['momentum'] for s in sources)
+            composite_momentum = total_momentum / source_count
+            
+            # Calculate agreement score
+            positive = sum(1 for s in sources if s['momentum'] > 0)
+            negative = sum(1 for s in sources if s['momentum'] < 0)
+            neutral = sum(1 for s in sources if s['momentum'] == 0)
+            
+            if source_count == 1:
+                agreement_score = 100
+                agreement_level = 'single-source'
+            elif positive == source_count or negative == source_count:
+                agreement_score = 100
+                agreement_level = 'strong'
+            elif positive > 0 and negative > 0:
+                majority = max(positive, negative)
+                agreement_score = int((majority / source_count) * 100)
+                agreement_level = 'mixed'
+            else:
+                agreement_score = 100
+                agreement_level = 'moderate'
+            
+            # Calculate confidence stars (1-5)
+            confidence_stars = 1
+            if source_count >= 2:
+                confidence_stars += 1
+            if source_count >= 3:
+                confidence_stars += 1
+            if agreement_score >= 80:
+                confidence_stars += 1
+            if any(s['data_points'] >= 14 for s in sources):
+                confidence_stars += 1
+            confidence_stars = min(confidence_stars, 5)
+            
+            signals.append({
+                'name': group['primary_var'].name,
+                'display_name': keyword,
+                'momentum': round(composite_momentum, 1),
+                'layer': 1,
+                'source': 'composite' if source_count > 1 else sources[0]['source_type'],
+                'sources': sources,
+                'source_count': source_count,
+                'agreement_score': agreement_score,
+                'confidence': {
+                    'score': confidence_stars / 5,
+                    'stars': confidence_stars,
+                    'agreement': agreement_level
+                },
+                'has_data': any(s['data_points'] > 0 for s in sources),
+                'data_points': sum(s['data_points'] for s in sources),
+                'has_predictions': True,  # Will be determined by Granger
+                'description': _get_signal_description(group['primary_var'].name, group['primary_var'].source)
+            })
         
         # Sort by absolute momentum (most active first)
         signals.sort(key=lambda x: abs(x['momentum']), reverse=True)
-        
-        # Count sources
-        wiki_count = len([s for s in signals if s['source'] == 'wikipedia'])
-        reddit_count = len([s for s in signals if s['source'] == 'reddit'])
-        high_confidence = len([s for s in signals if s.get('confidence', {}).get('score', 0) >= 0.75])
         
         # Generate top insight
         top_insight = None
         if signals:
             top_signal = signals[0]
             direction = 'surging' if top_signal['momentum'] > 10 else 'rising' if top_signal['momentum'] > 0 else 'declining'
-            conf = top_signal.get('confidence', {})
-            conf_text = f" (confidence: {conf.get('agreement', 'single-source')})" if conf else ""
             top_insight = {
                 'title': f"Top Signal: {top_signal['display_name']}",
-                'description': f"{top_signal['display_name']} is {direction} with {abs(top_signal['momentum']):.1f}% momentum{conf_text}. "
-                               f"This Layer 1 signal has empirically-validated predictions for Layer 2 market movements."
+                'description': f"{top_signal['display_name']} is {direction} with {abs(top_signal['momentum']):.1f}% composite momentum from {top_signal['source_count']} source(s)."
             }
         
-        # Count signals with/without predictions
-        predictive_count = len(predictive_signal_ids)
-        
         return {
-            'signals': signals[:15],  # Top 15 most active predictive signals
-            'total_layer1_variables': len(layer1_vars),
-            'predictive_signals': predictive_count,
-            'showing_only_predictive': only_predictive,
-            'sources': {
-                'wikipedia': wiki_count,
-                'reddit': reddit_count
-            },
-            'high_confidence_signals': high_confidence,
+            'signals': signals[:20],  # Top 20 most active signals
+            'total_signals': len(signals),
+            'multi_source_signals': len([s for s in signals if s['source_count'] > 1]),
             'top_insight': top_insight,
-            'note': f"Showing {len(signals)} signals with Granger-validated predictions" if only_predictive else f"Showing all {len(signals)} Layer 1 signals"
+            'note': f"Showing {min(20, len(signals))} composite signals aggregated from Wikipedia + Reddit"
         }
             
     except Exception as e:
@@ -1283,13 +1334,29 @@ async def get_cascade_predictions(signal_name: str, db: Session = Depends(get_db
     computed_live = False
     
     try:
-        # Find the Layer 1 variable
+        # Find the Layer 1 variable - try multiple name patterns
         layer1_var = db.query(VariableMetadata).filter(
             VariableMetadata.name == signal_name
         ).first()
         
+        # If not found, try alternative patterns (handle display_name lookups)
         if not layer1_var:
-            return {'predictions': [], 'top_prediction': None, 'optimal_lag': None}
+            # Try wiki_ prefix
+            alt_name = f"wiki_{signal_name.lower().replace(' ', '-')}"
+            layer1_var = db.query(VariableMetadata).filter(
+                VariableMetadata.name == alt_name
+            ).first()
+        
+        if not layer1_var:
+            # Try without prefix
+            alt_name = f"wiki_{signal_name.lower().replace(' ', '_')}"
+            layer1_var = db.query(VariableMetadata).filter(
+                VariableMetadata.name == alt_name
+            ).first()
+        
+        if not layer1_var:
+            logger.warning(f"Could not find Layer 1 variable for: {signal_name}")
+            return {'predictions': [], 'top_prediction': f'Signal "{signal_name}" not found', 'optimal_lag': None}
         
         # Try to find empirical Granger causality first
         causality_results = db.query(CorrelationResult).filter(

@@ -130,8 +130,18 @@
                                             <div x-text="signal.description || 'Behavioral signal tracking public interest and search momentum. Higher values indicate increased attention.'"></div>
                                             <div class="mt-2 pt-2 border-t border-slate-600 text-slate-400">
                                                 <span class="block">Sources: <span x-text="signal.source_count || 1"></span></span>
-                                                <span x-show="signal.sources" class="block text-xs" x-text="(signal.sources || []).join(', ')"></span>
-                                                <span x-show="signal.agreement_score" class="block">Agreement: <span x-text="Math.round(signal.agreement_score) + '%'"></span></span>
+                                                <template x-if="signal.sources && signal.sources.length > 0">
+                                                    <div class="mt-1 space-y-0.5">
+                                                        <template x-for="src in signal.sources" :key="src.name">
+                                                            <div class="text-xs flex justify-between">
+                                                                <span x-text="src.name"></span>
+                                                                <span :class="src.momentum > 0 ? 'text-green-400' : 'text-red-400'" 
+                                                                      x-text="(src.momentum > 0 ? '+' : '') + src.momentum + '%'"></span>
+                                                            </div>
+                                                        </template>
+                                                    </div>
+                                                </template>
+                                                <span x-show="signal.agreement_score" class="block mt-1">Agreement: <span x-text="Math.round(signal.agreement_score) + '%'"></span></span>
                                             </div>
                                         </div>
                                     </div>
