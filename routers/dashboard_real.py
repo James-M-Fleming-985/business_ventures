@@ -1326,37 +1326,75 @@ async def get_cascade_predictions(signal_name: str, db: Session = Depends(get_db
     """
     Get Layer 2/3 variables that the selected Layer 1 signal predicts.
     Computes Granger causality on-the-fly if no pre-computed results exist.
+    
+    signal_name can be:
+    - A keyword like "Climate Change" (from composite signals)
+    - A variable name like "wiki_climate_change"
     """
     from sqlalchemy import or_, and_, desc
     import numpy as np
     
     predictions = []
     computed_live = False
+    layer1_vars = []  # May find multiple variables for a keyword
     
     try:
-        # Find the Layer 1 variable - try multiple name patterns
+        # Decode URL-encoded signal name
+        import urllib.parse
+        signal_name = urllib.parse.unquote(signal_name)
+        logger.info(f"Looking up Layer 1 variable for: '{signal_name}'")
+        
+        # Strategy 1: Try exact name match first
         layer1_var = db.query(VariableMetadata).filter(
             VariableMetadata.name == signal_name
         ).first()
         
-        # If not found, try alternative patterns (handle display_name lookups)
-        if not layer1_var:
-            # Try wiki_ prefix
-            alt_name = f"wiki_{signal_name.lower().replace(' ', '-')}"
-            layer1_var = db.query(VariableMetadata).filter(
-                VariableMetadata.name == alt_name
-            ).first()
+        if layer1_var:
+            layer1_vars = [layer1_var]
+        else:
+            # Strategy 2: Try wiki_ prefix variations
+            normalized = signal_name.lower().strip()
+            patterns_to_try = [
+                f"wiki_{normalized.replace(' ', '_')}",  # wiki_climate_change
+                f"wiki_{normalized.replace(' ', '-')}",  # wiki_climate-change
+                f"reddit_{normalized.replace(' ', '_')}",  # reddit_climate_change
+            ]
+            
+            for pattern in patterns_to_try:
+                var = db.query(VariableMetadata).filter(
+                    VariableMetadata.name == pattern
+                ).first()
+                if var:
+                    layer1_vars.append(var)
+                    break
+            
+            # Strategy 3: Try partial match on display_name
+            if not layer1_vars:
+                layer1_vars = db.query(VariableMetadata).filter(
+                    VariableMetadata.display_name.ilike(f"%{signal_name}%"),
+                    VariableMetadata.source.in_(['wikipedia', 'reddit'])
+                ).limit(3).all()
+            
+            # Strategy 4: Try keyword in name
+            if not layer1_vars:
+                keyword_pattern = normalized.replace(' ', '%')
+                layer1_vars = db.query(VariableMetadata).filter(
+                    VariableMetadata.name.ilike(f"%{keyword_pattern}%"),
+                    VariableMetadata.source.in_(['wikipedia', 'reddit'])
+                ).limit(3).all()
         
-        if not layer1_var:
-            # Try without prefix
-            alt_name = f"wiki_{signal_name.lower().replace(' ', '_')}"
-            layer1_var = db.query(VariableMetadata).filter(
-                VariableMetadata.name == alt_name
-            ).first()
-        
-        if not layer1_var:
+        if not layer1_vars:
             logger.warning(f"Could not find Layer 1 variable for: {signal_name}")
-            return {'predictions': [], 'top_prediction': f'Signal "{signal_name}" not found', 'optimal_lag': None}
+            return {
+                'predictions': [], 
+                'top_prediction': f'Signal "{signal_name}" not found in database', 
+                'optimal_lag': None,
+                'note': 'Try fetching fresh data first'
+            }
+        
+        # Use the first matching variable for Granger analysis
+        layer1_var = layer1_vars[0]
+        logger.info(f"Found Layer 1 variable: {layer1_var.name} (display: {layer1_var.display_name})")
         
         # Try to find empirical Granger causality first
         causality_results = db.query(CorrelationResult).filter(
@@ -1587,8 +1625,15 @@ async def get_cascade_predictions(signal_name: str, db: Session = Depends(get_db
         }
         
     except Exception as e:
-        logger.error(f"Failed to load cascade predictions: {e}")
-        return {'predictions': [], 'top_prediction': None, 'optimal_lag': None}
+        import traceback
+        logger.error(f"Failed to load cascade predictions for '{signal_name}': {e}")
+        logger.error(traceback.format_exc())
+        return {
+            'predictions': [], 
+            'top_prediction': f'Error analyzing {signal_name}: {str(e)[:100]}', 
+            'optimal_lag': None,
+            'error': str(e)
+        }
 
 
 # Curated mappings: which L1 signals predict which L2 outcomes
