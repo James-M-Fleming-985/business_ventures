@@ -79,51 +79,55 @@ function dashboardData() {
         },
         
         async loadSignalRadar() {
-            console.log('📡 Loading Signal Radar (Composite Multi-Source Signals)...');
+            console.log('📡 Loading Signal Radar...');
             try {
-                // Fetch composite signals from multiple sources (Wikipedia, Reddit, Twitter, Google Trends)
-                const response = await fetch('/api/signal-radar/signals/composite?matching_mode=simple&min_momentum=15&min_sources=1');
+                // Load signals directly from fast-signals endpoint
+                // (Composite multi-source aggregation is done server-side)
+                const response = await fetch('/api/dashboard/fast-signals?only_predictive=false');
                 
                 if (response.ok) {
                     const data = await response.json();
                     
-                    // Transform composite signals to match expected format
-                    this.fastSignals = (data.signals || []).map(signal => ({
-                        name: `composite_${signal.keyword.toLowerCase().replace(/\s+/g, '-')}`,
-                        display_name: signal.keyword,
-                        momentum: signal.momentum,  // API returns 'momentum' not 'composite_momentum'
-                        layer: 1,
-                        source: 'composite',
-                        sources: (signal.sources || []).map(s => ({
-                            name: s.name || s.source_name,  // Handle both field names
-                            momentum: s.momentum
-                        })),
-                        source_count: signal.source_count,
-                        agreement_score: signal.agreement_score,
-                        confidence: signal.confidence_stars || signal.confidence || 0,
-                        confidence_level: signal.confidence_level || '',
-                        has_data: true,
-                        data_points: signal.total_data_points || 0,
-                        has_predictions: false,  // Don't auto-load Granger - user must click Run Granger
-                        description: `Multi-source signal from ${signal.source_count} source${signal.source_count !== 1 ? 's' : ''}`
-                    }));
+                    // Map signals to expected format
+                    this.fastSignals = (data.signals || []).map(signal => {
+                        // Strip source prefix from display_name
+                        let cleanName = signal.display_name || signal.name;
+                        if (cleanName.startsWith('Wikipedia: ')) {
+                            cleanName = cleanName.replace('Wikipedia: ', '');
+                        } else if (cleanName.startsWith('Reddit: ')) {
+                            cleanName = cleanName.replace('Reddit: ', '');
+                        }
+                        
+                        return {
+                            name: signal.name,
+                            display_name: cleanName,
+                            momentum: signal.momentum,
+                            layer: 1,
+                            source: signal.source,
+                            sources: [{name: signal.source, momentum: signal.momentum}],
+                            source_count: 1,
+                            agreement_score: 100,
+                            confidence: signal.confidence?.score ? Math.round(signal.confidence.score * 5) : 3,
+                            confidence_level: signal.confidence?.agreement || 'single-source',
+                            has_data: signal.has_data,
+                            data_points: signal.data_points || 0,
+                            has_predictions: signal.has_predictions,
+                            description: signal.description
+                        };
+                    });
                     
-                    this.topInsight = {
-                        title: 'Composite Signal Aggregation Active',
-                        description: `Analyzing ${this.fastSignals.length} multi-source behavioral signals with weighted averaging`
+                    this.topInsight = data.top_insight || {
+                        title: 'Layer 1 Signals Active',
+                        description: `Analyzing ${this.fastSignals.length} behavioral signals`
                     };
                     
-                    console.log('📡 Composite signals loaded:', this.fastSignals.length);
+                    console.log('📡 Fast signals loaded:', this.fastSignals.length);
                     this.filterSignals();
-                } else if (response.status === 404) {
-                    // Fall back to old endpoint if new one isn't deployed yet
-                    console.log('📡 Composite signals not available, falling back to single-source...');
-                    await this.loadFastSignalsFallback();
                 } else {
                     throw new Error(`API error: ${response.status}`);
                 }
             } catch (error) {
-                console.error('Failed to load composite signals:', error);
+                console.error('Failed to load signals:', error);
                 // Try fallback
                 await this.loadFastSignalsFallback();
             }

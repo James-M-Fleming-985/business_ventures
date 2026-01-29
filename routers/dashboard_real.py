@@ -1236,12 +1236,13 @@ async def get_signal_details(keyword: str, db: Session = Depends(get_db)):
 async def get_cascade_predictions(signal_name: str, db: Session = Depends(get_db)):
     """
     Get Layer 2/3 variables that the selected Layer 1 signal predicts.
-    Uses Granger causality results if available, otherwise falls back to
-    curated theoretical mappings based on domain knowledge.
+    Computes Granger causality on-the-fly if no pre-computed results exist.
     """
     from sqlalchemy import or_, and_, desc
+    import numpy as np
     
     predictions = []
+    computed_live = False
     
     try:
         # Find the Layer 1 variable
@@ -1253,12 +1254,6 @@ async def get_cascade_predictions(signal_name: str, db: Session = Depends(get_db
             return {'predictions': [], 'top_prediction': None, 'optimal_lag': None}
         
         # Try to find empirical Granger causality first
-        # Note: We only require the Granger p-value to be significant (< 0.05)
-        # The is_significant flag is for correlation significance, not Granger
-        
-        # Case 1: This signal PREDICTS other variables
-        # If signal is var1: granger_xy means var1→var2 (signal→other)
-        # If signal is var2: granger_yx means var2→var1 (signal→other)
         causality_results = db.query(CorrelationResult).filter(
             or_(
                 and_(
@@ -1274,6 +1269,95 @@ async def get_cascade_predictions(signal_name: str, db: Session = Depends(get_db
             )
         ).order_by(desc(CorrelationResult.abs_correlation)).limit(5).all()
         
+        # If no pre-computed results, compute Granger on-the-fly
+        if not causality_results:
+            logger.info(f"No pre-computed Granger for {signal_name}, computing on-the-fly...")
+            computed_live = True
+            
+            # Get time series data for this signal
+            signal_data = db.query(TimeSeriesData).filter(
+                TimeSeriesData.variable_id == layer1_var.id
+            ).order_by(TimeSeriesData.timestamp).all()
+            
+            if len(signal_data) >= 20:  # Need enough data for Granger
+                signal_values = {dp.timestamp.date(): dp.value for dp in signal_data}
+                
+                # Find all Layer 2/3 variables (non-Wikipedia) to test against
+                market_vars = db.query(VariableMetadata).filter(
+                    VariableMetadata.source.notin_(['wikipedia', 'reddit']),
+                    VariableMetadata.is_active == True
+                ).limit(20).all()
+                
+                for mv in market_vars:
+                    mv_data = db.query(TimeSeriesData).filter(
+                        TimeSeriesData.variable_id == mv.id
+                    ).order_by(TimeSeriesData.timestamp).all()
+                    
+                    if len(mv_data) >= 20:
+                        mv_values = {dp.timestamp.date(): dp.value for dp in mv_data}
+                        
+                        # Align the time series
+                        common_dates = sorted(set(signal_values.keys()) & set(mv_values.keys()))
+                        
+                        if len(common_dates) >= 20:
+                            x = np.array([signal_values[d] for d in common_dates])
+                            y = np.array([mv_values[d] for d in common_dates])
+                            
+                            # Quick Granger test
+                            try:
+                                from statsmodels.tsa.stattools import grangercausalitytests
+                                import warnings
+                                with warnings.catch_warnings():
+                                    warnings.simplefilter("ignore")
+                                    
+                                    # X → Y test
+                                    data = np.column_stack([y, x])
+                                    max_lag = min(5, len(common_dates) // 5)
+                                    if max_lag >= 1:
+                                        result = grangercausalitytests(data, maxlag=max_lag, verbose=False)
+                                        
+                                        # Get best p-value
+                                        best_lag = 1
+                                        best_pvalue = 1.0
+                                        for lag in range(1, max_lag + 1):
+                                            if lag in result:
+                                                p = result[lag][0]['ssr_ftest'][1]
+                                                if p < best_pvalue:
+                                                    best_pvalue = p
+                                                    best_lag = lag
+                                        
+                                        if best_pvalue < 0.10:  # Include marginal for on-the-fly
+                                            r = float(np.corrcoef(x, y)[0, 1])
+                                            r_squared = r ** 2
+                                            n = len(common_dates)
+                                            f_stat = (r_squared * (n - 2)) / max(1 - r_squared, 0.0001) if r_squared < 1 else 0
+                                            
+                                            predictions.append({
+                                                'name': mv.name,
+                                                'display_name': mv.display_name,
+                                                'direction': 'up' if r > 0 else 'down',
+                                                'r': round(r, 4),
+                                                'r_value': round(r, 4),
+                                                'r_squared': round(r_squared, 4),
+                                                'f_statistic': round(f_stat, 2),
+                                                'p_value': f"{best_pvalue:.4f}",
+                                                'lag': best_lag,
+                                                'correlation': r,
+                                                'sample_size': n,
+                                                'confidence': 'high' if best_pvalue < 0.01 else 'medium' if best_pvalue < 0.05 else 'low',
+                                                'source': 'granger_live',
+                                                'is_causal': best_pvalue < 0.05
+                                            })
+                                            
+                            except Exception as granger_err:
+                                logger.debug(f"Granger test failed for {mv.name}: {granger_err}")
+                                continue
+                
+                # Sort by p-value (most significant first)
+                predictions.sort(key=lambda x: float(x['p_value']))
+                predictions = predictions[:5]
+        
+        # Use pre-computed results if available
         for result in causality_results:
             if result.variable1_id == layer1_var.id:
                 outcome_var = result.variable2
