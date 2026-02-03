@@ -596,6 +596,39 @@ async def data_quality_diagnostic():
         }, status_code=500)
 
 
+@router.post("/disable-google-trends")
+async def disable_google_trends_variables():
+    """
+    Disable all Google Trends variables - pytrends is blocked from data centers.
+    """
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+        from database import get_db_session
+        from models import VariableMetadata
+        
+        disabled_count = 0
+        with get_db_session() as session:
+            trends_vars = session.query(VariableMetadata).filter(
+                VariableMetadata.source == 'google_trends',
+                VariableMetadata.is_active == True
+            ).all()
+            
+            for var in trends_vars:
+                var.is_active = False
+                disabled_count += 1
+            
+            session.commit()
+        
+        return {
+            "status": "success",
+            "message": f"Disabled {disabled_count} Google Trends variables",
+            "reason": "pytrends is blocked from data centers - use Wikipedia pageviews instead"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error disabling Google Trends: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.post("/disable-empty-environmental-vars")
 async def disable_empty_environmental_vars():
