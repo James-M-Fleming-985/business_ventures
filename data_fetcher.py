@@ -454,7 +454,8 @@ class DataFetcher:
                 params = {
                     "query.cond": condition,
                     "filter.advanced": f"AREA[StartDate]RANGE[{month_start.strftime('%m/%d/%Y')}, {month_end.strftime('%m/%d/%Y')}]",
-                    "pageSize": 1
+                    "pageSize": 1,
+                    "countTotal": "true"  # Required to get totalCount in response
                 }
                 
                 try:
