@@ -460,7 +460,11 @@ async def env_check():
         "POSTGRES_DB_exists": bool(os.getenv('POSTGRES_DB')),
         "DATABASE_URL_prefix": os.getenv('DATABASE_URL', '')[:30] if os.getenv('DATABASE_URL') else None,
         "DATABASE_PUBLIC_URL_prefix": os.getenv('DATABASE_PUBLIC_URL', '')[:30] if os.getenv('DATABASE_PUBLIC_URL') else None,
-        "POSTGRES_DB_prefix": os.getenv('POSTGRES_DB', '')[:30] if os.getenv('POSTGRES_DB') else None
+        "POSTGRES_DB_prefix": os.getenv('POSTGRES_DB', '')[:30] if os.getenv('POSTGRES_DB') else None,
+        # API Keys
+        "FRED_API_KEY_exists": bool(os.getenv('FRED_API_KEY')),
+        "FRED_API_KEY_prefix": os.getenv('FRED_API_KEY', '')[:8] + '...' if os.getenv('FRED_API_KEY') else None,
+        "ALPHA_VANTAGE_API_KEY_exists": bool(os.getenv('ALPHA_VANTAGE_API_KEY')),
     }
 
 
