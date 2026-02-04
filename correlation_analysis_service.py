@@ -28,7 +28,15 @@ from datetime import datetime, timedelta
 import logging
 import json
 import pandas as pd
+import numpy as np
 from typing import List, Tuple, Optional
+
+# Granger causality from statsmodels
+try:
+    from statsmodels.tsa.stattools import grangercausalitytests
+    GRANGER_AVAILABLE = True
+except ImportError:
+    GRANGER_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -248,6 +256,19 @@ class CorrelationAnalysisService:
                 logger.error(f"Correlation calculation error for {var1_id}-{var2_id}: {e}")
                 return None
             
+            # Calculate Granger causality if enough data points and correlation is significant
+            granger_p_xy = None
+            granger_p_yx = None
+            granger_lags = None
+            
+            if GRANGER_AVAILABLE and sample_size >= 30 and p is not None and float(p) < 0.05:
+                try:
+                    granger_p_xy, granger_p_yx, granger_lags = self._calculate_granger(
+                        x, y, max_lag=min(4, sample_size // 10)
+                    )
+                except Exception as e:
+                    logger.debug(f"Granger calculation skipped for {var1_id}-{var2_id}: {e}")
+            
             # Build result dictionary with explicit type conversions
             try:
                 result = {
@@ -260,7 +281,10 @@ class CorrelationAnalysisService:
                     'start_date': pd.Timestamp(aligned_data.index.min()).to_pydatetime(),
                     'end_date': pd.Timestamp(aligned_data.index.max()).to_pydatetime(),
                     'is_significant': bool(float(p) < 0.05) if p is not None else False,
-                    'abs_correlation': float(abs(r)) if r is not None else 0.0
+                    'abs_correlation': float(abs(r)) if r is not None else 0.0,
+                    'granger_p_value_xy': granger_p_xy,
+                    'granger_p_value_yx': granger_p_yx,
+                    'granger_lags': granger_lags
                 }
                 return result
             except Exception as e:
@@ -270,6 +294,68 @@ class CorrelationAnalysisService:
         except Exception as e:
             logger.error(f"Unexpected error calculating correlation {var1_id}-{var2_id}: {e}", exc_info=True)
             return None
+    
+    def _calculate_granger(
+        self, 
+        x: np.ndarray, 
+        y: np.ndarray, 
+        max_lag: int = 4
+    ) -> Tuple[Optional[float], Optional[float], Optional[int]]:
+        """
+        Calculate Granger causality p-values in both directions.
+        
+        Args:
+            x: First time series (predictor in X→Y test)
+            y: Second time series (predictor in Y→X test)
+            max_lag: Maximum lag to test
+            
+        Returns:
+            Tuple of (p_value_xy, p_value_yx, optimal_lag)
+            - p_value_xy: p-value for X Granger-causes Y
+            - p_value_yx: p-value for Y Granger-causes X
+            - optimal_lag: Best lag found
+        """
+        if not GRANGER_AVAILABLE:
+            return None, None, None
+        
+        if max_lag < 1:
+            max_lag = 1
+        
+        import warnings
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            
+            try:
+                # Test X → Y (does X Granger-cause Y?)
+                data_xy = np.column_stack([y, x])  # Target first, predictor second
+                results_xy = grangercausalitytests(data_xy, maxlag=max_lag, verbose=False)
+                
+                # Get best p-value across all lags (use F-test)
+                best_p_xy = 1.0
+                best_lag = 1
+                for lag in range(1, max_lag + 1):
+                    if lag in results_xy:
+                        p_val = results_xy[lag][0]['ssr_ftest'][1]
+                        if p_val < best_p_xy:
+                            best_p_xy = p_val
+                            best_lag = lag
+                
+                # Test Y → X (does Y Granger-cause X?)
+                data_yx = np.column_stack([x, y])  # Target first, predictor second
+                results_yx = grangercausalitytests(data_yx, maxlag=max_lag, verbose=False)
+                
+                best_p_yx = 1.0
+                for lag in range(1, max_lag + 1):
+                    if lag in results_yx:
+                        p_val = results_yx[lag][0]['ssr_ftest'][1]
+                        if p_val < best_p_yx:
+                            best_p_yx = p_val
+                
+                return float(best_p_xy), float(best_p_yx), int(best_lag)
+                
+            except Exception as e:
+                logger.debug(f"Granger test failed: {e}")
+                return None, None, None
     
     def _store_correlation(self, result: dict, job_id: int):
         """Store or update correlation result in database"""
@@ -301,6 +387,10 @@ class CorrelationAnalysisService:
                 existing.calculated_at = datetime.utcnow()
                 existing.source1 = var1_meta.source if var1_meta else existing.source1
                 existing.source2 = var2_meta.source if var2_meta else existing.source2
+                # Update Granger fields
+                existing.granger_p_value_xy = result.get('granger_p_value_xy')
+                existing.granger_p_value_yx = result.get('granger_p_value_yx')
+                existing.granger_lags = result.get('granger_lags')
                 logger.debug(f"Updated correlation {existing.id}: {result['variable1_id']}-{result['variable2_id']}, dates: {result['start_date']} to {result['end_date']}")
             else:
                 # CREATE new correlation
@@ -318,7 +408,10 @@ class CorrelationAnalysisService:
                     analysis_job_id=job_id,
                     calculated_at=datetime.utcnow(),
                     source1=var1_meta.source if var1_meta else None,
-                    source2=var2_meta.source if var2_meta else None
+                    source2=var2_meta.source if var2_meta else None,
+                    granger_p_value_xy=result.get('granger_p_value_xy'),
+                    granger_p_value_yx=result.get('granger_p_value_yx'),
+                    granger_lags=result.get('granger_lags')
                 )
                 session.add(corr)
             
