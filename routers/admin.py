@@ -412,14 +412,15 @@ async def get_data_quality():
                 CorrelationResult.sample_size < 20
             ).count()
             
-            # Variables by source
-            source_dist = {}
-            for source in ['alpha_vantage', 'usgs', 'nasa_eonet', 'worldbank', 'arxiv', 'clinicaltrials']:
-                count = db.query(VariableMetadata).filter(
-                    VariableMetadata.source == source,
-                    VariableMetadata.is_active.is_(True)
-                ).count()
-                source_dist[source] = count
+            # Variables by source - dynamically get all sources
+            source_query = db.query(
+                VariableMetadata.source,
+                func.count(VariableMetadata.id)
+            ).filter(
+                VariableMetadata.is_active.is_(True)
+            ).group_by(VariableMetadata.source).all()
+            
+            source_dist = {source: count for source, count in source_query if source}
             
             return JSONResponse({
                 "status": "success",

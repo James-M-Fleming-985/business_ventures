@@ -879,11 +879,35 @@ SIGNAL_CROSS_VALIDATION = {
     
     # Tech signals
     "wiki_artificial-intelligence": ["reddit_machinelearning", "reddit_artificial", "reddit_technology"],
+    "wiki_machine-learning": ["reddit_machinelearning", "reddit_artificial", "reddit_technology"],
     "wiki_chatgpt": ["reddit_machinelearning", "reddit_artificial"],
+    "wiki_remote-work": ["reddit_remotework", "reddit_digitalnomad"],
     
     # Housing signals
     "wiki_real-estate": ["reddit_realestate", "reddit_rebubble", "reddit_firsttimehomebuyer"],
     "wiki_mortgage": ["reddit_realestate", "reddit_firsttimehomebuyer"],
+    "wiki_home-improvement": ["reddit_homeimprovement", "reddit_diy"],
+    
+    # Health signals
+    "wiki_vaccine": ["reddit_coronavirus", "reddit_medicine"],
+    "wiki_covid-19": ["reddit_coronavirus", "reddit_covid19"],
+    "wiki_diabetes": ["reddit_diabetes", "reddit_health"],
+    
+    # Geopolitical signals
+    "wiki_sanctions": ["reddit_worldnews", "reddit_geopolitics"],
+    "wiki_trade-war": ["reddit_economics", "reddit_worldnews"],
+    "wiki_war": ["reddit_worldnews", "reddit_geopolitics"],
+    
+    # Energy/Climate signals
+    "wiki_oil-price": ["reddit_energy", "reddit_oil"],
+    "wiki_climate-change": ["reddit_climate", "reddit_environment"],
+    
+    # Companies
+    "wiki_tesla-inc": ["reddit_teslamotors", "reddit_electricvehicles"],
+    
+    # Economic indicators
+    "wiki_federal-reserve": ["reddit_economics", "reddit_finance"],
+    "wiki_interest-rate": ["reddit_personalfinance", "reddit_economics"],
 }
 
 
