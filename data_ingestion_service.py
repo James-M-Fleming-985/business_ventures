@@ -499,6 +499,12 @@ class DataIngestionService:
     
     def _fetch_google_trends_data(self) -> dict:
         """Fetch Google Trends data for all trend variables"""
+        # SKIP: Google Trends pytrends is blocked from data centers
+        # The API gets rate-limited and blocks all subsequent fetches
+        logger.info("Skipping Google Trends (blocked from data centers)")
+        return {'google_trends_fetched': 0, 'google_trends_skipped': True}
+        
+        # Original code below (disabled)
         logger.info("Fetching Google Trends data...")
         
         with get_db_session() as session:
