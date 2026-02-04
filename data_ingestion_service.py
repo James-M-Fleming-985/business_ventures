@@ -583,19 +583,32 @@ class DataIngestionService:
         """Fetch FRED economic indicator data for all FRED variables"""
         logger.info("Fetching FRED economic data...")
         
+        # Check if FRED client is available
+        if not self.fetcher.fred_client:
+            logger.error("FRED client not initialized - check FRED_API_KEY environment variable")
+            return {'fred_fetched': 0, 'fred_error': 'FRED client not initialized'}
+        
         with get_db_session() as session:
             fred_vars = session.query(VariableMetadata).filter(
                 VariableMetadata.source == 'fred',
                 VariableMetadata.is_active == True
             ).all()
             
+            logger.info(f"Found {len(fred_vars)} FRED variables to fetch")
+            
+            if not fred_vars:
+                logger.warning("No FRED variables found in database")
+                return {'fred_fetched': 0, 'fred_variables_found': 0}
+            
             success_count = 0
             data_points = 0
             
-            for var in fred_vars:
+            for idx, var in enumerate(fred_vars):
                 try:
                     params = json.loads(var.parameters)
                     indicator_code = params.get('indicator_code')
+                    
+                    logger.info(f"[{idx+1}/{len(fred_vars)}] Fetching FRED: {indicator_code}")
                     
                     # Fetch monthly data (300 months = 25 years)
                     monthly_data = self.fetcher.fetch_fred_indicator(
