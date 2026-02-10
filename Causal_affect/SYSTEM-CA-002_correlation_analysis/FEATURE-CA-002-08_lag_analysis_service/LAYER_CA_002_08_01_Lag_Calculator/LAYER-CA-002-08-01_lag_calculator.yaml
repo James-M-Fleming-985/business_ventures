@@ -46,8 +46,8 @@ traceability:
     - "SYS-REQ-006: REST API endpoints"
   
   derivation_rationale: |
-    This layer implements the lag calculation algorithm that computes 
-    correlation at each lag value (0-30 days) and identifies the optimal
+    This layer wraps the existing LaggedCorrelationAnalyzer (LAYER-CA-002-01-05)
+    to compute correlation at each lag value (0-90 days) and identify the optimal
     lag with the highest absolute correlation.
 
 # ====================================================================================
@@ -68,14 +68,14 @@ requirement:
   title: "Lag Calculator"
   
   description: |
-    Calculates Pearson correlation at each lag value from 0 to max_lag days.
+    Wraps the existing LaggedCorrelationAnalyzer (LAYER-CA-002-01-05) to calculate
+    Pearson correlation at each lag value from 0 to 90 days (configurable max_lag).
     Returns array of correlations and identifies optimal lag (highest absolute correlation).
     
     Key responsibilities:
     - Define GET /api/causality/{var1_name}/{var2_name}/lag-curve endpoint
-    - Shift time series by each lag value
-    - Calculate correlation at each lag
-    - Find optimal lag with highest |correlation|
+    - Import and use LaggedCorrelationAnalyzer from LAYER-CA-002-01-05
+    - Configure with max_lag=90, min_observations=10
     - Return structured JSON with lag_days, correlations, optimal_lag, peak_correlation
     - Handle errors: 404 for missing variables, 400 for insufficient data
   

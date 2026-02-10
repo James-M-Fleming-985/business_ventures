@@ -40,8 +40,9 @@ metadata:
 
 overview:
   description: |
-    REST API service that calculates correlation at multiple lag values (0-30 days)
-    and identifies the optimal predictive lag window between two variables.
+    REST API service that wraps the existing LaggedCorrelationAnalyzer 
+    (LAYER-CA-002-01-05) to calculate correlation at multiple lag values (0-90 days)
+    and identify the optimal predictive lag window between two variables.
     
     This is Phase 3 implementation that answers: "How far in advance can we
     predict variable Y using variable X?"
@@ -59,7 +60,7 @@ overview:
   
   acceptance_criteria:
     - "GET /api/causality/{var1}/{var2}/lag-curve endpoint functional"
-    - "Returns lag_days array (0-30 days)"
+    - "Returns lag_days array (0-90 days, configurable max_lag)"
     - "Returns correlations array for each lag value"
     - "Returns optimal_lag with highest absolute correlation"
     - "Returns peak_correlation value at optimal lag"
@@ -84,7 +85,7 @@ shared_interfaces:
       "data": {
         "var1": "ai_papers",
         "var2": "nvda_stock",
-        "lag_days": [0, 1, 2, ..., 30],
+        "lag_days": [0, 1, 2, ..., 90],
         "correlations": [0.12, 0.35, 0.67, ...],
         "optimal_lag": 14,
         "peak_correlation": 0.78
