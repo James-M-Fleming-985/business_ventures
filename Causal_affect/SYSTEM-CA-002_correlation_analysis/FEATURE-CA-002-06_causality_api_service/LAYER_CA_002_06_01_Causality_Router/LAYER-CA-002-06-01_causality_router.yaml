@@ -1,0 +1,326 @@
+# ====================================================================================
+# LAYER REQUIREMENT: Causality Router
+# ====================================================================================
+# LAYER ID: LAYER-CA-002-06-01
+# FEATURE: FEATURE-CA-002-06 Causality API Service
+# VERSION: 1.0.0
+# ====================================================================================
+
+metadata:
+  requirement_id: "LAYER-CA-002-06-01"
+  requirement_title: "Causality Router"
+  layer_id: "LAYER-CA-002-06-01"
+  layer_name: "Causality Router"
+  layer_folder: "LAYER_CA_002_06_01_Causality_Router"
+  
+  parent_feature: "FEATURE-CA-002-06_causality_api_service"
+  parent_feature_file: "../FEATURE-CA-002-06_causality_api_service.yaml"
+  
+  version: "1.0.0"
+  status: "Active"
+  priority: "MUST HAVE"
+  created_date: "2026-02-10"
+  updated_date: "2026-02-10"
+  owner: "Causal Affect Team"
+  target_date: "2026-02-15"
+  
+  change_log:
+    - version: "1.0.0"
+      date: "2026-02-10"
+      changes: "Initial version"
+      author: "AI-derived"
+
+# ====================================================================================
+# TRACEABILITY
+# ====================================================================================
+
+traceability:
+  parent_feature_requirements:
+    - "FEAT-CA-002-06-REQ-001: Causality API Endpoint"
+    - "FEAT-CA-002-06-REQ-002: Bidirectional Testing"
+    - "FEAT-CA-002-06-REQ-003: Error Handling"
+  
+  parent_system_requirements:
+    - "SYS-REQ-002: Granger causality testing"
+    - "SYS-REQ-006: REST API endpoints"
+  
+  derivation_rationale: |
+    This layer implements the FastAPI router that exposes Granger causality
+    testing via REST endpoints. It wraps the existing GrangerCausalityTest
+    class from LAYER-CA-002-02-01 and provides HTTP access for frontend.
+
+# ====================================================================================
+# TECHNICAL CONSTRAINTS - CRITICAL FOR AI CODE GENERATION
+# ====================================================================================
+
+technical_constraints:
+  language: "Python"
+  framework: "FastAPI 0.104.0"
+  output_file_type: ".py"
+  runtime: "Python 3.10+"
+
+# ====================================================================================
+# REQUIREMENT DEFINITION
+# ====================================================================================
+
+requirement:
+  title: "Causality Router"
+  
+  description: |
+    FastAPI router implementing REST endpoints for Granger causality testing.
+    Wraps the existing GrangerCausalityTest implementation (LAYER-CA-002-02-01)
+    and exposes it via /api/causality endpoints.
+    
+    Key responsibilities:
+    - Define GET /api/causality/{var1_name}/{var2_name} endpoint
+    - Fetch time series data from database
+    - Call GrangerCausalityTest for both X→Y and Y→X directions
+    - Determine causal_direction based on p-values and significance threshold
+    - Return structured JSON response with interpretation
+    - Handle errors: 404 for missing variables, 400 for insufficient data
+  
+  rationale: |
+    Users need REST API access to causality testing functionality.
+    The Granger test implementation exists in LAYER-CA-002-02-01 but is not
+    exposed via HTTP. This router bridges that gap for frontend consumption.
+
+# ====================================================================================
+# SPECIFICATION
+# ====================================================================================
+
+specification:
+  technology_stack:
+    programming_language: "Python"
+    file_extensions: [".py"]
+    runtime_environment: "Python 3.10+"
+    primary_framework: "FastAPI 0.104.0"
+    additional_libraries:
+      - "sqlalchemy"
+      - "numpy"
+      - "statsmodels"
+  
+  structure:
+    entry_point: "src/backend/app/causality_router.py"
+    modules:
+      - "causality_router.py - FastAPI router with /api/causality endpoints"
+  
+  classes:
+    - name: "causality_router"
+      purpose: "FastAPI APIRouter with causality testing endpoints"
+      methods:
+        - name: "get_causality_test"
+          signature: "async def get_causality_test(var1_name: str, var2_name: str, max_lag: int = 10, significance: float = 0.05, db: Session = Depends(get_db)) -> dict"
+          purpose: "Run bidirectional Granger causality test between two variables"
+          example: |
+            # GET /api/causality/ai_papers/nvda_stock?max_lag=10&significance=0.05
+            # Returns:
+            {
+              "var1": "ai_papers",
+              "var2": "nvda_stock",
+              "test_x_causes_y": {"p_value": 0.001, "is_significant": true, "optimal_lag": 3},
+              "test_y_causes_x": {"p_value": 0.45, "is_significant": false, "optimal_lag": 2},
+              "causal_direction": "X->Y",
+              "interpretation": "ai_papers significantly Granger-causes nvda_stock (p=0.001)"
+            }
+  
+  implementation_details:
+    libraries:
+      - "FastAPI"
+      - "SQLAlchemy"
+      - "NumPy"
+      - "statsmodels.tsa.stattools.grangercausalitytests"
+    patterns:
+      - "Router Pattern"
+      - "Dependency Injection"
+      - "Service Layer Pattern"
+    error_handling:
+      - error_type: "VariableNotFound"
+        handling: "Return HTTP 404 with descriptive message"
+      - error_type: "InsufficientData"
+        handling: "Return HTTP 400 with required data points info"
+      - error_type: "GrangerTestError"
+        handling: "Return HTTP 500 with error details"
+  
+  inputs:
+    - name: "var1_name"
+      type: "str"
+      description: "Name of first variable (potential cause)"
+      example: "ai_papers"
+    - name: "var2_name"
+      type: "str"
+      description: "Name of second variable (potential effect)"
+      example: "nvda_stock"
+    - name: "max_lag"
+      type: "int"
+      description: "Maximum lag to test (default 10)"
+      example: "10"
+    - name: "significance"
+      type: "float"
+      description: "P-value threshold (default 0.05)"
+      example: "0.05"
+  
+  outputs:
+    - name: "causality_result"
+      type: "dict"
+      description: "Complete causality test results"
+      example: |
+        {
+          "var1": "ai_papers",
+          "var2": "nvda_stock",
+          "test_x_causes_y": {"p_value": 0.001, "is_significant": true, "optimal_lag": 3},
+          "test_y_causes_x": {"p_value": 0.45, "is_significant": false, "optimal_lag": 2},
+          "causal_direction": "X->Y",
+          "interpretation": "ai_papers significantly Granger-causes nvda_stock"
+        }
+
+# ====================================================================================
+# ACCEPTANCE CRITERIA
+# ====================================================================================
+
+acceptance_criteria:
+  - criterion: "GET /api/causality/{var1}/{var2} returns valid JSON"
+    test: "pytest test_causality_router.py::test_get_causality_returns_json"
+    category: "functional"
+  
+  - criterion: "Tests both X→Y and Y→X directions"
+    test: "pytest test_causality_router.py::test_bidirectional_testing"
+    category: "functional"
+  
+  - criterion: "Returns 404 when variable not found"
+    test: "pytest test_causality_router.py::test_variable_not_found_returns_404"
+    category: "functional"
+  
+  - criterion: "Returns 400 when insufficient data"
+    test: "pytest test_causality_router.py::test_insufficient_data_returns_400"
+    category: "functional"
+  
+  - criterion: "Includes human-readable interpretation"
+    test: "pytest test_causality_router.py::test_response_has_interpretation"
+    category: "functional"
+  
+  - criterion: "causal_direction correctly determined"
+    test: "pytest test_causality_router.py::test_causal_direction_logic"
+    category: "functional"
+
+# ====================================================================================
+# TDD IMPLEMENTATION PLAN
+# ====================================================================================
+
+week_1_task:
+  title: "Build Causality Router (TDD Approach)"
+  
+  steps:
+    - step: 1
+      action: "Write failing unit tests (RED phase)"
+      file: "tests/test_causality_router.py"
+      tests:
+        - "test_get_causality_returns_json"
+        - "test_bidirectional_testing"
+        - "test_variable_not_found_returns_404"
+        - "test_insufficient_data_returns_400"
+        - "test_response_has_interpretation"
+        - "test_causal_direction_logic"
+      duration: "30 min"
+    
+    - step: 2
+      action: "Run pytest to confirm RED phase"
+      command: "pytest tests/test_causality_router.py -v"
+      expected: "All tests FAIL (as expected)"
+      duration: "2 min"
+    
+    - step: 3
+      action: "Implement causality_router.py (GREEN phase)"
+      file: "src/backend/app/causality_router.py"
+      methods:
+        - "get_causality_test(var1_name, var2_name, max_lag, significance) → dict"
+        - "_run_granger_test(data1, data2, max_lag) → dict"
+        - "_determine_direction(test_xy, test_yx, significance) → str"
+        - "_generate_interpretation(var1, var2, direction, p_value) → str"
+      duration: "2 hours"
+    
+    - step: 4
+      action: "Run pytest to confirm GREEN phase"
+      command: "pytest tests/test_causality_router.py -v"
+      expected: "All tests PASS"
+      duration: "5 min"
+    
+    - step: 5
+      action: "Refactor for code quality (REFACTOR phase)"
+      improvements:
+        - "Extract helper functions"
+        - "Add type hints"
+        - "Improve error messages"
+      duration: "30 min"
+  
+  total_time: "~3.5 hours"
+  
+  deliverable: "Fully tested /api/causality endpoint"
+
+# ====================================================================================
+# INTEGRATION POINTS
+# ====================================================================================
+
+integration:
+  input_from:
+    - layer: "LAYER-CA-002-02-01_granger_test"
+      data_type: "GrangerCausalityTest class"
+      interface: "granger_test.run_test(data1, data2, max_lag)"
+  
+  output_to:
+    - layer: "Frontend correlation explorer"
+      data_type: "JSON API response"
+      interface: "GET /api/causality/{var1}/{var2}"
+  
+  shared_dependencies:
+    - "Database models for time series data"
+    - "SQLAlchemy session dependency"
+
+# ====================================================================================
+# TESTING STRATEGY
+# ====================================================================================
+
+testing_strategy:
+  unit_tests:
+    location: "tests/test_causality_router.py"
+    coverage_target: "90%"
+    key_scenarios:
+      - "Successful causality test returns expected format"
+      - "Missing variable returns 404"
+      - "Insufficient data returns 400"
+      - "Bidirectional testing works correctly"
+      - "Interpretation is human-readable"
+  
+  integration_tests:
+    location: "tests/integration/test_causality_integration.py"
+    scenarios:
+      - "Full flow from API call to Granger test to response"
+      - "Database interaction for fetching time series"
+  
+  fixtures:
+    location: "tests/fixtures/"
+    files:
+      - "sample_time_series.json"
+      - "expected_causality_response.json"
+
+# ====================================================================================
+# CODE GENERATION CONSTRAINTS
+# ====================================================================================
+
+code_generation_constraints:
+  must_use:
+    - "FastAPI APIRouter"
+    - "Depends(get_db) for database session"
+    - "HTTPException for error responses"
+  
+  must_not_use:
+    - "Global database connections"
+    - "Blocking synchronous calls in async functions"
+  
+  naming_conventions:
+    functions: "snake_case"
+    classes: "PascalCase"
+    constants: "UPPER_SNAKE_CASE"
+  
+  file_structure:
+    implementation: "src/backend/app/causality_router.py"
+    tests: "tests/test_causality_router.py"

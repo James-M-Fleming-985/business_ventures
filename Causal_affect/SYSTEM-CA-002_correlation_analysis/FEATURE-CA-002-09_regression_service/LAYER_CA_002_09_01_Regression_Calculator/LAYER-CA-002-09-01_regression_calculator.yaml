@@ -1,0 +1,367 @@
+# ====================================================================================
+# LAYER REQUIREMENT: Regression Calculator
+# ====================================================================================
+# LAYER ID: LAYER-CA-002-09-01
+# FEATURE: FEATURE-CA-002-09 Regression Quantification Service
+# VERSION: 1.0.0
+# ====================================================================================
+
+metadata:
+  requirement_id: "LAYER-CA-002-09-01"
+  requirement_title: "Regression Calculator"
+  layer_id: "LAYER-CA-002-09-01"
+  layer_name: "Regression Calculator"
+  layer_folder: "LAYER_CA_002_09_01_Regression_Calculator"
+  
+  parent_feature: "FEATURE-CA-002-09_regression_service"
+  parent_feature_file: "../FEATURE-CA-002-09_regression_service.yaml"
+  
+  version: "1.0.0"
+  status: "Active"
+  priority: "MUST HAVE"
+  created_date: "2026-02-10"
+  updated_date: "2026-02-10"
+  owner: "Causal Affect Team"
+  target_date: "2026-02-25"
+  
+  change_log:
+    - version: "1.0.0"
+      date: "2026-02-10"
+      changes: "Initial version"
+      author: "AI-derived"
+
+# ====================================================================================
+# TRACEABILITY
+# ====================================================================================
+
+traceability:
+  parent_feature_requirements:
+    - "FEAT-CA-002-09-REQ-001: Regression API Endpoint"
+    - "FEAT-CA-002-09-REQ-002: Beta Coefficient Calculation"
+    - "FEAT-CA-002-09-REQ-003: Statistical Metrics"
+    - "FEAT-CA-002-09-REQ-004: Optimal Lag Integration"
+    - "FEAT-CA-002-09-REQ-005: Current Prediction"
+    - "FEAT-CA-002-09-REQ-006: Error Handling"
+  
+  parent_system_requirements:
+    - "SYS-REQ-004: OLS regression for coefficient calculation"
+    - "SYS-REQ-006: REST API endpoints"
+  
+  derivation_rationale: |
+    This layer implements OLS regression using statsmodels to calculate
+    the β₁ coefficient. It applies the optimal lag from FEATURE-CA-002-08
+    to align time series before regression.
+
+# ====================================================================================
+# TECHNICAL CONSTRAINTS - CRITICAL FOR AI CODE GENERATION
+# ====================================================================================
+
+technical_constraints:
+  language: "Python"
+  framework: "FastAPI 0.104.0"
+  output_file_type: ".py"
+  runtime: "Python 3.10+"
+
+# ====================================================================================
+# REQUIREMENT DEFINITION
+# ====================================================================================
+
+requirement:
+  title: "Regression Calculator"
+  
+  description: |
+    Performs OLS regression between two variables to calculate β₁ coefficient.
+    Uses optimal_lag from lag analysis to align time series before regression.
+    
+    Key responsibilities:
+    - Define GET /api/causality/{var1_name}/{var2_name}/regression endpoint
+    - Fetch optimal_lag from lag analysis (or accept as parameter)
+    - Align time series using optimal lag
+    - Perform OLS regression: Y = β₀ + β₁X
+    - Calculate R², p-value, confidence intervals
+    - Generate current prediction using latest X value
+    - Handle errors: 404 for missing variables, 400 for insufficient data
+  
+  rationale: |
+    Users need quantified predictions, not just correlation coefficients.
+    The regression equation Y = β₀ + β₁X enables statements like:
+    "For every 10 new AI papers, NVDA stock increases by $24.50"
+
+# ====================================================================================
+# SPECIFICATION
+# ====================================================================================
+
+specification:
+  technology_stack:
+    programming_language: "Python"
+    file_extensions: [".py"]
+    runtime_environment: "Python 3.10+"
+    primary_framework: "FastAPI 0.104.0"
+    additional_libraries:
+      - "sqlalchemy"
+      - "numpy"
+      - "pandas"
+      - "statsmodels"
+  
+  structure:
+    entry_point: "src/backend/app/regression_calculator.py"
+    modules:
+      - "regression_calculator.py - OLS regression with FastAPI endpoint"
+  
+  classes:
+    - name: "regression_calculator"
+      purpose: "Perform OLS regression and return β₁ coefficient"
+      methods:
+        - name: "get_regression"
+          signature: "async def get_regression(var1_name: str, var2_name: str, lag: int = None, db: Session = Depends(get_db)) -> dict"
+          purpose: "Perform OLS regression with optional lag parameter"
+          example: |
+            # GET /api/causality/ai_papers/nvda_stock/regression?lag=14
+            # Returns:
+            {
+              "var1": "ai_papers",
+              "var2": "nvda_stock",
+              "beta_0": 150.23,
+              "beta_1": 2.45,
+              "r_squared": 0.72,
+              "p_value": 0.0001,
+              "confidence_intervals": {"lower": 1.89, "upper": 3.01},
+              "optimal_lag_used": 14,
+              "current_prediction": {"x_value": 125, "predicted_y": 456.48}
+            }
+        
+        - name: "_perform_ols_regression"
+          signature: "def _perform_ols_regression(x: np.ndarray, y: np.ndarray) -> dict"
+          purpose: "Run statsmodels OLS and extract coefficients"
+        
+        - name: "_generate_prediction"
+          signature: "def _generate_prediction(beta_0: float, beta_1: float, current_x: float) -> dict"
+          purpose: "Calculate predicted Y for current X value"
+        
+        - name: "_get_optimal_lag"
+          signature: "async def _get_optimal_lag(var1_name: str, var2_name: str, db: Session) -> int"
+          purpose: "Call lag analysis to get optimal lag if not provided"
+  
+  implementation_details:
+    libraries:
+      - "FastAPI"
+      - "SQLAlchemy"
+      - "NumPy"
+      - "Pandas"
+      - "statsmodels.api.OLS"
+    patterns:
+      - "Router Pattern"
+      - "Dependency Injection"
+      - "Service Layer Pattern"
+    error_handling:
+      - error_type: "VariableNotFound"
+        handling: "Return HTTP 404 with descriptive message"
+      - error_type: "InsufficientData"
+        handling: "Return HTTP 400 with required data points info"
+      - error_type: "RegressionError"
+        handling: "Return HTTP 500 with error details"
+  
+  inputs:
+    - name: "var1_name"
+      type: "str"
+      description: "Name of independent variable (X)"
+      example: "ai_papers"
+    - name: "var2_name"
+      type: "str"
+      description: "Name of dependent variable (Y)"
+      example: "nvda_stock"
+    - name: "lag"
+      type: "int"
+      description: "Optional lag to use (default: fetch from lag analysis)"
+      example: "14"
+  
+  outputs:
+    - name: "regression_result"
+      type: "dict"
+      description: "Complete regression results"
+      example: |
+        {
+          "var1": "ai_papers",
+          "var2": "nvda_stock",
+          "beta_0": 150.23,
+          "beta_1": 2.45,
+          "r_squared": 0.72,
+          "p_value": 0.0001,
+          "confidence_intervals": {"lower": 1.89, "upper": 3.01},
+          "optimal_lag_used": 14,
+          "current_prediction": {"x_value": 125, "predicted_y": 456.48}
+        }
+
+# ====================================================================================
+# ACCEPTANCE CRITERIA
+# ====================================================================================
+
+acceptance_criteria:
+  - criterion: "GET /api/causality/{var1}/{var2}/regression returns valid JSON"
+    test: "pytest test_regression_calculator.py::test_get_regression_returns_json"
+    category: "functional"
+  
+  - criterion: "Returns beta_0 and beta_1 coefficients"
+    test: "pytest test_regression_calculator.py::test_returns_beta_coefficients"
+    category: "functional"
+  
+  - criterion: "Returns R² between 0 and 1"
+    test: "pytest test_regression_calculator.py::test_r_squared_valid_range"
+    category: "functional"
+  
+  - criterion: "Returns p_value for significance testing"
+    test: "pytest test_regression_calculator.py::test_returns_p_value"
+    category: "functional"
+  
+  - criterion: "Returns confidence intervals for beta_1"
+    test: "pytest test_regression_calculator.py::test_returns_confidence_intervals"
+    category: "functional"
+  
+  - criterion: "current_prediction uses correct formula"
+    test: "pytest test_regression_calculator.py::test_current_prediction_formula"
+    category: "functional"
+  
+  - criterion: "Returns 404 when variable not found"
+    test: "pytest test_regression_calculator.py::test_variable_not_found_returns_404"
+    category: "functional"
+  
+  - criterion: "Returns 400 when insufficient data"
+    test: "pytest test_regression_calculator.py::test_insufficient_data_returns_400"
+    category: "functional"
+
+# ====================================================================================
+# TDD IMPLEMENTATION PLAN
+# ====================================================================================
+
+week_1_task:
+  title: "Build Regression Calculator (TDD Approach)"
+  
+  steps:
+    - step: 1
+      action: "Write failing unit tests (RED phase)"
+      file: "tests/test_regression_calculator.py"
+      tests:
+        - "test_get_regression_returns_json"
+        - "test_returns_beta_coefficients"
+        - "test_r_squared_valid_range"
+        - "test_returns_p_value"
+        - "test_returns_confidence_intervals"
+        - "test_current_prediction_formula"
+        - "test_variable_not_found_returns_404"
+        - "test_insufficient_data_returns_400"
+      duration: "30 min"
+    
+    - step: 2
+      action: "Run pytest to confirm RED phase"
+      command: "pytest tests/test_regression_calculator.py -v"
+      expected: "All tests FAIL (as expected)"
+      duration: "2 min"
+    
+    - step: 3
+      action: "Implement regression_calculator.py (GREEN phase)"
+      file: "src/backend/app/regression_calculator.py"
+      methods:
+        - "get_regression(var1_name, var2_name, lag) → dict"
+        - "_perform_ols_regression(x, y) → dict"
+        - "_generate_prediction(beta_0, beta_1, current_x) → dict"
+        - "_get_optimal_lag(var1_name, var2_name, db) → int"
+      duration: "2.5 hours"
+    
+    - step: 4
+      action: "Run pytest to confirm GREEN phase"
+      command: "pytest tests/test_regression_calculator.py -v"
+      expected: "All tests PASS"
+      duration: "5 min"
+    
+    - step: 5
+      action: "Refactor for code quality (REFACTOR phase)"
+      improvements:
+        - "Extract statsmodels interaction"
+        - "Add comprehensive type hints"
+        - "Improve confidence interval calculation"
+      duration: "30 min"
+  
+  total_time: "~4 hours"
+  
+  deliverable: "Fully tested /api/causality/{var1}/{var2}/regression endpoint"
+
+# ====================================================================================
+# INTEGRATION POINTS
+# ====================================================================================
+
+integration:
+  input_from:
+    - layer: "LAYER-CA-002-08-01 Lag Calculator"
+      data_type: "optimal_lag value"
+      interface: "Call lag-curve endpoint or pass lag parameter"
+    - layer: "Database time series repository"
+      data_type: "Time series arrays"
+      interface: "get_time_series(variable_name)"
+  
+  output_to:
+    - layer: "LAYER-CA-002-10-01 Prediction Storage"
+      data_type: "Prediction data to store"
+      interface: "POST /api/predictions"
+    - layer: "Frontend regression display"
+      data_type: "JSON API response"
+      interface: "GET /api/causality/{var1}/{var2}/regression"
+  
+  shared_dependencies:
+    - "Database models for time series data"
+    - "SQLAlchemy session dependency"
+    - "Lag Calculator for optimal_lag"
+
+# ====================================================================================
+# TESTING STRATEGY
+# ====================================================================================
+
+testing_strategy:
+  unit_tests:
+    location: "tests/test_regression_calculator.py"
+    coverage_target: "90%"
+    key_scenarios:
+      - "Regression calculation returns expected format"
+      - "Beta coefficients are accurate"
+      - "R² is within valid range"
+      - "Confidence intervals are correct"
+      - "Current prediction uses correct formula"
+      - "Missing variable returns 404"
+      - "Insufficient data returns 400"
+  
+  integration_tests:
+    location: "tests/integration/test_regression_integration.py"
+    scenarios:
+      - "Full flow from API to regression calculation"
+      - "Integration with lag calculator"
+      - "Database interaction for fetching time series"
+  
+  fixtures:
+    location: "tests/fixtures/"
+    files:
+      - "sample_time_series.json"
+      - "expected_regression_response.json"
+
+# ====================================================================================
+# CODE GENERATION CONSTRAINTS
+# ====================================================================================
+
+code_generation_constraints:
+  must_use:
+    - "FastAPI APIRouter"
+    - "Depends(get_db) for database session"
+    - "HTTPException for error responses"
+    - "statsmodels.api.OLS for regression"
+  
+  must_not_use:
+    - "Global database connections"
+    - "Blocking synchronous calls in async functions"
+    - "Manual regression calculation (use statsmodels)"
+  
+  naming_conventions:
+    functions: "snake_case"
+    classes: "PascalCase"
+    constants: "UPPER_SNAKE_CASE"
+  
+  file_structure:
+    implementation: "src/backend/app/regression_calculator.py"
+    tests: "tests/test_regression_calculator.py"

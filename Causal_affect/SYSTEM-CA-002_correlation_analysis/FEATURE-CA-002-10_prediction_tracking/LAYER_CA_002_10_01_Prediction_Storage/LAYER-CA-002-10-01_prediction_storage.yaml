@@ -1,0 +1,457 @@
+# ====================================================================================
+# LAYER REQUIREMENT: Prediction Storage
+# ====================================================================================
+# LAYER ID: LAYER-CA-002-10-01
+# FEATURE: FEATURE-CA-002-10 Prediction Tracking Service
+# VERSION: 1.0.0
+# ====================================================================================
+
+metadata:
+  requirement_id: "LAYER-CA-002-10-01"
+  requirement_title: "Prediction Storage"
+  layer_id: "LAYER-CA-002-10-01"
+  layer_name: "Prediction Storage"
+  layer_folder: "LAYER_CA_002_10_01_Prediction_Storage"
+  
+  parent_feature: "FEATURE-CA-002-10_prediction_tracking"
+  parent_feature_file: "../FEATURE-CA-002-10_prediction_tracking.yaml"
+  
+  version: "1.0.0"
+  status: "Active"
+  priority: "MUST HAVE"
+  created_date: "2026-02-10"
+  updated_date: "2026-02-10"
+  owner: "Causal Affect Team"
+  target_date: "2026-03-01"
+  
+  change_log:
+    - version: "1.0.0"
+      date: "2026-02-10"
+      changes: "Initial version"
+      author: "AI-derived"
+
+# ====================================================================================
+# TRACEABILITY
+# ====================================================================================
+
+traceability:
+  parent_feature_requirements:
+    - "FEAT-CA-002-10-REQ-001: Store Prediction"
+    - "FEAT-CA-002-10-REQ-002: Record Actual Outcome"
+    - "FEAT-CA-002-10-REQ-003: Prediction Analytics"
+    - "FEAT-CA-002-10-REQ-004: List Predictions"
+    - "FEAT-CA-002-10-REQ-005: Accuracy Metrics"
+    - "FEAT-CA-002-10-REQ-006: Error Handling"
+  
+  parent_system_requirements:
+    - "SYS-REQ-005: Prediction storage and accuracy tracking"
+    - "SYS-REQ-006: REST API endpoints"
+  
+  derivation_rationale: |
+    This layer implements the prediction_tracking database table and
+    CRUD operations for storing predictions, recording actuals, and
+    calculating accuracy metrics.
+
+# ====================================================================================
+# TECHNICAL CONSTRAINTS - CRITICAL FOR AI CODE GENERATION
+# ====================================================================================
+
+technical_constraints:
+  language: "Python"
+  framework: "FastAPI 0.104.0"
+  output_file_type: ".py"
+  runtime: "Python 3.10+"
+
+# ====================================================================================
+# REQUIREMENT DEFINITION
+# ====================================================================================
+
+requirement:
+  title: "Prediction Storage"
+  
+  description: |
+    Database layer for storing and managing predictions with accuracy tracking.
+    
+    Key responsibilities:
+    - Define prediction_tracking database table (SQLAlchemy model)
+    - Implement POST /api/predictions to store new predictions
+    - Implement PUT /api/predictions/{id}/actual to record actual outcomes
+    - Implement GET /api/predictions to list predictions with pagination
+    - Implement GET /api/predictions/analytics for accuracy metrics
+    - Calculate MAE, MAPE, R², hit rate from stored predictions
+    - Handle errors: 400 for invalid data, 404 for not found
+  
+  rationale: |
+    Users need to track prediction accuracy over time to validate
+    their causal models and improve forecasting. Without tracking,
+    there's no way to know if predictions are actually correct.
+
+# ====================================================================================
+# DATABASE SCHEMA
+# ====================================================================================
+
+database_schema:
+  table_name: "prediction_tracking"
+  columns:
+    - name: "id"
+      type: "Integer"
+      constraints: "PRIMARY KEY, AUTOINCREMENT"
+    - name: "var1_name"
+      type: "String(100)"
+      constraints: "NOT NULL"
+    - name: "var2_name"
+      type: "String(100)"
+      constraints: "NOT NULL"
+    - name: "predicted_value"
+      type: "Float"
+      constraints: "NOT NULL"
+    - name: "actual_value"
+      type: "Float"
+      constraints: "NULLABLE"
+    - name: "x_value_used"
+      type: "Float"
+      constraints: "NOT NULL"
+    - name: "beta_1_used"
+      type: "Float"
+      constraints: "NOT NULL"
+    - name: "lag_used"
+      type: "Integer"
+      constraints: "NOT NULL"
+    - name: "prediction_date"
+      type: "DateTime"
+      constraints: "NOT NULL, DEFAULT=now()"
+    - name: "target_date"
+      type: "Date"
+      constraints: "NOT NULL"
+    - name: "actual_recorded_date"
+      type: "DateTime"
+      constraints: "NULLABLE"
+    - name: "created_at"
+      type: "DateTime"
+      constraints: "NOT NULL, DEFAULT=now()"
+    - name: "updated_at"
+      type: "DateTime"
+      constraints: "NOT NULL, DEFAULT=now(), ON UPDATE=now()"
+
+# ====================================================================================
+# SPECIFICATION
+# ====================================================================================
+
+specification:
+  technology_stack:
+    programming_language: "Python"
+    file_extensions: [".py"]
+    runtime_environment: "Python 3.10+"
+    primary_framework: "FastAPI 0.104.0"
+    additional_libraries:
+      - "sqlalchemy"
+      - "numpy"
+      - "pydantic"
+  
+  structure:
+    entry_point: "src/backend/app/prediction_storage.py"
+    modules:
+      - "prediction_storage.py - CRUD operations and accuracy calculations"
+      - "models/prediction_tracking.py - SQLAlchemy model"
+  
+  classes:
+    - name: "PredictionTracking"
+      purpose: "SQLAlchemy model for prediction_tracking table"
+      methods: []
+    
+    - name: "prediction_router"
+      purpose: "FastAPI router for prediction endpoints"
+      methods:
+        - name: "create_prediction"
+          signature: "async def create_prediction(prediction: PredictionCreate, db: Session = Depends(get_db)) -> dict"
+          purpose: "Store new prediction record"
+          example: |
+            # POST /api/predictions
+            # Body: {"var1": "ai_papers", "var2": "nvda_stock", "predicted_value": 456.48, ...}
+            # Returns: {"id": 1, "var1": "ai_papers", ...}
+        
+        - name: "record_actual"
+          signature: "async def record_actual(prediction_id: int, actual: ActualValue, db: Session = Depends(get_db)) -> dict"
+          purpose: "Record actual outcome for a prediction"
+          example: |
+            # PUT /api/predictions/1/actual
+            # Body: {"actual_value": 462.10}
+            # Returns: {"id": 1, "actual_value": 462.10, "error": 5.62, ...}
+        
+        - name: "list_predictions"
+          signature: "async def list_predictions(skip: int = 0, limit: int = 50, var1: str = None, var2: str = None, db: Session = Depends(get_db)) -> dict"
+          purpose: "List predictions with optional filtering"
+        
+        - name: "get_analytics"
+          signature: "async def get_analytics(var1: str = None, var2: str = None, db: Session = Depends(get_db)) -> dict"
+          purpose: "Calculate and return accuracy metrics"
+          example: |
+            # GET /api/predictions/analytics
+            # Returns:
+            {
+              "total_predictions": 50,
+              "predictions_with_actuals": 35,
+              "accuracy_metrics": {
+                "mae": 12.5,
+                "mape": 3.2,
+                "r_squared": 0.78,
+                "hit_rate_5pct": 0.82
+              }
+            }
+        
+        - name: "_calculate_mae"
+          signature: "def _calculate_mae(predictions: List[float], actuals: List[float]) -> float"
+          purpose: "Calculate Mean Absolute Error"
+        
+        - name: "_calculate_mape"
+          signature: "def _calculate_mape(predictions: List[float], actuals: List[float]) -> float"
+          purpose: "Calculate Mean Absolute Percentage Error"
+        
+        - name: "_calculate_hit_rate"
+          signature: "def _calculate_hit_rate(predictions: List[float], actuals: List[float], threshold: float = 0.05) -> float"
+          purpose: "Calculate percentage of predictions within threshold"
+  
+  implementation_details:
+    libraries:
+      - "FastAPI"
+      - "SQLAlchemy"
+      - "Pydantic"
+      - "NumPy"
+    patterns:
+      - "Repository Pattern"
+      - "Router Pattern"
+      - "Dependency Injection"
+    error_handling:
+      - error_type: "InvalidData"
+        handling: "Return HTTP 400 with validation errors"
+      - error_type: "PredictionNotFound"
+        handling: "Return HTTP 404 with descriptive message"
+      - error_type: "DatabaseError"
+        handling: "Return HTTP 500 with error details"
+  
+  inputs:
+    - name: "prediction_create"
+      type: "PredictionCreate (Pydantic model)"
+      description: "New prediction data"
+      example: |
+        {
+          "var1": "ai_papers",
+          "var2": "nvda_stock",
+          "predicted_value": 456.48,
+          "x_value_used": 125,
+          "beta_1_used": 2.45,
+          "lag_used": 14,
+          "target_date": "2026-02-24"
+        }
+    - name: "actual_value"
+      type: "ActualValue (Pydantic model)"
+      description: "Actual outcome to record"
+      example: '{"actual_value": 462.10}'
+  
+  outputs:
+    - name: "prediction_response"
+      type: "dict"
+      description: "Stored prediction with ID"
+    - name: "analytics_response"
+      type: "dict"
+      description: "Accuracy metrics"
+      example: |
+        {
+          "total_predictions": 50,
+          "predictions_with_actuals": 35,
+          "accuracy_metrics": {
+            "mae": 12.5,
+            "mape": 3.2,
+            "r_squared": 0.78,
+            "hit_rate_5pct": 0.82
+          }
+        }
+
+# ====================================================================================
+# ACCEPTANCE CRITERIA
+# ====================================================================================
+
+acceptance_criteria:
+  - criterion: "POST /api/predictions stores prediction and returns ID"
+    test: "pytest test_prediction_storage.py::test_create_prediction"
+    category: "functional"
+  
+  - criterion: "PUT /api/predictions/{id}/actual records actual value"
+    test: "pytest test_prediction_storage.py::test_record_actual"
+    category: "functional"
+  
+  - criterion: "GET /api/predictions returns paginated list"
+    test: "pytest test_prediction_storage.py::test_list_predictions"
+    category: "functional"
+  
+  - criterion: "GET /api/predictions/analytics returns accuracy metrics"
+    test: "pytest test_prediction_storage.py::test_get_analytics"
+    category: "functional"
+  
+  - criterion: "MAE calculation is correct"
+    test: "pytest test_prediction_storage.py::test_mae_calculation"
+    category: "functional"
+  
+  - criterion: "MAPE calculation is correct"
+    test: "pytest test_prediction_storage.py::test_mape_calculation"
+    category: "functional"
+  
+  - criterion: "Hit rate calculation is correct"
+    test: "pytest test_prediction_storage.py::test_hit_rate_calculation"
+    category: "functional"
+  
+  - criterion: "Returns 404 when prediction not found"
+    test: "pytest test_prediction_storage.py::test_prediction_not_found_returns_404"
+    category: "functional"
+  
+  - criterion: "Returns 400 for invalid prediction data"
+    test: "pytest test_prediction_storage.py::test_invalid_data_returns_400"
+    category: "functional"
+
+# ====================================================================================
+# TDD IMPLEMENTATION PLAN
+# ====================================================================================
+
+week_1_task:
+  title: "Build Prediction Storage (TDD Approach)"
+  
+  steps:
+    - step: 1
+      action: "Create database model"
+      file: "src/backend/app/models/prediction_tracking.py"
+      details: "SQLAlchemy model for prediction_tracking table"
+      duration: "15 min"
+    
+    - step: 2
+      action: "Write failing unit tests (RED phase)"
+      file: "tests/test_prediction_storage.py"
+      tests:
+        - "test_create_prediction"
+        - "test_record_actual"
+        - "test_list_predictions"
+        - "test_get_analytics"
+        - "test_mae_calculation"
+        - "test_mape_calculation"
+        - "test_hit_rate_calculation"
+        - "test_prediction_not_found_returns_404"
+        - "test_invalid_data_returns_400"
+      duration: "45 min"
+    
+    - step: 3
+      action: "Run pytest to confirm RED phase"
+      command: "pytest tests/test_prediction_storage.py -v"
+      expected: "All tests FAIL (as expected)"
+      duration: "2 min"
+    
+    - step: 4
+      action: "Implement prediction_storage.py (GREEN phase)"
+      file: "src/backend/app/prediction_storage.py"
+      methods:
+        - "create_prediction(prediction) → dict"
+        - "record_actual(prediction_id, actual) → dict"
+        - "list_predictions(skip, limit, var1, var2) → dict"
+        - "get_analytics(var1, var2) → dict"
+        - "_calculate_mae(predictions, actuals) → float"
+        - "_calculate_mape(predictions, actuals) → float"
+        - "_calculate_hit_rate(predictions, actuals, threshold) → float"
+      duration: "3 hours"
+    
+    - step: 5
+      action: "Run pytest to confirm GREEN phase"
+      command: "pytest tests/test_prediction_storage.py -v"
+      expected: "All tests PASS"
+      duration: "5 min"
+    
+    - step: 6
+      action: "Refactor for code quality (REFACTOR phase)"
+      improvements:
+        - "Extract accuracy calculation service"
+        - "Add comprehensive type hints"
+        - "Improve error messages"
+      duration: "30 min"
+  
+  total_time: "~4.5 hours"
+  
+  deliverable: "Fully tested prediction storage with accuracy metrics"
+
+# ====================================================================================
+# INTEGRATION POINTS
+# ====================================================================================
+
+integration:
+  input_from:
+    - layer: "LAYER-CA-002-09-01 Regression Calculator"
+      data_type: "Prediction data"
+      interface: "Call POST /api/predictions after regression"
+  
+  output_to:
+    - layer: "Frontend prediction dashboard"
+      data_type: "JSON API response"
+      interface: "GET /api/predictions/analytics"
+    - layer: "Future: Model retraining pipeline"
+      data_type: "Accuracy metrics"
+      interface: "Export prediction accuracy data"
+  
+  shared_dependencies:
+    - "Database connection (SQLAlchemy)"
+    - "Regression calculator (generates predictions)"
+
+# ====================================================================================
+# TESTING STRATEGY
+# ====================================================================================
+
+testing_strategy:
+  unit_tests:
+    location: "tests/test_prediction_storage.py"
+    coverage_target: "90%"
+    key_scenarios:
+      - "Create prediction stores correctly"
+      - "Record actual updates prediction"
+      - "List predictions with filtering"
+      - "Analytics returns correct metrics"
+      - "MAE calculation is accurate"
+      - "MAPE calculation is accurate"
+      - "Hit rate calculation is accurate"
+      - "Prediction not found returns 404"
+      - "Invalid data returns 400"
+  
+  integration_tests:
+    location: "tests/integration/test_prediction_integration.py"
+    scenarios:
+      - "Full prediction lifecycle"
+      - "Multiple predictions with accuracy tracking"
+      - "Database transaction integrity"
+  
+  fixtures:
+    location: "tests/fixtures/"
+    files:
+      - "sample_predictions.json"
+      - "expected_analytics_response.json"
+
+# ====================================================================================
+# CODE GENERATION CONSTRAINTS
+# ====================================================================================
+
+code_generation_constraints:
+  must_use:
+    - "FastAPI APIRouter"
+    - "SQLAlchemy ORM"
+    - "Pydantic for request/response validation"
+    - "Depends(get_db) for database session"
+    - "HTTPException for error responses"
+  
+  must_not_use:
+    - "Raw SQL queries (use SQLAlchemy ORM)"
+    - "Global database connections"
+    - "Blocking synchronous calls in async functions"
+  
+  naming_conventions:
+    functions: "snake_case"
+    classes: "PascalCase"
+    constants: "UPPER_SNAKE_CASE"
+    tables: "snake_case"
+  
+  file_structure:
+    model: "src/backend/app/models/prediction_tracking.py"
+    implementation: "src/backend/app/prediction_storage.py"
+    tests: "tests/test_prediction_storage.py"

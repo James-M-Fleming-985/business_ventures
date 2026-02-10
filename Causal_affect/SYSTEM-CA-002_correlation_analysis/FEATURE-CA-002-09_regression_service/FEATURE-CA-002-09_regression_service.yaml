@@ -11,6 +11,8 @@
 metadata:
   requirement_id: "FEATURE-CA-002-09"
   requirement_name: "Regression Quantification Service"
+  feature_id: "FEATURE-CA-002-09"
+  feature_name: "Regression Quantification Service"
   feature_code: "CA-002-09"
   version: "1.0.0"
   status: "Active"
@@ -19,6 +21,18 @@ metadata:
   owner: "Causal Affect Team"
   priority: "MUST HAVE"
   target_date: "2026-02-25"
+  
+  traceability:
+    parent_system: "SYSTEM-CA-002"
+    parent_system_file: "../SYSTEM-CA-002.yaml"
+    parent_system_requirements:
+      - "SYS-REQ-004: OLS regression for coefficient calculation"
+      - "SYS-REQ-006: REST API endpoint for regression access"
+    
+    derivation_rationale: |
+      This feature implements OLS regression to calculate the β₁ coefficient,
+      enabling quantified predictions: "For every 1-unit change in X, 
+      Y changes by β₁ units."
 
 # ====================================================================================
 # FEATURE OVERVIEW
@@ -26,33 +40,64 @@ metadata:
 
 overview:
   description: |
-    Calculates β₁ coefficient (impact ratio) using OLS regression to quantify
-    HOW MUCH the effect variable changes when the cause variable changes.
+    REST API service that performs Ordinary Least Squares (OLS) regression
+    between two variables at the optimal lag, returning the β₁ coefficient
+    and associated statistics for making quantified predictions.
     
-    Formula: Y = β₀ + β₁×X + ε
-    
-    Key output: "For every +1 unit change in X, Y changes by β₁ units"
-    
-    This is Phase 4 - the critical quantification step that enables
-    exploitation decisions by converting correlations into predictions.
+    This is Phase 4 implementation that answers: "How much does Y change
+    for every 1-unit change in X?"
   
   business_value:
-    - "Quantifies impact magnitude (not just direction)"
-    - "Enables ROI calculations for exploitation"
-    - "Provides confidence intervals for risk assessment"
-    - "Generates concrete predictions from current data"
+    - "Provides quantified predictions: β₁ coefficient"
+    - "Enables 'For every X increase, Y increases by β₁' statements"
+    - "Returns confidence intervals for prediction uncertainty"
+    - "R² indicates prediction model quality"
+    - "Generates current predictions based on latest X value"
   
   user_story: |
-    As a user with confirmed causal relationship and optimal lag, I want to
-    know exactly how much Y will change when X changes, so I can make
-    quantified predictions and exploitation decisions.
-
+    As a user analyzing causal relationships, I want to know exactly how much
+    change in Y I can expect for a given change in X, so I can make
+    quantified predictions and decisions.
+  
   acceptance_criteria:
-    - "OLS regression calculation returns β₀, β₁ coefficients"
-    - "95% confidence intervals provided"
-    - "R² value indicates model fit quality"
-    - "Interpretation string explains the impact"
-    - "Current prediction calculated from latest X value"
+    - "GET /api/causality/{var1}/{var2}/regression endpoint functional"
+    - "Returns beta_0 (intercept) and beta_1 (slope) coefficients"
+    - "Returns r_squared (coefficient of determination)"
+    - "Returns p_value for statistical significance"
+    - "Returns confidence_intervals for beta_1"
+    - "Returns current_prediction based on latest X value"
+    - "Applies optimal_lag from lag analysis"
+    - "Error handling for missing variables (404)"
+    - "Error handling for insufficient data (400)"
+
+# ====================================================================================
+# SHARED INTERFACES
+# ====================================================================================
+
+shared_interfaces:
+  response_structure: "JSON API response with success, data, error fields"
+  
+  parent_system_reference:
+    file: "../SYSTEM-CA-002.yaml"
+    section: "shared_interfaces.api_response_structure"
+  
+  implementation_requirement: |
+    Response format:
+    {
+      "success": true,
+      "data": {
+        "var1": "ai_papers",
+        "var2": "nvda_stock",
+        "beta_0": 150.23,
+        "beta_1": 2.45,
+        "r_squared": 0.72,
+        "p_value": 0.0001,
+        "confidence_intervals": {"lower": 1.89, "upper": 3.01},
+        "optimal_lag_used": 14,
+        "current_prediction": {"x_value": 125, "predicted_y": 456.48}
+      },
+      "error": null
+    }
 
 # ====================================================================================
 # LAYER ARCHITECTURE
@@ -61,56 +106,125 @@ overview:
 layers:
   - layer_id: "LAYER-CA-002-09-01"
     name: "Regression Calculator"
-    responsibility: "OLS regression implementation"
-    technology: "Statsmodels, NumPy"
+    responsibility: "Perform OLS regression and calculate β₁ coefficient"
+    technology: "Python, FastAPI, statsmodels"
     requirement_file: "LAYER-CA-002-09-01_regression_calculator.yaml"
+    requirements:
+      - "LAYER-CA-002-09-01"
+
+# ====================================================================================
+# FEATURE REQUIREMENTS
+# ====================================================================================
+
+requirements:
+  - id: "FEAT-CA-002-09-REQ-001"
+    title: "Regression API Endpoint"
+    description: "GET /api/causality/{var1}/{var2}/regression returns OLS regression results"
+    priority: "MUST HAVE"
+    status: "Active"
+    traces_to:
+      system_requirements: ["SYS-REQ-004", "SYS-REQ-006"]
+      layer_requirements: ["LAYER-CA-002-09-01"]
   
-  - layer_id: "LAYER-CA-002-09-02"
-    name: "Regression Endpoint"
-    responsibility: "REST API for regression results"
-    technology: "FastAPI"
-    requirement_file: "LAYER-CA-002-09-02_regression_endpoint.yaml"
-
-# ====================================================================================
-# TECHNICAL SPECIFICATIONS
-# ====================================================================================
-
-technical_specifications:
-  architecture: "Service layer with OLS engine"
-  endpoint_prefix: "/api/causality"
+  - id: "FEAT-CA-002-09-REQ-002"
+    title: "Beta Coefficient Calculation"
+    description: "Calculate β₀ (intercept) and β₁ (slope) using OLS"
+    priority: "MUST HAVE"
+    status: "Active"
+    traces_to:
+      system_requirements: ["SYS-REQ-004"]
+      layer_requirements: ["LAYER-CA-002-09-01"]
   
-  api_endpoints:
-    - method: "GET"
-      path: "/api/causality/{var1_name}/{var2_name}/regression"
-      description: "Calculate regression coefficients"
-      params:
-        - "lag: int (from Phase 3 optimal_lag)"
-        - "lookback_days: int (default 365)"
-      response:
-        var1: "string (predictor X)"
-        var2: "string (outcome Y)"
-        beta_0: "float (intercept)"
-        beta_1: "float (slope - THE KEY NUMBER)"
-        r_squared: "float (model fit)"
-        p_value: "float (significance)"
-        std_error: "float"
-        confidence_interval_95:
-          lower: "float"
-          upper: "float"
-        interpretation: "string"
-        current_prediction:
-          x_current: "float"
-          x_baseline: "float"
-          predicted_change: "float"
-          predicted_y: "float"
+  - id: "FEAT-CA-002-09-REQ-003"
+    title: "Statistical Metrics"
+    description: "Return R², p-value, and confidence intervals"
+    priority: "MUST HAVE"
+    status: "Active"
+    traces_to:
+      system_requirements: ["SYS-REQ-004"]
+      layer_requirements: ["LAYER-CA-002-09-01"]
+  
+  - id: "FEAT-CA-002-09-REQ-004"
+    title: "Optimal Lag Integration"
+    description: "Apply optimal_lag from FEATURE-CA-002-08 for time alignment"
+    priority: "MUST HAVE"
+    status: "Active"
+    traces_to:
+      layer_requirements: ["LAYER-CA-002-09-01"]
+  
+  - id: "FEAT-CA-002-09-REQ-005"
+    title: "Current Prediction"
+    description: "Generate prediction using latest X value"
+    priority: "SHOULD HAVE"
+    status: "Active"
+    traces_to:
+      layer_requirements: ["LAYER-CA-002-09-01"]
+  
+  - id: "FEAT-CA-002-09-REQ-006"
+    title: "Error Handling"
+    description: "Return appropriate HTTP status codes for missing variables and insufficient data"
+    priority: "MUST HAVE"
+    status: "Active"
+    traces_to:
+      layer_requirements: ["LAYER-CA-002-09-01"]
 
 # ====================================================================================
-# TRACEABILITY
+# INTEGRATION POINTS
 # ====================================================================================
 
-traceability:
-  traces_from:
-    system: "SYSTEM-CA-002"
-    exploitation_pathway: "Phase 4 - Regression Quantification"
-  traces_to:
-    layers: ["LAYER-CA-002-09-01", "LAYER-CA-002-09-02"]
+integration:
+  upstream_features: 
+    - "FEATURE-CA-002-08 (Lag Analysis - provides optimal_lag)"
+  
+  downstream_features:
+    - "FEATURE-CA-002-10 (Prediction Tracking - stores predictions)"
+  
+  shared_components:
+    - "src/backend/app/lag_calculator.py (get optimal_lag)"
+    - "src/backend/app/database/time_series_repository.py"
+
+# ====================================================================================
+# IMPLEMENTATION NOTES
+# ====================================================================================
+
+implementation:
+  week_1_deliverables:
+    - "FastAPI router with /api/causality/{var1}/{var2}/regression endpoint"
+    - "OLS regression using statsmodels"
+    - "Confidence interval calculation"
+    - "Current prediction generation"
+    - "Error handling for edge cases"
+  
+  dependencies:
+    - "FEATURE-CA-002-08 (Lag Analysis - for optimal_lag)"
+    - "statsmodels for OLS regression"
+    - "NumPy for calculations"
+    - "FastAPI"
+    - "SQLAlchemy"
+  
+  testing_approach:
+    - "Unit tests for regression calculation logic"
+    - "Integration tests with lag analysis"
+    - "Error scenario tests (404, 400)"
+
+# ====================================================================================
+# TESTING STRATEGY
+# ====================================================================================
+
+testing:
+  unit_tests:
+    location: "tests/unit/"
+    coverage_target: "90%"
+  
+  integration_tests:
+    location: "tests/integration/"
+    scenarios:
+      - "Full regression calculation with optimal lag"
+      - "API response format verification"
+      - "Current prediction accuracy"
+  
+  e2e_tests:
+    location: "tests/e2e/"
+    scenarios:
+      - "Frontend displays regression equation"
+      - "Prediction value shown to user"

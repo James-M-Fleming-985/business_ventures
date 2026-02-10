@@ -11,6 +11,8 @@
 metadata:
   requirement_id: "FEATURE-CA-002-10"
   requirement_name: "Prediction Tracking Service"
+  feature_id: "FEATURE-CA-002-10"
+  feature_name: "Prediction Tracking Service"
   feature_code: "CA-002-10"
   version: "1.0.0"
   status: "Active"
@@ -18,7 +20,19 @@ metadata:
   last_modified: "2026-02-10"
   owner: "Causal Affect Team"
   priority: "MUST HAVE"
-  target_date: "2026-03-05"
+  target_date: "2026-03-01"
+  
+  traceability:
+    parent_system: "SYSTEM-CA-002"
+    parent_system_file: "../SYSTEM-CA-002.yaml"
+    parent_system_requirements:
+      - "SYS-REQ-005: Prediction storage and accuracy tracking"
+      - "SYS-REQ-006: REST API endpoints for prediction management"
+    
+    derivation_rationale: |
+      This feature implements prediction storage and accuracy tracking.
+      Users need to record predictions, compare with actual outcomes,
+      and measure prediction accuracy over time.
 
 # ====================================================================================
 # FEATURE OVERVIEW
@@ -26,34 +40,72 @@ metadata:
 
 overview:
   description: |
-    Stores predictions and tracks actual outcomes to measure model accuracy.
-    Creates a feedback loop for continuous improvement:
+    REST API service that stores predictions, records actual outcomes,
+    and calculates prediction accuracy metrics over time.
     
-    1. STORE: When user generates prediction, save it with target date
-    2. TRACK: When actual data arrives, update record with outcome
-    3. MEASURE: Calculate direction accuracy, value error, timing error
-    4. REPORT: Show prediction vs actual charts for each variable pair
-    
-    This is Phase 5.5 - the critical feedback loop that enables learning.
+    This is Phase 5.5 implementation that answers: "How accurate are
+    our causal predictions?"
   
   business_value:
-    - "Measures prediction accuracy over time"
-    - "Identifies which models perform best"
-    - "Enables continuous model improvement"
-    - "Builds trust through transparency"
-    - "Informs which relationships are truly exploitable"
+    - "Stores predictions for future validation"
+    - "Tracks actual outcomes vs predictions"
+    - "Calculates accuracy metrics (MAE, MAPE, R²)"
+    - "Provides analytics on prediction performance"
+    - "Enables model improvement based on accuracy data"
   
   user_story: |
-    As a user making predictions based on the system, I want to track whether
-    my predictions were correct, so I can improve my models and trust the ones
-    that prove accurate.
-
+    As a user making predictions, I want to track my predictions and
+    compare them with actual outcomes, so I can measure accuracy and
+    improve my forecasting over time.
+  
   acceptance_criteria:
-    - "Predictions stored with all required metadata"
-    - "Actual values automatically updated when data arrives"
-    - "Accuracy metrics calculated (direction %, MAE)"
-    - "Historical prediction vs actual chart data available"
-    - "Filter by variable pair, time period, model version"
+    - "POST /api/predictions endpoint stores new predictions"
+    - "GET /api/predictions/analytics returns accuracy metrics"
+    - "Predictions include: var1, var2, predicted_value, prediction_date, target_date"
+    - "Actuals can be recorded when available"
+    - "Accuracy calculated: MAE, MAPE, R², hit rate"
+    - "Error handling for invalid data (400)"
+    - "Error handling for prediction not found (404)"
+
+# ====================================================================================
+# SHARED INTERFACES
+# ====================================================================================
+
+shared_interfaces:
+  response_structure: "JSON API response with success, data, error fields"
+  
+  parent_system_reference:
+    file: "../SYSTEM-CA-002.yaml"
+    section: "shared_interfaces.api_response_structure"
+  
+  implementation_requirement: |
+    POST /api/predictions Request:
+    {
+      "var1": "ai_papers",
+      "var2": "nvda_stock",
+      "predicted_value": 456.48,
+      "x_value_used": 125,
+      "beta_1_used": 2.45,
+      "lag_used": 14,
+      "target_date": "2026-02-24"
+    }
+    
+    GET /api/predictions/analytics Response:
+    {
+      "success": true,
+      "data": {
+        "total_predictions": 50,
+        "predictions_with_actuals": 35,
+        "accuracy_metrics": {
+          "mae": 12.5,
+          "mape": 3.2,
+          "r_squared": 0.78,
+          "hit_rate_5pct": 0.82
+        },
+        "by_variable_pair": [...]
+      },
+      "error": null
+    }
 
 # ====================================================================================
 # LAYER ARCHITECTURE
@@ -62,88 +114,127 @@ overview:
 layers:
   - layer_id: "LAYER-CA-002-10-01"
     name: "Prediction Storage"
-    responsibility: "Store and retrieve prediction records"
-    technology: "SQLAlchemy, PostgreSQL"
+    responsibility: "Store predictions, record actuals, calculate accuracy"
+    technology: "Python, FastAPI, SQLAlchemy"
     requirement_file: "LAYER-CA-002-10-01_prediction_storage.yaml"
-  
-  - layer_id: "LAYER-CA-002-10-02"
-    name: "Actual Value Updater"
-    responsibility: "Background job to update predictions with actuals"
-    technology: "Python, SQLAlchemy"
-    requirement_file: "LAYER-CA-002-10-02_actual_updater.yaml"
-  
-  - layer_id: "LAYER-CA-002-10-03"
-    name: "Prediction Analytics Endpoint"
-    responsibility: "REST API for accuracy metrics and history"
-    technology: "FastAPI"
-    requirement_file: "LAYER-CA-002-10-03_prediction_analytics.yaml"
+    requirements:
+      - "LAYER-CA-002-10-01"
 
 # ====================================================================================
-# TECHNICAL SPECIFICATIONS
+# FEATURE REQUIREMENTS
 # ====================================================================================
 
-technical_specifications:
-  architecture: "Service layer with background job"
-  endpoint_prefix: "/api/predictions"
+requirements:
+  - id: "FEAT-CA-002-10-REQ-001"
+    title: "Store Prediction"
+    description: "POST /api/predictions stores new prediction record"
+    priority: "MUST HAVE"
+    status: "Active"
+    traces_to:
+      system_requirements: ["SYS-REQ-005", "SYS-REQ-006"]
+      layer_requirements: ["LAYER-CA-002-10-01"]
   
-  database_schema:
-    table_name: "prediction_tracking"
-    columns:
-      - "id: SERIAL PRIMARY KEY"
-      - "prediction_id: VARCHAR(50) UNIQUE"
-      - "fast_variable_name: VARCHAR(100)"
-      - "medium_variable_name: VARCHAR(100)"
-      - "predicted_at: TIMESTAMP"
-      - "target_date: DATE"
-      - "optimal_lag_days: INT"
-      - "predicted_direction: VARCHAR(10)"
-      - "predicted_value: FLOAT"
-      - "predicted_change_pct: FLOAT"
-      - "baseline_value: FLOAT"
-      - "beta_1: FLOAT"
-      - "r_squared: FLOAT"
-      - "model_version: VARCHAR(50)"
-      - "confidence_level: VARCHAR(20)"
-      - "actual_value: FLOAT"
-      - "actual_direction: VARCHAR(10)"
-      - "actual_change_pct: FLOAT"
-      - "actual_recorded_at: TIMESTAMP"
-      - "direction_correct: BOOLEAN"
-      - "value_error_pct: FLOAT"
+  - id: "FEAT-CA-002-10-REQ-002"
+    title: "Record Actual Outcome"
+    description: "PUT /api/predictions/{id}/actual records actual value"
+    priority: "MUST HAVE"
+    status: "Active"
+    traces_to:
+      system_requirements: ["SYS-REQ-005"]
+      layer_requirements: ["LAYER-CA-002-10-01"]
   
-  api_endpoints:
-    - method: "POST"
-      path: "/api/predictions"
-      description: "Store a new prediction"
-    
-    - method: "GET"
-      path: "/api/predictions/analytics"
-      description: "Get overall accuracy metrics"
-      response:
-        direction_accuracy_pct: "float"
-        mean_absolute_error: "float"
-        n_predictions: "int"
-        n_verified: "int"
-    
-    - method: "GET"
-      path: "/api/predictions/history"
-      description: "Get prediction history for charting"
-      params:
-        - "var1: string (optional)"
-        - "var2: string (optional)"
-        - "limit: int (default 100)"
-    
-    - method: "POST"
-      path: "/api/predictions/update-actuals"
-      description: "Manually trigger actual value updater"
+  - id: "FEAT-CA-002-10-REQ-003"
+    title: "Prediction Analytics"
+    description: "GET /api/predictions/analytics returns accuracy metrics"
+    priority: "MUST HAVE"
+    status: "Active"
+    traces_to:
+      system_requirements: ["SYS-REQ-005", "SYS-REQ-006"]
+      layer_requirements: ["LAYER-CA-002-10-01"]
+  
+  - id: "FEAT-CA-002-10-REQ-004"
+    title: "List Predictions"
+    description: "GET /api/predictions returns paginated prediction list"
+    priority: "SHOULD HAVE"
+    status: "Active"
+    traces_to:
+      layer_requirements: ["LAYER-CA-002-10-01"]
+  
+  - id: "FEAT-CA-002-10-REQ-005"
+    title: "Accuracy Metrics"
+    description: "Calculate MAE, MAPE, R², and hit rate"
+    priority: "MUST HAVE"
+    status: "Active"
+    traces_to:
+      system_requirements: ["SYS-REQ-005"]
+      layer_requirements: ["LAYER-CA-002-10-01"]
+  
+  - id: "FEAT-CA-002-10-REQ-006"
+    title: "Error Handling"
+    description: "Return appropriate HTTP status codes for errors"
+    priority: "MUST HAVE"
+    status: "Active"
+    traces_to:
+      layer_requirements: ["LAYER-CA-002-10-01"]
 
 # ====================================================================================
-# TRACEABILITY
+# INTEGRATION POINTS
 # ====================================================================================
 
-traceability:
-  traces_from:
-    system: "SYSTEM-CA-002"
-    exploitation_pathway: "Phase 5.5 - Prediction Tracking"
-  traces_to:
-    layers: ["LAYER-CA-002-10-01", "LAYER-CA-002-10-02", "LAYER-CA-002-10-03"]
+integration:
+  upstream_features: 
+    - "FEATURE-CA-002-09 (Regression Service - generates predictions)"
+  
+  downstream_features:
+    - "Future: Model retraining based on accuracy data"
+  
+  shared_components:
+    - "src/backend/app/regression_calculator.py (generates predictions)"
+    - "src/backend/app/database/models.py (prediction_tracking table)"
+
+# ====================================================================================
+# IMPLEMENTATION NOTES
+# ====================================================================================
+
+implementation:
+  week_1_deliverables:
+    - "Database table: prediction_tracking"
+    - "POST /api/predictions endpoint"
+    - "PUT /api/predictions/{id}/actual endpoint"
+    - "GET /api/predictions/analytics endpoint"
+    - "Accuracy calculation logic"
+    - "Error handling for edge cases"
+  
+  dependencies:
+    - "FEATURE-CA-002-09 (Regression Service)"
+    - "SQLAlchemy for ORM"
+    - "FastAPI"
+    - "NumPy for accuracy calculations"
+  
+  testing_approach:
+    - "Unit tests for CRUD operations"
+    - "Unit tests for accuracy calculations"
+    - "Integration tests with regression service"
+    - "Error scenario tests (404, 400)"
+
+# ====================================================================================
+# TESTING STRATEGY
+# ====================================================================================
+
+testing:
+  unit_tests:
+    location: "tests/unit/"
+    coverage_target: "90%"
+  
+  integration_tests:
+    location: "tests/integration/"
+    scenarios:
+      - "Full prediction lifecycle: create, record actual, check accuracy"
+      - "API response format verification"
+      - "Accuracy metrics calculation"
+  
+  e2e_tests:
+    location: "tests/e2e/"
+    scenarios:
+      - "Frontend displays prediction history"
+      - "Frontend shows accuracy dashboard"

@@ -11,6 +11,8 @@
 metadata:
   requirement_id: "FEATURE-CA-002-06"
   requirement_name: "Causality API Service"
+  feature_id: "FEATURE-CA-002-06"
+  feature_name: "Causality API Service"
   feature_code: "CA-002-06"
   version: "1.0.0"
   status: "Active"
@@ -19,6 +21,18 @@ metadata:
   owner: "Causal Affect Team"
   priority: "MUST HAVE"
   target_date: "2026-02-15"
+  
+  traceability:
+    parent_system: "SYSTEM-CA-002"
+    parent_system_file: "../SYSTEM-CA-002.yaml"
+    parent_system_requirements:
+      - "SYS-REQ-002: Granger causality testing implementation"
+      - "SYS-REQ-006: REST API endpoint for causality access"
+    
+    derivation_rationale: |
+      This feature implements REST API exposure of the existing Granger causality 
+      test (LAYER-CA-002-02-01) for frontend consumption. It bridges Phase 1 
+      statistical implementation with user-facing functionality.
 
 # ====================================================================================
 # FEATURE OVERVIEW
@@ -45,11 +59,31 @@ overview:
     rather than spurious correlations.
   
   acceptance_criteria:
-    - "All layer implementations complete and passing tests"
-    - "API endpoints return correct Granger test results"
-    - "Bidirectional testing (X→Y and Y→X) supported"
-    - "Results cached in database for quick retrieval"
-    - "Performance meets <10 second response time"
+    - "GET /api/causality/{var1}/{var2} endpoint functional"
+    - "Returns both X→Y and Y→X Granger test p-values"
+    - "Includes causal_direction field (X->Y, Y->X, bidirectional, none)"
+    - "Human-readable interpretation included in response"
+    - "Error handling for missing variables (404)"
+    - "Error handling for insufficient data (400)"
+
+# ====================================================================================
+# SHARED INTERFACES
+# ====================================================================================
+
+shared_interfaces:
+  response_structure: "JSON API response with success, data, error fields"
+  
+  parent_system_reference:
+    file: "../SYSTEM-CA-002.yaml"
+    section: "shared_interfaces.api_response_structure"
+  
+  implementation_requirement: |
+    Response format:
+    {
+      "success": true,
+      "data": {...},
+      "error": null
+    }
 
 # ====================================================================================
 # LAYER ARCHITECTURE
@@ -63,14 +97,6 @@ layers:
     requirement_file: "LAYER-CA-002-06-01_causality_router.yaml"
     requirements:
       - "LAYER-CA-002-06-01"
-  
-  - layer_id: "LAYER-CA-002-06-02"
-    name: "Causality Service"
-    responsibility: "Business logic wrapping GrangerCausalityTest"
-    technology: "Python, Statsmodels"
-    requirement_file: "LAYER-CA-002-06-02_causality_service.yaml"
-    requirements:
-      - "LAYER-CA-002-06-02"
 
 # ====================================================================================
 # FEATURE REQUIREMENTS
@@ -78,87 +104,82 @@ layers:
 
 requirements:
   - id: "FEAT-CA-002-06-REQ-001"
-    title: "Granger Test Endpoint"
-    description: |
-      GET /api/causality/{var1_name}/{var2_name}
-      Returns p-values for both directions, optimal lag, and causal direction
+    title: "Causality API Endpoint"
+    description: "GET /api/causality/{var1}/{var2} returns Granger causality test results"
     priority: "MUST HAVE"
     status: "Active"
     traces_to:
+      system_requirements: ["SYS-REQ-002", "SYS-REQ-006"]
       layer_requirements: ["LAYER-CA-002-06-01"]
   
   - id: "FEAT-CA-002-06-REQ-002"
     title: "Bidirectional Testing"
-    description: "Test both X→Y and Y→X directions in single request"
+    description: "Test both X→Y and Y→X directions and determine causal direction"
     priority: "MUST HAVE"
     status: "Active"
+    traces_to:
+      system_requirements: ["SYS-REQ-002"]
+      layer_requirements: ["LAYER-CA-002-06-01"]
   
   - id: "FEAT-CA-002-06-REQ-003"
-    title: "Result Caching"
-    description: "Store causality results in database for quick retrieval"
-    priority: "SHOULD HAVE"
+    title: "Error Handling"
+    description: "Return appropriate HTTP status codes for missing variables and insufficient data"
+    priority: "MUST HAVE"
     status: "Active"
+    traces_to:
+      layer_requirements: ["LAYER-CA-002-06-01"]
+
+# ====================================================================================
+# INTEGRATION POINTS
+# ====================================================================================
+
+integration:
+  upstream_features: 
+    - "FEATURE-CA-002-02 (existing Granger test implementation)"
   
-  - id: "FEAT-CA-002-06-REQ-004"
-    title: "Human-Readable Interpretation"
-    description: "Return interpretation string explaining causal direction"
-    priority: "SHOULD HAVE"
-    status: "Active"
+  downstream_features:
+    - "FEATURE-CA-002-08 (Lag Analysis Service)"
+  
+  shared_components:
+    - "src/backend/app/features/FEATURE-CA-002-02_causality_testing_engine/services/granger_test.py"
 
 # ====================================================================================
-# TECHNICAL SPECIFICATIONS
+# IMPLEMENTATION NOTES
 # ====================================================================================
 
-technical_specifications:
-  architecture: "Service layer wrapping existing LAYER-CA-002-02-01 implementation"
-  endpoint_prefix: "/api/causality"
-  data_flow: "Request → Router → Service → GrangerCausalityTest → Database → Response"
+implementation:
+  week_1_deliverables:
+    - "FastAPI router with /api/causality/{var1}/{var2} endpoint"
+    - "Integration with existing GrangerCausalityTest class"
+    - "Bidirectional testing logic"
+    - "Error handling for edge cases"
   
   dependencies:
-    internal:
-      - "LAYER-CA-002-02-01_granger_test (existing Granger implementation)"
-      - "FEATURE-CA-001-03 timeseries_storage (database schema)"
-    external:
-      - "FastAPI"
-      - "SQLAlchemy"
-      - "Statsmodels"
+    - "LAYER-CA-002-02-01_granger_test (existing implementation)"
+    - "FastAPI"
+    - "SQLAlchemy"
   
-  api_endpoints:
-    - method: "GET"
-      path: "/api/causality/{var1_name}/{var2_name}"
-      description: "Run Granger causality test between two variables"
-      params:
-        - "max_lag: int (default 10)"
-        - "significance: float (default 0.05)"
-        - "lookback_days: int (default 365)"
-      response:
-        var1: "string"
-        var2: "string"
-        test_x_causes_y:
-          p_value: "float"
-          f_statistic: "float"
-          optimal_lag: "int"
-          is_significant: "bool"
-        test_y_causes_x:
-          p_value: "float"
-          f_statistic: "float"
-          optimal_lag: "int"
-          is_significant: "bool"
-        causal_direction: "X->Y | Y->X | bidirectional | none"
-        interpretation: "string"
-    
-    - method: "GET"
-      path: "/api/causality/health"
-      description: "Health check for causality service"
+  testing_approach:
+    - "Unit tests for router endpoint logic"
+    - "Integration tests calling actual Granger implementation"
+    - "Error scenario tests (404, 400)"
 
 # ====================================================================================
-# TRACEABILITY
+# TESTING STRATEGY
 # ====================================================================================
 
-traceability:
-  traces_from:
-    system: "SYSTEM-CA-002"
-    exploitation_pathway: "Phase 2 - Causality Testing"
-  traces_to:
-    layers: ["LAYER-CA-002-06-01", "LAYER-CA-002-06-02"]
-    depends_on: ["LAYER-CA-002-02-01"]
+testing:
+  unit_tests:
+    location: "tests/unit/"
+    coverage_target: "90%"
+  
+  integration_tests:
+    location: "tests/integration/"
+    scenarios:
+      - "Full causality test with real data"
+      - "API response format verification"
+  
+  e2e_tests:
+    location: "tests/e2e/"
+    scenarios:
+      - "Frontend triggers causality test via API"
