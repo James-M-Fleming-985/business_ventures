@@ -1,0 +1,190 @@
+# ====================================================================================
+# LAYER REQUIREMENT: Regression Results
+# ====================================================================================
+# LAYER ID: LAYER-CA-002-09-03
+# FEATURE: FEATURE-CA-002-09 Regression Quantification Service
+# VERSION: 2.0.0
+# TYPE: Frontend
+# ====================================================================================
+
+metadata:
+  requirement_id: "LAYER-CA-002-09-03"
+  requirement_title: "Regression Results"
+  layer_id: "LAYER-CA-002-09-03"
+  layer_name: "Regression Results"
+  layer_folder: "LAYER_CA_002_09_03_Regression_Results"
+  layer_type: "frontend"
+  
+  parent_feature: "FEATURE-CA-002-09_regression_service"
+  parent_feature_file: "../FEATURE-CA-002-09_regression_service.yaml"
+  
+  version: "2.0.0"
+  status: "Active"
+  priority: "MUST HAVE"
+  created_date: "2026-02-10"
+  updated_date: "2026-02-10"
+  owner: "Causal Affect Team"
+  target_date: "2026-02-25"
+
+# ====================================================================================
+# TECHNICAL CONSTRAINTS
+# ====================================================================================
+
+technical_constraints:
+  language: "JavaScript/JSX"
+  framework: "React 18"
+  output_file_type: ".jsx"
+  runtime: "Browser"
+  styling: "TailwindCSS"
+
+# ====================================================================================
+# REQUIREMENT DEFINITION
+# ====================================================================================
+
+requirement:
+  title: "Regression Results Component"
+  
+  description: |
+    React component that displays regression results with emphasis on β₁ coefficient.
+    The β₁ is the KEY metric for exploitation - it tells users exactly how much
+    the target will change for each unit change in the signal.
+    
+    Key responsibilities:
+    - Accept keyword prop and fetch from /api/signal-radar/signals/{keyword}/regression
+    - Display loading spinner while fetching
+    - Prominently display β₁ = 2.45 (large, centered)
+    - Show formula: Y = β₀ + β₁ × X
+    - Show R² with interpretation (% variance explained)
+    - Show confidence interval for β₁
+    - Display interpretation text
+    - Handle error states gracefully
+  
+  rationale: |
+    The β₁ coefficient is the critical exploitation metric. Users need to see it
+    prominently to understand the magnitude of expected returns from a signal.
+
+# ====================================================================================
+# SPECIFICATION
+# ====================================================================================
+
+specification:
+  technology_stack:
+    programming_language: "JavaScript/JSX"
+    file_extensions: [".jsx"]
+    runtime_environment: "Browser"
+    primary_framework: "React 18"
+    additional_libraries:
+      - "tailwindcss"
+
+# ====================================================================================
+# COMPONENT DEFINITION
+# ====================================================================================
+
+component:
+  name: "RegressionResults"
+  file: "RegressionResults.jsx"
+  
+  props:
+    - name: "keyword"
+      type: "string"
+      required: true
+      description: "Signal keyword to fetch regression for"
+    - name: "onDataLoaded"
+      type: "function"
+      required: false
+      description: "Callback when data is loaded"
+  
+  state:
+    - name: "loading"
+      type: "boolean"
+      initial: true
+    - name: "data"
+      type: "object | null"
+      initial: null
+    - name: "error"
+      type: "string | null"
+      initial: null
+  
+  api_call:
+    endpoint: "GET /api/signal-radar/signals/{keyword}/regression"
+    trigger: "useEffect on mount and keyword change"
+  
+  visual_layout: |
+    ┌──────────────────────────────────────────────────────────┐
+    │                                                          │
+    │              β₁ = 2.45                                   │  ← Large, purple
+    │                                                          │
+    │  "For every +1% increase in ai_papers,                   │
+    │   nvda_stock increases by 2.45%"                         │  ← Interpretation
+    │                                                          │
+    ├──────────────────────────────────────────────────────────┤
+    │                                                          │
+    │  Formula: Y = 150.23 + 2.45 × X                          │  ← Monospace
+    │                                                          │
+    ├──────────────────────────────────────────────────────────┤
+    │                                                          │
+    │  ┌───────────┐  ┌───────────┐  ┌───────────────────┐    │
+    │  │   R²      │  │  p-value  │  │  95% CI for β₁   │    │
+    │  │   0.72    │  │  <0.0001  │  │  [1.78, 3.12]    │    │
+    │  │  72%      │  │ Signif*** │  │                  │    │
+    │  └───────────┘  └───────────┘  └───────────────────┘    │
+    │                                                          │
+    └──────────────────────────────────────────────────────────┘
+
+# ====================================================================================
+# STYLING
+# ====================================================================================
+
+styling:
+  container: "bg-white rounded-lg p-6"
+  
+  beta_1:
+    size: "text-5xl"
+    color: "text-purple-600"
+    weight: "font-bold"
+    suffix: " β₁"
+  
+  interpretation:
+    container: "bg-purple-50 border border-purple-200 rounded-lg p-4 mt-4"
+    text: "text-purple-800"
+  
+  formula:
+    container: "bg-gray-100 rounded-lg p-4 mt-4"
+    font: "font-mono text-lg"
+  
+  metrics_grid:
+    container: "grid grid-cols-3 gap-4 mt-6"
+    card: "bg-white border-2 border-gray-200 rounded-lg p-4 text-center"
+
+# ====================================================================================
+# HELPER FUNCTIONS
+# ====================================================================================
+
+helpers:
+  format_p_value: |
+    function formatPValue(p) {
+      if (p < 0.0001) return '<0.0001 ***';
+      if (p < 0.001) return `${p.toFixed(4)} ***`;
+      if (p < 0.01) return `${p.toFixed(3)} **`;
+      if (p < 0.05) return `${p.toFixed(3)} *`;
+      return `${p.toFixed(3)}`;
+    }
+  
+  format_r_squared: |
+    function formatRSquared(r2) {
+      const percent = (r2 * 100).toFixed(0);
+      return `${r2.toFixed(2)} (${percent}% variance explained)`;
+    }
+
+# ====================================================================================
+# TESTING REQUIREMENTS
+# ====================================================================================
+
+testing:
+  unit_tests:
+    - "Renders loading state initially"
+    - "Renders β₁ prominently with valid data"
+    - "Renders formula correctly"
+    - "Renders metrics grid with R², p-value, CI"
+    - "Renders error state on API failure"
+    - "Formats p-value with significance stars"

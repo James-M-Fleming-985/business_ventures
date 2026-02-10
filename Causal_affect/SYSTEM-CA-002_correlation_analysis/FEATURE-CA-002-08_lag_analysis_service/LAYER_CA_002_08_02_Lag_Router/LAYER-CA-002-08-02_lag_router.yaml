@@ -1,0 +1,122 @@
+# ====================================================================================
+# LAYER REQUIREMENT: Lag Router
+# ====================================================================================
+# LAYER ID: LAYER-CA-002-08-02
+# FEATURE: FEATURE-CA-002-08 Lag Analysis Service
+# VERSION: 2.0.0
+# TYPE: Backend
+# ====================================================================================
+
+metadata:
+  requirement_id: "LAYER-CA-002-08-02"
+  requirement_title: "Lag Router"
+  layer_id: "LAYER-CA-002-08-02"
+  layer_name: "Lag Router"
+  layer_folder: "LAYER_CA_002_08_02_Lag_Router"
+  layer_type: "backend"
+  
+  parent_feature: "FEATURE-CA-002-08_lag_analysis_service"
+  parent_feature_file: "../FEATURE-CA-002-08_lag_analysis_service.yaml"
+  
+  version: "2.0.0"
+  status: "Active"
+  priority: "MUST HAVE"
+  created_date: "2026-02-10"
+  updated_date: "2026-02-10"
+  owner: "Causal Affect Team"
+  target_date: "2026-02-20"
+
+# ====================================================================================
+# TECHNICAL CONSTRAINTS
+# ====================================================================================
+
+technical_constraints:
+  language: "Python"
+  framework: "FastAPI 0.104.0"
+  output_file_type: ".py"
+  runtime: "Python 3.10+"
+
+# ====================================================================================
+# REQUIREMENT DEFINITION
+# ====================================================================================
+
+requirement:
+  title: "Lag Router"
+  
+  description: |
+    FastAPI router providing GET /api/signal-radar/signals/{keyword}/lag-curve endpoint.
+    
+    Key responsibilities:
+    - Define GET endpoint matching Signal Radar API pattern
+    - Accept optional max_lag query parameter (default 90)
+    - Instantiate and call LagService.calculate_lag_curve()
+    - Return JSON response for LagCurveChart frontend component
+    - Handle 404 for missing signals
+    - Handle 400 for insufficient data
+
+# ====================================================================================
+# API ENDPOINT DEFINITION
+# ====================================================================================
+
+api:
+  endpoint:
+    method: "GET"
+    path: "/api/signal-radar/signals/{keyword}/lag-curve"
+    path_params:
+      - name: "keyword"
+        type: "str"
+        description: "Signal keyword (e.g., 'ai_papers')"
+    
+    query_params:
+      - name: "max_lag"
+        type: "int"
+        default: 90
+        min: 1
+        max: 365
+        description: "Maximum lag days to calculate"
+    
+    response:
+      success_code: 200
+      content_type: "application/json"
+      schema: |
+        {
+          "keyword": "ai_papers",
+          "target": "nvda_stock",
+          "lag_days": [0, 1, 2, ..., 90],
+          "correlations": [0.12, 0.15, 0.23, ..., 0.45],
+          "optimal_lag": 30,
+          "peak_correlation": 0.72,
+          "p_value_at_optimal": 0.001
+        }
+    
+    error_responses:
+      - code: 404
+        description: "Signal keyword not found"
+        body: '{"detail": "Signal not found: {keyword}"}'
+      - code: 400
+        description: "Insufficient data for lag analysis"
+        body: '{"detail": "Insufficient data. Need at least 10 observations."}'
+
+# ====================================================================================
+# FRONTEND COMPATIBILITY
+# ====================================================================================
+
+frontend_compatibility:
+  component: "LagCurveChart.jsx"
+  expected_fields:
+    - "lag_days (array of integers)"
+    - "correlations (array of floats)"
+    - "optimal_lag (integer)"
+    - "peak_correlation (float)"
+
+# ====================================================================================
+# TESTING REQUIREMENTS
+# ====================================================================================
+
+testing:
+  unit_tests:
+    - "Endpoint returns 200 with valid keyword"
+    - "Endpoint returns 404 for unknown keyword"
+    - "Endpoint returns 400 for insufficient data"
+    - "max_lag query param works correctly"
+    - "Response arrays have correct length"

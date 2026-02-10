@@ -1,0 +1,125 @@
+# ====================================================================================
+# LAYER REQUIREMENT: Granger Service
+# ====================================================================================
+# LAYER ID: LAYER-CA-002-06-01
+# FEATURE: FEATURE-CA-002-06 Granger Causality API Service
+# VERSION: 2.0.0
+# ====================================================================================
+
+metadata:
+  requirement_id: "LAYER-CA-002-06-01"
+  requirement_title: "Granger Service"
+  layer_id: "LAYER-CA-002-06-01"
+  layer_name: "Granger Service"
+  layer_folder: "LAYER_CA_002_06_01_Granger_Service"
+  
+  parent_feature: "FEATURE-CA-002-06_causality_api_service"
+  parent_feature_file: "../FEATURE-CA-002-06_causality_api_service.yaml"
+  
+  version: "2.0.0"
+  status: "Active"
+  priority: "MUST HAVE"
+  created_date: "2026-02-10"
+  updated_date: "2026-02-10"
+  owner: "Causal Affect Team"
+  target_date: "2026-02-15"
+
+# ====================================================================================
+# TECHNICAL CONSTRAINTS
+# ====================================================================================
+
+technical_constraints:
+  language: "Python"
+  framework: "None (pure Python service class)"
+  output_file_type: ".py"
+  runtime: "Python 3.10+"
+
+# ====================================================================================
+# REQUIREMENT DEFINITION
+# ====================================================================================
+
+requirement:
+  title: "Granger Service"
+  
+  description: |
+    Service wrapper class that imports and uses the existing GrangerCausalityTest
+    implementation from LAYER-CA-002-02-01 to provide Granger causality testing.
+    
+    Key responsibilities:
+    - Import GrangerCausalityTest from existing implementation
+    - Provide test_causality(keyword, target) method
+    - Call test_bidirectional() to test both X→Y and Y→X directions
+    - Determine causal_direction from results (X_to_Y, Y_to_X, bidirectional, none)
+    - Return formatted dict matching GrangerModal.jsx expected response
+  
+  rationale: |
+    The GrangerCausalityTest class already exists and is fully implemented.
+    This layer wraps it for production use with the Signal Radar API without
+    duplicating the statistical logic.
+
+# ====================================================================================
+# SPECIFICATION
+# ====================================================================================
+
+specification:
+  technology_stack:
+    programming_language: "Python"
+    file_extensions: [".py"]
+    runtime_environment: "Python 3.10+"
+    primary_framework: "None"
+    additional_libraries:
+      - "numpy"
+      - "pandas"
+  
+  wraps:
+    source_path: "../../FEATURE-CA-002-02_causality_testing/LAYER-CA-002-02-01_granger_test/src/implementation.py"
+    class_name: "GrangerCausalityTest"
+    methods_used:
+      - "test_bidirectional(x, y) -> {'x_causes_y': result, 'y_causes_x': result}"
+    initialization: "GrangerCausalityTest(max_lag=30, confidence_level=0.05)"
+
+# ====================================================================================
+# INTERFACE DEFINITION
+# ====================================================================================
+
+interface:
+  class_name: "GrangerService"
+  
+  methods:
+    - name: "test_causality"
+      signature: "def test_causality(self, keyword: str, target: str = 'default_target') -> dict"
+      description: "Tests Granger causality between signal keyword and target variable"
+      parameters:
+        - name: "keyword"
+          type: "str"
+          description: "Signal keyword (e.g., 'ai_papers', 'bitcoin')"
+        - name: "target"
+          type: "str"
+          description: "Target variable to predict"
+      returns:
+        type: "dict"
+        description: "Granger results matching GrangerModal expected format"
+        format: |
+          {
+            "granger_results": {
+              "f_statistic": float,
+              "p_value": float,
+              "optimal_lag": int,
+              "r_value": float,
+              "reject_null": bool
+            },
+            "direction": str  # X_to_Y, Y_to_X, bidirectional, none
+          }
+
+# ====================================================================================
+# TESTING REQUIREMENTS
+# ====================================================================================
+
+testing:
+  unit_tests:
+    - "test_causality returns correct structure"
+    - "test_causality determines direction correctly for X→Y case"
+    - "test_causality determines direction correctly for Y→X case"
+    - "test_causality handles bidirectional case"
+    - "test_causality handles no causality case"
+    - "test_causality handles missing data gracefully"

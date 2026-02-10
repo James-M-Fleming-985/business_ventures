@@ -1,8 +1,8 @@
 # ====================================================================================
-# FEATURE REQUIREMENTS: Causality API Service
+# FEATURE REQUIREMENTS: Granger Causality API Service
 # ====================================================================================
 # FEATURE ID: FEATURE-CA-002-06
-# VERSION: 1.0.0
+# VERSION: 2.0.0
 # LAST UPDATED: 2026-02-10
 # SYSTEM: CA-002 Correlation Analysis Engine
 # PHASE: 2 - Granger Causality Integration
@@ -10,11 +10,11 @@
 
 metadata:
   requirement_id: "FEATURE-CA-002-06"
-  requirement_name: "Causality API Service"
+  requirement_name: "Granger Causality API Service"
   feature_id: "FEATURE-CA-002-06"
-  feature_name: "Causality API Service"
+  feature_name: "Granger Causality API Service"
   feature_code: "CA-002-06"
-  version: "1.0.0"
+  version: "2.0.0"
   status: "Active"
   created_date: "2026-02-10"
   last_modified: "2026-02-10"
@@ -27,12 +27,37 @@ metadata:
     parent_system_file: "../SYSTEM-CA-002.yaml"
     parent_system_requirements:
       - "SYS-REQ-002: Granger causality testing implementation"
-      - "SYS-REQ-006: REST API endpoint for causality access"
+      - "SYS-REQ-006: REST API endpoints for Signal Radar"
     
     derivation_rationale: |
-      This feature implements REST API exposure of the existing Granger causality 
-      test (LAYER-CA-002-02-01) for frontend consumption. It bridges Phase 1 
-      statistical implementation with user-facing functionality.
+      This feature wraps the existing GrangerCausalityTest implementation
+      (LAYER-CA-002-02-01) into a production service that integrates with
+      the existing SignalRadar UI and GrangerModal component.
+
+# ====================================================================================
+# UI INTEGRATION CONTEXT
+# ====================================================================================
+
+ui_integration:
+  entry_point:
+    page: "SignalRadar.jsx"
+    location: "src/pages/SignalRadar.jsx"
+    trigger: "User clicks 'Run Granger' button on signal card"
+  
+  component:
+    name: "GrangerModal.jsx"
+    location: "src/components/GrangerModal.jsx"
+    status: "EXISTS - displays Granger results"
+    modifications_required: "None - enhance backend only"
+  
+  user_flow: |
+    SignalRadar page
+      → User sees list of FMV signals (ai_papers, bitcoin, etc.)
+        → User clicks signal card "Run Granger" button
+          → GrangerModal opens
+            → Modal calls POST /api/signal-radar/signals/{keyword}/granger
+              → Backend returns: f_statistic, p_value, optimal_lag, direction
+                → Modal displays results with star ratings and interpretation
 
 # ====================================================================================
 # FEATURE OVERVIEW
@@ -40,49 +65,60 @@ metadata:
 
 overview:
   description: |
-    REST API service that wraps the existing Granger causality test implementation
-    (LAYER-CA-002-02-01) into production endpoints. Enables frontend to test
-    causal relationships between any two variables and receive structured results.
+    Backend service that wraps the existing GrangerCausalityTest class
+    (from LAYER-CA-002-02-01) to provide Granger causality testing via
+    the Signal Radar API. The frontend GrangerModal.jsx already exists
+    and displays results - this feature only enhances the backend.
     
-    This is the Phase 2 implementation that bridges the statistical calculations
-    to the user interface.
+    Granger causality tests whether X(t-lag) helps predict Y(t) beyond
+    Y's own history, determining if FMV signals have predictive power
+    over MV targets.
   
   business_value:
-    - "Exposes causality testing to end users via REST API"
-    - "Caches results to avoid redundant expensive calculations"
-    - "Provides clear directional indicators (X→Y vs Y→X)"
-    - "Enables UI to show causal relationships in correlation explorer"
+    - "Determines causal direction: does X→Y or Y→X?"
+    - "Filters out spurious correlations that aren't predictive"
+    - "Provides F-statistic strength rating for signal quality"
+    - "Enables confident exploitation of only predictive relationships"
   
   user_story: |
-    As a user viewing correlations, I want to click "Test Causality" and see
-    which variable causes which, so I can focus on predictive relationships
-    rather than spurious correlations.
+    As a user viewing Signal Radar,
+    I want to click "Run Granger" on a signal and see if it truly predicts
+    the target variable with a clear direction indicator,
+    So that I can focus on relationships with genuine predictive power.
   
   acceptance_criteria:
-    - "GET /api/causality/{var1}/{var2} endpoint functional"
-    - "Returns both X→Y and Y→X Granger test p-values"
-    - "Includes causal_direction field (X->Y, Y->X, bidirectional, none)"
-    - "Human-readable interpretation included in response"
-    - "Error handling for missing variables (404)"
+    - "POST /api/signal-radar/signals/{keyword}/granger endpoint functional"
+    - "Uses existing GrangerCausalityTest from LAYER-CA-002-02-01"
+    - "Returns f_statistic, p_value, optimal_lag, r_value"
+    - "Returns causal_direction: X_to_Y, Y_to_X, bidirectional, or none"
+    - "Response format matches existing GrangerModal.jsx expectations"
+    - "Error handling for missing signals (404)"
     - "Error handling for insufficient data (400)"
 
 # ====================================================================================
-# SHARED INTERFACES
+# API SPECIFICATION
 # ====================================================================================
 
-shared_interfaces:
-  response_structure: "JSON API response with success, data, error fields"
+api:
+  endpoint: "POST /api/signal-radar/signals/{keyword}/granger"
+  status: "EXISTS - enhance backend implementation"
   
-  parent_system_reference:
-    file: "../SYSTEM-CA-002.yaml"
-    section: "shared_interfaces.api_response_structure"
+  request_body:
+    max_lag:
+      type: "integer"
+      default: 12
+      description: "Maximum lag periods to test"
   
-  implementation_requirement: |
-    Response format:
+  response_format: |
     {
-      "success": true,
-      "data": {...},
-      "error": null
+      "granger_results": {
+        "f_statistic": 8.234,
+        "p_value": 0.0001,
+        "optimal_lag": 30,
+        "r_value": 0.72,
+        "reject_null": true
+      },
+      "interpretation": "Strong evidence that signal Granger-causes target"
     }
 
 # ====================================================================================
@@ -91,78 +127,48 @@ shared_interfaces:
 
 layers:
   - layer_id: "LAYER-CA-002-06-01"
-    name: "Causality Router"
-    responsibility: "FastAPI router with /api/causality endpoints"
-    technology: "FastAPI, SQLAlchemy"
-    requirement_file: "LAYER-CA-002-06-01_causality_router.yaml"
-    requirements:
-      - "LAYER-CA-002-06-01"
+    name: "Granger Service"
+    folder: "LAYER_CA_002_06_01_Granger_Service"
+    type: "backend"
+    responsibility: |
+      Service wrapper class that imports and uses GrangerCausalityTest
+      from LAYER-CA-002-02-01. Provides test_causality() method that:
+      - Retrieves signal and target time series data
+      - Calls GrangerCausalityTest.test_bidirectional()
+      - Determines causal direction from results
+      - Returns formatted response for GrangerModal
+    technology: "Python, GrangerCausalityTest"
+    wraps: "LAYER-CA-002-02-01_granger_test/src/implementation.py"
+    requirement_file: "LAYER-CA-002-06-01_granger_service.yaml"
+  
+  - layer_id: "LAYER-CA-002-06-02"
+    name: "Granger Router"
+    folder: "LAYER_CA_002_06_02_Granger_Router"
+    type: "backend"
+    responsibility: |
+      FastAPI router enhancement for /api/signal-radar/signals/{keyword}/granger
+      endpoint. Calls GrangerService and returns response matching
+      GrangerModal.jsx expected format.
+    technology: "FastAPI"
+    requirement_file: "LAYER-CA-002-06-02_granger_router.yaml"
 
 # ====================================================================================
-# FEATURE REQUIREMENTS
+# EXISTING IMPLEMENTATIONS TO WRAP
 # ====================================================================================
 
-requirements:
-  - id: "FEAT-CA-002-06-REQ-001"
-    title: "Causality API Endpoint"
-    description: "GET /api/causality/{var1}/{var2} returns Granger causality test results"
-    priority: "MUST HAVE"
-    status: "Active"
-    traces_to:
-      system_requirements: ["SYS-REQ-002", "SYS-REQ-006"]
-      layer_requirements: ["LAYER-CA-002-06-01"]
+dependencies:
+  existing_backend:
+    - path: "LAYER-CA-002-02-01_granger_test/src/implementation.py"
+      class: "GrangerCausalityTest"
+      methods:
+        - "test(x, y, lag) -> GrangerTestResult"
+        - "test_bidirectional(x, y) -> dict with x_causes_y, y_causes_x"
+      config: "max_lag=30, confidence_level=0.05"
   
-  - id: "FEAT-CA-002-06-REQ-002"
-    title: "Bidirectional Testing"
-    description: "Test both X→Y and Y→X directions and determine causal direction"
-    priority: "MUST HAVE"
-    status: "Active"
-    traces_to:
-      system_requirements: ["SYS-REQ-002"]
-      layer_requirements: ["LAYER-CA-002-06-01"]
-  
-  - id: "FEAT-CA-002-06-REQ-003"
-    title: "Error Handling"
-    description: "Return appropriate HTTP status codes for missing variables and insufficient data"
-    priority: "MUST HAVE"
-    status: "Active"
-    traces_to:
-      layer_requirements: ["LAYER-CA-002-06-01"]
-
-# ====================================================================================
-# INTEGRATION POINTS
-# ====================================================================================
-
-integration:
-  upstream_features: 
-    - "FEATURE-CA-002-02 (existing Granger test implementation)"
-  
-  downstream_features:
-    - "FEATURE-CA-002-08 (Lag Analysis Service)"
-  
-  shared_components:
-    - "src/backend/app/features/FEATURE-CA-002-02_causality_testing_engine/services/granger_test.py"
-
-# ====================================================================================
-# IMPLEMENTATION NOTES
-# ====================================================================================
-
-implementation:
-  week_1_deliverables:
-    - "FastAPI router with /api/causality/{var1}/{var2} endpoint"
-    - "Integration with existing GrangerCausalityTest class"
-    - "Bidirectional testing logic"
-    - "Error handling for edge cases"
-  
-  dependencies:
-    - "LAYER-CA-002-02-01_granger_test (existing implementation)"
-    - "FastAPI"
-    - "SQLAlchemy"
-  
-  testing_approach:
-    - "Unit tests for router endpoint logic"
-    - "Integration tests calling actual Granger implementation"
-    - "Error scenario tests (404, 400)"
+  existing_frontend:
+    - path: "SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/dashboard-app-complete/src/components/GrangerModal.jsx"
+      status: "No changes needed"
+      expects: "granger_results.f_statistic, granger_results.p_value, granger_results.optimal_lag, granger_results.r_value"
 
 # ====================================================================================
 # TESTING STRATEGY
@@ -170,16 +176,10 @@ implementation:
 
 testing:
   unit_tests:
-    location: "tests/unit/"
-    coverage_target: "90%"
+    - "GrangerService.test_causality returns correct direction"
+    - "GrangerService handles missing signal gracefully"
+    - "Response format matches GrangerModal expectations"
   
   integration_tests:
-    location: "tests/integration/"
-    scenarios:
-      - "Full causality test with real data"
-      - "API response format verification"
-  
-  e2e_tests:
-    location: "tests/e2e/"
-    scenarios:
-      - "Frontend triggers causality test via API"
+    - "Full flow: API call → GrangerService → GrangerCausalityTest → response"
+    - "GrangerModal displays results correctly"

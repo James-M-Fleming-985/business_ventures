@@ -2,7 +2,7 @@
 # FEATURE REQUIREMENTS: Regression Quantification Service
 # ====================================================================================
 # FEATURE ID: FEATURE-CA-002-09
-# VERSION: 1.0.0
+# VERSION: 2.0.0
 # LAST UPDATED: 2026-02-10
 # SYSTEM: CA-002 Correlation Analysis Engine
 # PHASE: 4 - Regression Quantification
@@ -14,7 +14,7 @@ metadata:
   feature_id: "FEATURE-CA-002-09"
   feature_name: "Regression Quantification Service"
   feature_code: "CA-002-09"
-  version: "1.0.0"
+  version: "2.0.0"
   status: "Active"
   created_date: "2026-02-10"
   last_modified: "2026-02-10"
@@ -27,12 +27,45 @@ metadata:
     parent_system_file: "../SYSTEM-CA-002.yaml"
     parent_system_requirements:
       - "SYS-REQ-004: OLS regression for coefficient calculation"
-      - "SYS-REQ-006: REST API endpoint for regression access"
+      - "SYS-REQ-006: REST API endpoints for Signal Radar"
     
     derivation_rationale: |
       This feature implements OLS regression to calculate the β₁ coefficient,
       enabling quantified predictions: "For every 1-unit change in X, 
-      Y changes by β₁ units."
+      Y changes by β₁ units." This is the key to exploitation.
+
+# ====================================================================================
+# UI INTEGRATION CONTEXT
+# ====================================================================================
+
+ui_integration:
+  entry_point:
+    page: "GrangerModal.jsx"
+    location: "src/components/GrangerModal.jsx"
+    trigger: "User clicks 'Regression' tab inside GrangerModal"
+  
+  component:
+    name: "GrangerModal.jsx"
+    location: "src/components/GrangerModal.jsx"
+    status: "MODIFIED by CA-002-08 to have tabs"
+    tab: "Regression (third tab)"
+  
+  new_components:
+    - name: "RegressionResults.jsx"
+      type: "React component"
+      description: "Displays β₁, R², formula, interpretation"
+  
+  user_flow: |
+    User is in GrangerModal (with tabs from CA-002-08)
+      → User clicks "Regression" tab
+        → RegressionResults component loads
+          → Calls GET /api/signal-radar/signals/{keyword}/regression
+            → Backend returns: beta_0, beta_1, r_squared, p_value, interpretation
+              → Component displays:
+                - Large β₁ = 2.45
+                - Formula: Y = 150.23 + 2.45 × X
+                - R² = 0.72 (72% variance explained)
+                - "For every 1% increase in ai_papers, nvda_stock increases 2.45%"
 
 # ====================================================================================
 # FEATURE OVERVIEW
@@ -40,63 +73,70 @@ metadata:
 
 overview:
   description: |
-    REST API service that performs Ordinary Least Squares (OLS) regression
-    between two variables at the optimal lag, returning the β₁ coefficient
-    and associated statistics for making quantified predictions.
+    Backend service that performs Ordinary Least Squares (OLS) regression
+    between a signal and target at the optimal lag (from CA-002-08),
+    returning the β₁ coefficient for quantified predictions.
     
-    This is Phase 4 implementation that answers: "How much does Y change
-    for every 1-unit change in X?"
+    Regression answers: "How much does Y change for every 1-unit change in X?"
+    The β₁ coefficient is the KEY to exploitation - it tells you the expected
+    magnitude of price movement given a signal change.
   
   business_value:
-    - "Provides quantified predictions: β₁ coefficient"
-    - "Enables 'For every X increase, Y increases by β₁' statements"
-    - "Returns confidence intervals for prediction uncertainty"
-    - "R² indicates prediction model quality"
-    - "Generates current predictions based on latest X value"
+    - "Provides quantified predictions: β₁ = 2.45 means +1 X → +2.45 Y"
+    - "Enables formula-based trading: Y = β₀ + β₁ × X"
+    - "R² indicates model quality (how much variance explained)"
+    - "Confidence intervals quantify prediction uncertainty"
+    - "Interpretation text makes results actionable"
   
   user_story: |
-    As a user analyzing causal relationships, I want to know exactly how much
-    change in Y I can expect for a given change in X, so I can make
-    quantified predictions and decisions.
+    As a user viewing Granger/Lag results,
+    I want to see exactly how much change in the target I can expect
+    for a given change in the signal,
+    So that I can make quantified predictions and calculate expected returns.
   
   acceptance_criteria:
-    - "GET /api/causality/{var1}/{var2}/regression endpoint functional"
-    - "Returns beta_0 (intercept) and beta_1 (slope) coefficients"
+    - "GET /api/signal-radar/signals/{keyword}/regression endpoint functional"
+    - "Uses statsmodels OLS regression"
+    - "Applies optimal_lag from lag analysis"
+    - "Returns beta_0 (intercept) and beta_1 (slope)"
     - "Returns r_squared (coefficient of determination)"
     - "Returns p_value for statistical significance"
     - "Returns confidence_intervals for beta_1"
-    - "Returns current_prediction based on latest X value"
-    - "Applies optimal_lag from lag analysis"
-    - "Error handling for missing variables (404)"
-    - "Error handling for insufficient data (400)"
+    - "Returns interpretation text"
+    - "Error handling for missing signals (404)"
 
 # ====================================================================================
-# SHARED INTERFACES
+# API SPECIFICATION
 # ====================================================================================
 
-shared_interfaces:
-  response_structure: "JSON API response with success, data, error fields"
+api:
+  endpoint: "GET /api/signal-radar/signals/{keyword}/regression"
+  status: "NEW"
   
-  parent_system_reference:
-    file: "../SYSTEM-CA-002.yaml"
-    section: "shared_interfaces.api_response_structure"
+  path_params:
+    keyword:
+      type: "string"
+      description: "Signal keyword (e.g., 'ai_papers')"
   
-  implementation_requirement: |
-    Response format:
+  query_params:
+    lag:
+      type: "integer"
+      default: null
+      description: "Lag to use. If null, uses optimal_lag from lag analysis"
+  
+  response_format: |
     {
-      "success": true,
-      "data": {
-        "var1": "ai_papers",
-        "var2": "nvda_stock",
-        "beta_0": 150.23,
-        "beta_1": 2.45,
-        "r_squared": 0.72,
-        "p_value": 0.0001,
-        "confidence_intervals": {"lower": 1.89, "upper": 3.01},
-        "optimal_lag_used": 14,
-        "current_prediction": {"x_value": 125, "predicted_y": 456.48}
-      },
-      "error": null
+      "keyword": "ai_papers",
+      "target": "nvda_stock",
+      "lag_used": 30,
+      "beta_0": 150.23,
+      "beta_1": 2.45,
+      "r_squared": 0.72,
+      "p_value": 0.0001,
+      "std_error": 0.34,
+      "confidence_interval": {"lower": 1.78, "upper": 3.12},
+      "n_observations": 365,
+      "interpretation": "For every +1% increase in ai_papers, nvda_stock increases by 2.45% after 30 days"
     }
 
 # ====================================================================================
@@ -104,108 +144,57 @@ shared_interfaces:
 # ====================================================================================
 
 layers:
+  # Backend Layers
   - layer_id: "LAYER-CA-002-09-01"
-    name: "Regression Calculator"
-    responsibility: "Perform OLS regression and calculate β₁ coefficient"
-    technology: "Python, FastAPI, statsmodels"
-    requirement_file: "LAYER-CA-002-09-01_regression_calculator.yaml"
-    requirements:
-      - "LAYER-CA-002-09-01"
+    name: "Regression Service"
+    folder: "LAYER_CA_002_09_01_Regression_Service"
+    type: "backend"
+    responsibility: |
+      Service class that performs OLS regression using statsmodels.
+      Retrieves data, applies lag shift, runs regression, formats results.
+    technology: "Python, statsmodels"
+    requirement_file: "LAYER-CA-002-09-01_regression_service.yaml"
+  
+  - layer_id: "LAYER-CA-002-09-02"
+    name: "Regression Router"
+    folder: "LAYER_CA_002_09_02_Regression_Router"
+    type: "backend"
+    responsibility: |
+      FastAPI router with GET /api/signal-radar/signals/{keyword}/regression endpoint.
+      Calls RegressionService and returns formatted results.
+    technology: "FastAPI"
+    requirement_file: "LAYER-CA-002-09-02_regression_router.yaml"
+  
+  # Frontend Layer
+  - layer_id: "LAYER-CA-002-09-03"
+    name: "Regression Results"
+    folder: "LAYER_CA_002_09_03_Regression_Results"
+    type: "frontend"
+    responsibility: |
+      React component displaying regression results with emphasis on β₁.
+      Shows formula, R², interpretation, confidence intervals.
+    technology: "React, TailwindCSS"
+    requirement_file: "LAYER-CA-002-09-03_regression_results.yaml"
 
 # ====================================================================================
-# FEATURE REQUIREMENTS
+# DEPENDENCIES
 # ====================================================================================
 
-requirements:
-  - id: "FEAT-CA-002-09-REQ-001"
-    title: "Regression API Endpoint"
-    description: "GET /api/causality/{var1}/{var2}/regression returns OLS regression results"
-    priority: "MUST HAVE"
-    status: "Active"
-    traces_to:
-      system_requirements: ["SYS-REQ-004", "SYS-REQ-006"]
-      layer_requirements: ["LAYER-CA-002-09-01"]
+dependencies:
+  requires:
+    - feature: "FEATURE-CA-002-08"
+      reason: "Uses optimal_lag from lag analysis"
+      data: "optimal_lag value"
   
-  - id: "FEAT-CA-002-09-REQ-002"
-    title: "Beta Coefficient Calculation"
-    description: "Calculate β₀ (intercept) and β₁ (slope) using OLS"
-    priority: "MUST HAVE"
-    status: "Active"
-    traces_to:
-      system_requirements: ["SYS-REQ-004"]
-      layer_requirements: ["LAYER-CA-002-09-01"]
+  python_libraries:
+    - "statsmodels>=0.14.0"
+    - "numpy"
+    - "pandas"
   
-  - id: "FEAT-CA-002-09-REQ-003"
-    title: "Statistical Metrics"
-    description: "Return R², p-value, and confidence intervals"
-    priority: "MUST HAVE"
-    status: "Active"
-    traces_to:
-      system_requirements: ["SYS-REQ-004"]
-      layer_requirements: ["LAYER-CA-002-09-01"]
-  
-  - id: "FEAT-CA-002-09-REQ-004"
-    title: "Optimal Lag Integration"
-    description: "Apply optimal_lag from FEATURE-CA-002-08 for time alignment"
-    priority: "MUST HAVE"
-    status: "Active"
-    traces_to:
-      layer_requirements: ["LAYER-CA-002-09-01"]
-  
-  - id: "FEAT-CA-002-09-REQ-005"
-    title: "Current Prediction"
-    description: "Generate prediction using latest X value"
-    priority: "SHOULD HAVE"
-    status: "Active"
-    traces_to:
-      layer_requirements: ["LAYER-CA-002-09-01"]
-  
-  - id: "FEAT-CA-002-09-REQ-006"
-    title: "Error Handling"
-    description: "Return appropriate HTTP status codes for missing variables and insufficient data"
-    priority: "MUST HAVE"
-    status: "Active"
-    traces_to:
-      layer_requirements: ["LAYER-CA-002-09-01"]
-
-# ====================================================================================
-# INTEGRATION POINTS
-# ====================================================================================
-
-integration:
-  upstream_features: 
-    - "FEATURE-CA-002-08 (Lag Analysis - provides optimal_lag)"
-  
-  downstream_features:
-    - "FEATURE-CA-002-10 (Prediction Tracking - stores predictions)"
-  
-  shared_components:
-    - "src/backend/app/lag_calculator.py (get optimal_lag)"
-    - "src/backend/app/database/time_series_repository.py"
-
-# ====================================================================================
-# IMPLEMENTATION NOTES
-# ====================================================================================
-
-implementation:
-  week_1_deliverables:
-    - "FastAPI router with /api/causality/{var1}/{var2}/regression endpoint"
-    - "OLS regression using statsmodels"
-    - "Confidence interval calculation"
-    - "Current prediction generation"
-    - "Error handling for edge cases"
-  
-  dependencies:
-    - "FEATURE-CA-002-08 (Lag Analysis - for optimal_lag)"
-    - "statsmodels for OLS regression"
-    - "NumPy for calculations"
-    - "FastAPI"
-    - "SQLAlchemy"
-  
-  testing_approach:
-    - "Unit tests for regression calculation logic"
-    - "Integration tests with lag analysis"
-    - "Error scenario tests (404, 400)"
+  existing_frontend:
+    - path: "GrangerModal.jsx"
+      status: "Already has tabs from CA-002-08"
+      integration: "RegressionResults renders in 'Regression' tab"
 
 # ====================================================================================
 # TESTING STRATEGY
@@ -213,18 +202,12 @@ implementation:
 
 testing:
   unit_tests:
-    location: "tests/unit/"
-    coverage_target: "90%"
+    - "RegressionService correctly applies lag shift"
+    - "RegressionService returns valid OLS results"
+    - "RegressionResults renders β₁ prominently"
+    - "Interpretation text is accurate"
   
   integration_tests:
-    location: "tests/integration/"
-    scenarios:
-      - "Full regression calculation with optimal lag"
-      - "API response format verification"
-      - "Current prediction accuracy"
-  
-  e2e_tests:
-    location: "tests/e2e/"
-    scenarios:
-      - "Frontend displays regression equation"
-      - "Prediction value shown to user"
+    - "Full flow: API → RegressionService → statsmodels → response"
+    - "RegressionResults fetches and displays data"
+    - "Tab switching loads regression correctly"

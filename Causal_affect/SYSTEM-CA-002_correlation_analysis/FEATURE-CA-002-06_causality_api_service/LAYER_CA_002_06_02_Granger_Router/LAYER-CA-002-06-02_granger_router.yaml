@@ -1,0 +1,148 @@
+# ====================================================================================
+# LAYER REQUIREMENT: Granger Router
+# ====================================================================================
+# LAYER ID: LAYER-CA-002-06-02
+# FEATURE: FEATURE-CA-002-06 Granger Causality API Service
+# VERSION: 2.0.0
+# ====================================================================================
+
+metadata:
+  requirement_id: "LAYER-CA-002-06-02"
+  requirement_title: "Granger Router"
+  layer_id: "LAYER-CA-002-06-02"
+  layer_name: "Granger Router"
+  layer_folder: "LAYER_CA_002_06_02_Granger_Router"
+  
+  parent_feature: "FEATURE-CA-002-06_causality_api_service"
+  parent_feature_file: "../FEATURE-CA-002-06_causality_api_service.yaml"
+  
+  version: "2.0.0"
+  status: "Active"
+  priority: "MUST HAVE"
+  created_date: "2026-02-10"
+  updated_date: "2026-02-10"
+  owner: "Causal Affect Team"
+  target_date: "2026-02-15"
+
+# ====================================================================================
+# TECHNICAL CONSTRAINTS
+# ====================================================================================
+
+technical_constraints:
+  language: "Python"
+  framework: "FastAPI 0.104.0"
+  output_file_type: ".py"
+  runtime: "Python 3.10+"
+
+# ====================================================================================
+# REQUIREMENT DEFINITION
+# ====================================================================================
+
+requirement:
+  title: "Granger Router"
+  
+  description: |
+    FastAPI router that enhances the existing /api/signal-radar/signals/{keyword}/granger
+    endpoint to use the new GrangerService wrapper.
+    
+    Key responsibilities:
+    - Define POST /api/signal-radar/signals/{keyword}/granger endpoint
+    - Accept max_lag parameter in request body (default 12)
+    - Instantiate and call GrangerService.test_causality()
+    - Return response matching GrangerModal.jsx expected format
+    - Handle 404 for missing signals
+    - Handle 400 for insufficient data
+  
+  rationale: |
+    The GrangerModal.jsx frontend already expects a specific response format.
+    This router must return data in that exact format to maintain compatibility.
+
+# ====================================================================================
+# SPECIFICATION
+# ====================================================================================
+
+specification:
+  technology_stack:
+    programming_language: "Python"
+    file_extensions: [".py"]
+    runtime_environment: "Python 3.10+"
+    primary_framework: "FastAPI 0.104.0"
+    additional_libraries:
+      - "pydantic"
+
+# ====================================================================================
+# API ENDPOINT DEFINITION
+# ====================================================================================
+
+api:
+  endpoint:
+    method: "POST"
+    path: "/api/signal-radar/signals/{keyword}/granger"
+    path_params:
+      - name: "keyword"
+        type: "str"
+        description: "Signal keyword (e.g., 'ai_papers')"
+    
+    request_body:
+      content_type: "application/json"
+      schema:
+        max_lag:
+          type: "integer"
+          default: 12
+          min: 1
+          max: 90
+          description: "Maximum lag periods to test"
+    
+    response:
+      success_code: 200
+      content_type: "application/json"
+      schema: |
+        {
+          "granger_results": {
+            "f_statistic": 8.234,
+            "p_value": 0.0001,
+            "optimal_lag": 30,
+            "r_value": 0.72,
+            "reject_null": true
+          },
+          "interpretation": "Strong evidence that ai_papers Granger-causes target with 30 period lag."
+        }
+      
+    error_responses:
+      - code: 404
+        description: "Signal keyword not found"
+        body: '{"detail": "Signal not found: {keyword}"}'
+      - code: 400
+        description: "Insufficient data for Granger test"
+        body: '{"detail": "Insufficient data for Granger test. Need at least 30 observations."}'
+
+# ====================================================================================
+# FRONTEND COMPATIBILITY
+# ====================================================================================
+
+frontend_compatibility:
+  component: "GrangerModal.jsx"
+  expected_fields:
+    - "granger_results.f_statistic"
+    - "granger_results.p_value"
+    - "granger_results.optimal_lag"
+    - "granger_results.r_value"
+    - "granger_results.reject_null"
+  notes: |
+    GrangerModal.jsx references these fields directly.
+    Any change to response structure will break the modal.
+
+# ====================================================================================
+# TESTING REQUIREMENTS
+# ====================================================================================
+
+testing:
+  unit_tests:
+    - "Endpoint returns 200 with valid keyword"
+    - "Endpoint returns 404 for unknown keyword"
+    - "Endpoint returns 400 for insufficient data"
+    - "Response matches expected schema"
+  
+  integration_tests:
+    - "Full flow: POST request → GrangerService → response"
+    - "GrangerModal can parse and display response"

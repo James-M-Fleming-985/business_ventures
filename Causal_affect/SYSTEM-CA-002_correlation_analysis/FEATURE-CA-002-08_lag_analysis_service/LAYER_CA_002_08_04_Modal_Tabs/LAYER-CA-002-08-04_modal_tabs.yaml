@@ -1,0 +1,152 @@
+# ====================================================================================
+# LAYER REQUIREMENT: Modal Tabs
+# ====================================================================================
+# LAYER ID: LAYER-CA-002-08-04
+# FEATURE: FEATURE-CA-002-08 Lag Analysis Service
+# VERSION: 2.0.0
+# TYPE: Frontend
+# ====================================================================================
+
+metadata:
+  requirement_id: "LAYER-CA-002-08-04"
+  requirement_title: "Modal Tabs"
+  layer_id: "LAYER-CA-002-08-04"
+  layer_name: "Modal Tabs"
+  layer_folder: "LAYER_CA_002_08_04_Modal_Tabs"
+  layer_type: "frontend"
+  
+  parent_feature: "FEATURE-CA-002-08_lag_analysis_service"
+  parent_feature_file: "../FEATURE-CA-002-08_lag_analysis_service.yaml"
+  
+  version: "2.0.0"
+  status: "Active"
+  priority: "MUST HAVE"
+  created_date: "2026-02-10"
+  updated_date: "2026-02-10"
+  owner: "Causal Affect Team"
+  target_date: "2026-02-20"
+
+# ====================================================================================
+# TECHNICAL CONSTRAINTS
+# ====================================================================================
+
+technical_constraints:
+  language: "JavaScript/JSX"
+  framework: "React 18"
+  output_file_type: ".jsx"
+  runtime: "Browser"
+  styling: "TailwindCSS"
+
+# ====================================================================================
+# REQUIREMENT DEFINITION
+# ====================================================================================
+
+requirement:
+  title: "Modal Tabs Enhancement"
+  
+  description: |
+    Enhance the existing GrangerModal.jsx to add a tabbed interface.
+    This is a MODIFICATION of an existing file, not a new component.
+    
+    Key responsibilities:
+    - Add tab bar below modal header: [Granger | Lag Curve | Regression]
+    - Granger tab shows existing Granger results (current modal content)
+    - Lag Curve tab shows LagCurveChart component
+    - Regression tab shows RegressionResults component (placeholder until Phase 4)
+    - Lazy-load tab content on click to avoid unnecessary API calls
+    - Maintain current modal styling and behavior
+  
+  rationale: |
+    All three analysis types (Granger, Lag, Regression) relate to the same signal-target
+    pair, so showing them in tabs within a single modal provides a unified analysis view.
+
+# ====================================================================================
+# SPECIFICATION
+# ====================================================================================
+
+specification:
+  technology_stack:
+    programming_language: "JavaScript/JSX"
+    file_extensions: [".jsx"]
+    runtime_environment: "Browser"
+    primary_framework: "React 18"
+    additional_libraries:
+      - "tailwindcss"
+
+# ====================================================================================
+# MODIFICATION TARGET
+# ====================================================================================
+
+modification:
+  file: "src/components/GrangerModal.jsx"
+  action: "MODIFY existing file"
+  
+  current_structure: |
+    <Modal>
+      <Header>Granger Causality Analysis</Header>
+      <Body>
+        [Granger results content]
+      </Body>
+      <Footer>Close button</Footer>
+    </Modal>
+  
+  target_structure: |
+    <Modal>
+      <Header>Signal Analysis: {keyword}</Header>
+      <TabBar>
+        <Tab active={activeTab === 'granger'}>Granger</Tab>
+        <Tab active={activeTab === 'lag'}>Lag Curve</Tab>
+        <Tab active={activeTab === 'regression'}>Regression</Tab>
+      </TabBar>
+      <Body>
+        {activeTab === 'granger' && <GrangerResults ... />}
+        {activeTab === 'lag' && <LagCurveChart keyword={keyword} />}
+        {activeTab === 'regression' && <RegressionResults keyword={keyword} />}
+      </Body>
+      <Footer>Close button</Footer>
+    </Modal>
+
+# ====================================================================================
+# TAB COMPONENT
+# ====================================================================================
+
+tabs:
+  - id: "granger"
+    label: "Granger"
+    default: true
+    content: "Existing Granger results (refactor into GrangerResults subcomponent)"
+  
+  - id: "lag"
+    label: "Lag Curve"
+    default: false
+    content: "LagCurveChart component from LAYER-CA-002-08-03"
+    lazy_load: true
+  
+  - id: "regression"
+    label: "Regression"
+    default: false
+    content: "RegressionResults component from LAYER-CA-002-09-03 (Phase 4)"
+    lazy_load: true
+    placeholder: "Coming soon - Phase 4"
+
+# ====================================================================================
+# STYLING
+# ====================================================================================
+
+styling:
+  tab_bar:
+    container: "flex border-b border-gray-200 mb-4"
+    tab_active: "px-4 py-2 border-b-2 border-purple-600 text-purple-600 font-medium"
+    tab_inactive: "px-4 py-2 text-gray-500 hover:text-gray-700 cursor-pointer"
+
+# ====================================================================================
+# TESTING REQUIREMENTS
+# ====================================================================================
+
+testing:
+  unit_tests:
+    - "Tab bar renders with 3 tabs"
+    - "Granger tab is active by default"
+    - "Clicking Lag Curve tab switches content"
+    - "Clicking Regression tab switches content"
+    - "Lazy loading prevents unnecessary API calls"

@@ -1,0 +1,129 @@
+# ====================================================================================
+# LAYER REQUIREMENT: Lag Service
+# ====================================================================================
+# LAYER ID: LAYER-CA-002-08-01
+# FEATURE: FEATURE-CA-002-08 Lag Analysis Service
+# VERSION: 2.0.0
+# TYPE: Backend
+# ====================================================================================
+
+metadata:
+  requirement_id: "LAYER-CA-002-08-01"
+  requirement_title: "Lag Service"
+  layer_id: "LAYER-CA-002-08-01"
+  layer_name: "Lag Service"
+  layer_folder: "LAYER_CA_002_08_01_Lag_Service"
+  layer_type: "backend"
+  
+  parent_feature: "FEATURE-CA-002-08_lag_analysis_service"
+  parent_feature_file: "../FEATURE-CA-002-08_lag_analysis_service.yaml"
+  
+  version: "2.0.0"
+  status: "Active"
+  priority: "MUST HAVE"
+  created_date: "2026-02-10"
+  updated_date: "2026-02-10"
+  owner: "Causal Affect Team"
+  target_date: "2026-02-20"
+
+# ====================================================================================
+# TECHNICAL CONSTRAINTS
+# ====================================================================================
+
+technical_constraints:
+  language: "Python"
+  framework: "None (pure Python service class)"
+  output_file_type: ".py"
+  runtime: "Python 3.10+"
+
+# ====================================================================================
+# REQUIREMENT DEFINITION
+# ====================================================================================
+
+requirement:
+  title: "Lag Service"
+  
+  description: |
+    Service wrapper that imports and uses the existing LaggedCorrelationAnalyzer
+    from LAYER-CA-002-01-05 to calculate correlation at each lag value.
+    
+    Key responsibilities:
+    - Import LaggedCorrelationAnalyzer from existing implementation
+    - Initialize with max_lag=90, min_observations=10
+    - Provide calculate_lag_curve(keyword, target) method
+    - Call calculate_lagged_correlation() for all lags 0-90
+    - Call find_optimal_lag() to get peak correlation lag
+    - Return structured dict for frontend consumption
+  
+  rationale: |
+    The LaggedCorrelationAnalyzer class already exists with full implementation.
+    This layer wraps it for production use without duplicating statistical logic.
+
+# ====================================================================================
+# SPECIFICATION
+# ====================================================================================
+
+specification:
+  technology_stack:
+    programming_language: "Python"
+    file_extensions: [".py"]
+    runtime_environment: "Python 3.10+"
+    primary_framework: "None"
+    additional_libraries:
+      - "numpy"
+      - "pandas"
+  
+  wraps:
+    source_path: "../../FEATURE-CA-002-01_statistical_correlation/LAYER-CA-002-01-05_lagged_correlation/src/implementation.py"
+    class_name: "LaggedCorrelationAnalyzer"
+    methods_used:
+      - "calculate_lagged_correlation(x, y, lags) -> dict mapping lag to correlation"
+      - "find_optimal_lag(x, y, criterion) -> (optimal_lag, LaggedCorrelationResult)"
+    initialization: "LaggedCorrelationAnalyzer(max_lag=90, min_observations=10)"
+
+# ====================================================================================
+# INTERFACE DEFINITION
+# ====================================================================================
+
+interface:
+  class_name: "LagService"
+  
+  methods:
+    - name: "calculate_lag_curve"
+      signature: "def calculate_lag_curve(self, keyword: str, target: str = 'default_target', max_lag: int = 90) -> dict"
+      description: "Calculates correlation at each lag value from 0 to max_lag"
+      parameters:
+        - name: "keyword"
+          type: "str"
+          description: "Signal keyword (e.g., 'ai_papers')"
+        - name: "target"
+          type: "str"
+          description: "Target variable to correlate against"
+        - name: "max_lag"
+          type: "int"
+          default: 90
+          description: "Maximum lag days to calculate"
+      returns:
+        type: "dict"
+        format: |
+          {
+            "keyword": "ai_papers",
+            "target": "nvda_stock",
+            "lag_days": [0, 1, 2, ..., 90],
+            "correlations": [0.12, 0.15, ..., 0.45],
+            "optimal_lag": 30,
+            "peak_correlation": 0.72,
+            "p_value_at_optimal": 0.001
+          }
+
+# ====================================================================================
+# TESTING REQUIREMENTS
+# ====================================================================================
+
+testing:
+  unit_tests:
+    - "calculate_lag_curve returns correct length arrays"
+    - "lag_days array is sequential 0 to max_lag"
+    - "optimal_lag corresponds to highest absolute correlation"
+    - "handles missing data gracefully"
+    - "handles insufficient observations with 400 error"

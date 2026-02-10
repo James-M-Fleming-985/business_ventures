@@ -1,0 +1,157 @@
+# ====================================================================================
+# LAYER REQUIREMENT: Lag Curve Chart
+# ====================================================================================
+# LAYER ID: LAYER-CA-002-08-03
+# FEATURE: FEATURE-CA-002-08 Lag Analysis Service
+# VERSION: 2.0.0
+# TYPE: Frontend
+# ====================================================================================
+
+metadata:
+  requirement_id: "LAYER-CA-002-08-03"
+  requirement_title: "Lag Curve Chart"
+  layer_id: "LAYER-CA-002-08-03"
+  layer_name: "Lag Curve Chart"
+  layer_folder: "LAYER_CA_002_08_03_Lag_Curve_Chart"
+  layer_type: "frontend"
+  
+  parent_feature: "FEATURE-CA-002-08_lag_analysis_service"
+  parent_feature_file: "../FEATURE-CA-002-08_lag_analysis_service.yaml"
+  
+  version: "2.0.0"
+  status: "Active"
+  priority: "MUST HAVE"
+  created_date: "2026-02-10"
+  updated_date: "2026-02-10"
+  owner: "Causal Affect Team"
+  target_date: "2026-02-20"
+
+# ====================================================================================
+# TECHNICAL CONSTRAINTS
+# ====================================================================================
+
+technical_constraints:
+  language: "JavaScript/JSX"
+  framework: "React 18"
+  output_file_type: ".jsx"
+  runtime: "Browser"
+  styling: "TailwindCSS"
+  charting: "Recharts"
+
+# ====================================================================================
+# REQUIREMENT DEFINITION
+# ====================================================================================
+
+requirement:
+  title: "Lag Curve Chart Component"
+  
+  description: |
+    React component that visualizes lag curve data using Recharts LineChart.
+    Shows correlation strength at each lag value from 0-90 days.
+    
+    Key responsibilities:
+    - Accept keyword prop and fetch data from /api/signal-radar/signals/{keyword}/lag-curve
+    - Display loading spinner while fetching
+    - Render Recharts LineChart with:
+      - X-axis: lag days (0-90)
+      - Y-axis: correlation (-1 to 1)
+      - Line showing correlation at each lag
+      - Special marker/dot at optimal_lag point
+    - Display summary below chart: "Best prediction window: {optimal_lag} days (r={peak_correlation})"
+    - Handle error states gracefully
+  
+  rationale: |
+    Users need to visualize how predictive power changes across different lag values
+    to identify the optimal prediction window for trading strategies.
+
+# ====================================================================================
+# SPECIFICATION
+# ====================================================================================
+
+specification:
+  technology_stack:
+    programming_language: "JavaScript/JSX"
+    file_extensions: [".jsx"]
+    runtime_environment: "Browser"
+    primary_framework: "React 18"
+    additional_libraries:
+      - "recharts"
+      - "tailwindcss"
+
+# ====================================================================================
+# COMPONENT DEFINITION
+# ====================================================================================
+
+component:
+  name: "LagCurveChart"
+  file: "LagCurveChart.jsx"
+  
+  props:
+    - name: "keyword"
+      type: "string"
+      required: true
+      description: "Signal keyword to fetch lag curve for"
+    - name: "onDataLoaded"
+      type: "function"
+      required: false
+      description: "Callback when data is loaded, receives lag curve data"
+  
+  state:
+    - name: "loading"
+      type: "boolean"
+      initial: true
+    - name: "data"
+      type: "object | null"
+      initial: null
+    - name: "error"
+      type: "string | null"
+      initial: null
+  
+  api_call:
+    endpoint: "GET /api/signal-radar/signals/{keyword}/lag-curve"
+    trigger: "useEffect on mount and keyword change"
+  
+  visual_layout: |
+    ┌──────────────────────────────────────────────────────────┐
+    │ Correlation                                              │
+    │    1.0 ┤                                                 │
+    │    0.8 ┤                    ●                            │
+    │    0.6 ┤               ╱    │    ╲                       │
+    │    0.4 ┤          ╱         │         ╲                  │
+    │    0.2 ┤     ╱              │              ╲             │
+    │    0.0 ┼────────────────────┼────────────────────        │
+    │   -0.2 ┤                    │                            │
+    │        0    15    30    45    60    75    90             │
+    │                   Lag (days)                             │
+    └──────────────────────────────────────────────────────────┘
+    Best prediction window: 30 days ahead (r=0.72, p<0.001)
+
+# ====================================================================================
+# STYLING
+# ====================================================================================
+
+styling:
+  container: "bg-white rounded-lg p-4"
+  chart_height: 300
+  optimal_marker:
+    color: "#8b5cf6"  # purple-500
+    size: 8
+  line:
+    color: "#3b82f6"  # blue-500
+    stroke_width: 2
+  reference_line:
+    y_value: 0
+    color: "#9ca3af"  # gray-400
+    dash: "3 3"
+
+# ====================================================================================
+# TESTING REQUIREMENTS
+# ====================================================================================
+
+testing:
+  unit_tests:
+    - "Renders loading state initially"
+    - "Renders chart with valid data"
+    - "Renders error state on API failure"
+    - "Highlights optimal lag point"
+    - "Displays summary text correctly"

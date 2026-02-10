@@ -1,0 +1,127 @@
+# ====================================================================================
+# LAYER REQUIREMENT: Regression Router
+# ====================================================================================
+# LAYER ID: LAYER-CA-002-09-02
+# FEATURE: FEATURE-CA-002-09 Regression Quantification Service
+# VERSION: 2.0.0
+# TYPE: Backend
+# ====================================================================================
+
+metadata:
+  requirement_id: "LAYER-CA-002-09-02"
+  requirement_title: "Regression Router"
+  layer_id: "LAYER-CA-002-09-02"
+  layer_name: "Regression Router"
+  layer_folder: "LAYER_CA_002_09_02_Regression_Router"
+  layer_type: "backend"
+  
+  parent_feature: "FEATURE-CA-002-09_regression_service"
+  parent_feature_file: "../FEATURE-CA-002-09_regression_service.yaml"
+  
+  version: "2.0.0"
+  status: "Active"
+  priority: "MUST HAVE"
+  created_date: "2026-02-10"
+  updated_date: "2026-02-10"
+  owner: "Causal Affect Team"
+  target_date: "2026-02-25"
+
+# ====================================================================================
+# TECHNICAL CONSTRAINTS
+# ====================================================================================
+
+technical_constraints:
+  language: "Python"
+  framework: "FastAPI 0.104.0"
+  output_file_type: ".py"
+  runtime: "Python 3.10+"
+
+# ====================================================================================
+# REQUIREMENT DEFINITION
+# ====================================================================================
+
+requirement:
+  title: "Regression Router"
+  
+  description: |
+    FastAPI router providing GET /api/signal-radar/signals/{keyword}/regression endpoint.
+    
+    Key responsibilities:
+    - Define GET endpoint matching Signal Radar API pattern
+    - Accept optional lag query parameter (default uses optimal_lag)
+    - Instantiate and call RegressionService.calculate_regression()
+    - Return JSON response for RegressionResults frontend component
+    - Handle 404 for missing signals
+    - Handle 400 for insufficient data
+
+# ====================================================================================
+# API ENDPOINT DEFINITION
+# ====================================================================================
+
+api:
+  endpoint:
+    method: "GET"
+    path: "/api/signal-radar/signals/{keyword}/regression"
+    path_params:
+      - name: "keyword"
+        type: "str"
+        description: "Signal keyword (e.g., 'ai_papers')"
+    
+    query_params:
+      - name: "lag"
+        type: "int"
+        default: null
+        description: "Lag to use. If null, uses optimal_lag from lag analysis."
+    
+    response:
+      success_code: 200
+      content_type: "application/json"
+      schema: |
+        {
+          "keyword": "ai_papers",
+          "target": "nvda_stock",
+          "lag_used": 30,
+          "beta_0": 150.23,
+          "beta_1": 2.45,
+          "r_squared": 0.72,
+          "p_value": 0.0001,
+          "std_error": 0.34,
+          "confidence_interval": {"lower": 1.78, "upper": 3.12},
+          "n_observations": 365,
+          "interpretation": "For every +1% increase in ai_papers, nvda_stock increases by 2.45% after 30 days"
+        }
+    
+    error_responses:
+      - code: 404
+        description: "Signal keyword not found"
+        body: '{"detail": "Signal not found: {keyword}"}'
+      - code: 400
+        description: "Insufficient data for regression"
+        body: '{"detail": "Insufficient data. Need at least 30 observations."}'
+
+# ====================================================================================
+# FRONTEND COMPATIBILITY
+# ====================================================================================
+
+frontend_compatibility:
+  component: "RegressionResults.jsx"
+  expected_fields:
+    - "beta_0 (float)"
+    - "beta_1 (float)"
+    - "r_squared (float)"
+    - "p_value (float)"
+    - "confidence_interval.lower (float)"
+    - "confidence_interval.upper (float)"
+    - "interpretation (string)"
+
+# ====================================================================================
+# TESTING REQUIREMENTS
+# ====================================================================================
+
+testing:
+  unit_tests:
+    - "Endpoint returns 200 with valid keyword"
+    - "Endpoint returns 404 for unknown keyword"
+    - "Endpoint returns 400 for insufficient data"
+    - "Optional lag parameter works correctly"
+    - "Response contains all required fields"

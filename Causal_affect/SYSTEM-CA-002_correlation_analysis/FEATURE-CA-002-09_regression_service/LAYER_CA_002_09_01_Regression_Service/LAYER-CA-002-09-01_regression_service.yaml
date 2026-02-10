@@ -1,0 +1,161 @@
+# ====================================================================================
+# LAYER REQUIREMENT: Regression Service
+# ====================================================================================
+# LAYER ID: LAYER-CA-002-09-01
+# FEATURE: FEATURE-CA-002-09 Regression Quantification Service
+# VERSION: 2.0.0
+# TYPE: Backend
+# ====================================================================================
+
+metadata:
+  requirement_id: "LAYER-CA-002-09-01"
+  requirement_title: "Regression Service"
+  layer_id: "LAYER-CA-002-09-01"
+  layer_name: "Regression Service"
+  layer_folder: "LAYER_CA_002_09_01_Regression_Service"
+  layer_type: "backend"
+  
+  parent_feature: "FEATURE-CA-002-09_regression_service"
+  parent_feature_file: "../FEATURE-CA-002-09_regression_service.yaml"
+  
+  version: "2.0.0"
+  status: "Active"
+  priority: "MUST HAVE"
+  created_date: "2026-02-10"
+  updated_date: "2026-02-10"
+  owner: "Causal Affect Team"
+  target_date: "2026-02-25"
+
+# ====================================================================================
+# TECHNICAL CONSTRAINTS
+# ====================================================================================
+
+technical_constraints:
+  language: "Python"
+  framework: "None (pure Python service class)"
+  output_file_type: ".py"
+  runtime: "Python 3.10+"
+
+# ====================================================================================
+# REQUIREMENT DEFINITION
+# ====================================================================================
+
+requirement:
+  title: "Regression Service"
+  
+  description: |
+    Service class that performs OLS (Ordinary Least Squares) regression
+    using statsmodels to calculate the β₁ coefficient.
+    
+    Key responsibilities:
+    - Retrieve signal and target time series data
+    - Apply lag shift (use optimal_lag from CA-002-08 or provided lag)
+    - Align X(t-lag) with Y(t) for regression
+    - Run OLS regression using statsmodels
+    - Extract: beta_0, beta_1, r_squared, p_value, std_error, confidence_intervals
+    - Generate interpretation text
+    - Return formatted dict for API response
+  
+  rationale: |
+    The β₁ coefficient is the key to exploitation. It tells you:
+    "For every +1 change in signal X, target Y changes by β₁"
+    This enables quantified predictions and E[Return] calculations.
+
+# ====================================================================================
+# SPECIFICATION
+# ====================================================================================
+
+specification:
+  technology_stack:
+    programming_language: "Python"
+    file_extensions: [".py"]
+    runtime_environment: "Python 3.10+"
+    primary_framework: "None"
+    additional_libraries:
+      - "statsmodels>=0.14.0"
+      - "numpy"
+      - "pandas"
+
+# ====================================================================================
+# INTERFACE DEFINITION
+# ====================================================================================
+
+interface:
+  class_name: "RegressionService"
+  
+  methods:
+    - name: "calculate_regression"
+      signature: "def calculate_regression(self, keyword: str, target: str = 'default_target', lag: int = None) -> dict"
+      description: "Performs OLS regression between signal and target at specified lag"
+      parameters:
+        - name: "keyword"
+          type: "str"
+          description: "Signal keyword (e.g., 'ai_papers')"
+        - name: "target"
+          type: "str"
+          description: "Target variable to predict"
+        - name: "lag"
+          type: "int"
+          default: null
+          description: "Lag to apply. If None, fetches optimal_lag from lag analysis."
+      returns:
+        type: "dict"
+        format: |
+          {
+            "keyword": "ai_papers",
+            "target": "nvda_stock",
+            "lag_used": 30,
+            "beta_0": 150.23,
+            "beta_1": 2.45,
+            "r_squared": 0.72,
+            "p_value": 0.0001,
+            "std_error": 0.34,
+            "confidence_interval": {"lower": 1.78, "upper": 3.12},
+            "n_observations": 365,
+            "interpretation": "For every +1% increase in ai_papers, nvda_stock increases by 2.45% after 30 days"
+          }
+
+# ====================================================================================
+# IMPLEMENTATION DETAILS
+# ====================================================================================
+
+implementation:
+  regression_method: |
+    from statsmodels.api import OLS, add_constant
+    
+    # Apply lag shift
+    if lag > 0:
+        x_lagged = x_data[:-lag]
+        y_aligned = y_data[lag:]
+    else:
+        x_lagged = x_data
+        y_aligned = y_data
+    
+    # Run OLS
+    X = add_constant(x_lagged)  # Add intercept term
+    model = OLS(y_aligned, X).fit()
+    
+    # Extract results
+    beta_0 = model.params[0]  # Intercept
+    beta_1 = model.params[1]  # Slope (THE KEY COEFFICIENT)
+    r_squared = model.rsquared
+    p_value = model.pvalues[1]
+    std_error = model.bse[1]
+    conf_int = model.conf_int(alpha=0.05)[1]  # 95% CI for beta_1
+  
+  interpretation_template: |
+    f"For every +1% increase in {keyword}, {target} increases by {beta_1:.2f}% after {lag} days"
+
+# ====================================================================================
+# TESTING REQUIREMENTS
+# ====================================================================================
+
+testing:
+  unit_tests:
+    - "calculate_regression returns correct structure"
+    - "Lag shift is applied correctly (x_lagged aligns with y)"
+    - "beta_1 has correct sign for positive correlation"
+    - "r_squared is between 0 and 1"
+    - "confidence_interval contains beta_1"
+    - "interpretation text is formatted correctly"
+    - "handles insufficient data with meaningful error"

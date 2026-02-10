@@ -2,10 +2,10 @@
 # FEATURE REQUIREMENTS: Lag Analysis Service
 # ====================================================================================
 # FEATURE ID: FEATURE-CA-002-08
-# VERSION: 1.0.0
+# VERSION: 2.0.0
 # LAST UPDATED: 2026-02-10
 # SYSTEM: CA-002 Correlation Analysis Engine
-# PHASE: 3 - Lag Analysis
+# PHASE: 3 - Lag Optimization
 # ====================================================================================
 
 metadata:
@@ -14,7 +14,7 @@ metadata:
   feature_id: "FEATURE-CA-002-08"
   feature_name: "Lag Analysis Service"
   feature_code: "CA-002-08"
-  version: "1.0.0"
+  version: "2.0.0"
   status: "Active"
   created_date: "2026-02-10"
   last_modified: "2026-02-10"
@@ -27,12 +27,44 @@ metadata:
     parent_system_file: "../SYSTEM-CA-002.yaml"
     parent_system_requirements:
       - "SYS-REQ-003: Lag optimization for predictive correlation"
-      - "SYS-REQ-006: REST API endpoint for lag analysis access"
+      - "SYS-REQ-006: REST API endpoints for Signal Radar"
     
     derivation_rationale: |
-      This feature implements optimal lag window detection between variables.
-      Users need to know not just IF two variables correlate, but WHEN - 
-      specifically how many days of lead time exists for prediction.
+      This feature wraps the existing LaggedCorrelationAnalyzer implementation
+      (LAYER-CA-002-01-05) and adds a new "Lag Curve" tab to the GrangerModal
+      showing correlation at each lag from 0-90 days.
+
+# ====================================================================================
+# UI INTEGRATION CONTEXT
+# ====================================================================================
+
+ui_integration:
+  entry_point:
+    page: "GrangerModal.jsx"
+    location: "src/components/GrangerModal.jsx"
+    trigger: "User clicks 'Lag Curve' tab inside GrangerModal"
+  
+  component:
+    name: "GrangerModal.jsx"
+    location: "src/components/GrangerModal.jsx"
+    status: "EXISTS - needs tabs added"
+    modifications_required: "Add tabbed interface with [Granger | Lag Curve | Regression]"
+  
+  new_components:
+    - name: "LagCurveChart.jsx"
+      type: "React component"
+      library: "Recharts"
+      description: "Line chart showing correlation at each lag value"
+  
+  user_flow: |
+    User is in GrangerModal (opened from SignalRadar)
+      → User sees new tab bar: [Granger] [Lag Curve] [Regression]
+        → User clicks "Lag Curve" tab
+          → LagCurveChart component loads
+            → Calls GET /api/signal-radar/signals/{keyword}/lag-curve
+              → Backend returns: lag_days[], correlations[], optimal_lag, peak_correlation
+                → Chart displays line graph with optimal lag highlighted
+                → Below chart: "Best prediction window: 30 days ahead (r=0.72)"
 
 # ====================================================================================
 # FEATURE OVERVIEW
@@ -40,57 +72,63 @@ metadata:
 
 overview:
   description: |
-    REST API service that wraps the existing LaggedCorrelationAnalyzer 
-    (LAYER-CA-002-01-05) to calculate correlation at multiple lag values (0-90 days)
-    and identify the optimal predictive lag window between two variables.
+    Backend service wrapping the existing LaggedCorrelationAnalyzer (LAYER-CA-002-01-05)
+    plus frontend components to visualize lag curve data in the GrangerModal.
     
-    This is Phase 3 implementation that answers: "How far in advance can we
-    predict variable Y using variable X?"
+    Lag optimization answers: "How many days in advance can we predict Y from X?"
+    The lag curve shows correlation strength at each lag value (0-90 days),
+    helping users identify the optimal prediction window.
   
   business_value:
-    - "Discovers optimal prediction lead time between variables"
-    - "Generates lag curve data for visualization"
-    - "Identifies peak correlation lag for forecasting"
-    - "Enables time-shifted predictive analytics"
+    - "Discovers optimal prediction lead time between FMV signals and MV targets"
+    - "Visualizes how predictive power changes across time lags"
+    - "Identifies whether signals are leading (early warning) or lagging indicators"
+    - "Enables time-shifted predictive analytics for trading strategies"
   
   user_story: |
-    As a user analyzing causal relationships, I want to see how correlation
-    changes across different time lags, so I can identify the optimal
-    prediction window and make timely forecasts.
+    As a user viewing Granger results,
+    I want to see a chart of correlation at different lag values,
+    So that I can identify the optimal prediction window and make timely forecasts.
   
   acceptance_criteria:
-    - "GET /api/causality/{var1}/{var2}/lag-curve endpoint functional"
-    - "Returns lag_days array (0-90 days, configurable max_lag)"
+    - "GrangerModal has tabbed interface: [Granger | Lag Curve | Regression]"
+    - "Lag Curve tab displays Recharts LineChart"
+    - "GET /api/signal-radar/signals/{keyword}/lag-curve endpoint functional"
+    - "Returns lag_days array (0-90 days)"
     - "Returns correlations array for each lag value"
     - "Returns optimal_lag with highest absolute correlation"
-    - "Returns peak_correlation value at optimal lag"
-    - "Error handling for missing variables (404)"
-    - "Error handling for insufficient data (400)"
+    - "Returns peak_correlation and p_value at optimal lag"
+    - "Chart highlights optimal lag point with marker"
+    - "Error handling for missing signals (404)"
 
 # ====================================================================================
-# SHARED INTERFACES
+# API SPECIFICATION
 # ====================================================================================
 
-shared_interfaces:
-  response_structure: "JSON API response with success, data, error fields"
+api:
+  endpoint: "GET /api/signal-radar/signals/{keyword}/lag-curve"
+  status: "NEW"
   
-  parent_system_reference:
-    file: "../SYSTEM-CA-002.yaml"
-    section: "shared_interfaces.api_response_structure"
+  path_params:
+    keyword:
+      type: "string"
+      description: "Signal keyword (e.g., 'ai_papers')"
   
-  implementation_requirement: |
-    Response format:
+  query_params:
+    max_lag:
+      type: "integer"
+      default: 90
+      description: "Maximum lag days to calculate"
+  
+  response_format: |
     {
-      "success": true,
-      "data": {
-        "var1": "ai_papers",
-        "var2": "nvda_stock",
-        "lag_days": [0, 1, 2, ..., 90],
-        "correlations": [0.12, 0.35, 0.67, ...],
-        "optimal_lag": 14,
-        "peak_correlation": 0.78
-      },
-      "error": null
+      "keyword": "ai_papers",
+      "target": "nvda_stock",
+      "lag_days": [0, 1, 2, 3, ..., 90],
+      "correlations": [0.12, 0.15, 0.23, 0.31, ..., 0.45],
+      "optimal_lag": 30,
+      "peak_correlation": 0.72,
+      "p_value_at_optimal": 0.001
     }
 
 # ====================================================================================
@@ -98,89 +136,69 @@ shared_interfaces:
 # ====================================================================================
 
 layers:
+  # Backend Layers
   - layer_id: "LAYER-CA-002-08-01"
-    name: "Lag Calculator"
-    responsibility: "Calculate correlations at each lag value and find optimal lag"
-    technology: "Python, FastAPI, NumPy"
-    requirement_file: "LAYER-CA-002-08-01_lag_calculator.yaml"
-    requirements:
-      - "LAYER-CA-002-08-01"
+    name: "Lag Service"
+    folder: "LAYER_CA_002_08_01_Lag_Service"
+    type: "backend"
+    responsibility: |
+      Service wrapper that imports LaggedCorrelationAnalyzer from LAYER-CA-002-01-05.
+      Provides calculate_lag_curve() method returning correlation at each lag.
+    technology: "Python, LaggedCorrelationAnalyzer"
+    wraps: "LAYER-CA-002-01-05_lagged_correlation/src/implementation.py"
+    requirement_file: "LAYER-CA-002-08-01_lag_service.yaml"
+  
+  - layer_id: "LAYER-CA-002-08-02"
+    name: "Lag Router"
+    folder: "LAYER_CA_002_08_02_Lag_Router"
+    type: "backend"
+    responsibility: |
+      FastAPI router with GET /api/signal-radar/signals/{keyword}/lag-curve endpoint.
+      Calls LagService and returns lag curve data for frontend visualization.
+    technology: "FastAPI"
+    requirement_file: "LAYER-CA-002-08-02_lag_router.yaml"
+  
+  # Frontend Layers
+  - layer_id: "LAYER-CA-002-08-03"
+    name: "Lag Curve Chart"
+    folder: "LAYER_CA_002_08_03_Lag_Curve_Chart"
+    type: "frontend"
+    responsibility: |
+      React component using Recharts LineChart to visualize lag curve data.
+      X-axis: lag days (0-90), Y-axis: correlation (-1 to 1).
+      Highlights optimal lag point with special marker.
+    technology: "React, Recharts, TailwindCSS"
+    requirement_file: "LAYER-CA-002-08-03_lag_curve_chart.yaml"
+  
+  - layer_id: "LAYER-CA-002-08-04"
+    name: "Modal Tabs"
+    folder: "LAYER_CA_002_08_04_Modal_Tabs"
+    type: "frontend"
+    responsibility: |
+      Enhance GrangerModal.jsx with tabbed interface.
+      Tabs: [Granger | Lag Curve | Regression]
+      Lazy-load tab content on click.
+    technology: "React, TailwindCSS"
+    requirement_file: "LAYER-CA-002-08-04_modal_tabs.yaml"
 
 # ====================================================================================
-# FEATURE REQUIREMENTS
+# EXISTING IMPLEMENTATIONS TO WRAP
 # ====================================================================================
 
-requirements:
-  - id: "FEAT-CA-002-08-REQ-001"
-    title: "Lag Curve API Endpoint"
-    description: "GET /api/causality/{var1}/{var2}/lag-curve returns correlation at each lag"
-    priority: "MUST HAVE"
-    status: "Active"
-    traces_to:
-      system_requirements: ["SYS-REQ-003", "SYS-REQ-006"]
-      layer_requirements: ["LAYER-CA-002-08-01"]
+dependencies:
+  existing_backend:
+    - path: "FEATURE-CA-002-01_statistical_correlation/LAYER-CA-002-01-05_lagged_correlation/src/implementation.py"
+      class: "LaggedCorrelationAnalyzer"
+      methods:
+        - "calculate_lagged_correlation(x, y, lags) -> dict[int, float]"
+        - "find_optimal_lag(x, y, criterion) -> (int, LaggedCorrelationResult)"
+      config: "max_lag=90, min_observations=10"
   
-  - id: "FEAT-CA-002-08-REQ-002"
-    title: "Optimal Lag Detection"
-    description: "Identify lag value with highest absolute correlation"
-    priority: "MUST HAVE"
-    status: "Active"
-    traces_to:
-      system_requirements: ["SYS-REQ-003"]
-      layer_requirements: ["LAYER-CA-002-08-01"]
-  
-  - id: "FEAT-CA-002-08-REQ-003"
-    title: "Lag Range Configuration"
-    description: "Support configurable lag range (default 0-30 days)"
-    priority: "SHOULD HAVE"
-    status: "Active"
-    traces_to:
-      layer_requirements: ["LAYER-CA-002-08-01"]
-  
-  - id: "FEAT-CA-002-08-REQ-004"
-    title: "Error Handling"
-    description: "Return appropriate HTTP status codes for missing variables and insufficient data"
-    priority: "MUST HAVE"
-    status: "Active"
-    traces_to:
-      layer_requirements: ["LAYER-CA-002-08-01"]
-
-# ====================================================================================
-# INTEGRATION POINTS
-# ====================================================================================
-
-integration:
-  upstream_features: 
-    - "FEATURE-CA-002-06 (Causality API Service)"
-  
-  downstream_features:
-    - "FEATURE-CA-002-09 (Regression Service - uses optimal_lag)"
-  
-  shared_components:
-    - "src/backend/app/database/time_series_repository.py"
-    - "src/backend/app/features/FEATURE-CA-002-06_causality_api_service/causality_router.py"
-
-# ====================================================================================
-# IMPLEMENTATION NOTES
-# ====================================================================================
-
-implementation:
-  week_1_deliverables:
-    - "FastAPI router with /api/causality/{var1}/{var2}/lag-curve endpoint"
-    - "Lag calculation algorithm (0-30 day range)"
-    - "Optimal lag detection logic"
-    - "Error handling for edge cases"
-  
-  dependencies:
-    - "NumPy for correlation calculations"
-    - "Pandas for time series alignment"
-    - "FastAPI"
-    - "SQLAlchemy"
-  
-  testing_approach:
-    - "Unit tests for lag calculation logic"
-    - "Integration tests with real time series data"
-    - "Error scenario tests (404, 400)"
+  existing_frontend:
+    - path: "SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/dashboard-app-complete/src/components/GrangerModal.jsx"
+      status: "MODIFY - add tabs"
+      current_state: "Single panel showing Granger results"
+      target_state: "Tabbed interface with [Granger | Lag Curve | Regression]"
 
 # ====================================================================================
 # TESTING STRATEGY
@@ -188,16 +206,12 @@ implementation:
 
 testing:
   unit_tests:
-    location: "tests/unit/"
-    coverage_target: "90%"
+    - "LagService.calculate_lag_curve returns correct array lengths"
+    - "LagService.find_optimal_lag returns highest absolute correlation lag"
+    - "LagCurveChart renders with valid data"
+    - "Modal tabs switch content correctly"
   
   integration_tests:
-    location: "tests/integration/"
-    scenarios:
-      - "Full lag curve calculation with real data"
-      - "API response format verification"
-  
-  e2e_tests:
-    location: "tests/e2e/"
-    scenarios:
-      - "Frontend displays lag curve visualization"
+    - "Full flow: API call → LagService → LaggedCorrelationAnalyzer → response"
+    - "LagCurveChart fetches and displays data from API"
+    - "Tab navigation works without full page reload"
