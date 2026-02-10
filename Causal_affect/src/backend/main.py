@@ -20,6 +20,7 @@ from app.features import (
     export_router
 )
 from app.signal_radar_router import router as signal_radar_router
+from app.causality_router import router as causality_router
 from app.database import init_db, close_db
 from app.config import settings
 
@@ -51,6 +52,7 @@ app.add_middleware(
 # Include routers
 app.include_router(health_router)
 app.include_router(signal_radar_router)
+app.include_router(causality_router)
 app.include_router(feedback_router)
 app.include_router(iteration_router)
 app.include_router(analysis_router)

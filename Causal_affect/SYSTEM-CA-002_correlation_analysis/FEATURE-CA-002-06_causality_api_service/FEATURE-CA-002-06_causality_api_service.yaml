@@ -1,0 +1,164 @@
+# ====================================================================================
+# FEATURE REQUIREMENTS: Causality API Service
+# ====================================================================================
+# FEATURE ID: FEATURE-CA-002-06
+# VERSION: 1.0.0
+# LAST UPDATED: 2026-02-10
+# SYSTEM: CA-002 Correlation Analysis Engine
+# PHASE: 2 - Granger Causality Integration
+# ====================================================================================
+
+metadata:
+  requirement_id: "FEATURE-CA-002-06"
+  requirement_name: "Causality API Service"
+  feature_code: "CA-002-06"
+  version: "1.0.0"
+  status: "Active"
+  created_date: "2026-02-10"
+  last_modified: "2026-02-10"
+  owner: "Causal Affect Team"
+  priority: "MUST HAVE"
+  target_date: "2026-02-15"
+
+# ====================================================================================
+# FEATURE OVERVIEW
+# ====================================================================================
+
+overview:
+  description: |
+    REST API service that wraps the existing Granger causality test implementation
+    (LAYER-CA-002-02-01) into production endpoints. Enables frontend to test
+    causal relationships between any two variables and receive structured results.
+    
+    This is the Phase 2 implementation that bridges the statistical calculations
+    to the user interface.
+  
+  business_value:
+    - "Exposes causality testing to end users via REST API"
+    - "Caches results to avoid redundant expensive calculations"
+    - "Provides clear directional indicators (X→Y vs Y→X)"
+    - "Enables UI to show causal relationships in correlation explorer"
+  
+  user_story: |
+    As a user viewing correlations, I want to click "Test Causality" and see
+    which variable causes which, so I can focus on predictive relationships
+    rather than spurious correlations.
+  
+  acceptance_criteria:
+    - "All layer implementations complete and passing tests"
+    - "API endpoints return correct Granger test results"
+    - "Bidirectional testing (X→Y and Y→X) supported"
+    - "Results cached in database for quick retrieval"
+    - "Performance meets <10 second response time"
+
+# ====================================================================================
+# LAYER ARCHITECTURE
+# ====================================================================================
+
+layers:
+  - layer_id: "LAYER-CA-002-06-01"
+    name: "Causality Router"
+    responsibility: "FastAPI router with /api/causality endpoints"
+    technology: "FastAPI, SQLAlchemy"
+    requirement_file: "LAYER-CA-002-06-01_causality_router.yaml"
+    requirements:
+      - "LAYER-CA-002-06-01"
+  
+  - layer_id: "LAYER-CA-002-06-02"
+    name: "Causality Service"
+    responsibility: "Business logic wrapping GrangerCausalityTest"
+    technology: "Python, Statsmodels"
+    requirement_file: "LAYER-CA-002-06-02_causality_service.yaml"
+    requirements:
+      - "LAYER-CA-002-06-02"
+
+# ====================================================================================
+# FEATURE REQUIREMENTS
+# ====================================================================================
+
+requirements:
+  - id: "FEAT-CA-002-06-REQ-001"
+    title: "Granger Test Endpoint"
+    description: |
+      GET /api/causality/{var1_name}/{var2_name}
+      Returns p-values for both directions, optimal lag, and causal direction
+    priority: "MUST HAVE"
+    status: "Active"
+    traces_to:
+      layer_requirements: ["LAYER-CA-002-06-01"]
+  
+  - id: "FEAT-CA-002-06-REQ-002"
+    title: "Bidirectional Testing"
+    description: "Test both X→Y and Y→X directions in single request"
+    priority: "MUST HAVE"
+    status: "Active"
+  
+  - id: "FEAT-CA-002-06-REQ-003"
+    title: "Result Caching"
+    description: "Store causality results in database for quick retrieval"
+    priority: "SHOULD HAVE"
+    status: "Active"
+  
+  - id: "FEAT-CA-002-06-REQ-004"
+    title: "Human-Readable Interpretation"
+    description: "Return interpretation string explaining causal direction"
+    priority: "SHOULD HAVE"
+    status: "Active"
+
+# ====================================================================================
+# TECHNICAL SPECIFICATIONS
+# ====================================================================================
+
+technical_specifications:
+  architecture: "Service layer wrapping existing LAYER-CA-002-02-01 implementation"
+  endpoint_prefix: "/api/causality"
+  data_flow: "Request → Router → Service → GrangerCausalityTest → Database → Response"
+  
+  dependencies:
+    internal:
+      - "LAYER-CA-002-02-01_granger_test (existing Granger implementation)"
+      - "FEATURE-CA-001-03 timeseries_storage (database schema)"
+    external:
+      - "FastAPI"
+      - "SQLAlchemy"
+      - "Statsmodels"
+  
+  api_endpoints:
+    - method: "GET"
+      path: "/api/causality/{var1_name}/{var2_name}"
+      description: "Run Granger causality test between two variables"
+      params:
+        - "max_lag: int (default 10)"
+        - "significance: float (default 0.05)"
+        - "lookback_days: int (default 365)"
+      response:
+        var1: "string"
+        var2: "string"
+        test_x_causes_y:
+          p_value: "float"
+          f_statistic: "float"
+          optimal_lag: "int"
+          is_significant: "bool"
+        test_y_causes_x:
+          p_value: "float"
+          f_statistic: "float"
+          optimal_lag: "int"
+          is_significant: "bool"
+        causal_direction: "X->Y | Y->X | bidirectional | none"
+        interpretation: "string"
+    
+    - method: "GET"
+      path: "/api/causality/health"
+      description: "Health check for causality service"
+
+# ====================================================================================
+# TRACEABILITY
+# ====================================================================================
+
+traceability:
+  traces_from:
+    system: "SYSTEM-CA-002"
+    exploitation_pathway: "Phase 2 - Causality Testing"
+  traces_to:
+    layers: ["LAYER-CA-002-06-01", "LAYER-CA-002-06-02"]
+    depends_on: ["LAYER-CA-002-02-01"]

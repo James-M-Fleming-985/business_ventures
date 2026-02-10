@@ -1,0 +1,116 @@
+# ====================================================================================
+# FEATURE REQUIREMENTS: Regression Quantification Service
+# ====================================================================================
+# FEATURE ID: FEATURE-CA-002-09
+# VERSION: 1.0.0
+# LAST UPDATED: 2026-02-10
+# SYSTEM: CA-002 Correlation Analysis Engine
+# PHASE: 4 - Regression Quantification
+# ====================================================================================
+
+metadata:
+  requirement_id: "FEATURE-CA-002-09"
+  requirement_name: "Regression Quantification Service"
+  feature_code: "CA-002-09"
+  version: "1.0.0"
+  status: "Active"
+  created_date: "2026-02-10"
+  last_modified: "2026-02-10"
+  owner: "Causal Affect Team"
+  priority: "MUST HAVE"
+  target_date: "2026-02-25"
+
+# ====================================================================================
+# FEATURE OVERVIEW
+# ====================================================================================
+
+overview:
+  description: |
+    Calculates β₁ coefficient (impact ratio) using OLS regression to quantify
+    HOW MUCH the effect variable changes when the cause variable changes.
+    
+    Formula: Y = β₀ + β₁×X + ε
+    
+    Key output: "For every +1 unit change in X, Y changes by β₁ units"
+    
+    This is Phase 4 - the critical quantification step that enables
+    exploitation decisions by converting correlations into predictions.
+  
+  business_value:
+    - "Quantifies impact magnitude (not just direction)"
+    - "Enables ROI calculations for exploitation"
+    - "Provides confidence intervals for risk assessment"
+    - "Generates concrete predictions from current data"
+  
+  user_story: |
+    As a user with confirmed causal relationship and optimal lag, I want to
+    know exactly how much Y will change when X changes, so I can make
+    quantified predictions and exploitation decisions.
+
+  acceptance_criteria:
+    - "OLS regression calculation returns β₀, β₁ coefficients"
+    - "95% confidence intervals provided"
+    - "R² value indicates model fit quality"
+    - "Interpretation string explains the impact"
+    - "Current prediction calculated from latest X value"
+
+# ====================================================================================
+# LAYER ARCHITECTURE
+# ====================================================================================
+
+layers:
+  - layer_id: "LAYER-CA-002-09-01"
+    name: "Regression Calculator"
+    responsibility: "OLS regression implementation"
+    technology: "Statsmodels, NumPy"
+    requirement_file: "LAYER-CA-002-09-01_regression_calculator.yaml"
+  
+  - layer_id: "LAYER-CA-002-09-02"
+    name: "Regression Endpoint"
+    responsibility: "REST API for regression results"
+    technology: "FastAPI"
+    requirement_file: "LAYER-CA-002-09-02_regression_endpoint.yaml"
+
+# ====================================================================================
+# TECHNICAL SPECIFICATIONS
+# ====================================================================================
+
+technical_specifications:
+  architecture: "Service layer with OLS engine"
+  endpoint_prefix: "/api/causality"
+  
+  api_endpoints:
+    - method: "GET"
+      path: "/api/causality/{var1_name}/{var2_name}/regression"
+      description: "Calculate regression coefficients"
+      params:
+        - "lag: int (from Phase 3 optimal_lag)"
+        - "lookback_days: int (default 365)"
+      response:
+        var1: "string (predictor X)"
+        var2: "string (outcome Y)"
+        beta_0: "float (intercept)"
+        beta_1: "float (slope - THE KEY NUMBER)"
+        r_squared: "float (model fit)"
+        p_value: "float (significance)"
+        std_error: "float"
+        confidence_interval_95:
+          lower: "float"
+          upper: "float"
+        interpretation: "string"
+        current_prediction:
+          x_current: "float"
+          x_baseline: "float"
+          predicted_change: "float"
+          predicted_y: "float"
+
+# ====================================================================================
+# TRACEABILITY
+# ====================================================================================
+
+traceability:
+  traces_from:
+    system: "SYSTEM-CA-002"
+    exploitation_pathway: "Phase 4 - Regression Quantification"
+  traces_to:
+    layers: ["LAYER-CA-002-09-01", "LAYER-CA-002-09-02"]

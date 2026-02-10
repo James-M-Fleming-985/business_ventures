@@ -1,0 +1,160 @@
+# CAUSAL AFFECT - FEATURE BUILD QUEUE
+# ====================================
+# Features to build using build_feature.py --ai-generate
+# Each feature follows the TDD cycle: RED → GREEN → REFACTOR → VERIFY
+#
+# USAGE:
+#   python build_feature.py --feature FEATURE-CA-002-06 --ai-generate
+#
+# These features implement the exploitation pathway phases:
+#   Phase 2: Causality API (wrap existing Granger test)
+#   Phase 3: Lag Analysis (find optimal predictive window)
+#   Phase 4: Regression (quantify impact with β₁)
+#   Phase 5.5: Prediction Tracking (store and verify predictions)
+
+queue_config:
+  repo_path: "/workspaces/control_tower/cloned_repos/business_ventures/Causal_affect"
+  system_path: "SYSTEM-CA-002_correlation_analysis"
+  auto_push: true
+  on_failure: "skip_and_continue"
+
+# ============================================
+# FEATURE BUILD QUEUE (Execute in order)
+# ============================================
+
+features:
+  # ----------------------------------------
+  # PHASE 2: Causality API Service
+  # ----------------------------------------
+  - feature_id: "FEATURE-CA-002-06"
+    phase: 2
+    title: "Causality API Service"
+    status: "pending"  # pending | in_progress | complete | skipped
+    priority: "high"
+    estimated_hours: 4
+    
+    description: |
+      Wraps existing Granger test (LAYER-CA-002-02-01) into REST API.
+      Enables frontend to test causal direction between any two variables.
+    
+    yaml_path: "FEATURE-CA-002-06_causality_api_service/FEATURE-CA-002-06_causality_api_service.yaml"
+    
+    layers_to_build:
+      - "LAYER-CA-002-06-01_causality_router"
+    
+    depends_on:
+      - "LAYER-CA-002-02-01 (existing - Granger implementation)"
+    
+    build_command: "python build_feature.py --feature FEATURE-CA-002-06 --ai-generate"
+    
+    acceptance_criteria:
+      - "GET /api/causality/{var1}/{var2} returns p-values"
+      - "Causal direction determined (X→Y, Y→X, bidirectional, none)"
+      - "Human-readable interpretation included"
+
+  # ----------------------------------------
+  # PHASE 3: Lag Analysis Service
+  # ----------------------------------------
+  - feature_id: "FEATURE-CA-002-08"
+    phase: 3
+    title: "Lag Analysis Service"
+    status: "pending"
+    priority: "high"
+    estimated_hours: 4
+    
+    description: |
+      Calculates correlation at each lag value to find optimal predictive window.
+      Answers: "X from N days ago best predicts Y today"
+    
+    yaml_path: "FEATURE-CA-002-08_lag_analysis_service/FEATURE-CA-002-08_lag_analysis_service.yaml"
+    
+    layers_to_build:
+      - "LAYER-CA-002-08-01_lag_calculator"
+    
+    depends_on:
+      - "FEATURE-CA-002-06 (causality API for integration)"
+    
+    build_command: "python build_feature.py --feature FEATURE-CA-002-08 --ai-generate"
+    
+    acceptance_criteria:
+      - "GET /api/causality/{var1}/{var2}/lag-curve returns array data"
+      - "Optimal lag identified"
+      - "Response suitable for frontend charting"
+
+  # ----------------------------------------
+  # PHASE 4: Regression Service
+  # ----------------------------------------
+  - feature_id: "FEATURE-CA-002-09"
+    phase: 4
+    title: "Regression Quantification Service"
+    status: "pending"
+    priority: "high"
+    estimated_hours: 6
+    
+    description: |
+      OLS regression to calculate β₁ coefficient - the impact ratio.
+      "For every +1 change in X, Y changes by β₁"
+    
+    yaml_path: "FEATURE-CA-002-09_regression_service/FEATURE-CA-002-09_regression_service.yaml"
+    
+    layers_to_build:
+      - "LAYER-CA-002-09-01_regression_calculator"
+    
+    depends_on:
+      - "FEATURE-CA-002-08 (lag analysis for optimal_lag input)"
+    
+    build_command: "python build_feature.py --feature FEATURE-CA-002-09 --ai-generate"
+    
+    acceptance_criteria:
+      - "GET /api/causality/{var1}/{var2}/regression returns β₁"
+      - "95% confidence interval included"
+      - "Current prediction calculated from latest data"
+
+  # ----------------------------------------
+  # PHASE 5.5: Prediction Tracking
+  # ----------------------------------------
+  - feature_id: "FEATURE-CA-002-10"
+    phase: 5.5
+    title: "Prediction Tracking Service"
+    status: "pending"
+    priority: "medium"
+    estimated_hours: 8
+    
+    description: |
+      Stores predictions and tracks actual outcomes.
+      Measures accuracy, creates feedback loop for improvement.
+    
+    yaml_path: "FEATURE-CA-002-10_prediction_tracking/FEATURE-CA-002-10_prediction_tracking.yaml"
+    
+    layers_to_build:
+      - "LAYER-CA-002-10-01_prediction_storage"
+    
+    depends_on:
+      - "FEATURE-CA-002-09 (regression provides predictions to track)"
+    
+    build_command: "python build_feature.py --feature FEATURE-CA-002-10 --ai-generate"
+    
+    acceptance_criteria:
+      - "POST /api/predictions stores prediction"
+      - "GET /api/predictions/analytics returns accuracy %"
+      - "Actual updater job works"
+
+# ============================================
+# EXECUTION LOG
+# ============================================
+execution_log: []
+
+# ============================================
+# NOTES
+# ============================================
+notes: |
+  Total estimated time: ~22 hours of AI code generation
+  
+  Each feature:
+  1. Creates tests from acceptance criteria (RED phase)
+  2. Generates implementation to pass tests (GREEN phase)
+  3. Refactors for quality (REFACTOR phase)
+  4. Generates verification report
+  
+  On completion, changes are committed and pushed to main,
+  which triggers Railway deployment.

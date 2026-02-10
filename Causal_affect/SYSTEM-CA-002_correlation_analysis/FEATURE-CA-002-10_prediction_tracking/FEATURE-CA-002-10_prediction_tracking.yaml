@@ -1,0 +1,149 @@
+# ====================================================================================
+# FEATURE REQUIREMENTS: Prediction Tracking Service
+# ====================================================================================
+# FEATURE ID: FEATURE-CA-002-10
+# VERSION: 1.0.0
+# LAST UPDATED: 2026-02-10
+# SYSTEM: CA-002 Correlation Analysis Engine
+# PHASE: 5.5 - Prediction Tracking
+# ====================================================================================
+
+metadata:
+  requirement_id: "FEATURE-CA-002-10"
+  requirement_name: "Prediction Tracking Service"
+  feature_code: "CA-002-10"
+  version: "1.0.0"
+  status: "Active"
+  created_date: "2026-02-10"
+  last_modified: "2026-02-10"
+  owner: "Causal Affect Team"
+  priority: "MUST HAVE"
+  target_date: "2026-03-05"
+
+# ====================================================================================
+# FEATURE OVERVIEW
+# ====================================================================================
+
+overview:
+  description: |
+    Stores predictions and tracks actual outcomes to measure model accuracy.
+    Creates a feedback loop for continuous improvement:
+    
+    1. STORE: When user generates prediction, save it with target date
+    2. TRACK: When actual data arrives, update record with outcome
+    3. MEASURE: Calculate direction accuracy, value error, timing error
+    4. REPORT: Show prediction vs actual charts for each variable pair
+    
+    This is Phase 5.5 - the critical feedback loop that enables learning.
+  
+  business_value:
+    - "Measures prediction accuracy over time"
+    - "Identifies which models perform best"
+    - "Enables continuous model improvement"
+    - "Builds trust through transparency"
+    - "Informs which relationships are truly exploitable"
+  
+  user_story: |
+    As a user making predictions based on the system, I want to track whether
+    my predictions were correct, so I can improve my models and trust the ones
+    that prove accurate.
+
+  acceptance_criteria:
+    - "Predictions stored with all required metadata"
+    - "Actual values automatically updated when data arrives"
+    - "Accuracy metrics calculated (direction %, MAE)"
+    - "Historical prediction vs actual chart data available"
+    - "Filter by variable pair, time period, model version"
+
+# ====================================================================================
+# LAYER ARCHITECTURE
+# ====================================================================================
+
+layers:
+  - layer_id: "LAYER-CA-002-10-01"
+    name: "Prediction Storage"
+    responsibility: "Store and retrieve prediction records"
+    technology: "SQLAlchemy, PostgreSQL"
+    requirement_file: "LAYER-CA-002-10-01_prediction_storage.yaml"
+  
+  - layer_id: "LAYER-CA-002-10-02"
+    name: "Actual Value Updater"
+    responsibility: "Background job to update predictions with actuals"
+    technology: "Python, SQLAlchemy"
+    requirement_file: "LAYER-CA-002-10-02_actual_updater.yaml"
+  
+  - layer_id: "LAYER-CA-002-10-03"
+    name: "Prediction Analytics Endpoint"
+    responsibility: "REST API for accuracy metrics and history"
+    technology: "FastAPI"
+    requirement_file: "LAYER-CA-002-10-03_prediction_analytics.yaml"
+
+# ====================================================================================
+# TECHNICAL SPECIFICATIONS
+# ====================================================================================
+
+technical_specifications:
+  architecture: "Service layer with background job"
+  endpoint_prefix: "/api/predictions"
+  
+  database_schema:
+    table_name: "prediction_tracking"
+    columns:
+      - "id: SERIAL PRIMARY KEY"
+      - "prediction_id: VARCHAR(50) UNIQUE"
+      - "fast_variable_name: VARCHAR(100)"
+      - "medium_variable_name: VARCHAR(100)"
+      - "predicted_at: TIMESTAMP"
+      - "target_date: DATE"
+      - "optimal_lag_days: INT"
+      - "predicted_direction: VARCHAR(10)"
+      - "predicted_value: FLOAT"
+      - "predicted_change_pct: FLOAT"
+      - "baseline_value: FLOAT"
+      - "beta_1: FLOAT"
+      - "r_squared: FLOAT"
+      - "model_version: VARCHAR(50)"
+      - "confidence_level: VARCHAR(20)"
+      - "actual_value: FLOAT"
+      - "actual_direction: VARCHAR(10)"
+      - "actual_change_pct: FLOAT"
+      - "actual_recorded_at: TIMESTAMP"
+      - "direction_correct: BOOLEAN"
+      - "value_error_pct: FLOAT"
+  
+  api_endpoints:
+    - method: "POST"
+      path: "/api/predictions"
+      description: "Store a new prediction"
+    
+    - method: "GET"
+      path: "/api/predictions/analytics"
+      description: "Get overall accuracy metrics"
+      response:
+        direction_accuracy_pct: "float"
+        mean_absolute_error: "float"
+        n_predictions: "int"
+        n_verified: "int"
+    
+    - method: "GET"
+      path: "/api/predictions/history"
+      description: "Get prediction history for charting"
+      params:
+        - "var1: string (optional)"
+        - "var2: string (optional)"
+        - "limit: int (default 100)"
+    
+    - method: "POST"
+      path: "/api/predictions/update-actuals"
+      description: "Manually trigger actual value updater"
+
+# ====================================================================================
+# TRACEABILITY
+# ====================================================================================
+
+traceability:
+  traces_from:
+    system: "SYSTEM-CA-002"
+    exploitation_pathway: "Phase 5.5 - Prediction Tracking"
+  traces_to:
+    layers: ["LAYER-CA-002-10-01", "LAYER-CA-002-10-02", "LAYER-CA-002-10-03"]

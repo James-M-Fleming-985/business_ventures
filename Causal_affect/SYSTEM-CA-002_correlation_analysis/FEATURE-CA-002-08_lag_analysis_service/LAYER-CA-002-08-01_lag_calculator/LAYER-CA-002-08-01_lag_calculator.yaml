@@ -1,0 +1,109 @@
+# ====================================================================================
+# LAYER REQUIREMENT: Lag Analysis Calculator
+# ====================================================================================
+# LAYER ID: LAYER-CA-002-08-01
+# FEATURE: Lag Analysis Service
+# VERSION: 1.0.0
+# ====================================================================================
+
+metadata:
+  requirement_id: "LAYER-CA-002-08-01"
+  requirement_name: "Lag Analysis Calculator"
+  layer: "LAYER-CA-002-08-01_lag_calculator"
+  feature: "FEATURE-CA-002-08_lag_analysis_service"
+  version: "1.0.0"
+  status: "Active"
+  priority: "MUST HAVE"
+  created_date: "2026-02-10"
+  updated_date: "2026-02-10"
+  owner: "Causal Affect Team"
+  target_date: "2026-02-20"
+
+requirement:
+  title: "Lag Analysis Calculator"
+  description: |
+    Calculates Pearson correlation between two time series at varying lag offsets.
+    For each lag value from 0 to max_lag:
+      - Shifts X backward by lag days
+      - Calculates correlation between shifted X and Y
+      - Records the correlation strength
+    
+    Returns the complete lag-correlation curve and identifies optimal lag
+    (where |correlation| is maximum).
+  
+  rationale: |
+    Understanding the optimal predictive lag is essential for timing exploitation.
+    If X predicts Y best at lag=30 days, users know to watch X today for
+    predictions about Y 30 days from now.
+
+specification:
+  structure:
+    entry_point: "src/backend/app/lag_analysis_service.py"
+    modules:
+      - "lag_analysis_service.py - Core calculation logic"
+  
+  implementation_details:
+    libraries:
+      - "NumPy"
+      - "SciPy (stats.pearsonr)"
+    patterns:
+      - "Pure Function Pattern"
+    
+  inputs:
+    - name: "x_series"
+      type: "np.ndarray"
+      description: "Time series for variable X"
+    - name: "y_series"
+      type: "np.ndarray"
+      description: "Time series for variable Y"
+    - name: "max_lag"
+      type: "int"
+      description: "Maximum lag to test (default 90 days)"
+  
+  outputs:
+    - name: "lag_curve"
+      type: "dict"
+      description: "Lag analysis results"
+      example: |
+        {
+          "lag_days": [0, 1, 2, ..., 90],
+          "correlations": [0.45, 0.52, 0.61, ..., 0.23],
+          "optimal_lag": 30,
+          "optimal_correlation": 0.78
+        }
+
+acceptance_criteria:
+  - criterion: "Calculates correlation at each lag from 0 to max_lag"
+    category: "functional"
+  - criterion: "Identifies optimal lag correctly (highest |r|)"
+    category: "functional"
+  - criterion: "Handles edge cases (identical series, all zeros)"
+    category: "functional"
+  - criterion: "Computation time <30 seconds for max_lag=90"
+    category: "performance"
+  - criterion: "Unit test coverage >90%"
+    category: "quality"
+
+code_generation_constraints:
+  imports:
+    required:
+      - "import numpy as np"
+      - "from scipy import stats"
+      - "from typing import Dict, Any, List"
+  
+  naming_conventions:
+    class_name: "LagAnalysisCalculator"
+    main_function: "calculate_lag_curve"
+  
+  structure:
+    must_include:
+      - "calculate_lag_curve(x_series, y_series, max_lag=90) -> dict"
+      - "find_optimal_lag(correlations) -> int"
+      - "validation of input arrays"
+
+traceability:
+  traces_from:
+    feature: "FEATURE-CA-002-08"
+  traces_to:
+    implementation: "src/backend/app/lag_analysis_service.py"
+    tests: "src/backend/tests/test_lag_analysis.py"

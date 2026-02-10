@@ -1,0 +1,124 @@
+# ====================================================================================
+# LAYER REQUIREMENT: Prediction Storage
+# ====================================================================================
+# LAYER ID: LAYER-CA-002-10-01
+# FEATURE: Prediction Tracking Service
+# VERSION: 1.0.0
+# ====================================================================================
+
+metadata:
+  requirement_id: "LAYER-CA-002-10-01"
+  requirement_name: "Prediction Storage"
+  layer: "LAYER-CA-002-10-01_prediction_storage"
+  feature: "FEATURE-CA-002-10_prediction_tracking"
+  version: "1.0.0"
+  status: "Active"
+  priority: "MUST HAVE"
+  created_date: "2026-02-10"
+  updated_date: "2026-02-10"
+  owner: "Causal Affect Team"
+  target_date: "2026-03-05"
+
+requirement:
+  title: "Prediction Storage"
+  description: |
+    Database service for storing and retrieving predictions.
+    
+    When a user generates a prediction from the regression service,
+    this layer stores:
+    - What was predicted (direction, value, % change)
+    - When it was predicted
+    - When the outcome is expected (target_date = predicted_at + lag)
+    - What model/coefficients were used
+    
+    Later, the actual updater layer fills in actual values.
+  
+  rationale: |
+    Without storing predictions, we cannot measure accuracy.
+    This is the foundation of the feedback loop.
+
+specification:
+  structure:
+    entry_point: "src/backend/app/prediction_service.py"
+    modules:
+      - "prediction_service.py - CRUD operations"
+      - "migrations/create_prediction_tracking.py - DB migration"
+  
+  implementation_details:
+    libraries:
+      - "SQLAlchemy"
+      - "uuid"
+    patterns:
+      - "Repository Pattern"
+      - "Service Pattern"
+    
+  inputs:
+    - name: "prediction_data"
+      type: "dict"
+      description: "Prediction details from regression service"
+      example: |
+        {
+          "fast_variable_name": "layoff_searches",
+          "medium_variable_name": "job_board_traffic",
+          "predicted_direction": "up",
+          "predicted_value": 82000,
+          "predicted_change_pct": 64.0,
+          "beta_1": 3.2,
+          "optimal_lag_days": 7
+        }
+  
+  outputs:
+    - name: "stored_prediction"
+      type: "dict"
+      description: "Stored prediction with generated ID"
+      example: |
+        {
+          "prediction_id": "pred_abc123",
+          "target_date": "2026-02-17",
+          "status": "pending_verification"
+        }
+
+acceptance_criteria:
+  - criterion: "Stores prediction with unique prediction_id"
+    category: "functional"
+  - criterion: "Calculates target_date from predicted_at + optimal_lag"
+    category: "functional"
+  - criterion: "Retrieves predictions pending verification"
+    category: "functional"
+  - criterion: "Updates prediction with actual values"
+    category: "functional"
+  - criterion: "Calculates direction_correct and value_error_pct"
+    category: "functional"
+  - criterion: "Database operations complete in <100ms"
+    category: "performance"
+  - criterion: "Unit test coverage >90%"
+    category: "quality"
+
+code_generation_constraints:
+  imports:
+    required:
+      - "from sqlalchemy.ext.asyncio import AsyncSession"
+      - "from sqlalchemy import select, update, and_"
+      - "import uuid"
+      - "from datetime import datetime, timedelta"
+  
+  naming_conventions:
+    class_name: "PredictionService"
+    table_name: "prediction_tracking"
+  
+  structure:
+    must_include:
+      - "store_prediction(db, prediction_data) -> dict"
+      - "get_predictions_pending_verification(db) -> list"
+      - "update_with_actual(db, prediction_id, actual_value) -> dict"
+      - "calculate_accuracy_metrics(db, filters) -> dict"
+      - "_calculate_direction_correct(predicted_dir, actual_dir) -> bool"
+      - "_calculate_value_error_pct(predicted, actual) -> float"
+
+traceability:
+  traces_from:
+    feature: "FEATURE-CA-002-10"
+  traces_to:
+    implementation: "src/backend/app/prediction_service.py"
+    tests: "src/backend/tests/test_prediction_service.py"
+    migration: "src/backend/migrations/create_prediction_tracking.py"

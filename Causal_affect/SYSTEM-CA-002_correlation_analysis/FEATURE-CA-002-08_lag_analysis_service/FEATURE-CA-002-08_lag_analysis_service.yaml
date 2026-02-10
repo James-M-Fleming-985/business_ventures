@@ -1,0 +1,103 @@
+# ====================================================================================
+# FEATURE REQUIREMENTS: Lag Analysis Service
+# ====================================================================================
+# FEATURE ID: FEATURE-CA-002-08
+# VERSION: 1.0.0
+# LAST UPDATED: 2026-02-10
+# SYSTEM: CA-002 Correlation Analysis Engine
+# PHASE: 3 - Lag Optimization
+# ====================================================================================
+
+metadata:
+  requirement_id: "FEATURE-CA-002-08"
+  requirement_name: "Lag Analysis Service"
+  feature_code: "CA-002-08"
+  version: "1.0.0"
+  status: "Active"
+  created_date: "2026-02-10"
+  last_modified: "2026-02-10"
+  owner: "Causal Affect Team"
+  priority: "MUST HAVE"
+  target_date: "2026-02-20"
+
+# ====================================================================================
+# FEATURE OVERVIEW
+# ====================================================================================
+
+overview:
+  description: |
+    Analyzes correlation strength at different time lags to find the optimal
+    predictive window. Answers: "How many days ahead does X predict Y?"
+    
+    Key insight: If AI papers from 30 days ago best correlate with NVDA today,
+    then watching AI papers NOW lets you predict NVDA 30 days from now.
+    
+    This is Phase 3 of the exploitation pathway - temporal optimization.
+  
+  business_value:
+    - "Identifies optimal lag for predictions"
+    - "Visualizes lag-correlation curve for user understanding"
+    - "Quantifies the predictive time window"
+    - "Enables timing-based exploitation strategies"
+  
+  user_story: |
+    As a user who has confirmed a causal relationship, I want to know the
+    optimal time lag so I can time my exploitation decisions correctly.
+
+  acceptance_criteria:
+    - "API endpoint returns lag curve data for charting"
+    - "Optimal lag clearly identified and returned"
+    - "Computation completes in <30 seconds"
+    - "Results stored for caching"
+
+# ====================================================================================
+# LAYER ARCHITECTURE
+# ====================================================================================
+
+layers:
+  - layer_id: "LAYER-CA-002-08-01"
+    name: "Lag Analysis Calculator"
+    responsibility: "Calculate correlation at each lag value"
+    technology: "NumPy, SciPy"
+    requirement_file: "LAYER-CA-002-08-01_lag_calculator.yaml"
+  
+  - layer_id: "LAYER-CA-002-08-02"
+    name: "Lag Analysis Endpoint"
+    responsibility: "REST API for lag curve data"
+    technology: "FastAPI"
+    requirement_file: "LAYER-CA-002-08-02_lag_endpoint.yaml"
+
+# ====================================================================================
+# TECHNICAL SPECIFICATIONS
+# ====================================================================================
+
+technical_specifications:
+  architecture: "Service layer with calculation engine"
+  endpoint_prefix: "/api/causality"
+  
+  api_endpoints:
+    - method: "GET"
+      path: "/api/causality/{var1_name}/{var2_name}/lag-curve"
+      description: "Get correlation values at each lag"
+      params:
+        - "max_lag: int (default 90)"
+        - "lookback_days: int (default 365)"
+      response:
+        var1: "string"
+        var2: "string"
+        lag_days: "[0, 1, 2, ..., 90]"
+        correlations: "[r0, r1, r2, ..., r90]"
+        optimal_lag: "int"
+        optimal_correlation: "float"
+        analysis_timestamp: "datetime"
+
+# ====================================================================================
+# TRACEABILITY
+# ====================================================================================
+
+traceability:
+  traces_from:
+    system: "SYSTEM-CA-002"
+    exploitation_pathway: "Phase 3 - Lag Optimization"
+  traces_to:
+    layers: ["LAYER-CA-002-08-01", "LAYER-CA-002-08-02"]
