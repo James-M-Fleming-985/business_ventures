@@ -118,10 +118,21 @@ frontend_compatibility:
 # TESTING REQUIREMENTS
 # ====================================================================================
 
-testing:
-  unit_tests:
-    - "Endpoint returns 200 with valid keyword"
-    - "Endpoint returns 404 for unknown keyword"
-    - "Endpoint returns 400 for insufficient data"
-    - "Optional lag parameter works correctly"
-    - "Response contains all required fields"
+# ====================================================================================
+# TOP-LEVEL KEYS (required by AI Code Generator orchestrator)
+# ====================================================================================
+
+layer_id: "LAYER-CA-002-09-02"
+feature_name: "Regression Quantification Service"
+
+acceptance_criteria:
+  - criterion: "GET /api/signal-radar/signals/{keyword}/regression returns 200 with valid keyword"
+    category: functional
+  - criterion: "Endpoint returns 404 for unknown keyword"
+    category: functional
+  - criterion: "Endpoint returns 400 for insufficient data"
+    category: functional
+  - criterion: "Optional lag query parameter overrides auto-detected optimal lag"
+    category: functional
+  - criterion: "Response contains beta_1, r_squared, p_value, formula, interpretation"
+    category: functional

@@ -143,10 +143,21 @@ styling:
 # TESTING REQUIREMENTS
 # ====================================================================================
 
-testing:
-  unit_tests:
-    - "Tab bar renders with 3 tabs"
-    - "Granger tab is active by default"
-    - "Clicking Lag Curve tab switches content"
-    - "Clicking Regression tab switches content"
-    - "Lazy loading prevents unnecessary API calls"
+# ====================================================================================
+# TOP-LEVEL KEYS (required by AI Code Generator orchestrator)
+# ====================================================================================
+
+layer_id: "LAYER-CA-002-08-04"
+feature_name: "Lag Analysis Service"
+
+acceptance_criteria:
+  - criterion: "Tab bar renders with 3 tabs: Granger, Lag Curve, Regression"
+    category: functional
+  - criterion: "Granger tab is active by default when modal opens"
+    category: functional
+  - criterion: "Clicking Lag Curve tab switches visible content to LagCurveChart"
+    category: functional
+  - criterion: "Clicking Regression tab switches visible content to RegressionResults"
+    category: functional
+  - criterion: "Lazy loading prevents API calls until tab is first clicked"
+    category: functional

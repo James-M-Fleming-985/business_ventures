@@ -120,10 +120,23 @@ interface:
 # TESTING REQUIREMENTS
 # ====================================================================================
 
-testing:
-  unit_tests:
-    - "calculate_lag_curve returns correct length arrays"
-    - "lag_days array is sequential 0 to max_lag"
-    - "optimal_lag corresponds to highest absolute correlation"
-    - "handles missing data gracefully"
-    - "handles insufficient observations with 400 error"
+# ====================================================================================
+# TOP-LEVEL KEYS (required by AI Code Generator orchestrator)
+# ====================================================================================
+
+layer_id: "LAYER-CA-002-08-01"
+feature_name: "Lag Analysis Service"
+
+acceptance_criteria:
+  - criterion: "calculate_lag_curve returns arrays of correct length matching max_lag+1"
+    category: functional
+  - criterion: "lag_days array is sequential from 0 to max_lag"
+    category: functional
+  - criterion: "optimal_lag corresponds to lag with highest absolute correlation"
+    category: functional
+  - criterion: "Handles missing data gracefully with meaningful error"
+    category: functional
+  - criterion: "Handles insufficient observations with appropriate error"
+    category: functional
+  - criterion: "LagService imports and uses LaggedCorrelationAnalyzer from LAYER-CA-002-01-05"
+    category: functional

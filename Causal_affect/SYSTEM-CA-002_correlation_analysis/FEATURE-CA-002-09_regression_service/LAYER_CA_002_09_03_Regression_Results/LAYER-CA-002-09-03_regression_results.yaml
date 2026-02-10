@@ -180,11 +180,23 @@ helpers:
 # TESTING REQUIREMENTS
 # ====================================================================================
 
-testing:
-  unit_tests:
-    - "Renders loading state initially"
-    - "Renders β₁ prominently with valid data"
-    - "Renders formula correctly"
-    - "Renders metrics grid with R², p-value, CI"
-    - "Renders error state on API failure"
-    - "Formats p-value with significance stars"
+# ====================================================================================
+# TOP-LEVEL KEYS (required by AI Code Generator orchestrator)
+# ====================================================================================
+
+layer_id: "LAYER-CA-002-09-03"
+feature_name: "Regression Quantification Service"
+
+acceptance_criteria:
+  - criterion: "Renders loading spinner while fetching regression data"
+    category: functional
+  - criterion: "Renders beta_1 value prominently with large font"
+    category: functional
+  - criterion: "Renders regression formula correctly"
+    category: functional
+  - criterion: "Renders metrics grid with R-squared, p-value, confidence interval"
+    category: functional
+  - criterion: "Renders error message on API failure"
+    category: functional
+  - criterion: "Formats p-value with significance stars"
+    category: functional

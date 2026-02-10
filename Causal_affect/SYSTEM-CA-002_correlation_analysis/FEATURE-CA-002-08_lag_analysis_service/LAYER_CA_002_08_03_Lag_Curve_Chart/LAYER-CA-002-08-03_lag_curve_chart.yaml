@@ -148,10 +148,21 @@ styling:
 # TESTING REQUIREMENTS
 # ====================================================================================
 
-testing:
-  unit_tests:
-    - "Renders loading state initially"
-    - "Renders chart with valid data"
-    - "Renders error state on API failure"
-    - "Highlights optimal lag point"
-    - "Displays summary text correctly"
+# ====================================================================================
+# TOP-LEVEL KEYS (required by AI Code Generator orchestrator)
+# ====================================================================================
+
+layer_id: "LAYER-CA-002-08-03"
+feature_name: "Lag Analysis Service"
+
+acceptance_criteria:
+  - criterion: "Renders loading spinner while fetching lag curve data"
+    category: functional
+  - criterion: "Renders Recharts LineChart with valid lag curve data"
+    category: functional
+  - criterion: "Renders error message on API failure"
+    category: functional
+  - criterion: "Highlights optimal lag point with special marker on chart"
+    category: functional
+  - criterion: "Displays summary text with optimal lag and max correlation values"
+    category: functional

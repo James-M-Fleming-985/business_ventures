@@ -113,10 +113,21 @@ frontend_compatibility:
 # TESTING REQUIREMENTS
 # ====================================================================================
 
-testing:
-  unit_tests:
-    - "Endpoint returns 200 with valid keyword"
-    - "Endpoint returns 404 for unknown keyword"
-    - "Endpoint returns 400 for insufficient data"
-    - "max_lag query param works correctly"
-    - "Response arrays have correct length"
+# ====================================================================================
+# TOP-LEVEL KEYS (required by AI Code Generator orchestrator)
+# ====================================================================================
+
+layer_id: "LAYER-CA-002-08-02"
+feature_name: "Lag Analysis Service"
+
+acceptance_criteria:
+  - criterion: "GET /api/signal-radar/signals/{keyword}/lag-curve returns 200 with valid keyword"
+    category: functional
+  - criterion: "Endpoint returns 404 for unknown keyword"
+    category: functional
+  - criterion: "Endpoint returns 400 for insufficient data"
+    category: functional
+  - criterion: "max_lag query parameter correctly limits lag range"
+    category: functional
+  - criterion: "Response arrays lag_days and correlations have correct length"
+    category: functional

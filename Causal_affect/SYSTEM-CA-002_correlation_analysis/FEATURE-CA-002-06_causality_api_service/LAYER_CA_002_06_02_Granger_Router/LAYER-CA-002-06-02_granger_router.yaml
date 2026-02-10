@@ -136,13 +136,30 @@ frontend_compatibility:
 # TESTING REQUIREMENTS
 # ====================================================================================
 
-testing:
-  unit_tests:
-    - "Endpoint returns 200 with valid keyword"
-    - "Endpoint returns 404 for unknown keyword"
-    - "Endpoint returns 400 for insufficient data"
-    - "Response matches expected schema"
-  
-  integration_tests:
-    - "Full flow: POST request → GrangerService → response"
-    - "GrangerModal can parse and display response"
+# ====================================================================================
+# TOP-LEVEL KEYS (required by AI Code Generator orchestrator)
+# ====================================================================================
+
+layer_id: "LAYER-CA-002-06-02"
+feature_name: "Granger Causality API Service"
+
+acceptance_criteria:
+  - criterion: "POST /api/signal-radar/signals/{keyword}/granger returns 200 with valid keyword"
+    category: functional
+  - criterion: "Endpoint returns 404 for unknown keyword"
+    category: functional
+  - criterion: "Endpoint returns 400 for insufficient data"
+    category: functional
+  - criterion: "Response JSON matches GrangerModal expected schema"
+    category: functional
+
+integration_test_scenarios:
+  - scenario: "Full Granger API flow"
+    description: "POST request through router to GrangerService and back"
+    test_class: "TestGrangerRouterIntegration"
+    tests:
+      - "test_full_flow_valid_keyword"
+      - "test_response_parseable_by_granger_modal"
+    layers_integrated:
+      - "LAYER-CA-002-06-01"
+      - "LAYER-CA-002-06-02"

@@ -115,11 +115,27 @@ interface:
 # TESTING REQUIREMENTS
 # ====================================================================================
 
-testing:
-  unit_tests:
-    - "test_causality returns correct structure"
-    - "test_causality determines direction correctly for X→Y case"
-    - "test_causality determines direction correctly for Y→X case"
-    - "test_causality handles bidirectional case"
-    - "test_causality handles no causality case"
-    - "test_causality handles missing data gracefully"
+# ====================================================================================
+# TOP-LEVEL KEYS (required by AI Code Generator orchestrator)
+# ====================================================================================
+
+layer_id: "LAYER-CA-002-06-01"
+feature_name: "Granger Causality API Service"
+
+acceptance_criteria:
+  - criterion: "test_causality returns correct structure with f_statistic, p_value, optimal_lag, r_value, reject_null"
+    category: functional
+  - criterion: "test_causality determines direction correctly for X causes Y case"
+    category: functional
+  - criterion: "test_causality determines direction correctly for Y causes X case"
+    category: functional
+  - criterion: "test_causality handles bidirectional causality case"
+    category: functional
+  - criterion: "test_causality handles no causality case (returns direction=none)"
+    category: functional
+  - criterion: "test_causality handles missing data gracefully with meaningful error"
+    category: functional
+  - criterion: "GrangerService imports and uses GrangerCausalityTest from LAYER-CA-002-02-01"
+    category: functional
+  - criterion: "Response format matches GrangerModal.jsx expected format"
+    category: functional

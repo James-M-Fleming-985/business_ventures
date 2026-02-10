@@ -150,12 +150,27 @@ implementation:
 # TESTING REQUIREMENTS
 # ====================================================================================
 
-testing:
-  unit_tests:
-    - "calculate_regression returns correct structure"
-    - "Lag shift is applied correctly (x_lagged aligns with y)"
-    - "beta_1 has correct sign for positive correlation"
-    - "r_squared is between 0 and 1"
-    - "confidence_interval contains beta_1"
-    - "interpretation text is formatted correctly"
-    - "handles insufficient data with meaningful error"
+# ====================================================================================
+# TOP-LEVEL KEYS (required by AI Code Generator orchestrator)
+# ====================================================================================
+
+layer_id: "LAYER-CA-002-09-01"
+feature_name: "Regression Quantification Service"
+
+acceptance_criteria:
+  - criterion: "calculate_regression returns dict with beta_0, beta_1, r_squared, p_value, std_error, confidence_interval, formula, interpretation"
+    category: functional
+  - criterion: "Lag shift is applied correctly so x_lagged aligns with y"
+    category: functional
+  - criterion: "beta_1 has correct sign for positive correlation data"
+    category: functional
+  - criterion: "r_squared is between 0 and 1"
+    category: functional
+  - criterion: "confidence_interval contains beta_1 value"
+    category: functional
+  - criterion: "interpretation text is formatted correctly with variable names"
+    category: functional
+  - criterion: "Handles insufficient data with meaningful error message"
+    category: functional
+  - criterion: "Uses statsmodels OLS for regression calculation"
+    category: functional
