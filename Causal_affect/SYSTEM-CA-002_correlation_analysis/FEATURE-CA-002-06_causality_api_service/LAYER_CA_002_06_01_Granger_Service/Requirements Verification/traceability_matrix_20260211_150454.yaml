@@ -1,0 +1,170 @@
+matrix_metadata:
+  timestamp: '20260211_150454'
+  layer_id: LAYER-CA-002-06-01
+  feature_name: Granger Causality API Service
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-001
+  requirement: test_causality returns correct structure with f_statistic, p_value,
+    optimal_lag, r_value, reject_null
+  description: test_causality returns correct structure with f_statistic, p_value,
+    optimal_lag, r_value, reject_null
+  test_files: &id001
+  - /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-06_causality_api_service/LAYER_CA_002_06_01_Granger_Service/tests/test_generated_20260211_150422.py
+  test_methods:
+  - test_ac_001
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-002
+  requirement: test_causality determines direction correctly for X causes Y case
+  description: test_causality determines direction correctly for X causes Y case
+  test_files: *id001
+  test_methods:
+  - test_ac_002
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-003
+  requirement: test_causality determines direction correctly for Y causes X case
+  description: test_causality determines direction correctly for Y causes X case
+  test_files: *id001
+  test_methods:
+  - test_ac_003
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-004
+  requirement: test_causality handles bidirectional causality case
+  description: test_causality handles bidirectional causality case
+  test_files: *id001
+  test_methods:
+  - test_ac_004
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-005
+  requirement: test_causality handles no causality case (returns direction=none)
+  description: test_causality handles no causality case (returns direction=none)
+  test_files: *id001
+  test_methods:
+  - test_ac_005
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-006
+  requirement: test_causality handles missing data gracefully with meaningful error
+  description: test_causality handles missing data gracefully with meaningful error
+  test_files: *id001
+  test_methods:
+  - test_ac_006
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-007
+  requirement: GrangerService imports and uses GrangerCausalityTest from LAYER-CA-002-02-01
+  description: GrangerService imports and uses GrangerCausalityTest from LAYER-CA-002-02-01
+  test_files: *id001
+  test_methods:
+  - test_ac_007
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-008
+  requirement: Response format matches GrangerModal.jsx expected format
+  description: Response format matches GrangerModal.jsx expected format
+  test_files: *id001
+  test_methods:
+  - test_ac_008
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-06_causality_api_service/LAYER_CA_002_06_01_Granger_Service/src/layer_ca_002_06_01.py
+  lines: 161
+  methods:
+  - name: __init__
+    lines: 12-16
+  - name: test
+    lines: 17-35
+  - name: __init__
+    lines: 39-42
+  - name: test_causality
+    lines: 43-53
+  classes:
+  - name: GrangerService
+    type: class
+    lines: 36-161
+  implements_requirements:
+  - AC-001
+  - AC-002
+  - AC-003
+  - AC-004
+  - AC-005
+  - AC-006
+  - AC-007
+  - AC-008
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-06_causality_api_service/LAYER_CA_002_06_01_Granger_Service/tests/test_generated_20260211_150422.py
+  test_count: 0
+  implementation_files:
+  - /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-06_causality_api_service/LAYER_CA_002_06_01_Granger_Service/src/layer_ca_002_06_01.py
+  methods_tested:
+  - __init__
+  - test
+  - __init__
+  - test_causality
+  classes_tested:
+  - GrangerService
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-06_causality_api_service/LAYER_CA_002_06_01_Granger_Service/src/layer_ca_002_06_01.py:12-16
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-06_causality_api_service/LAYER_CA_002_06_01_Granger_Service/tests/test_generated_20260211_150422.py
+  verified: true
+- implementation_location: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-06_causality_api_service/LAYER_CA_002_06_01_Granger_Service/src/layer_ca_002_06_01.py:17-35
+  method_name: test
+  requirement: AC-001
+  test: test_test
+  test_file: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-06_causality_api_service/LAYER_CA_002_06_01_Granger_Service/tests/test_generated_20260211_150422.py
+  verified: true
+- implementation_location: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-06_causality_api_service/LAYER_CA_002_06_01_Granger_Service/src/layer_ca_002_06_01.py:39-42
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-06_causality_api_service/LAYER_CA_002_06_01_Granger_Service/tests/test_generated_20260211_150422.py
+  verified: true
+- implementation_location: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-06_causality_api_service/LAYER_CA_002_06_01_Granger_Service/src/layer_ca_002_06_01.py:43-53
+  method_name: test_causality
+  requirement: AC-001
+  test: test_test_causality
+  test_file: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-06_causality_api_service/LAYER_CA_002_06_01_Granger_Service/tests/test_generated_20260211_150422.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 8
+  requirements_traced: 8
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

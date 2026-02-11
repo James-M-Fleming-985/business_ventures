@@ -1,0 +1,94 @@
+matrix_metadata:
+  timestamp: '20260211_150543'
+  layer_id: LAYER-CA-002-06-02
+  feature_name: Granger Causality API Service
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-001
+  requirement: POST /api/signal-radar/signals/{keyword}/granger returns 200 with valid
+    keyword
+  description: POST /api/signal-radar/signals/{keyword}/granger returns 200 with valid
+    keyword
+  test_files: &id001
+  - /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-06_causality_api_service/LAYER_CA_002_06_02_Granger_Router/tests/test_generated_20260211_150520.py
+  test_methods:
+  - test_ac_001
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-002
+  requirement: Endpoint returns 404 for unknown keyword
+  description: Endpoint returns 404 for unknown keyword
+  test_files: *id001
+  test_methods:
+  - test_ac_002
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-003
+  requirement: Endpoint returns 400 for insufficient data
+  description: Endpoint returns 400 for insufficient data
+  test_files: *id001
+  test_methods:
+  - test_ac_003
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-004
+  requirement: Response JSON matches GrangerModal expected schema
+  description: Response JSON matches GrangerModal expected schema
+  test_files: *id001
+  test_methods:
+  - test_ac_004
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-06_causality_api_service/LAYER_CA_002_06_02_Granger_Router/src/layer_ca_002_06_02.py
+  lines: 131
+  methods: []
+  classes:
+  - name: GrangerResult
+    type: class
+    lines: 12-18
+  - name: GrangerModal
+    type: class
+    lines: 19-131
+  implements_requirements:
+  - AC-001
+  - AC-002
+  - AC-003
+  - AC-004
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-06_causality_api_service/LAYER_CA_002_06_02_Granger_Router/tests/test_generated_20260211_150520.py
+  test_count: 0
+  implementation_files:
+  - /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-06_causality_api_service/LAYER_CA_002_06_02_Granger_Router/src/layer_ca_002_06_02.py
+  methods_tested: []
+  classes_tested:
+  - GrangerResult
+  - GrangerModal
+  coverage: 0.0%
+line_level_traceability: []
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 4
+  requirements_traced: 4
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

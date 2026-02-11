@@ -1,0 +1,12 @@
+feature_id: FEATURE-CA-002-06
+feature_name: Granger Causality API Service
+verification_timestamp: '20260211_151001'
+total_layers: 0
+layers_completed: 0
+feature_level_tests:
+  integration_tests: REQUIRED
+  e2e_tests: REQUIRED
+  status: PENDING_EXECUTION
+layer_summary: []
+acceptance_criteria: []
+acceptance_status: PENDING_FEATURE_TESTS

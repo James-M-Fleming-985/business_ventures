@@ -1,0 +1,12 @@
+feature_id: FEATURE-CA-002-06
+feature_name: Granger Causality API Service
+traceability_timestamp: '20260211_151001'
+feature_to_layers: {}
+feature_integration:
+  integration_file: src/feature_integration.py
+  orchestrates_layers: []
+  status: IMPLEMENTED
+requirements_coverage:
+  layer_requirements: 100%
+  feature_requirements: PENDING_FEATURE_TESTS
+  acceptance_criteria: 0
