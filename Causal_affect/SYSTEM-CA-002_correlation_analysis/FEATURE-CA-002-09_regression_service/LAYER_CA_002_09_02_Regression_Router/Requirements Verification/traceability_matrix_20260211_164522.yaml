@@ -1,0 +1,115 @@
+matrix_metadata:
+  timestamp: '20260211_164522'
+  layer_id: LAYER-CA-002-09-02
+  feature_name: Regression Quantification Service
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-001
+  requirement: GET /api/signal-radar/signals/{keyword}/regression returns 200 with
+    valid keyword
+  description: GET /api/signal-radar/signals/{keyword}/regression returns 200 with
+    valid keyword
+  test_files: &id001
+  - /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-09_regression_service/LAYER_CA_002_09_02_Regression_Router/tests/test_generated_20260211_164453.py
+  test_methods:
+  - test_ac_001
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-002
+  requirement: Endpoint returns 404 for unknown keyword
+  description: Endpoint returns 404 for unknown keyword
+  test_files: *id001
+  test_methods:
+  - test_ac_002
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-003
+  requirement: Endpoint returns 400 for insufficient data
+  description: Endpoint returns 400 for insufficient data
+  test_files: *id001
+  test_methods:
+  - test_ac_003
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-004
+  requirement: Optional lag query parameter overrides auto-detected optimal lag
+  description: Optional lag query parameter overrides auto-detected optimal lag
+  test_files: *id001
+  test_methods:
+  - test_ac_004
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-005
+  requirement: Response contains beta_1, r_squared, p_value, formula, interpretation
+  description: Response contains beta_1, r_squared, p_value, formula, interpretation
+  test_files: *id001
+  test_methods:
+  - test_ac_005
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-09_regression_service/LAYER_CA_002_09_02_Regression_Router/src/layer_ca_002_09_02.py
+  lines: 159
+  methods:
+  - name: detect_optimal_lag
+    lines: 28-53
+  - name: perform_regression
+    lines: 54-64
+  classes: []
+  implements_requirements:
+  - AC-001
+  - AC-002
+  - AC-003
+  - AC-004
+  - AC-005
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-09_regression_service/LAYER_CA_002_09_02_Regression_Router/tests/test_generated_20260211_164453.py
+  test_count: 0
+  implementation_files:
+  - /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-09_regression_service/LAYER_CA_002_09_02_Regression_Router/src/layer_ca_002_09_02.py
+  methods_tested:
+  - detect_optimal_lag
+  - perform_regression
+  classes_tested: []
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-09_regression_service/LAYER_CA_002_09_02_Regression_Router/src/layer_ca_002_09_02.py:28-53
+  method_name: detect_optimal_lag
+  requirement: AC-001
+  test: test_detect_optimal_lag
+  test_file: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-09_regression_service/LAYER_CA_002_09_02_Regression_Router/tests/test_generated_20260211_164453.py
+  verified: true
+- implementation_location: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-09_regression_service/LAYER_CA_002_09_02_Regression_Router/src/layer_ca_002_09_02.py:54-64
+  method_name: perform_regression
+  requirement: AC-001
+  test: test_perform_regression
+  test_file: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-09_regression_service/LAYER_CA_002_09_02_Regression_Router/tests/test_generated_20260211_164453.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 5
+  requirements_traced: 5
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

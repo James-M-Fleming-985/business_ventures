@@ -1,0 +1,143 @@
+matrix_metadata:
+  timestamp: '20260211_164405'
+  layer_id: LAYER-CA-002-09-01
+  feature_name: Regression Quantification Service
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-001
+  requirement: calculate_regression returns dict with beta_0, beta_1, r_squared, p_value,
+    std_error, confidence_interval, formula, interpretation
+  description: calculate_regression returns dict with beta_0, beta_1, r_squared, p_value,
+    std_error, confidence_interval, formula, interpretation
+  test_files: &id001
+  - /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-09_regression_service/LAYER_CA_002_09_01_Regression_Service/tests/test_generated_20260211_164342.py
+  test_methods:
+  - test_ac_001
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-002
+  requirement: Lag shift is applied correctly so x_lagged aligns with y
+  description: Lag shift is applied correctly so x_lagged aligns with y
+  test_files: *id001
+  test_methods:
+  - test_ac_002
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-003
+  requirement: beta_1 has correct sign for positive correlation data
+  description: beta_1 has correct sign for positive correlation data
+  test_files: *id001
+  test_methods:
+  - test_ac_003
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-004
+  requirement: r_squared is between 0 and 1
+  description: r_squared is between 0 and 1
+  test_files: *id001
+  test_methods:
+  - test_ac_004
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-005
+  requirement: confidence_interval contains beta_1 value
+  description: confidence_interval contains beta_1 value
+  test_files: *id001
+  test_methods:
+  - test_ac_005
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-006
+  requirement: interpretation text is formatted correctly with variable names
+  description: interpretation text is formatted correctly with variable names
+  test_files: *id001
+  test_methods:
+  - test_ac_006
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-007
+  requirement: Handles insufficient data with meaningful error message
+  description: Handles insufficient data with meaningful error message
+  test_files: *id001
+  test_methods:
+  - test_ac_007
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-008
+  requirement: Uses statsmodels OLS for regression calculation
+  description: Uses statsmodels OLS for regression calculation
+  test_files: *id001
+  test_methods:
+  - test_ac_008
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-09_regression_service/LAYER_CA_002_09_01_Regression_Service/src/layer_ca_002_09_01.py
+  lines: 119
+  methods:
+  - name: calculate_regression
+    lines: 10-20
+  classes:
+  - name: RegressionService
+    type: class
+    lines: 7-119
+  implements_requirements:
+  - AC-001
+  - AC-002
+  - AC-003
+  - AC-004
+  - AC-005
+  - AC-006
+  - AC-007
+  - AC-008
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-09_regression_service/LAYER_CA_002_09_01_Regression_Service/tests/test_generated_20260211_164342.py
+  test_count: 0
+  implementation_files:
+  - /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-09_regression_service/LAYER_CA_002_09_01_Regression_Service/src/layer_ca_002_09_01.py
+  methods_tested:
+  - calculate_regression
+  classes_tested:
+  - RegressionService
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-09_regression_service/LAYER_CA_002_09_01_Regression_Service/src/layer_ca_002_09_01.py:10-20
+  method_name: calculate_regression
+  requirement: AC-001
+  test: test_calculate_regression
+  test_file: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-09_regression_service/LAYER_CA_002_09_01_Regression_Service/tests/test_generated_20260211_164342.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 8
+  requirements_traced: 8
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%
