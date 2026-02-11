@@ -1,4 +1,3 @@
-```python
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Dict, List, Optional
@@ -128,4 +127,3 @@ async def granger_analysis(keyword: str, max_lag: Optional[int] = 4):
         
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error performing Granger causality test: {str(e)}")
-```

@@ -1,4 +1,3 @@
-```python
 import pytest
 import unittest.mock
 import sys
@@ -113,4 +112,3 @@ class TestGrangerRouterIntegration:
     def test_concurrent_requests_handling(self):
         """Test that multiple concurrent Granger requests are handled correctly"""
         assert False, "System should handle concurrent Granger analysis requests"
-```

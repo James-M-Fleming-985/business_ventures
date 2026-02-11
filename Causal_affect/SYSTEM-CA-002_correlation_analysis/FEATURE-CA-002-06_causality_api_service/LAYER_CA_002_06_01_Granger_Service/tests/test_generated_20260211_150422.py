@@ -1,4 +1,3 @@
-```python
 import pytest
 import unittest.mock
 import sys
@@ -332,4 +331,3 @@ class TestPerformanceE2E:
     def test_scalability(self):
         """Test API scalability with increasing load"""
         assert False  # RED phase - test not implemented
-```

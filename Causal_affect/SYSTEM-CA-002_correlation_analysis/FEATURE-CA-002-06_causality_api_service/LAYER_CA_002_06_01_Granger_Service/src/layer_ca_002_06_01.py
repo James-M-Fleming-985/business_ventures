@@ -1,4 +1,3 @@
-```python
 import numpy as np
 from typing import Dict, List, Union, Optional, Tuple
 import warnings
@@ -158,4 +157,3 @@ class GrangerService:
             'reject_null': reject_null,
             'direction': direction
         }
-```
