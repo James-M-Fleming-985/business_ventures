@@ -1,0 +1,137 @@
+matrix_metadata:
+  timestamp: '20260211_155226'
+  layer_id: LAYER-CA-002-08-01
+  feature_name: Lag Analysis Service
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-001
+  requirement: calculate_lag_curve returns arrays of correct length matching max_lag+1
+  description: calculate_lag_curve returns arrays of correct length matching max_lag+1
+  test_files: &id001
+  - /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-08_lag_analysis_service/LAYER_CA_002_08_01_Lag_Service/tests/test_generated_20260211_155206.py
+  test_methods:
+  - test_ac_001
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-002
+  requirement: lag_days array is sequential from 0 to max_lag
+  description: lag_days array is sequential from 0 to max_lag
+  test_files: *id001
+  test_methods:
+  - test_ac_002
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-003
+  requirement: optimal_lag corresponds to lag with highest absolute correlation
+  description: optimal_lag corresponds to lag with highest absolute correlation
+  test_files: *id001
+  test_methods:
+  - test_ac_003
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-004
+  requirement: Handles missing data gracefully with meaningful error
+  description: Handles missing data gracefully with meaningful error
+  test_files: *id001
+  test_methods:
+  - test_ac_004
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-005
+  requirement: Handles insufficient observations with appropriate error
+  description: Handles insufficient observations with appropriate error
+  test_files: *id001
+  test_methods:
+  - test_ac_005
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-006
+  requirement: LagService imports and uses LaggedCorrelationAnalyzer from LAYER-CA-002-01-05
+  description: LagService imports and uses LaggedCorrelationAnalyzer from LAYER-CA-002-01-05
+  test_files: *id001
+  test_methods:
+  - test_ac_006
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-08_lag_analysis_service/LAYER_CA_002_08_01_Lag_Service/src/layer_ca_002_08_01.py
+  lines: 98
+  methods:
+  - name: __init__
+    lines: 10-13
+  - name: calculate_lag_curve
+    lines: 14-76
+  - name: _to_numpy
+    lines: 77-87
+  classes:
+  - name: LagService
+    type: class
+    lines: 7-98
+  implements_requirements:
+  - AC-001
+  - AC-002
+  - AC-003
+  - AC-004
+  - AC-005
+  - AC-006
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-08_lag_analysis_service/LAYER_CA_002_08_01_Lag_Service/tests/test_generated_20260211_155206.py
+  test_count: 0
+  implementation_files:
+  - /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-08_lag_analysis_service/LAYER_CA_002_08_01_Lag_Service/src/layer_ca_002_08_01.py
+  methods_tested:
+  - __init__
+  - calculate_lag_curve
+  - _to_numpy
+  classes_tested:
+  - LagService
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-08_lag_analysis_service/LAYER_CA_002_08_01_Lag_Service/src/layer_ca_002_08_01.py:10-13
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-08_lag_analysis_service/LAYER_CA_002_08_01_Lag_Service/tests/test_generated_20260211_155206.py
+  verified: true
+- implementation_location: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-08_lag_analysis_service/LAYER_CA_002_08_01_Lag_Service/src/layer_ca_002_08_01.py:14-76
+  method_name: calculate_lag_curve
+  requirement: AC-001
+  test: test_calculate_lag_curve
+  test_file: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-08_lag_analysis_service/LAYER_CA_002_08_01_Lag_Service/tests/test_generated_20260211_155206.py
+  verified: true
+- implementation_location: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-08_lag_analysis_service/LAYER_CA_002_08_01_Lag_Service/src/layer_ca_002_08_01.py:77-87
+  method_name: _to_numpy
+  requirement: AC-001
+  test: test__to_numpy
+  test_file: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-08_lag_analysis_service/LAYER_CA_002_08_01_Lag_Service/tests/test_generated_20260211_155206.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 6
+  requirements_traced: 6
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

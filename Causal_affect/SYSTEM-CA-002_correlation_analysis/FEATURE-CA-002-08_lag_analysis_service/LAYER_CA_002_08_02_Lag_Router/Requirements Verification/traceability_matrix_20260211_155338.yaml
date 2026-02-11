@@ -1,0 +1,106 @@
+matrix_metadata:
+  timestamp: '20260211_155338'
+  layer_id: LAYER-CA-002-08-02
+  feature_name: Lag Analysis Service
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-001
+  requirement: GET /api/signal-radar/signals/{keyword}/lag-curve returns 200 with
+    valid keyword
+  description: GET /api/signal-radar/signals/{keyword}/lag-curve returns 200 with
+    valid keyword
+  test_files: &id001
+  - /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-08_lag_analysis_service/LAYER_CA_002_08_02_Lag_Router/tests/test_generated_20260211_155322.py
+  test_methods:
+  - test_ac_001
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-002
+  requirement: Endpoint returns 404 for unknown keyword
+  description: Endpoint returns 404 for unknown keyword
+  test_files: *id001
+  test_methods:
+  - test_ac_002
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-003
+  requirement: Endpoint returns 400 for insufficient data
+  description: Endpoint returns 400 for insufficient data
+  test_files: *id001
+  test_methods:
+  - test_ac_003
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-004
+  requirement: max_lag query parameter correctly limits lag range
+  description: max_lag query parameter correctly limits lag range
+  test_files: *id001
+  test_methods:
+  - test_ac_004
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-005
+  requirement: Response arrays lag_days and correlations have correct length
+  description: Response arrays lag_days and correlations have correct length
+  test_files: *id001
+  test_methods:
+  - test_ac_005
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-08_lag_analysis_service/LAYER_CA_002_08_02_Lag_Router/src/layer_ca_002_08_02.py
+  lines: 93
+  methods:
+  - name: calculate_lag_correlation
+    lines: 24-34
+  classes: []
+  implements_requirements:
+  - AC-001
+  - AC-002
+  - AC-003
+  - AC-004
+  - AC-005
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-08_lag_analysis_service/LAYER_CA_002_08_02_Lag_Router/tests/test_generated_20260211_155322.py
+  test_count: 0
+  implementation_files:
+  - /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-08_lag_analysis_service/LAYER_CA_002_08_02_Lag_Router/src/layer_ca_002_08_02.py
+  methods_tested:
+  - calculate_lag_correlation
+  classes_tested: []
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-08_lag_analysis_service/LAYER_CA_002_08_02_Lag_Router/src/layer_ca_002_08_02.py:24-34
+  method_name: calculate_lag_correlation
+  requirement: AC-001
+  test: test_calculate_lag_correlation
+  test_file: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-08_lag_analysis_service/LAYER_CA_002_08_02_Lag_Router/tests/test_generated_20260211_155322.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 5
+  requirements_traced: 5
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

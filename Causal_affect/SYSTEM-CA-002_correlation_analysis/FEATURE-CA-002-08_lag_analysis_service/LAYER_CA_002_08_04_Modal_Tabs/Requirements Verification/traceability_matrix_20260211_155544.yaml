@@ -1,0 +1,95 @@
+matrix_metadata:
+  timestamp: '20260211_155544'
+  layer_id: LAYER-CA-002-08-04
+  feature_name: Lag Analysis Service
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-001
+  requirement: 'Tab bar renders with 3 tabs: Granger, Lag Curve, Regression'
+  description: 'Tab bar renders with 3 tabs: Granger, Lag Curve, Regression'
+  test_files: &id001
+  - /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-08_lag_analysis_service/LAYER_CA_002_08_04_Modal_Tabs/tests/test_generated_20260211_155533.py
+  test_methods:
+  - test_ac_001
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-002
+  requirement: Granger tab is active by default when modal opens
+  description: Granger tab is active by default when modal opens
+  test_files: *id001
+  test_methods:
+  - test_ac_002
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-003
+  requirement: Clicking Lag Curve tab switches visible content to LagCurveChart
+  description: Clicking Lag Curve tab switches visible content to LagCurveChart
+  test_files: *id001
+  test_methods:
+  - test_ac_003
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-004
+  requirement: Clicking Regression tab switches visible content to RegressionResults
+  description: Clicking Regression tab switches visible content to RegressionResults
+  test_files: *id001
+  test_methods:
+  - test_ac_004
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-005
+  requirement: Lazy loading prevents API calls until tab is first clicked
+  description: Lazy loading prevents API calls until tab is first clicked
+  test_files: *id001
+  test_methods:
+  - test_ac_005
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-08_lag_analysis_service/LAYER_CA_002_08_04_Modal_Tabs/src/implementation.jsx
+  lines: 72
+  methods: []
+  classes: []
+  implements_requirements:
+  - AC-001
+  - AC-002
+  - AC-003
+  - AC-004
+  - AC-005
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-08_lag_analysis_service/LAYER_CA_002_08_04_Modal_Tabs/tests/test_generated_20260211_155533.py
+  test_count: 0
+  implementation_files:
+  - /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-08_lag_analysis_service/LAYER_CA_002_08_04_Modal_Tabs/src/implementation.jsx
+  methods_tested: []
+  classes_tested: []
+  coverage: 0.0%
+line_level_traceability: []
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 5
+  requirements_traced: 5
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

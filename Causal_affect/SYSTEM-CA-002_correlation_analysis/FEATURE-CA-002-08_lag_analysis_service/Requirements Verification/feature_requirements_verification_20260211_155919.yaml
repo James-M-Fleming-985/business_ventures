@@ -1,0 +1,12 @@
+feature_id: FEATURE-CA-002-08
+feature_name: Lag Analysis Service
+verification_timestamp: '20260211_155919'
+total_layers: 0
+layers_completed: 0
+feature_level_tests:
+  integration_tests: REQUIRED
+  e2e_tests: REQUIRED
+  status: PENDING_EXECUTION
+layer_summary: []
+acceptance_criteria: []
+acceptance_status: PENDING_FEATURE_TESTS
