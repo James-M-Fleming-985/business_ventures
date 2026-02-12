@@ -1,17 +1,20 @@
 """
 Causality Analysis Router
-Endpoints for Granger causality testing and related analysis
+Endpoints for Granger causality testing, lag analysis, and regression quantification.
 
-Phase 2 of the exploitation pathway.
+Phase 2-4 of the exploitation pathway.
+Integrates: FEATURE-CA-002-02 (Granger), CA-002-06 (Causality API),
+            CA-002-08 (Lag Analysis), CA-002-09 (Regression)
 """
 
 from fastapi import APIRouter, HTTPException, Query, Depends
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from datetime import datetime, timedelta
 import logging
 import sys
 import numpy as np
 from pathlib import Path
+from pydantic import BaseModel, Field
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
@@ -19,7 +22,7 @@ from sqlalchemy import select, and_
 # Add paths for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-# Import Granger test implementation
+# Import Granger test implementation (Feature 02 - original)
 ca002_path = Path(__file__).parent.parent.parent.parent / "SYSTEM-CA-002_correlation_analysis"
 granger_path = ca002_path / "FEATURE-CA-002-02_causality_testing" / "LAYER-CA-002-02-01_granger_test" / "src"
 sys.path.insert(0, str(granger_path))
@@ -32,6 +35,58 @@ except ImportError as e:
     GRANGER_AVAILABLE = False
     GrangerCausalityTest = None
     GrangerTestResult = None
+
+# Import Feature 06 - Causality API Service
+feature_06_path = ca002_path / "FEATURE-CA-002-06_causality_api_service" / "src"
+
+try:
+    import importlib.util as _ilu
+    _spec06 = _ilu.spec_from_file_location(
+        "feature_integration_06", feature_06_path / "feature_integration.py"
+    )
+    _mod06 = _ilu.module_from_spec(_spec06)
+    _spec06.loader.exec_module(_mod06)
+    CausalityOrchestrator = _mod06.FeatureOrchestrator
+    CAUSALITY_SERVICE_AVAILABLE = True
+    _causality_service = CausalityOrchestrator()
+except Exception as e:
+    logging.warning(f"Causality API service (CA-002-06) not available: {e}")
+    CAUSALITY_SERVICE_AVAILABLE = False
+    _causality_service = None
+
+# Import Feature 08 - Lag Analysis Service
+feature_08_path = ca002_path / "FEATURE-CA-002-08_lag_analysis_service" / "src"
+
+try:
+    _spec08 = _ilu.spec_from_file_location(
+        "feature_integration_08", feature_08_path / "feature_integration.py"
+    )
+    _mod08 = _ilu.module_from_spec(_spec08)
+    _spec08.loader.exec_module(_mod08)
+    LagOrchestrator = _mod08.FeatureOrchestrator
+    LAG_SERVICE_AVAILABLE = True
+    _lag_service = LagOrchestrator()
+except Exception as e:
+    logging.warning(f"Lag analysis service (CA-002-08) not available: {e}")
+    LAG_SERVICE_AVAILABLE = False
+    _lag_service = None
+
+# Import Feature 09 - Regression Quantification Service
+feature_09_path = ca002_path / "FEATURE-CA-002-09_regression_service" / "src"
+
+try:
+    _spec09 = _ilu.spec_from_file_location(
+        "feature_integration_09", feature_09_path / "feature_integration.py"
+    )
+    _mod09 = _ilu.module_from_spec(_spec09)
+    _spec09.loader.exec_module(_mod09)
+    RegressionOrchestrator = _mod09.FeatureOrchestrator
+    REGRESSION_SERVICE_AVAILABLE = True
+    _regression_service = RegressionOrchestrator()
+except Exception as e:
+    logging.warning(f"Regression service (CA-002-09) not available: {e}")
+    REGRESSION_SERVICE_AVAILABLE = False
+    _regression_service = None
 
 from .database import get_db
 
@@ -123,6 +178,226 @@ def determine_causal_direction(
     else:
         return "none"
 
+
+@router.get("/health")
+async def causality_health() -> Dict[str, Any]:
+    """Health check for causality service."""
+    return {
+        "status": "healthy" if GRANGER_AVAILABLE else "degraded",
+        "granger_available": GRANGER_AVAILABLE,
+        "causality_service_available": CAUSALITY_SERVICE_AVAILABLE,
+        "lag_service_available": LAG_SERVICE_AVAILABLE,
+        "regression_service_available": REGRESSION_SERVICE_AVAILABLE,
+        "timestamp": datetime.utcnow().isoformat()
+    }
+
+
+# =============================================================================
+# FEATURE CA-002-06: Causality API Service Endpoints
+# =============================================================================
+
+class GrangerTestRequest(BaseModel):
+    """Request body for multi-variable Granger causality test."""
+    data: Dict[str, List[float]] = Field(..., description="Variable name -> time series values")
+    target_variable: str = Field(..., description="Variable to test as effect")
+    predictor_variables: List[str] = Field(..., description="Variables to test as causes")
+    max_lag: int = Field(default=10, ge=1, le=30)
+    significance_level: float = Field(default=0.05, ge=0.01, le=0.1)
+
+
+@router.post("/granger/test")
+async def run_granger_service(request: GrangerTestRequest) -> Dict[str, Any]:
+    """
+    Run multi-variable Granger causality test via the Causality API Service (CA-002-06).
+
+    Tests whether predictor variables Granger-cause the target variable.
+    """
+    if not CAUSALITY_SERVICE_AVAILABLE:
+        raise HTTPException(
+            status_code=503,
+            detail="Causality API service (CA-002-06) not available"
+        )
+
+    result = _causality_service.perform_granger_causality_test(
+        data=request.data,
+        target_variable=request.target_variable,
+        predictor_variables=request.predictor_variables,
+    )
+    return result.to_dict()
+
+
+@router.get("/granger/status")
+async def granger_service_status() -> Dict[str, Any]:
+    """Get status of the Granger causality service (CA-002-06)."""
+    if not CAUSALITY_SERVICE_AVAILABLE:
+        return {"available": False, "error": "Service not loaded"}
+
+    result = _causality_service.get_status()
+    return result.to_dict()
+
+
+# =============================================================================
+# FEATURE CA-002-08: Lag Analysis Service Endpoints
+# =============================================================================
+
+class LagAnalysisRequest(BaseModel):
+    """Request body for lag analysis between two time series."""
+    series_1: List[float] = Field(..., description="First time series")
+    series_2: List[float] = Field(..., description="Second time series")
+    max_lag: Optional[int] = Field(default=None, description="Override max lag")
+
+
+class BatchLagRequest(BaseModel):
+    """Request body for batch lag analysis."""
+    series_pairs: List[Dict[str, Any]] = Field(
+        ..., description="List of {id, series_1, series_2} dicts"
+    )
+
+
+@router.post("/lag/analyze")
+async def analyze_lag(request: LagAnalysisRequest) -> Dict[str, Any]:
+    """
+    Perform lag analysis between two time series (CA-002-08).
+
+    Finds the optimal time lag and cross-correlation between two series.
+    """
+    if not LAG_SERVICE_AVAILABLE:
+        raise HTTPException(
+            status_code=503,
+            detail="Lag analysis service (CA-002-08) not available"
+        )
+
+    kwargs = {}
+    if request.max_lag is not None:
+        kwargs["max_lag"] = request.max_lag
+
+    result = _lag_service.analyze_lag(
+        request.series_1,
+        request.series_2,
+        **kwargs,
+    )
+
+    if not result.success:
+        raise HTTPException(status_code=400, detail=result.error)
+
+    return {
+        "success": result.success,
+        "data": result.data,
+        "metadata": result.metadata,
+        "timestamp": result.timestamp.isoformat() if result.timestamp else None,
+    }
+
+
+@router.post("/lag/batch")
+async def batch_lag_analysis(request: BatchLagRequest) -> Dict[str, Any]:
+    """
+    Perform lag analysis on multiple time series pairs (CA-002-08).
+    """
+    if not LAG_SERVICE_AVAILABLE:
+        raise HTTPException(
+            status_code=503,
+            detail="Lag analysis service (CA-002-08) not available"
+        )
+
+    result = _lag_service.batch_analyze(request.series_pairs)
+
+    return {
+        "success": result.success,
+        "data": result.data,
+        "timestamp": result.timestamp.isoformat() if result.timestamp else None,
+    }
+
+
+@router.get("/lag/health")
+async def lag_service_health() -> Dict[str, Any]:
+    """Health check for the lag analysis service (CA-002-08)."""
+    if not LAG_SERVICE_AVAILABLE:
+        return {"available": False, "error": "Service not loaded"}
+
+    result = _lag_service.health_check()
+    return {
+        "available": True,
+        "healthy": result.success,
+        "data": result.data,
+    }
+
+
+# =============================================================================
+# FEATURE CA-002-09: Regression Quantification Service Endpoints
+# =============================================================================
+
+class RegressionRequest(BaseModel):
+    """Request body for regression quantification."""
+    model_type: str = Field(default="linear_regression", description="Regression model type")
+    data_source: str = Field(..., description="Data source identifier")
+    parameters: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Model parameters (confidence_level, validation_split, etc.)",
+    )
+
+
+@router.post("/regression/quantify")
+async def run_regression(request: RegressionRequest) -> Dict[str, Any]:
+    """
+    Execute regression quantification analysis (CA-002-09).
+
+    Quantifies the strength and nature of causal relationships via regression.
+    """
+    if not REGRESSION_SERVICE_AVAILABLE:
+        raise HTTPException(
+            status_code=503,
+            detail="Regression service (CA-002-09) not available"
+        )
+
+    result = _regression_service.execute_regression_quantification({
+        "model_type": request.model_type,
+        "data_source": request.data_source,
+        "parameters": request.parameters,
+    })
+
+    if not result.success:
+        raise HTTPException(status_code=400, detail=result.error)
+
+    return {
+        "success": result.success,
+        "data": result.data,
+        "feature_id": result.feature_id,
+        "operation": result.operation,
+        "metadata": result.metadata,
+        "timestamp": result.timestamp,
+    }
+
+
+@router.get("/regression/info")
+async def regression_service_info() -> Dict[str, Any]:
+    """Get regression service information (CA-002-09)."""
+    if not REGRESSION_SERVICE_AVAILABLE:
+        return {"available": False, "error": "Service not loaded"}
+
+    result = _regression_service.get_service_info()
+    return {
+        "available": True,
+        "data": result.data,
+    }
+
+
+@router.get("/regression/health")
+async def regression_service_health() -> Dict[str, Any]:
+    """Health check for the regression service (CA-002-09)."""
+    if not REGRESSION_SERVICE_AVAILABLE:
+        return {"available": False, "error": "Service not loaded"}
+
+    result = _regression_service.health_check()
+    return {
+        "available": True,
+        "healthy": result.success,
+        "data": result.data,
+    }
+
+
+# =============================================================================
+# FEATURE CA-002-02: Original Granger Pairwise Test (catch-all route — MUST be last)
+# =============================================================================
 
 @router.get("/{var1_name}/{var2_name}")
 async def test_causality(
@@ -281,13 +556,3 @@ def _generate_interpretation(
             f"No significant Granger causality detected in either direction "
             f"(p-values: {result_xy.p_value:.4f} and {result_yx.p_value:.4f})."
         )
-
-
-@router.get("/health")
-async def causality_health() -> Dict[str, Any]:
-    """Health check for causality service."""
-    return {
-        "status": "healthy" if GRANGER_AVAILABLE else "degraded",
-        "granger_available": GRANGER_AVAILABLE,
-        "timestamp": datetime.utcnow().isoformat()
-    }
