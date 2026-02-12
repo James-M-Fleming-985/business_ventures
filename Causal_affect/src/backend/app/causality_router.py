@@ -88,7 +88,35 @@ except Exception as e:
     REGRESSION_SERVICE_AVAILABLE = False
     _regression_service = None
 
-from .database import get_db
+# Database dependency - only available when running as part of the Causal_affect package
+_DB_AVAILABLE = False
+try:
+    from .database import get_db
+    _DB_AVAILABLE = True
+except ImportError:
+    try:
+        # Fallback: load database module from the same directory via importlib
+        import importlib.util as _ilu_db
+        _db_path = Path(__file__).parent / "database.py"
+        if _db_path.exists():
+            _config_path = Path(__file__).parent / "config.py"
+            # Pre-load config module so database.py's relative import works
+            _cfg_spec = _ilu_db.spec_from_file_location("app.config", _config_path)
+            _cfg_mod = _ilu_db.module_from_spec(_cfg_spec)
+            sys.modules['app.config'] = _cfg_mod
+            sys.modules['app'] = type(sys)('app')
+            sys.modules['app'].config = _cfg_mod
+            _cfg_spec.loader.exec_module(_cfg_mod)
+            
+            _db_spec = _ilu_db.spec_from_file_location("app.database", _db_path,
+                submodule_search_locations=[])
+            _db_mod = _ilu_db.module_from_spec(_db_spec)
+            _db_spec.loader.exec_module(_db_mod)
+            get_db = _db_mod.get_db
+            _DB_AVAILABLE = True
+    except Exception as e:
+        logging.warning(f"Causal_affect database not available (DB endpoints disabled): {e}")
+        get_db = None
 
 # Import schema with correct path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -397,131 +425,125 @@ async def regression_service_health() -> Dict[str, Any]:
 
 # =============================================================================
 # FEATURE CA-002-02: Original Granger Pairwise Test (catch-all route — MUST be last)
+# Requires database dependency for timeseries lookups
 # =============================================================================
 
-@router.get("/{var1_name}/{var2_name}")
-async def test_causality(
-    var1_name: str,
-    var2_name: str,
-    max_lag: int = Query(default=10, ge=1, le=30, description="Maximum lag to test"),
-    significance: float = Query(default=0.05, ge=0.01, le=0.1, description="Significance level"),
-    lookback_days: int = Query(default=365, ge=30, le=730, description="Days of data to use"),
-    db: AsyncSession = Depends(get_db)
-) -> Dict[str, Any]:
-    """
-    Run Granger causality test between two variables.
-    
-    Tests both directions:
-    - Does var1 Granger-cause var2? (X→Y)
-    - Does var2 Granger-cause var1? (Y→X)
-    
-    Args:
-        var1_name: Name of first variable (potential cause X)
-        var2_name: Name of second variable (potential effect Y)
-        max_lag: Maximum number of lags to test
-        significance: P-value threshold for significance
-        lookback_days: How many days of historical data to use
+if _DB_AVAILABLE and get_db is not None:
+    @router.get("/{var1_name}/{var2_name}")
+    async def test_causality(
+        var1_name: str,
+        var2_name: str,
+        max_lag: int = Query(default=10, ge=1, le=30, description="Maximum lag to test"),
+        significance: float = Query(default=0.05, ge=0.01, le=0.1, description="Significance level"),
+        lookback_days: int = Query(default=365, ge=30, le=730, description="Days of data to use"),
+        db: AsyncSession = Depends(get_db)
+    ) -> Dict[str, Any]:
+        """
+        Run Granger causality test between two variables.
         
-    Returns:
-        Causality test results including direction
-    """
-    if not GRANGER_AVAILABLE:
-        raise HTTPException(
-            status_code=503,
-            detail="Granger causality testing not available - missing dependencies"
-        )
-    
-    # Fetch time series data for both variables
-    x_data = await get_timeseries_by_name(db, var1_name, lookback_days)
-    if x_data is None or len(x_data) == 0:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Variable '{var1_name}' not found or has no data"
-        )
-    
-    y_data = await get_timeseries_by_name(db, var2_name, lookback_days)
-    if y_data is None or len(y_data) == 0:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Variable '{var2_name}' not found or has no data"
-        )
-    
-    # Align time series lengths
-    min_len = min(len(x_data), len(y_data))
-    
-    if min_len < max_lag + 10:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Insufficient data points ({min_len}) for lag={max_lag}. Need at least {max_lag + 10}."
-        )
-    
-    x_aligned = x_data[-min_len:]
-    y_aligned = y_data[-min_len:]
-    
-    # Initialize Granger test
-    granger = GrangerCausalityTest(
-        max_lag=max_lag,
-        confidence_level=significance
-    )
-    
-    try:
-        # Test both directions
-        result_xy = granger.test(x_aligned, y_aligned)
-        result_yx = granger.test(y_aligned, x_aligned)
-        
-        # Determine overall causal direction
-        causal_direction = determine_causal_direction(
-            result_xy.p_value,
-            result_yx.p_value,
-            significance
-        )
-        
-        # Map direction to readable names
-        direction_names = {
-            "X->Y": f"{var1_name} → {var2_name}",
-            "Y->X": f"{var2_name} → {var1_name}",
-            "bidirectional": f"{var1_name} ↔ {var2_name}",
-            "none": "No significant causality"
-        }
-        
-        return {
-            "var1": var1_name,
-            "var2": var2_name,
-            "n_observations": int(min_len),
-            "test_x_causes_y": {
-                "hypothesis": f"{var1_name} Granger-causes {var2_name}",
-                "f_statistic": float(result_xy.test_statistic),
-                "p_value": float(result_xy.p_value),
-                "optimal_lag": int(result_xy.lags),
-                "is_significant": bool(result_xy.reject_null),
-                "aic": result_xy.aic,
-                "bic": result_xy.bic
-            },
-            "test_y_causes_x": {
-                "hypothesis": f"{var2_name} Granger-causes {var1_name}",
-                "f_statistic": float(result_yx.test_statistic),
-                "p_value": float(result_yx.p_value),
-                "optimal_lag": int(result_yx.lags),
-                "is_significant": bool(result_yx.reject_null),
-                "aic": result_yx.aic,
-                "bic": result_yx.bic
-            },
-            "causal_direction": causal_direction,
-            "causal_direction_readable": direction_names[causal_direction],
-            "significance_level": significance,
-            "tested_at": datetime.utcnow().isoformat(),
-            "interpretation": _generate_interpretation(
-                var1_name, var2_name,
-                result_xy, result_yx,
-                causal_direction
+        Tests both directions:
+        - Does var1 Granger-cause var2? (X->Y)
+        - Does var2 Granger-cause var1? (Y->X)
+        """
+        if not GRANGER_AVAILABLE:
+            raise HTTPException(
+                status_code=503,
+                detail="Granger causality testing not available - missing dependencies"
             )
-        }
         
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error running Granger test: {e}")
-        raise HTTPException(status_code=500, detail=f"Error running causality test: {str(e)}")
+        # Fetch time series data for both variables
+        x_data = await get_timeseries_by_name(db, var1_name, lookback_days)
+        if x_data is None or len(x_data) == 0:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Variable '{var1_name}' not found or has no data"
+            )
+        
+        y_data = await get_timeseries_by_name(db, var2_name, lookback_days)
+        if y_data is None or len(y_data) == 0:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Variable '{var2_name}' not found or has no data"
+            )
+        
+        # Align time series lengths
+        min_len = min(len(x_data), len(y_data))
+        
+        if min_len < max_lag + 10:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Insufficient data points ({min_len}) for lag={max_lag}. Need at least {max_lag + 10}."
+            )
+        
+        x_aligned = x_data[-min_len:]
+        y_aligned = y_data[-min_len:]
+        
+        # Initialize Granger test
+        granger = GrangerCausalityTest(
+            max_lag=max_lag,
+            confidence_level=significance
+        )
+        
+        try:
+            # Test both directions
+            result_xy = granger.test(x_aligned, y_aligned)
+            result_yx = granger.test(y_aligned, x_aligned)
+            
+            # Determine overall causal direction
+            causal_direction = determine_causal_direction(
+                result_xy.p_value,
+                result_yx.p_value,
+                significance
+            )
+            
+            # Map direction to readable names
+            direction_names = {
+                "X->Y": f"{var1_name} → {var2_name}",
+                "Y->X": f"{var2_name} → {var1_name}",
+                "bidirectional": f"{var1_name} ↔ {var2_name}",
+                "none": "No significant causality"
+            }
+            
+            return {
+                "var1": var1_name,
+                "var2": var2_name,
+                "n_observations": int(min_len),
+                "test_x_causes_y": {
+                    "hypothesis": f"{var1_name} Granger-causes {var2_name}",
+                    "f_statistic": float(result_xy.test_statistic),
+                    "p_value": float(result_xy.p_value),
+                    "optimal_lag": int(result_xy.lags),
+                    "is_significant": bool(result_xy.reject_null),
+                    "aic": result_xy.aic,
+                    "bic": result_xy.bic
+                },
+                "test_y_causes_x": {
+                    "hypothesis": f"{var2_name} Granger-causes {var1_name}",
+                    "f_statistic": float(result_yx.test_statistic),
+                    "p_value": float(result_yx.p_value),
+                    "optimal_lag": int(result_yx.lags),
+                    "is_significant": bool(result_yx.reject_null),
+                    "aic": result_yx.aic,
+                    "bic": result_yx.bic
+                },
+                "causal_direction": causal_direction,
+                "causal_direction_readable": direction_names[causal_direction],
+                "significance_level": significance,
+                "tested_at": datetime.utcnow().isoformat(),
+                "interpretation": _generate_interpretation(
+                    var1_name, var2_name,
+                    result_xy, result_yx,
+                    causal_direction
+                )
+            }
+            
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        except Exception as e:
+            logger.error(f"Error running Granger test: {e}")
+            raise HTTPException(status_code=500, detail=f"Error running causality test: {str(e)}")
+else:
+    logging.info("Skipping /{var1_name}/{var2_name} endpoint registration (database not available)")
 
 
 def _generate_interpretation(
