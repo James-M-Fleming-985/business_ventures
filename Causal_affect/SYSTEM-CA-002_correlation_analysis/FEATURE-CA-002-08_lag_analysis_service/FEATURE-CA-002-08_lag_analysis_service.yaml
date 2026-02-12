@@ -215,3 +215,79 @@ testing:
     - "Full flow: API call → LagService → LaggedCorrelationAnalyzer → response"
     - "LagCurveChart fetches and displays data from API"
     - "Tab navigation works without full page reload"
+
+# ====================================================================================
+# PRODUCTION INTEGRATION (auto-wiring into the live app)
+# ====================================================================================
+# This section tells the AI Feature Builder HOW to connect the built feature
+# into the production application. Without this, the feature code is generated
+# but sits orphaned — never imported or served by the running app.
+#
+# The builder reads this section after generating feature_integration.py and
+# automatically patches the target router file to import the orchestrator and
+# register API endpoints.
+# ====================================================================================
+
+production_integration:
+  # Path to the router/app file that should be patched (relative to repo root)
+  target_router_file: "src/backend/app/causality_router.py"
+  
+  # Unique alias for the imported orchestrator (used in generated code)
+  import_alias: "LagAnalysisService"
+  
+  # Unique module name for importlib loading (avoids name collisions)
+  module_name: "feature_integration_08"
+  
+  # URL prefix for all endpoints (appended to the router's existing prefix)
+  endpoint_prefix: "/lag"
+  
+  # Whether to auto-generate a GET <prefix>/health endpoint
+  health_endpoint: true
+  
+  # Pydantic models for request validation
+  pydantic_models:
+    - name: "LagAnalysisRequest"
+      fields:
+        - name: "series_1"
+          type: "List[float]"
+          default: "..."
+          description: "First time series"
+        - name: "series_2"
+          type: "List[float]"
+          default: "..."
+          description: "Second time series"
+        - name: "max_lag"
+          type: "Optional[int]"
+          default: "None"
+          description: "Override max lag"
+    - name: "BatchLagRequest"
+      fields:
+        - name: "series_pairs"
+          type: "List[Dict[str, Any]]"
+          default: "..."
+          description: "List of {id, series_1, series_2} dicts"
+  
+  # Operations to expose as API endpoints
+  operations:
+    - name: "analyze_lag"
+      http_method: "post"
+      path: "/analyze"
+      description: "Perform lag analysis between two time series"
+      request_model: "LagAnalysisRequest"
+      orchestrator_method: "analyze_lag"
+      orchestrator_args: "request.series_1, request.series_2"
+    
+    - name: "batch_lag_analysis"
+      http_method: "post"
+      path: "/batch"
+      description: "Batch lag analysis on multiple series pairs"
+      request_model: "BatchLagRequest"
+      orchestrator_method: "batch_analyze"
+      orchestrator_args: "request.series_pairs"
+    
+    - name: "lag_service_status"
+      http_method: "get"
+      path: "/status"
+      description: "Get lag analysis service status"
+      orchestrator_method: "get_analysis_status"
+      orchestrator_args: "'default'"
