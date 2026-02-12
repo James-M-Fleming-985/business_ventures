@@ -1,0 +1,491 @@
+# AUTONOMOUS WORK QUEUE - Causal Affect Project
+# ============================================
+# This file specifies autonomous work tasks for AI agents.
+# 
+# USAGE: "Execute tasks from AUTONOMOUS_WORK_QUEUE.yaml"
+# 
+# AGENT BEHAVIOR:
+# 1. Read this file
+# 2. Find first task with status: pending
+# 3. Execute implementation steps
+# 4. Run test command
+# 5. If tests pass: commit, push to main, mark status: complete
+# 6. If tests fail: mark status: skipped, add failure_reason, continue to next
+# 7. Repeat until no pending tasks remain
+#
+# IMPORTANT: Railway auto-deploys on push to main
+
+queue_config:
+  repo_path: "/workspaces/control_tower/cloned_repos/business_ventures/Causal_affect"
+  branch: "main"
+  auto_push: true
+  on_failure: "skip_and_continue"
+  commit_prefix: "[AUTO]"
+  
+  # Testing strategy
+  testing:
+    run_existing_tests: true
+    write_smoke_tests: true
+    require_tests_pass: true
+    test_timeout_seconds: 120
+
+# ============================================
+# TASK QUEUE (Execute in order)
+# ============================================
+
+tasks:
+  # ----------------------------------------
+  # PHASE 2: Granger Causality Integration
+  # ----------------------------------------
+  - id: "phase-2-granger-endpoint"
+    phase: 2
+    title: "Add Granger Causality Endpoint for Correlation Pairs"
+    status: pending  # pending | in_progress | complete | skipped
+    priority: high
+    estimated_minutes: 30
+    
+    description: |
+      Create a dedicated endpoint that runs Granger causality test on 
+      correlation pairs (var1_id, var2_id) from the correlation database.
+      This is different from the existing /signals/{keyword}/granger which
+      works on composite signals.
+    
+    context:
+      existing_code:
+        - "SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-02_causality_testing/LAYER-CA-002-02-01_granger_test/src/implementation.py"
+        - "GrangerCausalityTest class already implements the test logic"
+      production_service: "src/backend/app/signal_data_service.py"
+      router: "src/backend/app/signal_radar_router.py"
+    
+    implementation_steps:
+      - step: 1
+        action: "Create new router file for causality endpoints"
+        file: "src/backend/app/causality_router.py"
+        details: |
+          - Import GrangerCausalityTest from LAYER implementation
+          - Create APIRouter with prefix="/api/causality"
+          - Add GET endpoint: /api/causality/{var1_id}/{var2_id}
+          - Return: p_value_xy, p_value_yx, causal_direction, optimal_lag
+      
+      - step: 2
+        action: "Register new router in main.py"
+        file: "src/backend/main.py"
+        details: |
+          - Import causality_router
+          - Add app.include_router(causality_router)
+      
+      - step: 3
+        action: "Add smoke test"
+        file: "src/backend/tests/test_causality_endpoint.py"
+        details: |
+          - Test endpoint returns 200 with valid var IDs
+          - Test endpoint returns 404 with invalid var IDs
+    
+    acceptance_criteria:
+      - "GET /api/causality/1/2 returns JSON with p_value_xy, p_value_yx"
+      - "Endpoint handles missing variables gracefully (404)"
+      - "Response includes causal_direction: 'X->Y' | 'Y->X' | 'bidirectional' | 'none'"
+    
+    test_command: "cd src/backend && python -m pytest tests/test_causality_endpoint.py -v"
+    
+    commit_message: "Add Granger causality endpoint for correlation pairs"
+    
+    failure_reason: null
+    completed_at: null
+
+  # ----------------------------------------
+  - id: "phase-2-db-columns"
+    phase: 2
+    title: "Add Causality Columns to Correlation Results"
+    status: pending
+    priority: medium
+    estimated_minutes: 20
+    
+    description: |
+      Add database columns to store causality test results alongside correlations.
+      This allows caching and displaying causality results without re-running tests.
+    
+    implementation_steps:
+      - step: 1
+        action: "Create migration script"
+        file: "src/backend/migrations/add_causality_columns.py"
+        details: |
+          ALTER TABLE correlation_results ADD COLUMN IF NOT EXISTS causal_direction VARCHAR(20);
+          ALTER TABLE correlation_results ADD COLUMN IF NOT EXISTS granger_p_value_xy FLOAT;
+          ALTER TABLE correlation_results ADD COLUMN IF NOT EXISTS granger_p_value_yx FLOAT;
+          ALTER TABLE correlation_results ADD COLUMN IF NOT EXISTS optimal_lag INTEGER;
+          ALTER TABLE correlation_results ADD COLUMN IF NOT EXISTS causality_tested_at TIMESTAMP;
+      
+      - step: 2
+        action: "Update causality endpoint to store results"
+        file: "src/backend/app/causality_router.py"
+        details: |
+          After running Granger test, UPDATE correlation_results with results
+    
+    acceptance_criteria:
+      - "Database columns exist"
+      - "Causality endpoint stores results after computation"
+      - "Subsequent calls can return cached results"
+    
+    test_command: "cd src/backend && python -c 'from migrations.add_causality_columns import run_migration; print(\"Migration OK\")'"
+    
+    commit_message: "Add causality columns to correlation_results table"
+    
+    failure_reason: null
+    completed_at: null
+
+  # ----------------------------------------
+  # PHASE 3: Lag Optimization
+  # ----------------------------------------
+  - id: "phase-3-lag-endpoint"
+    phase: 3
+    title: "Add Lag Correlation Analysis Endpoint"
+    status: pending
+    priority: high
+    estimated_minutes: 30
+    
+    description: |
+      Create endpoint that tests correlations across multiple lag values
+      and returns the correlation curve data for visualization.
+    
+    context:
+      existing_code:
+        - "SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-01_statistical_correlation/LAYER-CA-002-01-05_lagged_correlation/"
+    
+    implementation_steps:
+      - step: 1
+        action: "Add lag analysis service"
+        file: "src/backend/app/lag_analysis_service.py"
+        details: |
+          - calculate_lag_curve(x_series, y_series, max_lag=90)
+          - Returns: {lag_days: [0,1,2...90], correlations: [r0,r1,r2...], optimal_lag: X}
+      
+      - step: 2  
+        action: "Add endpoint to causality router"
+        file: "src/backend/app/causality_router.py"
+        details: |
+          - GET /api/causality/{var1_id}/{var2_id}/lag-curve
+          - Query params: max_lag (default 90)
+          - Returns lag curve data for frontend charting
+    
+    acceptance_criteria:
+      - "Endpoint returns array of lag values and corresponding correlations"
+      - "Response includes optimal_lag (highest |r|)"
+      - "Computation completes in <30 seconds"
+    
+    test_command: "cd src/backend && python -m pytest tests/test_lag_analysis.py -v"
+    
+    commit_message: "Add lag correlation curve endpoint"
+    
+    failure_reason: null
+    completed_at: null
+
+  # ----------------------------------------
+  - id: "phase-3-lag-visualization"
+    phase: 3
+    title: "Add Lag Curve Visualization Component"
+    status: pending
+    priority: medium
+    estimated_minutes: 45
+    
+    description: |
+      Add frontend component to display lag-correlation curve chart.
+      X-axis: Lag (days), Y-axis: Correlation strength
+      Highlight optimal lag with marker.
+    
+    implementation_steps:
+      - step: 1
+        action: "Create lag curve chart component"
+        file: "src/frontend/components/LagCurveChart.tsx"
+        details: |
+          - Line chart using Recharts or similar
+          - Props: lagData: {lag_days: number[], correlations: number[], optimal_lag: number}
+          - Highlight optimal lag point
+          - Show tooltip on hover
+      
+      - step: 2
+        action: "Integrate into correlation modal"
+        file: "src/frontend/components/CorrelationModal.tsx"
+        details: |
+          - Add "Analyze Lag" button
+          - Fetch lag curve data on click
+          - Display LagCurveChart in modal section
+    
+    acceptance_criteria:
+      - "Lag curve chart renders with data from endpoint"
+      - "Optimal lag highlighted visually"
+      - "Chart loads within 3 seconds"
+    
+    test_command: "cd src/frontend && npm run build"
+    
+    commit_message: "Add lag correlation curve visualization"
+    
+    failure_reason: null
+    completed_at: null
+
+  # ----------------------------------------
+  # PHASE 4: Regression Service
+  # ----------------------------------------
+  - id: "phase-4-regression-service"
+    phase: 4
+    title: "Implement OLS Regression Service"
+    status: pending
+    priority: high
+    estimated_minutes: 45
+    
+    description: |
+      Build service to calculate β₁ coefficient (impact ratio) using OLS regression.
+      Formula: Y = β₀ + β₁×X + ε
+      This quantifies: "For every 1 unit change in X, Y changes by β₁"
+    
+    implementation_steps:
+      - step: 1
+        action: "Create regression service"
+        file: "src/backend/app/regression_service.py"
+        details: |
+          - run_ols_regression(x_series, y_series, lag=0)
+          - Uses statsmodels OLS
+          - Returns: beta_0, beta_1, r_squared, p_value, std_error, confidence_interval
+      
+      - step: 2
+        action: "Add regression endpoint"
+        file: "src/backend/app/causality_router.py"
+        details: |
+          - GET /api/causality/{var1_id}/{var2_id}/regression
+          - Query params: lag (from Phase 3 optimal_lag)
+          - Returns full regression results with interpretation
+      
+      - step: 3
+        action: "Add impact calculator utility"
+        file: "src/backend/app/regression_service.py"
+        details: |
+          - calculate_predicted_impact(beta_1, x_current, x_baseline)
+          - Returns: predicted_change, predicted_value
+    
+    acceptance_criteria:
+      - "Regression endpoint returns β₁ coefficient"
+      - "Response includes 95% confidence interval"
+      - "Returns interpretation string: 'For every +1 in X, Y changes by β₁'"
+    
+    test_command: "cd src/backend && python -m pytest tests/test_regression.py -v"
+    
+    commit_message: "Add OLS regression service for impact quantification"
+    
+    failure_reason: null
+    completed_at: null
+
+  # ----------------------------------------
+  - id: "phase-4-regression-ui"
+    phase: 4
+    title: "Add Regression Results UI"
+    status: pending
+    priority: medium
+    estimated_minutes: 30
+    
+    description: |
+      Display regression results in the correlation modal.
+      Show β₁ coefficient, R², and prediction example.
+    
+    implementation_steps:
+      - step: 1
+        action: "Create regression results component"
+        file: "src/frontend/components/RegressionResults.tsx"
+        details: |
+          - Display: Impact Formula, β₁ value, R², confidence interval
+          - Show prediction example with current data
+      
+      - step: 2
+        action: "Integrate into correlation modal"
+        file: "src/frontend/components/CorrelationModal.tsx"
+        details: |
+          - Add "Calculate Impact" button
+          - Fetch regression results on click
+          - Display RegressionResults component
+    
+    acceptance_criteria:
+      - "β₁ coefficient displayed clearly"
+      - "Prediction example shows: '+1000 X → +β₁×1000 Y'"
+    
+    test_command: "cd src/frontend && npm run build"
+    
+    commit_message: "Add regression results UI component"
+    
+    failure_reason: null
+    completed_at: null
+
+  # ----------------------------------------
+  # PHASE 5.5: Prediction Tracking
+  # ----------------------------------------
+  - id: "phase-5-5-db-schema"
+    phase: 5.5
+    title: "Create Prediction Tracking Database Schema"
+    status: pending
+    priority: high
+    estimated_minutes: 20
+    
+    description: |
+      Create prediction_tracking table to store predictions and track actuals.
+    
+    implementation_steps:
+      - step: 1
+        action: "Create migration"
+        file: "src/backend/migrations/create_prediction_tracking.py"
+        details: |
+          CREATE TABLE prediction_tracking (
+            id SERIAL PRIMARY KEY,
+            prediction_id VARCHAR(50) UNIQUE,
+            fast_variable_name VARCHAR(100),
+            medium_variable_name VARCHAR(100),
+            predicted_at TIMESTAMP NOT NULL,
+            target_date DATE NOT NULL,
+            optimal_lag_days INT,
+            predicted_direction VARCHAR(10),
+            predicted_value FLOAT,
+            predicted_change_pct FLOAT,
+            baseline_value FLOAT,
+            beta_1 FLOAT,
+            r_squared FLOAT,
+            model_version VARCHAR(50),
+            confidence_level VARCHAR(20),
+            actual_value FLOAT,
+            actual_direction VARCHAR(10),
+            actual_change_pct FLOAT,
+            actual_recorded_at TIMESTAMP,
+            direction_correct BOOLEAN,
+            value_error_pct FLOAT
+          );
+    
+    acceptance_criteria:
+      - "Table created successfully"
+      - "Can INSERT prediction record"
+    
+    test_command: "cd src/backend && python -c 'from migrations.create_prediction_tracking import run_migration; print(\"OK\")'"
+    
+    commit_message: "Add prediction_tracking database table"
+    
+    failure_reason: null
+    completed_at: null
+
+  # ----------------------------------------
+  - id: "phase-5-5-prediction-service"
+    phase: 5.5
+    title: "Implement Prediction Storage Service"
+    status: pending
+    priority: high
+    estimated_minutes: 30
+    
+    description: |
+      Service to store predictions when user runs Granger/regression analysis.
+    
+    implementation_steps:
+      - step: 1
+        action: "Create prediction service"
+        file: "src/backend/app/prediction_service.py"
+        details: |
+          - store_prediction(var1, var2, prediction_data, target_date)
+          - get_predictions_pending_verification()
+          - update_with_actual(prediction_id, actual_value)
+          - calculate_accuracy_metrics(prediction_id)
+      
+      - step: 2
+        action: "Hook into regression endpoint"
+        file: "src/backend/app/causality_router.py"
+        details: |
+          - After regression, optionally store prediction
+          - Query param: store_prediction=true
+    
+    acceptance_criteria:
+      - "Predictions stored with all required fields"
+      - "Can query pending predictions"
+      - "Can update with actual values"
+    
+    test_command: "cd src/backend && python -m pytest tests/test_prediction_service.py -v"
+    
+    commit_message: "Add prediction storage service"
+    
+    failure_reason: null
+    completed_at: null
+
+  # ----------------------------------------
+  - id: "phase-5-5-actual-updater"
+    phase: 5.5
+    title: "Create Actual Value Updater Job"
+    status: pending
+    priority: medium
+    estimated_minutes: 30
+    
+    description: |
+      Background job to check predictions and update with actual values
+      once the target_date has passed and data is available.
+    
+    implementation_steps:
+      - step: 1
+        action: "Create updater job"
+        file: "src/backend/jobs/update_prediction_actuals.py"
+        details: |
+          - Query predictions WHERE target_date <= today AND actual_value IS NULL
+          - Fetch actual values from time_series_data
+          - Update prediction_tracking with actuals
+          - Calculate direction_correct, value_error_pct
+      
+      - step: 2
+        action: "Add manual trigger endpoint"
+        file: "src/backend/app/causality_router.py"
+        details: |
+          - POST /api/predictions/update-actuals
+          - Triggers the updater job manually
+    
+    acceptance_criteria:
+      - "Job finds pending predictions"
+      - "Job updates with actual values when available"
+      - "Accuracy metrics calculated correctly"
+    
+    test_command: "cd src/backend && python -c 'from jobs.update_prediction_actuals import run_job; print(\"OK\")'"
+    
+    commit_message: "Add prediction actual value updater job"
+    
+    failure_reason: null
+    completed_at: null
+
+  # ----------------------------------------
+  - id: "phase-5-5-analytics-endpoint"
+    phase: 5.5
+    title: "Add Prediction Analytics Endpoints"
+    status: pending
+    priority: medium
+    estimated_minutes: 30
+    
+    description: |
+      Endpoints to retrieve prediction accuracy analytics.
+    
+    implementation_steps:
+      - step: 1
+        action: "Add analytics endpoints"
+        file: "src/backend/app/causality_router.py"
+        details: |
+          - GET /api/predictions/analytics
+            Returns: direction_accuracy_pct, mean_absolute_error, n_predictions
+          - GET /api/predictions/history
+            Returns: List of predictions with actuals for charting
+          - GET /api/predictions/{var1}/{var2}/history
+            Returns: Prediction history for specific pair
+    
+    acceptance_criteria:
+      - "Analytics endpoint returns accuracy metrics"
+      - "History endpoint returns time series of predicted vs actual"
+    
+    test_command: "cd src/backend && python -m pytest tests/test_prediction_analytics.py -v"
+    
+    commit_message: "Add prediction analytics endpoints"
+    
+    failure_reason: null
+    completed_at: null
+
+# ============================================
+# EXECUTION LOG (Agent fills this in)
+# ============================================
+execution_log:
+  - timestamp: null
+    task_id: null
+    action: null
+    result: null

@@ -60,6 +60,14 @@ except ImportError as e:
     logger.warning(f"⚠️  Could not import Signal Radar router: {e}")
     signal_radar_router = None
 
+# Import Causality router from Causal_affect (CA-002 features: Granger, Lag Analysis, Regression)
+try:
+    from causality_router import router as causality_router
+    logger.info("✅ Causality router imported successfully (CA-002-02/06/08/09)")
+except ImportError as e:
+    logger.warning(f"⚠️  Could not import Causality router: {e}")
+    causality_router = None
+
 # Build version - automatically read from VERSION file
 BUILD_VERSION = __version__
 DEPLOY_TIMESTAMP = datetime.utcnow().isoformat()
@@ -95,6 +103,13 @@ if signal_radar_router is not None:
     logger.info("✅ Signal Radar endpoints registered at /api/signal-radar")
 else:
     logger.warning("⚠️  Signal Radar endpoints not available")
+
+# Include Causality router if available (CA-002 AI-built features)
+if causality_router is not None:
+    app.include_router(causality_router)
+    logger.info("✅ Causality endpoints registered (Granger, Lag Analysis, Regression)")
+else:
+    logger.warning("⚠️  Causality endpoints not available")
 
 # CORS Configuration
 app.add_middleware(
