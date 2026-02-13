@@ -1,0 +1,154 @@
+# ====================================================================================
+# LAYER REQUIREMENT: Actual Updater
+# ====================================================================================
+# LAYER ID: LAYER-CA-002-10-02
+# FEATURE: FEATURE-CA-002-10 Prediction Accuracy Tracking
+# VERSION: 2.0.0
+# TYPE: Backend
+# ====================================================================================
+
+metadata:
+  requirement_id: "LAYER-CA-002-10-02"
+  requirement_title: "Actual Updater"
+  layer_id: "LAYER-CA-002-10-02"
+  layer_name: "Actual Updater"
+  layer_folder: "LAYER_CA_002_10_02_Actual_Updater"
+  layer_type: "backend"
+
+  parent_feature: "FEATURE-CA-002-10_prediction_tracking"
+  parent_feature_file: "../FEATURE-CA-002-10_prediction_tracking.yaml"
+
+  version: "2.0.0"
+  status: "Active"
+  priority: "MUST HAVE"
+  created_date: "2026-02-13"
+  updated_date: "2026-02-13"
+  owner: "Causal Affect Team"
+  target_date: "2026-03-01"
+
+# ====================================================================================
+# TECHNICAL CONSTRAINTS
+# ====================================================================================
+
+technical_constraints:
+  language: "Python"
+  framework: "SQLAlchemy 2.0 (async)"
+  output_file_type: ".py"
+  runtime: "Python 3.12+"
+  async_required: true
+
+# ====================================================================================
+# REQUIREMENT DEFINITION
+# ====================================================================================
+
+requirement:
+  title: "Actual Outcome Updater"
+
+  description: |
+    Background job logic that reconciles predictions with actual outcomes.
+
+    Key responsibilities:
+    1. Query prediction_tracking for records where:
+       - target_date <= today
+       - actual_value IS NULL
+       - status = 'pending'
+    2. For each pending prediction:
+       - Look up the medium_variable_name in time_series_data table
+       - Find the actual data point closest to the target_date
+       - Extract actual_value, compute actual_direction and actual_change_pct
+         relative to baseline_value
+    3. Call PredictionRepository.record_actual() to persist the update
+    4. Mark predictions as 'expired' if target_date is > 30 days old with no data
+    5. Return a summary: { updated: N, expired: N, still_pending: N }
+
+    This job can be triggered:
+    - Via POST /api/causality/predictions/update-actuals endpoint
+    - Or scheduled as a periodic task (daily at 00:30 UTC)
+
+    The updater handles ALL 61+ variable pairs — it does not filter by
+    domain or pair.  Every pending prediction gets checked.
+
+  rationale: |
+    Without the actual updater, predictions remain in 'pending' state forever.
+    This is the mechanism that "closes the loop" — transforming stored predictions
+    into accuracy data that powers the analytics service.
+
+# ====================================================================================
+# SPECIFICATION
+# ====================================================================================
+
+specification:
+  technology_stack:
+    programming_language: "Python"
+    file_extensions: [".py"]
+    runtime_environment: "Python 3.12+"
+    primary_framework: "SQLAlchemy 2.0"
+    additional_libraries:
+      - "asyncpg"
+      - "datetime"
+      - "logging"
+
+  dependencies:
+    - module: "prediction_storage"
+      class: "PredictionRepository"
+      methods: ["get_pending_predictions", "record_actual"]
+    - table: "time_series_data"
+      description: "Existing table with actual variable values over time"
+      query: "SELECT value FROM time_series_data WHERE variable_name = ? AND date >= ? ORDER BY date ASC LIMIT 1"
+
+# ====================================================================================
+# INTERFACE DEFINITION
+# ====================================================================================
+
+interface:
+  class_name: "ActualUpdater"
+
+  methods:
+    - name: "update_all_pending"
+      signature: "async def update_all_pending(self, session) -> dict"
+      description: |
+        Main entry point.  Finds all pending predictions with target_date <= today,
+        looks up actual values from time_series_data, updates records.
+        Returns {"updated": int, "expired": int, "still_pending": int, "errors": int}.
+      returns: "dict with counts"
+
+    - name: "fetch_actual_value"
+      signature: "async def fetch_actual_value(self, session, variable_name: str, target_date: date) -> tuple[float, str, float] | None"
+      description: |
+        Looks up the actual value for a variable near the target date.
+        Returns (actual_value, actual_direction, actual_change_pct) or None if data unavailable.
+        Direction is computed relative to the prediction's baseline_value.
+      returns: "Tuple or None"
+
+    - name: "expire_stale_predictions"
+      signature: "async def expire_stale_predictions(self, session, days_threshold: int = 30) -> int"
+      description: |
+        Marks predictions as 'expired' if target_date is more than days_threshold
+        days ago and actual_value is still NULL.
+      returns: "Count of expired records"
+
+# ====================================================================================
+# ACCEPTANCE CRITERIA
+# ====================================================================================
+
+acceptance_criteria:
+  - "update_all_pending finds all pending predictions with past target dates"
+  - "Actual values are correctly fetched from time_series_data"
+  - "direction_correct calculated as predicted_direction == actual_direction"
+  - "value_error_pct calculated as (actual - predicted) / predicted * 100"
+  - "Predictions with no data after 30 days are marked 'expired'"
+  - "Returns accurate summary counts"
+  - "Handles missing time_series_data gracefully (skips, counts as still_pending)"
+  - "Works across all 61+ variable pairs without hardcoded pair logic"
+
+# ====================================================================================
+# OUTPUT
+# ====================================================================================
+
+output:
+  files:
+    - path: "src/actual_updater.py"
+      description: "ActualUpdater class with update_all_pending method"
+  test_files:
+    - path: "tests/test_actual_updater.py"
+      description: "Unit tests for update logic and edge cases"

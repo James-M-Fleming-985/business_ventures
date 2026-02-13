@@ -1,0 +1,183 @@
+# ====================================================================================
+# LAYER REQUIREMENT: Prediction Router
+# ====================================================================================
+# LAYER ID: LAYER-CA-002-10-04
+# FEATURE: FEATURE-CA-002-10 Prediction Accuracy Tracking
+# VERSION: 2.0.0
+# TYPE: Backend
+# ====================================================================================
+
+metadata:
+  requirement_id: "LAYER-CA-002-10-04"
+  requirement_title: "Prediction Router"
+  layer_id: "LAYER-CA-002-10-04"
+  layer_name: "Prediction Router"
+  layer_folder: "LAYER_CA_002_10_04_Prediction_Router"
+  layer_type: "backend"
+
+  parent_feature: "FEATURE-CA-002-10_prediction_tracking"
+  parent_feature_file: "../FEATURE-CA-002-10_prediction_tracking.yaml"
+
+  version: "2.0.0"
+  status: "Active"
+  priority: "MUST HAVE"
+  created_date: "2026-02-13"
+  updated_date: "2026-02-13"
+  owner: "Causal Affect Team"
+  target_date: "2026-03-01"
+
+# ====================================================================================
+# TECHNICAL CONSTRAINTS
+# ====================================================================================
+
+technical_constraints:
+  language: "Python"
+  framework: "FastAPI"
+  output_file_type: ".py"
+  runtime: "Python 3.12+"
+  async_required: true
+
+# ====================================================================================
+# REQUIREMENT DEFINITION
+# ====================================================================================
+
+requirement:
+  title: "Prediction REST API Router"
+
+  description: |
+    FastAPI router exposing prediction tracking endpoints.  This layer wires
+    together PredictionRepository, ActualUpdater, and PredictionAnalyticsService
+    into REST API endpoints.
+
+    Endpoints (all under /api/causality/predictions):
+
+    1. GET / — Paginated prediction list
+       Query params: domain, variable_pair, model_version, status, confidence, page, page_size
+       Returns: { success: true, data: { predictions: [...], total, page, page_size } }
+
+    2. GET /{prediction_id} — Single prediction detail
+       Returns: { success: true, data: { ...prediction fields } }
+       404 if not found
+
+    3. GET /accuracy — Accuracy summary metrics
+       Query params: domain, variable_pair, model_version, date_from, date_to
+       Returns: { success: true, data: { direction_accuracy, mape, timing_accuracy, ... } }
+
+    4. GET /accuracy/timeseries — Predicted-vs-actual chart data
+       Query params: variable_pair (required), model_version, date_from, date_to
+       Returns: { success: true, data: { variable_pair, points: [...] } }
+
+    5. GET /models/compare — Model comparison table data
+       Query params: domain, variable_pair, date_from, date_to
+       Returns: { success: true, data: { models: [...] } }
+
+    6. POST /update-actuals — Trigger actual updater job
+       Returns: { success: true, data: { updated, expired, still_pending, errors } }
+
+    All responses follow the standard JSON API structure: { success, data, error }.
+    Error responses: 400 for invalid input, 404 for not found, 500 for server errors.
+
+  rationale: |
+    The router is the HTTP interface that the frontend dashboard calls.
+    It follows the same pattern as causality_router.py endpoints for
+    Granger, lag, and regression features.
+
+# ====================================================================================
+# SPECIFICATION
+# ====================================================================================
+
+specification:
+  technology_stack:
+    programming_language: "Python"
+    file_extensions: [".py"]
+    runtime_environment: "Python 3.12+"
+    primary_framework: "FastAPI"
+    additional_libraries:
+      - "pydantic"
+      - "typing"
+
+  dependencies:
+    - module: "prediction_storage"
+      class: "PredictionRepository"
+    - module: "actual_updater"
+      class: "ActualUpdater"
+    - module: "analytics_service"
+      class: "PredictionAnalyticsService"
+    - module: "database.connection"
+      function: "get_db_session"
+
+# ====================================================================================
+# INTERFACE DEFINITION
+# ====================================================================================
+
+interface:
+  router_prefix: "/api/causality/predictions"
+
+  endpoints:
+    - name: "list_predictions"
+      method: "GET"
+      path: "/"
+      query_params: ["domain", "variable_pair", "model_version", "status", "confidence", "page", "page_size"]
+      response_model: "Standard JSON API: {success, data: {predictions, total, page, page_size}}"
+      error_codes: [400, 500]
+
+    - name: "get_prediction_detail"
+      method: "GET"
+      path: "/{prediction_id}"
+      path_params: ["prediction_id"]
+      response_model: "Standard JSON API: {success, data: {...prediction}}"
+      error_codes: [404, 500]
+
+    - name: "get_accuracy_summary"
+      method: "GET"
+      path: "/accuracy"
+      query_params: ["domain", "variable_pair", "model_version", "date_from", "date_to"]
+      response_model: "Standard JSON API: {success, data: {direction_accuracy, mape, ...}}"
+      error_codes: [400, 500]
+
+    - name: "get_accuracy_timeseries"
+      method: "GET"
+      path: "/accuracy/timeseries"
+      query_params: ["variable_pair", "model_version", "date_from", "date_to"]
+      response_model: "Standard JSON API: {success, data: {variable_pair, points: [...]}}"
+      error_codes: [400, 500]
+
+    - name: "compare_models"
+      method: "GET"
+      path: "/models/compare"
+      query_params: ["domain", "variable_pair", "date_from", "date_to"]
+      response_model: "Standard JSON API: {success, data: {models: [...]}}"
+      error_codes: [500]
+
+    - name: "trigger_update_actuals"
+      method: "POST"
+      path: "/update-actuals"
+      response_model: "Standard JSON API: {success, data: {updated, expired, still_pending, errors}}"
+      error_codes: [500]
+
+# ====================================================================================
+# ACCEPTANCE CRITERIA
+# ====================================================================================
+
+acceptance_criteria:
+  - "All 6 endpoints return JSON with {success, data, error} structure"
+  - "GET / supports pagination and all filter query params"
+  - "GET /{prediction_id} returns 404 with error message for missing prediction"
+  - "GET /accuracy returns correct summary metrics"
+  - "GET /accuracy/timeseries requires variable_pair param, returns 400 if missing"
+  - "GET /models/compare returns models sorted by direction_accuracy descending"
+  - "POST /update-actuals triggers ActualUpdater and returns counts"
+  - "All endpoints handle database errors gracefully with 500 and error message"
+  - "CORS headers set correctly for frontend access"
+
+# ====================================================================================
+# OUTPUT
+# ====================================================================================
+
+output:
+  files:
+    - path: "src/prediction_router.py"
+      description: "FastAPI router with 6 prediction endpoints"
+  test_files:
+    - path: "tests/test_prediction_router.py"
+      description: "Integration tests for all endpoints"

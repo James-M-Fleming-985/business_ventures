@@ -1,0 +1,188 @@
+# ====================================================================================
+# LAYER REQUIREMENT: Prediction Storage
+# ====================================================================================
+# LAYER ID: LAYER-CA-002-10-01
+# FEATURE: FEATURE-CA-002-10 Prediction Accuracy Tracking
+# VERSION: 2.0.0
+# TYPE: Backend
+# ====================================================================================
+
+metadata:
+  requirement_id: "LAYER-CA-002-10-01"
+  requirement_title: "Prediction Storage"
+  layer_id: "LAYER-CA-002-10-01"
+  layer_name: "Prediction Storage"
+  layer_folder: "LAYER_CA_002_10_01_Prediction_Storage"
+  layer_type: "backend"
+
+  parent_feature: "FEATURE-CA-002-10_prediction_tracking"
+  parent_feature_file: "../FEATURE-CA-002-10_prediction_tracking.yaml"
+
+  version: "2.0.0"
+  status: "Active"
+  priority: "MUST HAVE"
+  created_date: "2026-02-13"
+  updated_date: "2026-02-13"
+  owner: "Causal Affect Team"
+  target_date: "2026-03-01"
+
+# ====================================================================================
+# TECHNICAL CONSTRAINTS
+# ====================================================================================
+
+technical_constraints:
+  language: "Python"
+  framework: "SQLAlchemy 2.0 (async)"
+  output_file_type: ".py"
+  runtime: "Python 3.12+"
+  database: "PostgreSQL (Railway)"
+  async_required: true
+
+# ====================================================================================
+# REQUIREMENT DEFINITION
+# ====================================================================================
+
+requirement:
+  title: "Prediction Storage Repository"
+
+  description: |
+    SQLAlchemy async model and repository for the prediction_tracking table.
+
+    Key responsibilities:
+    1. Define PredictionTracking SQLAlchemy model mapping to prediction_tracking table
+    2. PredictionRepository class with async CRUD operations:
+       - store_prediction(prediction_data: dict) -> PredictionTracking
+       - record_actual(prediction_id: str, actual_value: float, actual_direction: str,
+         actual_change_pct: float) -> PredictionTracking
+       - get_prediction(prediction_id: str) -> PredictionTracking
+       - list_predictions(filters: dict, page: int, page_size: int) -> tuple[list, int]
+       - get_pending_predictions(before_date: date) -> list[PredictionTracking]
+    3. Prediction ID format: "pred-{uuid4_hex[:12]}"
+    4. Auto-calculate direction_correct and value_error_pct when actual recorded
+    5. Use async session from existing database connection module
+
+    Database schema (prediction_tracking table):
+    - id: SERIAL PRIMARY KEY
+    - prediction_id: VARCHAR(50) UNIQUE NOT NULL
+    - granger_result_id: INT (FK → granger_results)
+    - fast_variable_id: INT (FK → variable_metadata)
+    - fast_variable_name: VARCHAR(100) NOT NULL
+    - medium_variable_id: INT (FK → variable_metadata)
+    - medium_variable_name: VARCHAR(100) NOT NULL
+    - predicted_at: TIMESTAMP NOT NULL
+    - target_date: DATE NOT NULL
+    - optimal_lag_days: INT
+    - predicted_direction: VARCHAR(10) — 'up' or 'down'
+    - predicted_value: FLOAT
+    - predicted_change_pct: FLOAT
+    - baseline_value: FLOAT
+    - beta_0, beta_1, r_squared, fast_var_change: FLOAT
+    - model_version: VARCHAR(50) NOT NULL DEFAULT 'granger_v1'
+    - confidence_level: VARCHAR(20) DEFAULT 'Medium'
+    - granger_p_value, granger_f_statistic: FLOAT
+    - actual_value, actual_direction, actual_change_pct: FLOAT/VARCHAR (NULL until data)
+    - actual_recorded_at: TIMESTAMP
+    - direction_correct: BOOLEAN
+    - value_error, value_error_pct: FLOAT
+    - timing_error_days: INT
+    - status: VARCHAR(20) DEFAULT 'pending'
+    - created_at, updated_at: TIMESTAMP DEFAULT NOW()
+
+  rationale: |
+    The storage layer is the foundation for all prediction tracking.
+    Every other layer depends on being able to store and retrieve predictions.
+    Using async SQLAlchemy matches the existing application pattern.
+
+# ====================================================================================
+# SPECIFICATION
+# ====================================================================================
+
+specification:
+  technology_stack:
+    programming_language: "Python"
+    file_extensions: [".py"]
+    runtime_environment: "Python 3.12+"
+    primary_framework: "SQLAlchemy 2.0"
+    additional_libraries:
+      - "asyncpg"
+      - "uuid"
+      - "datetime"
+
+  existing_patterns:
+    database_connection: "src/backend/app/database/connection.py"
+    existing_models: "src/backend/app/database/models.py"
+    session_pattern: "async with get_db_session() as session"
+
+# ====================================================================================
+# INTERFACE DEFINITION
+# ====================================================================================
+
+interface:
+  model_class: "PredictionTracking"
+  repository_class: "PredictionRepository"
+
+  methods:
+    - name: "store_prediction"
+      signature: "async def store_prediction(self, session, prediction_data: dict) -> PredictionTracking"
+      description: |
+        Creates a new prediction record.  Generates prediction_id as pred-{uuid4_hex[:12]}.
+        Sets predicted_at to now(), status to 'pending'.
+      parameters:
+        - name: "session"
+          type: "AsyncSession"
+          description: "SQLAlchemy async session"
+        - name: "prediction_data"
+          type: "dict"
+          description: "Dict with fast_variable_name, medium_variable_name, predicted_direction, predicted_value, predicted_change_pct, baseline_value, target_date, optimal_lag_days, beta_0, beta_1, r_squared, fast_var_change, model_version, confidence_level, granger_p_value, granger_f_statistic"
+      returns: "PredictionTracking instance"
+
+    - name: "record_actual"
+      signature: "async def record_actual(self, session, prediction_id: str, actual_value: float, actual_direction: str, actual_change_pct: float) -> PredictionTracking"
+      description: |
+        Updates prediction with actual outcome.  Calculates direction_correct
+        (predicted_direction == actual_direction), value_error (actual - predicted),
+        value_error_pct ((actual - predicted) / predicted * 100).  Sets status to 'validated',
+        actual_recorded_at to now().
+      returns: "Updated PredictionTracking instance"
+
+    - name: "get_prediction"
+      signature: "async def get_prediction(self, session, prediction_id: str) -> PredictionTracking | None"
+      description: "Fetch single prediction by prediction_id"
+      returns: "PredictionTracking or None"
+
+    - name: "list_predictions"
+      signature: "async def list_predictions(self, session, filters: dict, page: int = 1, page_size: int = 50) -> tuple[list[PredictionTracking], int]"
+      description: |
+        Paginated list with optional filters: domain (matches fast/medium variable name pattern),
+        variable_pair, model_version, status, confidence.
+      returns: "Tuple of (list of predictions, total count)"
+
+    - name: "get_pending_predictions"
+      signature: "async def get_pending_predictions(self, session, before_date: date) -> list[PredictionTracking]"
+      description: "Get all predictions where target_date <= before_date AND actual_value IS NULL AND status = 'pending'"
+      returns: "List of pending PredictionTracking records"
+
+# ====================================================================================
+# ACCEPTANCE CRITERIA
+# ====================================================================================
+
+acceptance_criteria:
+  - "PredictionTracking model maps correctly to prediction_tracking table"
+  - "store_prediction creates record with generated prediction_id"
+  - "record_actual updates actual fields and calculates direction_correct, value_error_pct"
+  - "list_predictions respects all filter combinations"
+  - "list_predictions paginates correctly"
+  - "get_pending_predictions returns only pending records with past target dates"
+  - "All operations use async SQLAlchemy sessions"
+
+# ====================================================================================
+# OUTPUT
+# ====================================================================================
+
+output:
+  files:
+    - path: "src/prediction_storage.py"
+      description: "SQLAlchemy model + PredictionRepository class"
+  test_files:
+    - path: "tests/test_prediction_storage.py"
+      description: "Unit tests for CRUD operations"

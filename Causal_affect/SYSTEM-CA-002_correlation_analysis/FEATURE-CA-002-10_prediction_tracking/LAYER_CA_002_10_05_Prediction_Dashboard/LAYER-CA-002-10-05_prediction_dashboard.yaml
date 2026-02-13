@@ -1,0 +1,210 @@
+# ====================================================================================
+# LAYER REQUIREMENT: Prediction Dashboard
+# ====================================================================================
+# LAYER ID: LAYER-CA-002-10-05
+# FEATURE: FEATURE-CA-002-10 Prediction Accuracy Tracking
+# VERSION: 2.0.0
+# TYPE: Frontend
+# ====================================================================================
+
+metadata:
+  requirement_id: "LAYER-CA-002-10-05"
+  requirement_title: "Prediction Dashboard"
+  layer_id: "LAYER-CA-002-10-05"
+  layer_name: "Prediction Dashboard"
+  layer_folder: "LAYER_CA_002_10_05_Prediction_Dashboard"
+  layer_type: "frontend"
+
+  parent_feature: "FEATURE-CA-002-10_prediction_tracking"
+  parent_feature_file: "../FEATURE-CA-002-10_prediction_tracking.yaml"
+
+  version: "2.0.0"
+  status: "Active"
+  priority: "MUST HAVE"
+  created_date: "2026-02-13"
+  updated_date: "2026-02-13"
+  owner: "Causal Affect Team"
+  target_date: "2026-03-01"
+
+# ====================================================================================
+# TECHNICAL CONSTRAINTS
+# ====================================================================================
+
+technical_constraints:
+  language: "JavaScript (JSX)"
+  framework: "React"
+  output_file_type: ".jsx"
+  runtime: "Node.js / Browser"
+  styling: "TailwindCSS (already in project)"
+  charting: "Recharts (already installed)"
+  routing: "react-router-dom (already installed)"
+
+# ====================================================================================
+# REQUIREMENT DEFINITION
+# ====================================================================================
+
+requirement:
+  title: "Prediction Analytics Dashboard"
+
+  description: |
+    Full-page React dashboard at route /predictions, accessible via new
+    sidebar nav item "🎯 Predictions" in Layout.jsx.
+
+    The dashboard has three main sections:
+
+    1. SUMMARY CARDS (top row)
+       Four stat cards showing:
+       - Direction Accuracy (e.g., "78.5%")
+       - MAPE (e.g., "4.2%")
+       - Timing Accuracy (e.g., "85%")
+       - Total Predictions (e.g., "245 tracked")
+       Data from: GET /api/causality/predictions/accuracy
+
+    2. PREDICTED VS ACTUAL OVERLAY CHART (main area)
+       - Recharts ComposedChart with two Line series:
+         - Predicted values: dashed line, blue
+         - Actual values: solid line, green
+       - Area between the lines shaded to show divergence:
+         - Red shading where predicted > actual (over-prediction)
+         - Green shading where actual > predicted (under-prediction)
+       - X-axis: target dates
+       - Y-axis: values
+       - Tooltip shows date, predicted, actual, divergence %
+       - Default view: most recent variable pair with data
+       Data from: GET /api/causality/predictions/accuracy/timeseries
+
+    3. MODEL COMPARISON TABLE (bottom section)
+       - Sortable HTML table with columns:
+         - Model Version (e.g., "granger_v1", "granger_v1+lag_opt")
+         - Direction % (e.g., "72%", "76%")
+         - MAPE (e.g., "5.1%", "4.5%")
+         - N Predictions (e.g., "45", "38")
+         - Period (e.g., "Jan-Jun 2026")
+       - Click column header to sort
+       - Best model highlighted with accent color
+       Data from: GET /api/causality/predictions/models/compare
+
+    4. FILTER PANEL (sidebar or top bar)
+       - Domain dropdown (variable domain filter)
+       - Variable Pair dropdown (specific X→Y relationship)
+       - Date Range picker (from/to date inputs)
+       - Model Version dropdown
+       - Confidence Level dropdown (High/Medium/Low)
+       - "Apply Filters" button refreshes all three sections
+       - "Reset" button clears all filters
+
+    Navigation Integration:
+    - Add to Layout.jsx nav items: { label: "🎯 Predictions", to: "/predictions" }
+    - Add to App.jsx routes: <Route path="/predictions" element={<PredictionDashboard />} />
+
+  rationale: |
+    The dashboard is the user-facing surface for model management.
+    It answers "where are models good, where are they bad, and is accuracy
+    improving?" — the north-star questions for the prediction tracking system.
+
+# ====================================================================================
+# SPECIFICATION
+# ====================================================================================
+
+specification:
+  technology_stack:
+    programming_language: "JavaScript (JSX)"
+    file_extensions: [".jsx"]
+    runtime_environment: "Browser (React)"
+    primary_framework: "React"
+    additional_libraries:
+      - "recharts (ComposedChart, Line, Area, XAxis, YAxis, Tooltip, Legend)"
+      - "react-router-dom"
+      - "TailwindCSS utility classes"
+
+  api_calls:
+    - endpoint: "GET /api/causality/predictions/accuracy"
+      description: "Summary metrics for stat cards"
+      trigger: "On mount and on filter change"
+    - endpoint: "GET /api/causality/predictions/accuracy/timeseries"
+      description: "Chart data for overlay"
+      trigger: "On mount and on filter change"
+      requires: "variable_pair query param"
+    - endpoint: "GET /api/causality/predictions/models/compare"
+      description: "Model comparison table data"
+      trigger: "On mount and on filter change"
+
+  components:
+    - name: "PredictionDashboard"
+      file: "PredictionDashboard.jsx"
+      description: "Main page component, orchestrates data fetching and layout"
+
+    - name: "PredictionOverlayChart"
+      file: "PredictionOverlayChart.jsx"
+      description: |
+        Recharts ComposedChart with:
+        - Line (dashed, blue): predicted values
+        - Line (solid, green): actual values
+        - Area: divergence shading between lines
+        Props: { points: [{target_date, predicted_value, actual_value, divergence_pct}] }
+
+    - name: "ModelComparisonTable"
+      file: "ModelComparisonTable.jsx"
+      description: |
+        Sortable table showing model performance.
+        Props: { models: [{model_version, direction_accuracy, mape, n_predictions, period}] }
+        State: sortColumn, sortDirection
+
+    - name: "PredictionFilters"
+      file: "PredictionFilters.jsx"
+      description: |
+        Filter controls panel.
+        Props: { onApply: (filters) => void, onReset: () => void }
+        State: domain, variablePair, dateFrom, dateTo, modelVersion, confidence
+
+# ====================================================================================
+# STYLING
+# ====================================================================================
+
+styling:
+  theme: "Dark theme matching existing Signal Radar dashboard"
+  stat_cards: "bg-gray-800 rounded-lg p-4 shadow-md"
+  chart_container: "bg-gray-800 rounded-lg p-6 mt-6"
+  table: "bg-gray-800 rounded-lg overflow-hidden mt-6"
+  table_header: "bg-gray-700 text-gray-300 uppercase text-xs"
+  table_row: "border-b border-gray-700 hover:bg-gray-750"
+  filter_panel: "bg-gray-800 rounded-lg p-4 space-y-3"
+  accent_color: "text-emerald-400 for positive, text-red-400 for negative"
+  best_model_highlight: "ring-2 ring-emerald-500"
+
+# ====================================================================================
+# ACCEPTANCE CRITERIA
+# ====================================================================================
+
+acceptance_criteria:
+  - "Dashboard accessible at /predictions route"
+  - "Nav sidebar shows '🎯 Predictions' link"
+  - "Four summary stat cards load with data from /accuracy endpoint"
+  - "Overlay chart renders predicted (dashed blue) and actual (solid green) lines"
+  - "Divergence area shaded red for over-prediction, green for under-prediction"
+  - "Model comparison table loads with sortable columns"
+  - "Best model row highlighted with accent"
+  - "Filter panel has domain, variable pair, date range, model, confidence controls"
+  - "Applying filters refreshes all three data sections"
+  - "Loading states shown while data fetches"
+  - "Error states shown if API calls fail"
+  - "Responsive layout works on standard desktop viewport"
+  - "Dark theme matches existing app aesthetic"
+
+# ====================================================================================
+# OUTPUT
+# ====================================================================================
+
+output:
+  files:
+    - path: "src/PredictionDashboard.jsx"
+      description: "Main page component"
+    - path: "src/PredictionOverlayChart.jsx"
+      description: "Recharts overlay chart component"
+    - path: "src/ModelComparisonTable.jsx"
+      description: "Sortable model comparison table"
+    - path: "src/PredictionFilters.jsx"
+      description: "Filter controls panel"
+  test_files:
+    - path: "tests/test_prediction_dashboard.jsx"
+      description: "Component render and interaction tests"

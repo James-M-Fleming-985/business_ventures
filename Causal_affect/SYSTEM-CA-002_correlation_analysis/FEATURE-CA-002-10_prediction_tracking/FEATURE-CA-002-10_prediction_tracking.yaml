@@ -1,0 +1,658 @@
+# ====================================================================================
+# FEATURE REQUIREMENTS: Prediction Accuracy Tracking
+# ====================================================================================
+# FEATURE ID: FEATURE-CA-002-10
+# VERSION: 2.0.0
+# LAST UPDATED: 2026-02-13
+# SYSTEM: CA-002 Correlation Analysis Engine
+# PHASE: 5.5 - Prediction Accuracy Tracking
+# ====================================================================================
+
+metadata:
+  requirement_id: "FEATURE-CA-002-10"
+  requirement_name: "Prediction Accuracy Tracking"
+  feature_id: "FEATURE-CA-002-10"
+  feature_name: "Prediction Accuracy Tracking"
+  feature_code: "CA-002-10"
+  version: "2.0.0"
+  status: "Active"
+  created_date: "2026-02-13"
+  last_modified: "2026-02-13"
+  owner: "Causal Affect Team"
+  priority: "MUST HAVE"
+  target_date: "2026-03-01"
+
+  traceability:
+    parent_system: "SYSTEM-CA-002"
+    parent_system_file: "../SYSTEM-CA-002.yaml"
+    parent_system_requirements:
+      - "SYS-REQ-005: Prediction storage and accuracy tracking"
+      - "SYS-REQ-006: REST API endpoints for prediction management"
+
+    derivation_rationale: |
+      Phase 5.5 of the Causal Affect exploitation pathway.  Tracks every
+      prediction the system makes, records actual outcomes when data arrives,
+      and calculates accuracy metrics.  This is the MODEL MANAGEMENT TOOL
+      that lets users compare Granger-only, lag-optimized, ensemble, and
+      future model variants.  North-star metric: closing the gap between
+      predicted and actual values over time.
+
+# ====================================================================================
+# UI INTEGRATION CONTEXT
+# ====================================================================================
+
+ui_integration:
+  entry_point:
+    page: "PredictionDashboard.jsx"
+    location: "src/components/PredictionDashboard.jsx"
+    trigger: "User clicks '🎯 Predictions' in the nav sidebar"
+
+  navigation:
+    type: "new_nav_item"
+    nav_file: "src/components/Layout.jsx"
+    label: "🎯 Predictions"
+    route: "/predictions"
+    position: "After Signal Radar"
+
+  routing:
+    router_file: "src/App.jsx"
+    route_path: "/predictions"
+    component: "PredictionDashboard"
+
+  new_components:
+    - name: "PredictionDashboard.jsx"
+      type: "React page component"
+      library: "Recharts, TailwindCSS"
+      description: |
+        Full-page Prediction Analytics dashboard.  Three main sections:
+        1. Predicted-vs-Actual overlay chart (Recharts ComposedChart with
+           dashed prediction line, solid actual line, divergence shading)
+        2. Model Comparison table (sortable by Direction %, MAPE, N, Period)
+        3. Filter panel (domain, variable pair, date range, model version,
+           confidence level)
+
+    - name: "PredictionOverlayChart.jsx"
+      type: "React component"
+      library: "Recharts"
+      description: "Line chart overlay: predicted (dashed) vs actual (solid) with divergence area shading"
+
+    - name: "ModelComparisonTable.jsx"
+      type: "React component"
+      library: "TailwindCSS"
+      description: "Sortable table comparing Direction %, MAPE, N Predictions, Period across model versions"
+
+    - name: "PredictionFilters.jsx"
+      type: "React component"
+      library: "TailwindCSS"
+      description: "Filter controls: domain, variable pair, date range, model version, confidence level"
+
+  user_flow: |
+    User clicks "🎯 Predictions" in the nav sidebar
+      → PredictionDashboard.jsx loads
+        → Calls GET /api/causality/predictions/accuracy (summary metrics)
+        → Calls GET /api/causality/predictions/accuracy/timeseries (chart data)
+          → PredictionOverlayChart renders predicted vs actual lines
+          → Summary cards show direction accuracy, MAPE, timing accuracy
+        → Bottom section shows ModelComparisonTable
+          → Calls GET /api/causality/predictions/models/compare
+          → Rows: model version, direction %, MAPE, N predictions, period
+        → User applies filters → API calls refresh with query params
+          → by_domain, by_variable_pair, date_range, model_version, confidence
+
+# ====================================================================================
+# FEATURE OVERVIEW
+# ====================================================================================
+
+overview:
+  description: |
+    Prediction Accuracy Tracking is the Phase 5.5 MODEL MANAGEMENT TOOL for the
+    Causal Affect project.  It stores every prediction the system makes (direction,
+    magnitude, timing, β₁ values) for ALL 61+ variable pairs from CA-001 data
+    sources, then updates with actual outcomes as data arrives.
+
+    Core value: MODEL COMPARISON.  Users see which model variant (granger_v1,
+    granger_v1+lag_opt, ensemble_v1, etc.) performs best for each domain and
+    variable pair.  Lag optimization is INTEGRAL — not a separate approach but
+    the default enhancement applied to all Granger predictions.
+
+    North-star metric: CLOSING THE GAP between predicted and actual values,
+    measured as decreasing MAPE and increasing direction accuracy across model
+    iterations.
+
+    The dashboard answers:
+    - Where do our models excel vs struggle (per domain and variable pair)?
+    - Which model version gives the best accuracy for which relationships?
+    - Is accuracy improving over time as we add new models?
+    - What is the gap between predicted and actual, and is it closing?
+
+  business_value:
+    - "Creates feedback loop for continuous model improvement"
+    - "Tracks accuracy across ALL 61+ CA-001 variable pairs"
+    - "Enables model comparison to identify best approach per relationship"
+    - "Identifies where models excel vs struggle by domain"
+    - "Measures gap between predicted and actual over time"
+    - "Informs future model investments (ensemble, VAR, etc.)"
+
+  user_story: |
+    As a Causal Affect analyst, I want to see how accurate my predictions are
+    for every variable pair across different model versions, so I can identify
+    which models work best where and focus improvement efforts on closing the
+    gap between predictions and reality.
+
+  acceptance_criteria:
+    - "Predictions stored automatically when Granger/regression analysis runs"
+    - "Actual outcomes recorded by daily background updater job"
+    - "GET /api/causality/predictions returns paginated list of all predictions"
+    - "GET /api/causality/predictions/{id} returns single prediction detail"
+    - "GET /api/causality/predictions/accuracy returns summary metrics"
+    - "GET /api/causality/predictions/accuracy/timeseries returns chart data"
+    - "GET /api/causality/predictions/models/compare returns model comparison"
+    - "Dashboard shows predicted-vs-actual overlay chart with divergence shading"
+    - "Dashboard shows model comparison table sortable by Direction %, MAPE"
+    - "Dashboard has filter controls for domain, variable pair, date, model, confidence"
+    - "Direction accuracy, MAPE, timing accuracy displayed as summary cards"
+    - "New nav item '🎯 Predictions' visible in sidebar"
+    - "Error handling: 404 for missing prediction, 400 for invalid input"
+
+# ====================================================================================
+# API SPECIFICATION
+# ====================================================================================
+
+api:
+  base_prefix: "/api/causality/predictions"
+
+  endpoints:
+    - method: "GET"
+      path: "/api/causality/predictions"
+      description: "Paginated list of predictions with optional filters"
+      query_params:
+        - name: "domain"
+          type: "string"
+          description: "Filter by variable domain"
+        - name: "variable_pair"
+          type: "string"
+          description: "Filter by specific X→Y pair (e.g., ai_papers__nvda_stock)"
+        - name: "model_version"
+          type: "string"
+          description: "Filter by model version"
+        - name: "status"
+          type: "string"
+          description: "'pending', 'validated', 'expired'"
+        - name: "confidence"
+          type: "string"
+          description: "'High', 'Medium', 'Low'"
+        - name: "page"
+          type: "integer"
+          default: 1
+        - name: "page_size"
+          type: "integer"
+          default: 50
+      response: |
+        {
+          "success": true,
+          "data": {
+            "predictions": [...],
+            "total": 245,
+            "page": 1,
+            "page_size": 50
+          }
+        }
+
+    - method: "GET"
+      path: "/api/causality/predictions/{prediction_id}"
+      description: "Single prediction with full detail"
+      response: |
+        {
+          "success": true,
+          "data": {
+            "prediction_id": "pred-abc123",
+            "fast_variable_name": "ai_papers",
+            "medium_variable_name": "nvda_stock",
+            "predicted_direction": "up",
+            "predicted_value": 480.0,
+            "actual_value": 465.0,
+            "direction_correct": false,
+            "value_error_pct": -3.1,
+            "model_version": "granger_v1",
+            "status": "validated",
+            ...
+          }
+        }
+
+    - method: "GET"
+      path: "/api/causality/predictions/accuracy"
+      description: "Summary accuracy metrics with optional filters"
+      query_params:
+        - name: "domain"
+          type: "string"
+        - name: "variable_pair"
+          type: "string"
+        - name: "model_version"
+          type: "string"
+        - name: "date_from"
+          type: "string"
+          description: "ISO date"
+        - name: "date_to"
+          type: "string"
+          description: "ISO date"
+      response: |
+        {
+          "success": true,
+          "data": {
+            "direction_accuracy": 0.785,
+            "mean_absolute_error": 4.2,
+            "mape": 3.8,
+            "timing_accuracy": 0.85,
+            "total_predictions": 245,
+            "validated_predictions": 180,
+            "best_performing_pair": {
+              "pair": "layoff_searches → job_board_traffic",
+              "direction_accuracy": 0.91
+            },
+            "worst_performing_pair": {
+              "pair": "ai_papers → nvda_stock",
+              "direction_accuracy": 0.62
+            }
+          }
+        }
+
+    - method: "GET"
+      path: "/api/causality/predictions/accuracy/timeseries"
+      description: "Time series of predicted vs actual for overlay chart"
+      query_params:
+        - name: "variable_pair"
+          type: "string"
+          required: true
+        - name: "model_version"
+          type: "string"
+        - name: "date_from"
+          type: "string"
+        - name: "date_to"
+          type: "string"
+      response: |
+        {
+          "success": true,
+          "data": {
+            "variable_pair": "ai_papers → nvda_stock",
+            "points": [
+              {
+                "target_date": "2026-01-15",
+                "predicted_value": 480.0,
+                "actual_value": 465.0,
+                "divergence_pct": -3.1
+              },
+              ...
+            ]
+          }
+        }
+
+    - method: "GET"
+      path: "/api/causality/predictions/models/compare"
+      description: "Compare accuracy across model versions"
+      query_params:
+        - name: "domain"
+          type: "string"
+        - name: "variable_pair"
+          type: "string"
+        - name: "date_from"
+          type: "string"
+        - name: "date_to"
+          type: "string"
+      response: |
+        {
+          "success": true,
+          "data": {
+            "models": [
+              {
+                "model_version": "granger_v1",
+                "direction_accuracy": 0.72,
+                "mape": 5.1,
+                "n_predictions": 45,
+                "period": "Jan-Jun 2026"
+              },
+              {
+                "model_version": "granger_v1+lag_opt",
+                "direction_accuracy": 0.76,
+                "mape": 4.5,
+                "n_predictions": 38,
+                "period": "Mar-Jun 2026"
+              }
+            ]
+          }
+        }
+
+# ====================================================================================
+# DATABASE SCHEMA
+# ====================================================================================
+
+database:
+  table_name: "prediction_tracking"
+  schema: |
+    CREATE TABLE prediction_tracking (
+      id SERIAL PRIMARY KEY,
+
+      -- Identification
+      prediction_id VARCHAR(50) UNIQUE NOT NULL,
+      granger_result_id INT REFERENCES granger_results(id),
+
+      -- Variables involved
+      fast_variable_id INT REFERENCES variable_metadata(id),
+      fast_variable_name VARCHAR(100) NOT NULL,
+      medium_variable_id INT REFERENCES variable_metadata(id),
+      medium_variable_name VARCHAR(100) NOT NULL,
+
+      -- Timing
+      predicted_at TIMESTAMP NOT NULL,
+      target_date DATE NOT NULL,
+      optimal_lag_days INT,
+
+      -- The prediction
+      predicted_direction VARCHAR(10),
+      predicted_value FLOAT,
+      predicted_change_pct FLOAT,
+      baseline_value FLOAT,
+
+      -- Regression coefficients
+      beta_0 FLOAT,
+      beta_1 FLOAT,
+      r_squared FLOAT,
+      fast_var_change FLOAT,
+
+      -- Model metadata
+      model_version VARCHAR(50) NOT NULL DEFAULT 'granger_v1',
+      confidence_level VARCHAR(20) DEFAULT 'Medium',
+      granger_p_value FLOAT,
+      granger_f_statistic FLOAT,
+
+      -- Actual outcome (NULL until data available)
+      actual_value FLOAT,
+      actual_direction VARCHAR(10),
+      actual_change_pct FLOAT,
+      actual_recorded_at TIMESTAMP,
+
+      -- Accuracy metrics (calculated after actual known)
+      direction_correct BOOLEAN,
+      value_error FLOAT,
+      value_error_pct FLOAT,
+      timing_error_days INT,
+
+      -- Status
+      status VARCHAR(20) DEFAULT 'pending',
+
+      created_at TIMESTAMP DEFAULT NOW(),
+      updated_at TIMESTAMP DEFAULT NOW()
+    );
+
+    CREATE INDEX idx_prediction_target_date ON prediction_tracking(target_date);
+    CREATE INDEX idx_prediction_status ON prediction_tracking(status);
+    CREATE INDEX idx_prediction_model ON prediction_tracking(model_version);
+    CREATE INDEX idx_prediction_variables ON prediction_tracking(fast_variable_id, medium_variable_id);
+
+# ====================================================================================
+# LAYER ARCHITECTURE
+# ====================================================================================
+
+layers:
+  # Backend Layers
+  - layer_id: "LAYER-CA-002-10-01"
+    name: "Prediction Storage"
+    folder: "LAYER_CA_002_10_01_Prediction_Storage"
+    type: "backend"
+    responsibility: |
+      SQLAlchemy model for prediction_tracking table plus a repository class
+      with CRUD operations: store_prediction(), record_actual(),
+      list_predictions(), get_prediction().  Uses async SQLAlchemy with
+      the Railway PostgreSQL database.
+    technology: "Python, SQLAlchemy, asyncpg"
+    requirement_file: "LAYER-CA-002-10-01_prediction_storage.yaml"
+
+  - layer_id: "LAYER-CA-002-10-02"
+    name: "Actual Updater"
+    folder: "LAYER_CA_002_10_02_Actual_Updater"
+    type: "backend"
+    responsibility: |
+      Background job that queries prediction_tracking where target_date <= today
+      AND actual_value IS NULL, fetches actual values from time_series_data,
+      and updates records with actual_value, direction_correct, value_error_pct.
+      Can be triggered via API endpoint or scheduled.
+    technology: "Python, SQLAlchemy, asyncio"
+    requirement_file: "LAYER-CA-002-10-02_actual_updater.yaml"
+
+  - layer_id: "LAYER-CA-002-10-03"
+    name: "Analytics Service"
+    folder: "LAYER_CA_002_10_03_Analytics_Service"
+    type: "backend"
+    responsibility: |
+      Service class that calculates accuracy metrics:
+      - Summary: direction accuracy, MAPE, timing accuracy, best/worst pairs
+      - Timeseries: predicted-vs-actual data points for overlay chart
+      - Model comparison: accuracy breakdown by model_version
+      Supports filtering by domain, variable pair, date range, model, confidence.
+      Operates on ALL 61+ variable pairs from CA-001 data sources.
+    technology: "Python, NumPy, SQLAlchemy"
+    requirement_file: "LAYER-CA-002-10-03_analytics_service.yaml"
+
+  - layer_id: "LAYER-CA-002-10-04"
+    name: "Prediction Router"
+    folder: "LAYER_CA_002_10_04_Prediction_Router"
+    type: "backend"
+    responsibility: |
+      FastAPI router exposing 5 endpoints under /api/causality/predictions/:
+      1. GET / — paginated prediction list
+      2. GET /{prediction_id} — single prediction detail
+      3. GET /accuracy — summary accuracy metrics
+      4. GET /accuracy/timeseries — chart data for overlay
+      5. GET /models/compare — model comparison table data
+      Plus POST /update-actuals to trigger the actual updater job.
+    technology: "FastAPI, Pydantic"
+    requirement_file: "LAYER-CA-002-10-04_prediction_router.yaml"
+
+  # Frontend Layer
+  - layer_id: "LAYER-CA-002-10-05"
+    name: "Prediction Dashboard"
+    folder: "LAYER_CA_002_10_05_Prediction_Dashboard"
+    type: "frontend"
+    responsibility: |
+      Full-page React dashboard at /predictions with:
+      1. PredictionOverlayChart — Recharts ComposedChart showing predicted
+         (dashed line) vs actual (solid line) with divergence area shading
+      2. ModelComparisonTable — sortable table of model versions with
+         Direction %, MAPE, N Predictions, Period columns
+      3. PredictionFilters — domain, variable pair, date range, model version,
+         confidence level filter controls
+      4. Summary cards — direction accuracy %, MAPE, timing accuracy
+      New nav item "🎯 Predictions" in Layout.jsx, route in App.jsx.
+    technology: "React, Recharts, TailwindCSS"
+    requirement_file: "LAYER-CA-002-10-05_prediction_dashboard.yaml"
+
+# ====================================================================================
+# DEPENDENCIES
+# ====================================================================================
+
+dependencies:
+  existing_backend:
+    - path: "FEATURE-CA-002-06_causality_api_service"
+      provides: "Granger analysis results that generate predictions"
+    - path: "FEATURE-CA-002-08_lag_analysis_service"
+      provides: "Optimal lag values (integral to predictions, not separate)"
+    - path: "FEATURE-CA-002-09_regression_service"
+      provides: "β₁ coefficients used in prediction calculations"
+    - path: "src/backend/app/database/models.py"
+      provides: "SQLAlchemy Base, async session factory"
+    - path: "src/backend/app/database/connection.py"
+      provides: "get_db_session() async context manager"
+
+  existing_frontend:
+    - path: "src/components/Layout.jsx"
+      status: "MODIFY — add nav item"
+    - path: "src/App.jsx"
+      status: "MODIFY — add route"
+
+  npm_packages:
+    - "recharts (already installed)"
+    - "react-router-dom (already installed)"
+
+  python_packages:
+    - "sqlalchemy (already installed)"
+    - "asyncpg (already installed)"
+    - "numpy (already installed)"
+
+# ====================================================================================
+# TESTING STRATEGY
+# ====================================================================================
+
+testing:
+  unit_tests:
+    - "PredictionRepository.store_prediction persists record with all fields"
+    - "PredictionRepository.record_actual updates actual_value and calculates direction_correct"
+    - "AnalyticsService.get_accuracy_summary returns correct MAPE and direction %"
+    - "AnalyticsService.get_timeseries returns matching predicted/actual pairs"
+    - "AnalyticsService.compare_models groups by model_version correctly"
+    - "ActualUpdater finds pending predictions and updates them"
+    - "PredictionOverlayChart renders with valid data"
+    - "ModelComparisonTable sorts by columns"
+    - "PredictionFilters emits filter changes"
+
+  integration_tests:
+    - "Full lifecycle: store prediction → record actual → calculate accuracy"
+    - "All 5 API endpoints return correct response structure"
+    - "Filter combinations return correct subsets"
+    - "Dashboard loads and displays data from API"
+
+  e2e_tests:
+    - "Navigate to Predictions page via sidebar"
+    - "Overlay chart displays with real data"
+    - "Model comparison table loads and is sortable"
+    - "Filters update chart and table"
+
+# ====================================================================================
+# PRODUCTION INTEGRATION (auto-wiring into the live app)
+# ====================================================================================
+# This section tells the AI Feature Builder HOW to connect the built feature
+# into the production application.  Without this, the feature code is generated
+# but sits orphaned — never imported or served by the running app.
+#
+# The builder reads this section after generating feature_integration.py and
+# automatically patches the target router file to import the orchestrator and
+# register API endpoints.
+# ====================================================================================
+
+production_integration:
+  # Path to the router/app file that should be patched (relative to repo root)
+  target_router_file: "src/backend/app/causality_router.py"
+
+  # Unique alias for the imported orchestrator (used in generated code)
+  import_alias: "PredictionTrackingService"
+
+  # Unique module name for importlib loading (avoids name collisions)
+  module_name: "feature_integration_10"
+
+  # URL prefix for all endpoints (appended to the router's existing prefix)
+  endpoint_prefix: "/predictions"
+
+  # Whether to auto-generate a GET <prefix>/health endpoint
+  health_endpoint: true
+
+  # Pydantic models for request validation
+  pydantic_models:
+    - name: "PredictionListRequest"
+      fields:
+        - name: "domain"
+          type: "Optional[str]"
+          default: "None"
+          description: "Filter by variable domain"
+        - name: "variable_pair"
+          type: "Optional[str]"
+          default: "None"
+          description: "Filter by X→Y pair"
+        - name: "model_version"
+          type: "Optional[str]"
+          default: "None"
+          description: "Filter by model version"
+        - name: "status"
+          type: "Optional[str]"
+          default: "None"
+          description: "pending, validated, expired"
+        - name: "confidence"
+          type: "Optional[str]"
+          default: "None"
+          description: "High, Medium, Low"
+        - name: "page"
+          type: "int"
+          default: "1"
+          description: "Page number"
+        - name: "page_size"
+          type: "int"
+          default: "50"
+          description: "Results per page"
+
+    - name: "AccuracyFilterRequest"
+      fields:
+        - name: "domain"
+          type: "Optional[str]"
+          default: "None"
+          description: "Filter by domain"
+        - name: "variable_pair"
+          type: "Optional[str]"
+          default: "None"
+          description: "Filter by pair"
+        - name: "model_version"
+          type: "Optional[str]"
+          default: "None"
+          description: "Filter by model"
+        - name: "date_from"
+          type: "Optional[str]"
+          default: "None"
+          description: "Start date ISO"
+        - name: "date_to"
+          type: "Optional[str]"
+          default: "None"
+          description: "End date ISO"
+
+  # Operations to expose as API endpoints
+  operations:
+    - name: "list_predictions"
+      http_method: "get"
+      path: "/"
+      description: "List predictions with filters"
+      request_model: "PredictionListRequest"
+      orchestrator_method: "list_predictions"
+      orchestrator_args: "request.domain, request.variable_pair, request.model_version, request.status, request.confidence, request.page, request.page_size"
+
+    - name: "get_prediction"
+      http_method: "get"
+      path: "/{prediction_id}"
+      description: "Get single prediction detail"
+      orchestrator_method: "get_prediction"
+      orchestrator_args: "prediction_id"
+
+    - name: "accuracy_summary"
+      http_method: "get"
+      path: "/accuracy"
+      description: "Get accuracy summary metrics"
+      request_model: "AccuracyFilterRequest"
+      orchestrator_method: "get_accuracy_summary"
+      orchestrator_args: "request.domain, request.variable_pair, request.model_version, request.date_from, request.date_to"
+
+    - name: "accuracy_timeseries"
+      http_method: "get"
+      path: "/accuracy/timeseries"
+      description: "Get predicted-vs-actual time series for overlay chart"
+      request_model: "AccuracyFilterRequest"
+      orchestrator_method: "get_accuracy_timeseries"
+      orchestrator_args: "request.variable_pair, request.model_version, request.date_from, request.date_to"
+
+    - name: "compare_models"
+      http_method: "get"
+      path: "/models/compare"
+      description: "Compare accuracy across model versions"
+      request_model: "AccuracyFilterRequest"
+      orchestrator_method: "compare_models"
+      orchestrator_args: "request.domain, request.variable_pair, request.date_from, request.date_to"
+
+    - name: "trigger_actual_update"
+      http_method: "post"
+      path: "/update-actuals"
+      description: "Trigger background job to update actuals for pending predictions"
+      orchestrator_method: "update_actuals"
+      orchestrator_args: ""

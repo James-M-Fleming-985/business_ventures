@@ -1,0 +1,185 @@
+# ====================================================================================
+# LAYER REQUIREMENT: Analytics Service
+# ====================================================================================
+# LAYER ID: LAYER-CA-002-10-03
+# FEATURE: FEATURE-CA-002-10 Prediction Accuracy Tracking
+# VERSION: 2.0.0
+# TYPE: Backend
+# ====================================================================================
+
+metadata:
+  requirement_id: "LAYER-CA-002-10-03"
+  requirement_title: "Analytics Service"
+  layer_id: "LAYER-CA-002-10-03"
+  layer_name: "Analytics Service"
+  layer_folder: "LAYER_CA_002_10_03_Analytics_Service"
+  layer_type: "backend"
+
+  parent_feature: "FEATURE-CA-002-10_prediction_tracking"
+  parent_feature_file: "../FEATURE-CA-002-10_prediction_tracking.yaml"
+
+  version: "2.0.0"
+  status: "Active"
+  priority: "MUST HAVE"
+  created_date: "2026-02-13"
+  updated_date: "2026-02-13"
+  owner: "Causal Affect Team"
+  target_date: "2026-03-01"
+
+# ====================================================================================
+# TECHNICAL CONSTRAINTS
+# ====================================================================================
+
+technical_constraints:
+  language: "Python"
+  framework: "SQLAlchemy 2.0 (async)"
+  output_file_type: ".py"
+  runtime: "Python 3.12+"
+  async_required: true
+
+# ====================================================================================
+# REQUIREMENT DEFINITION
+# ====================================================================================
+
+requirement:
+  title: "Prediction Analytics Service"
+
+  description: |
+    Service class that computes accuracy metrics across ALL 61+ variable pairs.
+    This is the CORE VALUE layer — the model management engine that answers:
+    - Where do models excel vs struggle? (per domain, per variable pair)
+    - Which model version is best for which relationship?
+    - Is accuracy improving over time? (is the gap closing?)
+
+    Three main analytics methods:
+    1. get_accuracy_summary(filters) — aggregate metrics:
+       - direction_accuracy: % of predictions where direction was correct
+       - mape: Mean Absolute Percentage Error across all validated predictions
+       - timing_accuracy: % of predictions validated within ±3 days of target
+       - best_performing_pair: pair with highest direction accuracy
+       - worst_performing_pair: pair with lowest direction accuracy
+       - total_predictions, validated_predictions counts
+
+    2. get_accuracy_timeseries(variable_pair, filters) — for overlay chart:
+       - Returns array of {target_date, predicted_value, actual_value, divergence_pct}
+       - Ordered by target_date ascending
+       - Only includes validated predictions (actual_value IS NOT NULL)
+
+    3. compare_models(filters) — for model comparison table:
+       - Groups validated predictions by model_version
+       - Calculates per-model: direction_accuracy, mape, n_predictions, period range
+       - Sorted by direction_accuracy descending
+       - Lag optimization (granger_v1+lag_opt) is shown as a model variant
+
+    All methods accept filters: domain, variable_pair, model_version, date_from, date_to.
+    Filters are applied via SQL WHERE clauses on the prediction_tracking table.
+
+  rationale: |
+    The analytics service transforms raw prediction/actual data into actionable
+    insights.  Without it, users would need to manually calculate accuracy.
+    This is the "closing the gap" engine — it quantifies how well predictions
+    match reality and where improvement efforts should focus.
+
+# ====================================================================================
+# SPECIFICATION
+# ====================================================================================
+
+specification:
+  technology_stack:
+    programming_language: "Python"
+    file_extensions: [".py"]
+    runtime_environment: "Python 3.12+"
+    primary_framework: "SQLAlchemy 2.0"
+    additional_libraries:
+      - "numpy"
+      - "datetime"
+
+  dependencies:
+    - module: "prediction_storage"
+      class: "PredictionTracking"
+      description: "SQLAlchemy model for querying prediction_tracking table"
+
+# ====================================================================================
+# INTERFACE DEFINITION
+# ====================================================================================
+
+interface:
+  class_name: "PredictionAnalyticsService"
+
+  methods:
+    - name: "get_accuracy_summary"
+      signature: "async def get_accuracy_summary(self, session, domain: str = None, variable_pair: str = None, model_version: str = None, date_from: str = None, date_to: str = None) -> dict"
+      description: |
+        Returns aggregate accuracy metrics for validated predictions matching filters.
+        Response: {
+          direction_accuracy: float (0-1),
+          mape: float (percentage),
+          timing_accuracy: float (0-1),
+          total_predictions: int,
+          validated_predictions: int,
+          best_performing_pair: {pair: str, direction_accuracy: float},
+          worst_performing_pair: {pair: str, direction_accuracy: float}
+        }
+      returns: "dict"
+
+    - name: "get_accuracy_timeseries"
+      signature: "async def get_accuracy_timeseries(self, session, variable_pair: str, model_version: str = None, date_from: str = None, date_to: str = None) -> dict"
+      description: |
+        Returns time-ordered predicted-vs-actual data points for the overlay chart.
+        Response: {
+          variable_pair: str,
+          points: [{target_date, predicted_value, actual_value, divergence_pct}, ...]
+        }
+      returns: "dict with points array"
+
+    - name: "compare_models"
+      signature: "async def compare_models(self, session, domain: str = None, variable_pair: str = None, date_from: str = None, date_to: str = None) -> dict"
+      description: |
+        Groups validated predictions by model_version and calculates per-model metrics.
+        Response: {
+          models: [{
+            model_version: str,
+            direction_accuracy: float,
+            mape: float,
+            n_predictions: int,
+            period: str
+          }, ...]
+        }
+        Sorted by direction_accuracy descending.
+      returns: "dict with models array"
+
+    - name: "_apply_filters"
+      signature: "def _apply_filters(self, query, domain, variable_pair, model_version, date_from, date_to)"
+      description: |
+        Internal helper that adds WHERE clauses to a SQLAlchemy query based on
+        filter parameters.  domain matches against fast_variable_name and
+        medium_variable_name patterns.
+      returns: "Modified SQLAlchemy query"
+
+# ====================================================================================
+# ACCEPTANCE CRITERIA
+# ====================================================================================
+
+acceptance_criteria:
+  - "direction_accuracy correctly computed as count(direction_correct=True) / count(validated)"
+  - "MAPE correctly computed as mean(abs(value_error_pct)) for validated predictions"
+  - "timing_accuracy computed as count(abs(timing_error_days) <= 3) / count(validated)"
+  - "best/worst performing pairs identified by per-pair direction accuracy"
+  - "Timeseries returns data points ordered by target_date"
+  - "Model comparison groups correctly by model_version"
+  - "Lag-optimized predictions appear as distinct model variant (granger_v1+lag_opt)"
+  - "All filter combinations work correctly (domain, pair, model, dates)"
+  - "Empty result sets return zero counts, not errors"
+  - "Handles division-by-zero gracefully when no validated predictions exist"
+
+# ====================================================================================
+# OUTPUT
+# ====================================================================================
+
+output:
+  files:
+    - path: "src/analytics_service.py"
+      description: "PredictionAnalyticsService with summary, timeseries, and model comparison"
+  test_files:
+    - path: "tests/test_analytics_service.py"
+      description: "Unit tests for accuracy calculations and filters"
