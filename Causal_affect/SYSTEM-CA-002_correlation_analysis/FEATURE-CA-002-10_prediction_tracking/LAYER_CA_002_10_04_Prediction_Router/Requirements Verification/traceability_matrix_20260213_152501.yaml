@@ -1,0 +1,206 @@
+matrix_metadata:
+  timestamp: '20260213_152501'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-001
+  requirement: All 6 endpoints return JSON with {success, data, error} structure
+  description: All 6 endpoints return JSON with {success, data, error} structure
+  test_files: &id001
+  - /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-10_prediction_tracking/LAYER_CA_002_10_04_Prediction_Router/tests/test_generated_20260213_152420.py
+  test_methods:
+  - test_ac-001
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-002
+  requirement: GET / supports pagination and all filter query params
+  description: GET / supports pagination and all filter query params
+  test_files: *id001
+  test_methods:
+  - test_ac-002
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-003
+  requirement: GET /{prediction_id} returns 404 with error message for missing prediction
+  description: GET /{prediction_id} returns 404 with error message for missing prediction
+  test_files: *id001
+  test_methods:
+  - test_ac-003
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-004
+  requirement: GET /accuracy returns correct summary metrics
+  description: GET /accuracy returns correct summary metrics
+  test_files: *id001
+  test_methods:
+  - test_ac-004
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-005
+  requirement: GET /accuracy/timeseries requires variable_pair param, returns 400
+    if missing
+  description: GET /accuracy/timeseries requires variable_pair param, returns 400
+    if missing
+  test_files: *id001
+  test_methods:
+  - test_ac-005
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-006
+  requirement: GET /models/compare returns models sorted by direction_accuracy descending
+  description: GET /models/compare returns models sorted by direction_accuracy descending
+  test_files: *id001
+  test_methods:
+  - test_ac-006
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-007
+  requirement: POST /update-actuals triggers ActualUpdater and returns counts
+  description: POST /update-actuals triggers ActualUpdater and returns counts
+  test_files: *id001
+  test_methods:
+  - test_ac-007
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-008
+  requirement: All endpoints handle database errors gracefully with 500 and error
+    message
+  description: All endpoints handle database errors gracefully with 500 and error
+    message
+  test_files: *id001
+  test_methods:
+  - test_ac-008
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-009
+  requirement: CORS headers set correctly for frontend access
+  description: CORS headers set correctly for frontend access
+  test_files: *id001
+  test_methods:
+  - test_ac-009
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-10_prediction_tracking/LAYER_CA_002_10_04_Prediction_Router/src/implementation.py
+  lines: 316
+  methods:
+  - name: __init__
+    lines: 25-55
+  - name: get_predictions
+    lines: 56-75
+  - name: get_prediction_by_id
+    lines: 76-82
+  - name: get_accuracy_metrics
+    lines: 83-99
+  - name: get_accuracy_timeseries
+    lines: 100-115
+  - name: get_model_comparisons
+    lines: 116-134
+  - name: update_actuals
+    lines: 136-147
+  classes:
+  - name: MockDatabase
+    type: class
+    lines: 24-134
+  - name: MockActualUpdater
+    type: class
+    lines: 135-147
+  - name: SuccessResponse
+    type: class
+    lines: 148-316
+  implements_requirements:
+  - AC-001
+  - AC-002
+  - AC-003
+  - AC-004
+  - AC-005
+  - AC-006
+  - AC-007
+  - AC-008
+  - AC-009
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-10_prediction_tracking/LAYER_CA_002_10_04_Prediction_Router/tests/test_generated_20260213_152420.py
+  test_count: 0
+  implementation_files:
+  - /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-10_prediction_tracking/LAYER_CA_002_10_04_Prediction_Router/src/implementation.py
+  methods_tested:
+  - __init__
+  - get_predictions
+  - get_prediction_by_id
+  - get_accuracy_metrics
+  - get_accuracy_timeseries
+  - get_model_comparisons
+  - update_actuals
+  classes_tested:
+  - MockDatabase
+  - MockActualUpdater
+  - SuccessResponse
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-10_prediction_tracking/LAYER_CA_002_10_04_Prediction_Router/src/implementation.py:25-55
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-10_prediction_tracking/LAYER_CA_002_10_04_Prediction_Router/tests/test_generated_20260213_152420.py
+  verified: true
+- implementation_location: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-10_prediction_tracking/LAYER_CA_002_10_04_Prediction_Router/src/implementation.py:56-75
+  method_name: get_predictions
+  requirement: AC-001
+  test: test_get_predictions
+  test_file: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-10_prediction_tracking/LAYER_CA_002_10_04_Prediction_Router/tests/test_generated_20260213_152420.py
+  verified: true
+- implementation_location: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-10_prediction_tracking/LAYER_CA_002_10_04_Prediction_Router/src/implementation.py:76-82
+  method_name: get_prediction_by_id
+  requirement: AC-001
+  test: test_get_prediction_by_id
+  test_file: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-10_prediction_tracking/LAYER_CA_002_10_04_Prediction_Router/tests/test_generated_20260213_152420.py
+  verified: true
+- implementation_location: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-10_prediction_tracking/LAYER_CA_002_10_04_Prediction_Router/src/implementation.py:83-99
+  method_name: get_accuracy_metrics
+  requirement: AC-001
+  test: test_get_accuracy_metrics
+  test_file: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-10_prediction_tracking/LAYER_CA_002_10_04_Prediction_Router/tests/test_generated_20260213_152420.py
+  verified: true
+- implementation_location: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-10_prediction_tracking/LAYER_CA_002_10_04_Prediction_Router/src/implementation.py:100-115
+  method_name: get_accuracy_timeseries
+  requirement: AC-001
+  test: test_get_accuracy_timeseries
+  test_file: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-10_prediction_tracking/LAYER_CA_002_10_04_Prediction_Router/tests/test_generated_20260213_152420.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 9
+  requirements_traced: 9
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

@@ -1,0 +1,187 @@
+matrix_metadata:
+  timestamp: '20260213_152709'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-001
+  requirement: Dashboard accessible at /predictions route
+  description: Dashboard accessible at /predictions route
+  test_files: &id001
+  - /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-10_prediction_tracking/LAYER_CA_002_10_05_Prediction_Dashboard/tests/test_generated_20260213_152605.py
+  test_methods:
+  - test_ac-001
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-002
+  requirement: Nav sidebar shows '🎯 Predictions' link
+  description: Nav sidebar shows '🎯 Predictions' link
+  test_files: *id001
+  test_methods:
+  - test_ac-002
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-003
+  requirement: Four summary stat cards load with data from /accuracy endpoint
+  description: Four summary stat cards load with data from /accuracy endpoint
+  test_files: *id001
+  test_methods:
+  - test_ac-003
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-004
+  requirement: Overlay chart renders predicted (dashed blue) and actual (solid green)
+    lines
+  description: Overlay chart renders predicted (dashed blue) and actual (solid green)
+    lines
+  test_files: *id001
+  test_methods:
+  - test_ac-004
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-005
+  requirement: Divergence area shaded red for over-prediction, green for under-prediction
+  description: Divergence area shaded red for over-prediction, green for under-prediction
+  test_files: *id001
+  test_methods:
+  - test_ac-005
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-006
+  requirement: Model comparison table loads with sortable columns
+  description: Model comparison table loads with sortable columns
+  test_files: *id001
+  test_methods:
+  - test_ac-006
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-007
+  requirement: Best model row highlighted with accent
+  description: Best model row highlighted with accent
+  test_files: *id001
+  test_methods:
+  - test_ac-007
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-008
+  requirement: Filter panel has domain, variable pair, date range, model, confidence
+    controls
+  description: Filter panel has domain, variable pair, date range, model, confidence
+    controls
+  test_files: *id001
+  test_methods:
+  - test_ac-008
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-009
+  requirement: Applying filters refreshes all three data sections
+  description: Applying filters refreshes all three data sections
+  test_files: *id001
+  test_methods:
+  - test_ac-009
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-010
+  requirement: Loading states shown while data fetches
+  description: Loading states shown while data fetches
+  test_files: *id001
+  test_methods:
+  - test_ac-010
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-011
+  requirement: Error states shown if API calls fail
+  description: Error states shown if API calls fail
+  test_files: *id001
+  test_methods:
+  - test_ac-011
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-012
+  requirement: Responsive layout works on standard desktop viewport
+  description: Responsive layout works on standard desktop viewport
+  test_files: *id001
+  test_methods:
+  - test_ac-012
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-013
+  requirement: Dark theme matches existing app aesthetic
+  description: Dark theme matches existing app aesthetic
+  test_files: *id001
+  test_methods:
+  - test_ac-013
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-10_prediction_tracking/LAYER_CA_002_10_05_Prediction_Dashboard/src/implementation.jsx
+  lines: 426
+  methods: []
+  classes: []
+  implements_requirements:
+  - AC-001
+  - AC-002
+  - AC-003
+  - AC-004
+  - AC-005
+  - AC-006
+  - AC-007
+  - AC-008
+  - AC-009
+  - AC-010
+  - AC-011
+  - AC-012
+  - AC-013
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-10_prediction_tracking/LAYER_CA_002_10_05_Prediction_Dashboard/tests/test_generated_20260213_152605.py
+  test_count: 0
+  implementation_files:
+  - /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-10_prediction_tracking/LAYER_CA_002_10_05_Prediction_Dashboard/src/implementation.jsx
+  methods_tested: []
+  classes_tested: []
+  coverage: 0.0%
+line_level_traceability: []
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 13
+  requirements_traced: 13
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

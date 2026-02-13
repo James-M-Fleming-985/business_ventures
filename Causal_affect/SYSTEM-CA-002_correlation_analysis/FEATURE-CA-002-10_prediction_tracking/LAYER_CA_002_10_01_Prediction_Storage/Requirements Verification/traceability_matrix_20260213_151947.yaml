@@ -1,0 +1,125 @@
+matrix_metadata:
+  timestamp: '20260213_151947'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-001
+  requirement: PredictionTracking model maps correctly to prediction_tracking table
+  description: PredictionTracking model maps correctly to prediction_tracking table
+  test_files: &id001
+  - /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-10_prediction_tracking/LAYER_CA_002_10_01_Prediction_Storage/tests/test_generated_20260213_151920.py
+  test_methods:
+  - test_ac-001
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-002
+  requirement: store_prediction creates record with generated prediction_id
+  description: store_prediction creates record with generated prediction_id
+  test_files: *id001
+  test_methods:
+  - test_ac-002
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-003
+  requirement: record_actual updates actual fields and calculates direction_correct,
+    value_error_pct
+  description: record_actual updates actual fields and calculates direction_correct,
+    value_error_pct
+  test_files: *id001
+  test_methods:
+  - test_ac-003
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-004
+  requirement: list_predictions respects all filter combinations
+  description: list_predictions respects all filter combinations
+  test_files: *id001
+  test_methods:
+  - test_ac-004
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-005
+  requirement: list_predictions paginates correctly
+  description: list_predictions paginates correctly
+  test_files: *id001
+  test_methods:
+  - test_ac-005
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-006
+  requirement: get_pending_predictions returns only pending records with past target
+    dates
+  description: get_pending_predictions returns only pending records with past target
+    dates
+  test_files: *id001
+  test_methods:
+  - test_ac-006
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-007
+  requirement: All operations use async SQLAlchemy sessions
+  description: All operations use async SQLAlchemy sessions
+  test_files: *id001
+  test_methods:
+  - test_ac-007
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-10_prediction_tracking/LAYER_CA_002_10_01_Prediction_Storage/src/implementation.py
+  lines: 182
+  methods: []
+  classes:
+  - name: PredictionTracking
+    type: class
+    lines: 15-182
+  implements_requirements:
+  - AC-001
+  - AC-002
+  - AC-003
+  - AC-004
+  - AC-005
+  - AC-006
+  - AC-007
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-10_prediction_tracking/LAYER_CA_002_10_01_Prediction_Storage/tests/test_generated_20260213_151920.py
+  test_count: 0
+  implementation_files:
+  - /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-10_prediction_tracking/LAYER_CA_002_10_01_Prediction_Storage/src/implementation.py
+  methods_tested: []
+  classes_tested:
+  - PredictionTracking
+  coverage: 0.0%
+line_level_traceability: []
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 7
+  requirements_traced: 7
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%

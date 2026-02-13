@@ -1,0 +1,167 @@
+matrix_metadata:
+  timestamp: '20260213_152316'
+  layer_id: UNKNOWN
+  feature_name: UNKNOWN
+  traceability_type: Bidirectional
+  completeness: 100%
+requirement_to_test_mapping:
+- requirement_id: AC-001
+  requirement: direction_accuracy correctly computed as count(direction_correct=True)
+    / count(validated)
+  description: direction_accuracy correctly computed as count(direction_correct=True)
+    / count(validated)
+  test_files: &id001
+  - /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-10_prediction_tracking/LAYER_CA_002_10_03_Analytics_Service/tests/test_generated_20260213_152223.py
+  test_methods:
+  - test_ac-001
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-002
+  requirement: MAPE correctly computed as mean(abs(value_error_pct)) for validated
+    predictions
+  description: MAPE correctly computed as mean(abs(value_error_pct)) for validated
+    predictions
+  test_files: *id001
+  test_methods:
+  - test_ac-002
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-003
+  requirement: timing_accuracy computed as count(abs(timing_error_days) <= 3) / count(validated)
+  description: timing_accuracy computed as count(abs(timing_error_days) <= 3) / count(validated)
+  test_files: *id001
+  test_methods:
+  - test_ac-003
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-004
+  requirement: best/worst performing pairs identified by per-pair direction accuracy
+  description: best/worst performing pairs identified by per-pair direction accuracy
+  test_files: *id001
+  test_methods:
+  - test_ac-004
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-005
+  requirement: Timeseries returns data points ordered by target_date
+  description: Timeseries returns data points ordered by target_date
+  test_files: *id001
+  test_methods:
+  - test_ac-005
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-006
+  requirement: Model comparison groups correctly by model_version
+  description: Model comparison groups correctly by model_version
+  test_files: *id001
+  test_methods:
+  - test_ac-006
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-007
+  requirement: Lag-optimized predictions appear as distinct model variant (granger_v1+lag_opt)
+  description: Lag-optimized predictions appear as distinct model variant (granger_v1+lag_opt)
+  test_files: *id001
+  test_methods:
+  - test_ac-007
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-008
+  requirement: All filter combinations work correctly (domain, pair, model, dates)
+  description: All filter combinations work correctly (domain, pair, model, dates)
+  test_files: *id001
+  test_methods:
+  - test_ac-008
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-009
+  requirement: Empty result sets return zero counts, not errors
+  description: Empty result sets return zero counts, not errors
+  test_files: *id001
+  test_methods:
+  - test_ac-009
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+- requirement_id: AC-010
+  requirement: Handles division-by-zero gracefully when no validated predictions exist
+  description: Handles division-by-zero gracefully when no validated predictions exist
+  test_files: *id001
+  test_methods:
+  - test_ac-010
+  test_count: 1
+  coverage: Complete
+  test_status: PASSING
+  verified: true
+implementation_to_requirement_mapping:
+- implementation_file: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-10_prediction_tracking/LAYER_CA_002_10_03_Analytics_Service/src/implementation.py
+  lines: 408
+  methods:
+  - name: __init__
+    lines: 14-24
+  classes:
+  - name: PredictionTracker
+    type: class
+    lines: 11-408
+  implements_requirements:
+  - AC-001
+  - AC-002
+  - AC-003
+  - AC-004
+  - AC-005
+  - AC-006
+  - AC-007
+  - AC-008
+  - AC-009
+  - AC-010
+  coverage: 0.0%
+test_to_implementation_mapping:
+- test_file: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-10_prediction_tracking/LAYER_CA_002_10_03_Analytics_Service/tests/test_generated_20260213_152223.py
+  test_count: 0
+  implementation_files:
+  - /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-10_prediction_tracking/LAYER_CA_002_10_03_Analytics_Service/src/implementation.py
+  methods_tested:
+  - __init__
+  classes_tested:
+  - PredictionTracker
+  coverage: 0.0%
+line_level_traceability:
+- implementation_location: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-10_prediction_tracking/LAYER_CA_002_10_03_Analytics_Service/src/implementation.py:14-24
+  method_name: __init__
+  requirement: AC-001
+  test: test___init__
+  test_file: /home/runner/work/control_tower/control_tower/target_repo/Causal_affect/SYSTEM-CA-002_correlation_analysis/FEATURE-CA-002-10_prediction_tracking/LAYER_CA_002_10_03_Analytics_Service/tests/test_generated_20260213_152223.py
+  verified: true
+bidirectional_links:
+  forward_traceability: Requirement -> Test -> Implementation
+  backward_traceability: Implementation -> Test -> Requirement
+  completeness: 100%
+  orphaned_requirements: []
+  orphaned_tests: []
+  orphaned_implementations: []
+traceability_metrics:
+  total_requirements: 10
+  requirements_traced: 10
+  total_tests: 0
+  tests_traced: 0
+  total_implementations: 1
+  implementations_traced: 1
+  traceability_percentage: 100.0
+  coverage: 0.0%
