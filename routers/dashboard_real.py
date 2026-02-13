@@ -1791,38 +1791,48 @@ async def get_deep_analysis(
         y_latest = float(y[-1])
         confidence = "high" if abs(r_squared) > 0.3 else "medium" if abs(r_squared) > 0.1 else "low"
 
-        # Use actual momentum if provided, otherwise fall back to hypothetical 1σ
+        # Always compute the 1σ baseline prediction
         has_momentum = momentum != 0.0
+        one_sigma_change = slope * x_std if x_std > 0 else 0
+        one_sigma_abs = abs(one_sigma_change)
+        one_sigma_pct = (one_sigma_change / abs(y_latest) * 100) if y_latest != 0 else 0
+        one_sigma_dir = "increase" if one_sigma_change > 0 else "decrease"
+
+        # For the actual prediction, use momentum if available, else 1σ
         if has_momentum:
-            # momentum is a percentage like -18.0
-            # Convert to actual signal change: momentum% of current value
             signal_change = (momentum / 100.0) * abs(x_latest) if x_latest != 0 else 0
             predicted_change = slope * signal_change
             momentum_label = f"{momentum:+.1f}%"
         else:
-            signal_change = x_std if x_std > 0 else 0
-            predicted_change = slope * signal_change
-            momentum_label = f"1σ ({x_std:.1f})"
+            predicted_change = one_sigma_change
+            momentum_label = f"1σ ({x_std:,.0f})"
 
         predicted_y = y_latest + predicted_change
         direction = "up" if predicted_change > 0 else "down"
         pct_change = (predicted_change / abs(y_latest) * 100) if y_latest != 0 else 0
         abs_change = abs(predicted_change)
 
-        # Build human-readable summary with actual figures
-        signal_status = f"is currently {'declining' if momentum < 0 else 'rising'} ({momentum:+.1f}%)" if has_momentum else f"increases by 1σ ({x_std:,.0f})"
-        # Format the absolute change nicely
-        if abs_change >= 1:
-            change_str = f"{abs_change:,.0f}"
-        else:
-            change_str = f"{abs_change:.4f}"
+        # Format numbers nicely
+        def _fmt(v):
+            return f"{v:,.0f}" if v >= 1 else f"{v:.4f}"
+
+        # Core relationship sentence: always anchored to 1σ
         summary = (
-            f"{signal_var.display_name} {signal_status}. "
-            f"Based on the {'inverse ' if r_val < 0 else ''}relationship (r={r_val:.2f}), "
-            f"expect {target_var.display_name} to {'rise' if direction == 'up' else 'drop'} by "
-            f"~{change_str} ({abs(pct_change):.1f}%) "
-            f"over the next {best_lag} days. (R²={r_squared:.2f})"
+            f"For every 1 standard deviation ({x_std:,.0f}) change in {signal_var.display_name}, "
+            f"we expect {target_var.display_name} to {one_sigma_dir} by "
+            f"~{_fmt(one_sigma_abs)} ({abs(one_sigma_pct):.1f}%)."
         )
+        # Add momentum context if available
+        if has_momentum:
+            summary += (
+                f" {signal_var.display_name} is currently "
+                f"{'declining' if momentum < 0 else 'rising'} ({momentum:+.1f}%), "
+                f"so expect {target_var.display_name} to {'rise' if direction == 'up' else 'drop'} by "
+                f"~{_fmt(abs_change)} ({abs(pct_change):.1f}%) "
+                f"over the next {best_lag} days."
+            )
+        else:
+            summary += f" Effect observed over {best_lag} days."
 
         prediction = {
             "signal_name": signal_var.display_name,
@@ -1835,6 +1845,9 @@ async def get_deep_analysis(
             "predicted_value": round(predicted_y, 4),
             "current_signal_value": round(x_latest, 4),
             "current_target_value": round(y_latest, 4),
+            "signal_std": round(x_std, 4),
+            "one_sigma_change": round(one_sigma_abs, 4),
+            "one_sigma_pct": round(abs(one_sigma_pct), 2),
             "signal_momentum": momentum,
             "signal_momentum_label": momentum_label,
             "confidence": confidence,
