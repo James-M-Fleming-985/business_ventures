@@ -211,3 +211,46 @@ testing:
     - "Full flow: API → RegressionService → statsmodels → response"
     - "RegressionResults fetches and displays data"
     - "Tab switching loads regression correctly"
+
+# ====================================================================================
+# PRODUCTION INTEGRATION (auto-wiring into the live app)
+# ====================================================================================
+
+production_integration:
+  target_router_file: "src/backend/app/causality_router.py"
+  app_entry_point: "src/backend/main.py"
+  import_alias: "RegressionQuantificationService"
+  module_name: "feature_integration_09"
+  endpoint_prefix: "/regression"
+  health_endpoint: true
+
+  pydantic_models:
+    - name: "RegressionRequest"
+      fields:
+        - name: "series_1"
+          type: "List[float]"
+          default: "..."
+          description: "Independent variable time series (signal)"
+        - name: "series_2"
+          type: "List[float]"
+          default: "..."
+          description: "Dependent variable time series (target)"
+        - name: "lag"
+          type: "Optional[int]"
+          default: "None"
+          description: "Lag to apply. If null, uses optimal lag from lag analysis"
+
+  operations:
+    - name: "run_regression"
+      http_method: "post"
+      path: "/analyze"
+      description: "Run OLS regression between signal and target at specified lag"
+      request_model: "RegressionRequest"
+      orchestrator_method: "run_regression"
+      orchestrator_args: "request.series_1, request.series_2, request.lag"
+
+    - name: "regression_service_status"
+      http_method: "get"
+      path: "/status"
+      description: "Get regression service status"
+      orchestrator_method: "get_service_status"

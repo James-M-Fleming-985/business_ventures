@@ -183,3 +183,46 @@ testing:
   integration_tests:
     - "Full flow: API call → GrangerService → GrangerCausalityTest → response"
     - "GrangerModal displays results correctly"
+
+# ====================================================================================
+# PRODUCTION INTEGRATION (auto-wiring into the live app)
+# ====================================================================================
+
+production_integration:
+  target_router_file: "src/backend/app/causality_router.py"
+  app_entry_point: "src/backend/main.py"
+  import_alias: "GrangerCausalityService"
+  module_name: "feature_integration_06"
+  endpoint_prefix: "/granger"
+  health_endpoint: true
+
+  pydantic_models:
+    - name: "GrangerTestRequest"
+      fields:
+        - name: "series_1"
+          type: "List[float]"
+          default: "..."
+          description: "First time series (signal)"
+        - name: "series_2"
+          type: "List[float]"
+          default: "..."
+          description: "Second time series (target)"
+        - name: "max_lag"
+          type: "Optional[int]"
+          default: "12"
+          description: "Maximum lag periods to test"
+
+  operations:
+    - name: "test_granger_causality"
+      http_method: "post"
+      path: "/test"
+      description: "Run Granger causality test between two time series"
+      request_model: "GrangerTestRequest"
+      orchestrator_method: "test_causality"
+      orchestrator_args: "request.series_1, request.series_2, request.max_lag"
+
+    - name: "granger_service_status"
+      http_method: "get"
+      path: "/status"
+      description: "Get Granger causality service status"
+      orchestrator_method: "get_service_status"
