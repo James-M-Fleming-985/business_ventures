@@ -1807,13 +1807,20 @@ async def get_deep_analysis(
         predicted_y = y_latest + predicted_change
         direction = "up" if predicted_change > 0 else "down"
         pct_change = (predicted_change / abs(y_latest) * 100) if y_latest != 0 else 0
+        abs_change = abs(predicted_change)
 
-        # Build human-readable summary
-        signal_status = f"is currently {'declining' if momentum < 0 else 'rising'} ({momentum:+.1f}%)" if has_momentum else f"moves 1σ ({x_std:.1f})"
+        # Build human-readable summary with actual figures
+        signal_status = f"is currently {'declining' if momentum < 0 else 'rising'} ({momentum:+.1f}%)" if has_momentum else f"increases by 1σ ({x_std:,.0f})"
+        # Format the absolute change nicely
+        if abs_change >= 1:
+            change_str = f"{abs_change:,.0f}"
+        else:
+            change_str = f"{abs_change:.4f}"
         summary = (
             f"{signal_var.display_name} {signal_status}. "
             f"Based on the {'inverse ' if r_val < 0 else ''}relationship (r={r_val:.2f}), "
-            f"expect {target_var.display_name} to move {direction} ~{abs(pct_change):.1f}% "
+            f"expect {target_var.display_name} to {'rise' if direction == 'up' else 'drop'} by "
+            f"~{change_str} ({abs(pct_change):.1f}%) "
             f"over the next {best_lag} days. (R²={r_squared:.2f})"
         )
 
@@ -1823,6 +1830,7 @@ async def get_deep_analysis(
             "direction": direction,
             "optimal_lag_days": best_lag,
             "predicted_change": round(predicted_change, 4),
+            "predicted_abs_change": round(abs_change, 4),
             "predicted_pct_change": round(pct_change, 2),
             "predicted_value": round(predicted_y, 4),
             "current_signal_value": round(x_latest, 4),

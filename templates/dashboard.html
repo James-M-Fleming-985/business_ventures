@@ -926,6 +926,17 @@
                                   :class="deepAnalysis?.prediction?.direction === 'up' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'"
                                   x-text="(deepAnalysis?.prediction?.direction === 'up' ? '↑ ' : '↓ ') + Math.abs(deepAnalysis?.prediction?.predicted_pct_change || 0).toFixed(1) + '%'"></span>
                         </div>
+                        <!-- Actual figure -->
+                        <div class="flex items-center gap-3 mb-2 p-2 bg-slate-700/30 rounded">
+                            <span class="text-xs text-slate-500">Predicted change:</span>
+                            <span class="font-mono font-bold"
+                                  :class="deepAnalysis?.prediction?.direction === 'up' ? 'text-green-400' : 'text-red-400'"
+                                  x-text="(deepAnalysis?.prediction?.direction === 'up' ? '+' : '-') + Math.abs(deepAnalysis?.prediction?.predicted_abs_change || 0).toLocaleString(undefined, {maximumFractionDigits: 0})"></span>
+                            <span class="text-xs text-slate-600">
+                                (from <span class="font-mono" x-text="(deepAnalysis?.prediction?.current_target_value || 0).toLocaleString(undefined, {maximumFractionDigits: 0})"></span>
+                                → <span class="font-mono" x-text="(deepAnalysis?.prediction?.predicted_value || 0).toLocaleString(undefined, {maximumFractionDigits: 0})"></span>)
+                            </span>
+                        </div>
                         <p class="text-sm text-slate-300 leading-relaxed" x-text="deepAnalysis?.prediction?.summary || ''"></p>
                         <div class="flex items-center justify-between mt-3 pt-3 border-t border-slate-700">
                             <div class="flex items-center gap-2">
