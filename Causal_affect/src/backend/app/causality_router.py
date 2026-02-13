@@ -137,6 +137,23 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+# Import Feature 10 - Prediction Accuracy Tracking
+feature_10_path = ca002_path / "FEATURE-CA-002-10_prediction_tracking" / "src"
+
+try:
+    _spec10 = _ilu.spec_from_file_location(
+        "feature_integration_10", feature_10_path / "feature_integration.py"
+    )
+    _mod10 = _ilu.module_from_spec(_spec10)
+    _spec10.loader.exec_module(_mod10)
+    PredictionOrchestrator = _mod10.FeatureOrchestrator
+    PREDICTION_SERVICE_AVAILABLE = True
+    _prediction_service = PredictionOrchestrator()
+except Exception as e:
+    logging.warning(f"Prediction tracking service (CA-002-10) not available: {e}")
+    PREDICTION_SERVICE_AVAILABLE = False
+    _prediction_service = None
+
 router = APIRouter(prefix="/api/causality", tags=["causality"])
 
 
@@ -216,6 +233,7 @@ async def causality_health() -> Dict[str, Any]:
         "causality_service_available": CAUSALITY_SERVICE_AVAILABLE,
         "lag_service_available": LAG_SERVICE_AVAILABLE,
         "regression_service_available": REGRESSION_SERVICE_AVAILABLE,
+        "prediction_service_available": PREDICTION_SERVICE_AVAILABLE,
         "timestamp": datetime.utcnow().isoformat()
     }
 
@@ -421,6 +439,80 @@ async def regression_service_health() -> Dict[str, Any]:
         "healthy": result.success,
         "data": result.data,
     }
+
+
+# =============================================================================
+# FEATURE CA-002-10: Prediction Accuracy Tracking Endpoints
+# =============================================================================
+
+@router.get("/predictions/health")
+async def prediction_service_health() -> Dict[str, Any]:
+    """Health check for the prediction tracking service (CA-002-10)."""
+    if not PREDICTION_SERVICE_AVAILABLE:
+        return {"available": False, "error": "Service not loaded"}
+    result = _prediction_service.health_check()
+    return {
+        "available": True,
+        "healthy": result.success,
+        "data": result.data,
+    }
+
+
+@router.get("/predictions/status")
+async def prediction_service_status() -> Dict[str, Any]:
+    """Get status of the prediction tracking service (CA-002-10)."""
+    if not PREDICTION_SERVICE_AVAILABLE:
+        return {"available": False, "error": "Service not loaded"}
+    result = _prediction_service.get_status()
+    return result.to_dict()
+
+
+@router.get("/predictions")
+async def list_predictions_endpoint() -> Dict[str, Any]:
+    """List predictions (CA-002-10)."""
+    if not PREDICTION_SERVICE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Prediction service (CA-002-10) not available")
+    result = _prediction_service.get_predictions()
+    return result.to_dict()
+
+
+@router.get("/predictions/accuracy")
+async def prediction_accuracy() -> Dict[str, Any]:
+    """Get prediction accuracy metrics (CA-002-10)."""
+    if not PREDICTION_SERVICE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Prediction service (CA-002-10) not available")
+    result = _prediction_service.calculate_accuracy_metrics()
+    return result.to_dict()
+
+
+@router.get("/predictions/accuracy/timeseries")
+async def prediction_accuracy_timeseries(
+    cause: str = Query(default="", description="Cause variable name"),
+    effect: str = Query(default="", description="Effect variable name"),
+) -> Dict[str, Any]:
+    """Get prediction accuracy over time (CA-002-10)."""
+    if not PREDICTION_SERVICE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Prediction service (CA-002-10) not available")
+    result = _prediction_service.get_accuracy_timeseries(cause=cause, effect=effect)
+    return result.to_dict()
+
+
+@router.get("/predictions/models/compare")
+async def compare_prediction_models() -> Dict[str, Any]:
+    """Compare prediction model performance (CA-002-10)."""
+    if not PREDICTION_SERVICE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Prediction service (CA-002-10) not available")
+    result = _prediction_service.compare_models()
+    return result.to_dict()
+
+
+@router.post("/predictions/update-actuals")
+async def trigger_actual_update() -> Dict[str, Any]:
+    """Trigger update of actual values for pending predictions (CA-002-10)."""
+    if not PREDICTION_SERVICE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Prediction service (CA-002-10) not available")
+    result = _prediction_service.update_actual_values()
+    return result.to_dict()
 
 
 # =============================================================================
