@@ -1661,10 +1661,18 @@ async def get_cascade_predictions(signal_name: str, db: Session = Depends(get_db
 
 
 @router.get("/deep-analysis/{signal_name}/{target_name}")
-async def get_deep_analysis(signal_name: str, target_name: str, db: Session = Depends(get_db)):
+async def get_deep_analysis(
+    signal_name: str,
+    target_name: str,
+    momentum: float = 0.0,
+    db: Session = Depends(get_db),
+):
     """
     Deep analysis for a signal→target pair: lag curve, regression, actionable prediction.
     Called after Granger confirms a causal relationship.
+    
+    Args:
+        momentum: Current composite momentum of the signal (e.g. -18.0 means -18%)
     """
     import urllib.parse
     import numpy as np
@@ -1778,15 +1786,36 @@ async def get_deep_analysis(signal_name: str, target_name: str, db: Session = De
             "equation": f"y = {slope:.4f}x + {intercept:.2f}",
         }
 
-        # --- 3. ACTIONABLE PREDICTION ---
-        # If signal changes by 1 std dev, what happens to target after optimal lag?
+        # --- 3. ACTIONABLE PREDICTION (uses actual momentum) ---
         x_latest = float(x[-1])
         y_latest = float(y[-1])
-        predicted_change = slope * x_std if x_std > 0 else 0
+        confidence = "high" if abs(r_squared) > 0.3 else "medium" if abs(r_squared) > 0.1 else "low"
+
+        # Use actual momentum if provided, otherwise fall back to hypothetical 1σ
+        has_momentum = momentum != 0.0
+        if has_momentum:
+            # momentum is a percentage like -18.0
+            # Convert to actual signal change: momentum% of current value
+            signal_change = (momentum / 100.0) * abs(x_latest) if x_latest != 0 else 0
+            predicted_change = slope * signal_change
+            momentum_label = f"{momentum:+.1f}%"
+        else:
+            signal_change = x_std if x_std > 0 else 0
+            predicted_change = slope * signal_change
+            momentum_label = f"1σ ({x_std:.1f})"
+
         predicted_y = y_latest + predicted_change
         direction = "up" if predicted_change > 0 else "down"
         pct_change = (predicted_change / abs(y_latest) * 100) if y_latest != 0 else 0
-        confidence = "high" if abs(r_squared) > 0.3 else "medium" if abs(r_squared) > 0.1 else "low"
+
+        # Build human-readable summary
+        signal_status = f"is currently {'declining' if momentum < 0 else 'rising'} ({momentum:+.1f}%)" if has_momentum else f"moves 1σ ({x_std:.1f})"
+        summary = (
+            f"{signal_var.display_name} {signal_status}. "
+            f"Based on the {'inverse ' if r_val < 0 else ''}relationship (r={r_val:.2f}), "
+            f"expect {target_var.display_name} to move {direction} ~{abs(pct_change):.1f}% "
+            f"over the next {best_lag} days. (R²={r_squared:.2f})"
+        )
 
         prediction = {
             "signal_name": signal_var.display_name,
@@ -1798,9 +1827,11 @@ async def get_deep_analysis(signal_name: str, target_name: str, db: Session = De
             "predicted_value": round(predicted_y, 4),
             "current_signal_value": round(x_latest, 4),
             "current_target_value": round(y_latest, 4),
+            "signal_momentum": momentum,
+            "signal_momentum_label": momentum_label,
             "confidence": confidence,
             "r_squared": round(r_squared, 4),
-            "summary": f"If {signal_var.display_name} moves 1σ ({x_std:.1f}), expect {target_var.display_name} to move {direction} ~{abs(pct_change):.1f}% in {best_lag} days (R²={r_squared:.2f})",
+            "summary": summary,
         }
 
         return {

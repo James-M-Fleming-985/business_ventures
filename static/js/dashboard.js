@@ -515,14 +515,15 @@ function dashboardData() {
         // Auto-triggered after Granger finds a causal relationship
         // ============================================================
         async runDeepAnalysis(signalKeyword, targetName) {
-            console.log('📊 Running deep analysis:', signalKeyword, '→', targetName);
+            console.log('📊 Running deep analysis:', signalKeyword, '→', targetName, 'momentum:', this.signalModalData.momentum);
             this.isRunningDeepAnalysis = true;
             this.deepAnalysis = null;
             
             try {
                 const signal = encodeURIComponent(signalKeyword);
                 const target = encodeURIComponent(targetName);
-                const response = await fetch(`/api/dashboard/deep-analysis/${signal}/${target}`);
+                const mom = this.signalModalData.momentum || 0;
+                const response = await fetch(`/api/dashboard/deep-analysis/${signal}/${target}?momentum=${mom}`);
                 
                 if (response.ok) {
                     const data = await response.json();
