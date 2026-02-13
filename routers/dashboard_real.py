@@ -1660,6 +1660,166 @@ async def get_cascade_predictions(signal_name: str, db: Session = Depends(get_db
         }
 
 
+@router.get("/deep-analysis/{signal_name}/{target_name}")
+async def get_deep_analysis(signal_name: str, target_name: str, db: Session = Depends(get_db)):
+    """
+    Deep analysis for a signal→target pair: lag curve, regression, actionable prediction.
+    Called after Granger confirms a causal relationship.
+    """
+    import urllib.parse
+    import numpy as np
+
+    signal_name = urllib.parse.unquote(signal_name)
+    target_name = urllib.parse.unquote(target_name)
+
+    try:
+        # --- Resolve variables ---
+        normalized = signal_name.lower().strip()
+        patterns = [
+            normalized.replace(' ', '_'),
+            f"wiki_{normalized.replace(' ', '_')}",
+            f"reddit_{normalized.replace(' ', '_')}",
+        ]
+        signal_var = None
+        for pat in patterns:
+            signal_var = db.query(VariableMetadata).filter(
+                VariableMetadata.name == pat
+            ).first()
+            if signal_var:
+                break
+        if not signal_var:
+            signal_var = db.query(VariableMetadata).filter(
+                VariableMetadata.display_name.ilike(f"%{signal_name}%")
+            ).first()
+
+        target_var = db.query(VariableMetadata).filter(
+            VariableMetadata.name == target_name
+        ).first()
+        if not target_var:
+            target_var = db.query(VariableMetadata).filter(
+                VariableMetadata.display_name.ilike(f"%{target_name}%")
+            ).first()
+
+        if not signal_var or not target_var:
+            return {"error": "Variables not found", "lag_curve": [], "regression": None, "prediction": None}
+
+        # --- Fetch time series ---
+        signal_data = db.query(TimeSeriesData).filter(
+            TimeSeriesData.variable_id == signal_var.id
+        ).order_by(TimeSeriesData.timestamp).all()
+
+        target_data = db.query(TimeSeriesData).filter(
+            TimeSeriesData.variable_id == target_var.id
+        ).order_by(TimeSeriesData.timestamp).all()
+
+        signal_vals = {dp.timestamp.date(): dp.value for dp in signal_data}
+        target_vals = {dp.timestamp.date(): dp.value for dp in target_data}
+        common_dates = sorted(set(signal_vals.keys()) & set(target_vals.keys()))
+
+        if len(common_dates) < 15:
+            return {
+                "error": f"Insufficient overlapping data ({len(common_dates)} points)",
+                "lag_curve": [], "regression": None, "prediction": None,
+            }
+
+        x = np.array([signal_vals[d] for d in common_dates])
+        y = np.array([target_vals[d] for d in common_dates])
+
+        # --- 1. LAG CURVE: cross-correlation at lags 0..max_lag ---
+        max_lag = min(14, len(common_dates) // 4)
+        lag_curve = []
+        best_lag = 0
+        best_abs_r = 0.0
+
+        for lag in range(0, max_lag + 1):
+            if lag == 0:
+                xl, yl = x, y
+            else:
+                xl, yl = x[:-lag], y[lag:]
+            if len(xl) < 10:
+                continue
+            r = float(np.corrcoef(xl, yl)[0, 1]) if np.std(xl) > 0 and np.std(yl) > 0 else 0.0
+            lag_curve.append({"lag": lag, "correlation": round(r, 4)})
+            if abs(r) > best_abs_r:
+                best_abs_r = abs(r)
+                best_lag = lag
+
+        # --- 2. REGRESSION at optimal lag ---
+        if best_lag > 0:
+            x_reg, y_reg = x[:-best_lag], y[best_lag:]
+        else:
+            x_reg, y_reg = x, y
+
+        n = len(x_reg)
+        x_mean, y_mean = float(np.mean(x_reg)), float(np.mean(y_reg))
+        x_std, y_std = float(np.std(x_reg)), float(np.std(y_reg))
+
+        if x_std > 0 and n > 2:
+            slope = float(np.sum((x_reg - x_mean) * (y_reg - y_mean)) / np.sum((x_reg - x_mean) ** 2))
+            intercept = y_mean - slope * x_mean
+            y_pred = slope * x_reg + intercept
+            ss_res = float(np.sum((y_reg - y_pred) ** 2))
+            ss_tot = float(np.sum((y_reg - y_mean) ** 2))
+            r_squared = 1 - ss_res / ss_tot if ss_tot > 0 else 0
+            r_val = float(np.corrcoef(x_reg, y_reg)[0, 1])
+            se_slope = float(np.sqrt(ss_res / (n - 2) / np.sum((x_reg - x_mean) ** 2))) if n > 2 else 0
+            t_stat = slope / se_slope if se_slope > 0 else 0
+        else:
+            slope, intercept, r_squared, r_val, se_slope, t_stat = 0, 0, 0, 0, 0, 0
+
+        regression = {
+            "slope": round(slope, 6),
+            "intercept": round(intercept, 4),
+            "r_squared": round(r_squared, 4),
+            "r_value": round(r_val, 4),
+            "std_error": round(se_slope, 6),
+            "t_statistic": round(t_stat, 2),
+            "sample_size": n,
+            "equation": f"y = {slope:.4f}x + {intercept:.2f}",
+        }
+
+        # --- 3. ACTIONABLE PREDICTION ---
+        # If signal changes by 1 std dev, what happens to target after optimal lag?
+        x_latest = float(x[-1])
+        y_latest = float(y[-1])
+        predicted_change = slope * x_std if x_std > 0 else 0
+        predicted_y = y_latest + predicted_change
+        direction = "up" if predicted_change > 0 else "down"
+        pct_change = (predicted_change / abs(y_latest) * 100) if y_latest != 0 else 0
+        confidence = "high" if abs(r_squared) > 0.3 else "medium" if abs(r_squared) > 0.1 else "low"
+
+        prediction = {
+            "signal_name": signal_var.display_name,
+            "target_name": target_var.display_name,
+            "direction": direction,
+            "optimal_lag_days": best_lag,
+            "predicted_change": round(predicted_change, 4),
+            "predicted_pct_change": round(pct_change, 2),
+            "predicted_value": round(predicted_y, 4),
+            "current_signal_value": round(x_latest, 4),
+            "current_target_value": round(y_latest, 4),
+            "confidence": confidence,
+            "r_squared": round(r_squared, 4),
+            "summary": f"If {signal_var.display_name} moves 1σ ({x_std:.1f}), expect {target_var.display_name} to move {direction} ~{abs(pct_change):.1f}% in {best_lag} days (R²={r_squared:.2f})",
+        }
+
+        return {
+            "signal": signal_var.display_name,
+            "target": target_var.display_name,
+            "lag_curve": lag_curve,
+            "optimal_lag": best_lag,
+            "regression": regression,
+            "prediction": prediction,
+            "data_points": len(common_dates),
+        }
+
+    except Exception as e:
+        import traceback
+        logger.error(f"Deep analysis failed for {signal_name}→{target_name}: {e}")
+        logger.error(traceback.format_exc())
+        return {"error": str(e), "lag_curve": [], "regression": None, "prediction": None}
+
+
 # Curated mappings: which L1 signals predict which L2 outcomes
 THEORETICAL_PREDICTIONS = {
     # Employment signals

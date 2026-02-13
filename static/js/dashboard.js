@@ -62,6 +62,10 @@ function dashboardData() {
         signalGrangerResults: null,
         isRunningSignalGranger: false,
         
+        // Deep Analysis State (lag curve, regression, prediction)
+        deepAnalysis: null,
+        isRunningDeepAnalysis: false,
+        
         async init() {
             console.log('Initializing dashboard...');
             await this.loadStats();
@@ -453,6 +457,12 @@ function dashboardData() {
                             stored: true,
                             timestamp: new Date().toISOString()
                         };
+                        
+                        // Auto-run deep analysis on top prediction
+                        const topPred = data.predictions[0];
+                        if (topPred && topPred.name) {
+                            this.runDeepAnalysis(this.signalModalData.keyword, topPred.name);
+                        }
                     } else if (data.leading_indicators && data.leading_indicators.length > 0) {
                         // This signal is predicted BY other signals (lagging indicator)
                         this.predictedOutcomes = data.leading_indicators.map(li => ({
@@ -497,6 +507,43 @@ function dashboardData() {
                 this.signalGrangerResults = { error: error.message };
             } finally {
                 this.isRunningSignalGranger = false;
+            }
+        },
+        
+        // ============================================================
+        // DEEP ANALYSIS: Lag Curve + Regression + Prediction
+        // Auto-triggered after Granger finds a causal relationship
+        // ============================================================
+        async runDeepAnalysis(signalKeyword, targetName) {
+            console.log('📊 Running deep analysis:', signalKeyword, '→', targetName);
+            this.isRunningDeepAnalysis = true;
+            this.deepAnalysis = null;
+            
+            try {
+                const signal = encodeURIComponent(signalKeyword);
+                const target = encodeURIComponent(targetName);
+                const response = await fetch(`/api/dashboard/deep-analysis/${signal}/${target}`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('📊 Deep analysis results:', data);
+                    
+                    if (!data.error) {
+                        this.deepAnalysis = data;
+                    } else {
+                        console.warn('Deep analysis returned error:', data.error);
+                        this.deepAnalysis = { error: data.error };
+                    }
+                } else {
+                    console.error('Deep analysis API error:', response.status);
+                    this.deepAnalysis = { error: 'API error ' + response.status };
+                }
+            } catch (error) {
+                console.error('Deep analysis failed:', error);
+                this.deepAnalysis = { error: error.message };
+            } finally {
+                this.isRunningDeepAnalysis = false;
+                setTimeout(() => lucide.createIcons(), 100);
             }
         },
         
