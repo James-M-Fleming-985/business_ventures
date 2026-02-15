@@ -7,7 +7,8 @@ export default function Layout({ children }) {
   
   const navItems = [
     { path: '/', label: 'Dashboard', icon: '📊' },
-    { path: '/signal-radar', label: 'Signal Radar', icon: '📡' }
+    { path: '/signal-radar', label: 'Signal Radar', icon: '📡' },
+    { path: '/predictions', label: 'Predictions', icon: '🎯' }
   ]
   
   return (
