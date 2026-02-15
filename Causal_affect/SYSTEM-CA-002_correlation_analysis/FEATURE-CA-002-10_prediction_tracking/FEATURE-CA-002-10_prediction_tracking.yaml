@@ -656,3 +656,11 @@ production_integration:
       description: "Trigger background job to update actuals for pending predictions"
       orchestrator_method: "update_actuals"
       orchestrator_args: ""
+
+# Frontend integration: auto-wire React dashboard into the deployed UI
+frontend_integration:
+  target_app_dir: "SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/dashboard-app-complete"
+  route_path: "/predictions"
+  nav_label: "Predictions"
+  nav_icon: "🎯"
+  page_component_name: "PredictionDashboard"
