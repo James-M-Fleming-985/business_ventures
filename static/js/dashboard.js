@@ -356,9 +356,11 @@ function dashboardData() {
                 sources: signal.sources || []
             };
             
-            // Reset Granger state for modal
+            // Reset Granger + deep analysis state for modal
             this.signalGrangerResults = null;
             this.isRunningSignalGranger = false;
+            this.deepAnalysis = null;
+            this.isRunningDeepAnalysis = false;
             
             // Open the modal
             this.signalModalOpen = true;
