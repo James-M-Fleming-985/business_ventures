@@ -180,10 +180,86 @@ class APIStatus(Base):
         return f"<APIStatus {self.source} {self.status}>"
 
 
+class PredictionTracking(Base):
+    """CA-002-10: Track predictions made by deep-analysis and their outcomes"""
+    __tablename__ = 'prediction_tracking'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    prediction_id = Column(String(50), unique=True, nullable=False, index=True)
+
+    # Variables involved
+    signal_name = Column(String(255), nullable=False)   # e.g. "ChatGPT"
+    target_name = Column(String(255), nullable=False)   # e.g. "NVIDIA Stock"
+
+    # Timing
+    predicted_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    target_date = Column(DateTime)                      # When prediction matures
+    optimal_lag_days = Column(Integer)
+
+    # The prediction
+    predicted_direction = Column(String(10))             # 'up' or 'down'
+    predicted_value = Column(Float)
+    predicted_change_pct = Column(Float)
+    current_target_value = Column(Float)                # Baseline at prediction time
+    current_signal_value = Column(Float)
+    signal_momentum = Column(Float)                     # Momentum % at prediction time
+
+    # Regression info
+    r_squared = Column(Float)
+    confidence = Column(String(20))                     # 'high', 'medium', 'low'
+    model_version = Column(String(50), default='granger_v1')
+
+    # Actual outcome (NULL until target_date passes and actuals fetched)
+    actual_value = Column(Float)
+    actual_direction = Column(String(10))
+    direction_correct = Column(Boolean)
+    value_error_pct = Column(Float)
+
+    # Status: 'pending', 'validated', 'expired'
+    status = Column(String(20), default='pending')
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        Index('ix_pred_target_date', 'target_date'),
+        Index('ix_pred_status', 'status'),
+        Index('ix_pred_model', 'model_version'),
+        Index('ix_pred_signal_target', 'signal_name', 'target_name'),
+    )
+
+    def __repr__(self):
+        return f"<Prediction {self.prediction_id} {self.signal_name}→{self.target_name} {self.predicted_direction}>"
+
+    def to_dict(self):
+        return {
+            "prediction_id": self.prediction_id,
+            "signal_name": self.signal_name,
+            "target_name": self.target_name,
+            "predicted_at": self.predicted_at.isoformat() if self.predicted_at else None,
+            "target_date": self.target_date.isoformat() if self.target_date else None,
+            "optimal_lag_days": self.optimal_lag_days,
+            "predicted_direction": self.predicted_direction,
+            "predicted_value": self.predicted_value,
+            "predicted_change_pct": self.predicted_change_pct,
+            "current_target_value": self.current_target_value,
+            "current_signal_value": self.current_signal_value,
+            "signal_momentum": self.signal_momentum,
+            "r_squared": self.r_squared,
+            "confidence": self.confidence,
+            "model_version": self.model_version,
+            "actual_value": self.actual_value,
+            "actual_direction": self.actual_direction,
+            "direction_correct": self.direction_correct,
+            "value_error_pct": self.value_error_pct,
+            "status": self.status,
+        }
+
+
 class User(Base):
-    """User accounts with role-based access control"""
+    """User model for authentication and authorization"""
     __tablename__ = 'users'
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     email = Column(String(255), nullable=False, unique=True, index=True)
     password_hash = Column(String(255), nullable=False)

@@ -84,6 +84,7 @@ function dashboardData() {
             analytics: false
         },
         isUpdatingActuals: false,
+        recentPredictions: [],
         
         async init() {
             console.log('Initializing dashboard...');
@@ -552,6 +553,21 @@ function dashboardData() {
                     
                     if (!data.error) {
                         this.deepAnalysis = data;
+                        
+                        // Auto-store prediction for accuracy tracking (CA-002-10)
+                        if (data.prediction) {
+                            try {
+                                const storeResp = await fetch('/api/dashboard/store-prediction', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify(data.prediction),
+                                });
+                                const storeResult = await storeResp.json();
+                                console.log('🎯 Prediction stored:', storeResult.prediction_id);
+                            } catch (storeErr) {
+                                console.warn('Failed to store prediction:', storeErr);
+                            }
+                        }
                     } else {
                         console.warn('Deep analysis returned error:', data.error);
                         this.deepAnalysis = { error: data.error };
@@ -575,12 +591,65 @@ function dashboardData() {
         
         async loadPredictions() {
             console.log('🎯 Loading Prediction Accuracy data (CA-002-10)...');
-            await Promise.all([
-                this.loadPredictionStatus(),
-                this.loadPredictionAccuracy(),
-                this.loadPredictionTimeseries(),
-                this.loadModelComparison()
-            ]);
+            try {
+                const response = await fetch('/api/dashboard/predictions?limit=100');
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('🎯 Predictions loaded:', data.total, 'total');
+                    
+                    this.predictionServiceAvailable = true;
+                    this.predictionLayers = { storage: true, updater: true, analytics: true };
+                    
+                    // Populate metrics from real data
+                    this.predictionMetrics = {
+                        total_predictions: data.total || 0,
+                        direction_accuracy: (data.accuracy?.direction_accuracy || 0) / 100,
+                        mape: data.accuracy?.avg_error_pct || 0,
+                        timing_accuracy: 0
+                    };
+                    
+                    // Build timeseries from predictions list
+                    if (data.predictions && data.predictions.length > 0) {
+                        this.predictionTimeseries = data.predictions.map(p => ({
+                            target_date: p.target_date,
+                            predicted_value: p.predicted_value,
+                            actual_value: p.actual_value,
+                            direction: p.predicted_direction,
+                            direction_correct: p.direction_correct,
+                            signal_name: p.signal_name,
+                            target_name: p.target_name,
+                            status: p.status,
+                            r_squared: p.r_squared,
+                            confidence: p.confidence
+                        }));
+                        this.$nextTick(() => this.renderPredictionChart());
+                    }
+                    
+                    // Model comparison: aggregate by model_version
+                    const byModel = {};
+                    (data.predictions || []).forEach(p => {
+                        const mv = p.model_version || 'granger_v1';
+                        if (!byModel[mv]) byModel[mv] = { name: mv, total: 0, correct: 0 };
+                        byModel[mv].total++;
+                        if (p.direction_correct) byModel[mv].correct++;
+                    });
+                    this.modelComparison = Object.values(byModel).map(m => ({
+                        ...m,
+                        model_type: m.name,
+                        direction_accuracy: m.total > 0 ? m.correct / m.total : 0,
+                        mape: 0,
+                        total_predictions: m.total
+                    }));
+                    
+                    // Store raw predictions for the table
+                    this.recentPredictions = data.predictions || [];
+                } else {
+                    this.predictionServiceAvailable = false;
+                }
+            } catch (error) {
+                console.error('Prediction load failed:', error);
+                this.predictionServiceAvailable = false;
+            }
             setTimeout(() => lucide.createIcons(), 100);
         },
         
@@ -730,10 +799,9 @@ function dashboardData() {
                 if (response.ok) {
                     const data = await response.json();
                     console.log('🎯 Actual update result:', data);
-                    // Reload metrics after updating actuals
-                    await this.loadPredictionAccuracy();
-                    await this.loadPredictionTimeseries();
                 }
+                // Reload all predictions data after updating actuals
+                await this.loadPredictions();
             } catch (error) {
                 console.error('Actual update failed:', error);
             } finally {
