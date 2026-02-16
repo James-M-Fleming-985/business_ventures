@@ -305,6 +305,12 @@
             <i data-lucide="award" class="w-4 h-4 inline mr-1"></i>
             Leaderboard
         </button>
+        <button @click="activeView = 'predictions'; loadPredictions()" 
+                :class="activeView === 'predictions' ? 'bg-primary-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'"
+                class="px-4 py-2 rounded-lg text-sm font-medium transition">
+            <i data-lucide="target" class="w-4 h-4 inline mr-1"></i>
+            Prediction Accuracy
+        </button>
     </div>
 
     <!-- Main Dashboard Grid (now secondary/tabbed) -->
@@ -434,6 +440,188 @@
                         </template>
                     </tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================================ -->
+    <!-- PREDICTION ACCURACY VIEW (CA-002-10)                                        -->
+    <!-- ============================================================================ -->
+    <div x-show="activeView === 'predictions'" x-transition class="space-y-6">
+        <!-- Service Status Banner -->
+        <div x-show="!predictionServiceAvailable" class="bg-amber-500/10 rounded-lg p-4 border border-amber-500/30 flex items-center space-x-3">
+            <i data-lucide="alert-circle" class="w-5 h-5 text-amber-400 flex-shrink-0"></i>
+            <div>
+                <p class="text-sm font-medium text-amber-300">Prediction Service Initialising</p>
+                <p class="text-xs text-slate-400">The prediction tracking service is loading. Metrics will appear once predictions are recorded.</p>
+            </div>
+        </div>
+
+        <!-- Accuracy Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="bg-slate-800 rounded-lg p-5 border border-slate-700">
+                <div class="flex items-center justify-between mb-2">
+                    <p class="text-xs text-slate-400 uppercase tracking-wider">Total Predictions</p>
+                    <i data-lucide="hash" class="w-4 h-4 text-blue-400"></i>
+                </div>
+                <p class="text-3xl font-bold text-white" x-text="predictionMetrics.total_predictions || 0"></p>
+            </div>
+            <div class="bg-slate-800 rounded-lg p-5 border border-slate-700">
+                <div class="flex items-center justify-between mb-2">
+                    <p class="text-xs text-slate-400 uppercase tracking-wider">Direction Accuracy</p>
+                    <i data-lucide="compass" class="w-4 h-4 text-green-400"></i>
+                </div>
+                <p class="text-3xl font-bold" 
+                   :class="(predictionMetrics.direction_accuracy || 0) >= 0.7 ? 'text-green-400' : (predictionMetrics.direction_accuracy || 0) >= 0.5 ? 'text-yellow-400' : 'text-red-400'"
+                   x-text="((predictionMetrics.direction_accuracy || 0) * 100).toFixed(1) + '%'"></p>
+            </div>
+            <div class="bg-slate-800 rounded-lg p-5 border border-slate-700">
+                <div class="flex items-center justify-between mb-2">
+                    <p class="text-xs text-slate-400 uppercase tracking-wider">MAPE</p>
+                    <i data-lucide="percent" class="w-4 h-4 text-accent-400"></i>
+                </div>
+                <p class="text-3xl font-bold"
+                   :class="(predictionMetrics.mape || 0) <= 10 ? 'text-green-400' : (predictionMetrics.mape || 0) <= 25 ? 'text-yellow-400' : 'text-red-400'"
+                   x-text="(predictionMetrics.mape || 0).toFixed(1) + '%'"></p>
+                <p class="text-xs text-slate-500 mt-1">Mean Absolute % Error</p>
+            </div>
+            <div class="bg-slate-800 rounded-lg p-5 border border-slate-700">
+                <div class="flex items-center justify-between mb-2">
+                    <p class="text-xs text-slate-400 uppercase tracking-wider">Timing Accuracy</p>
+                    <i data-lucide="clock" class="w-4 h-4 text-purple-400"></i>
+                </div>
+                <p class="text-3xl font-bold"
+                   :class="(predictionMetrics.timing_accuracy || 0) >= 0.7 ? 'text-green-400' : (predictionMetrics.timing_accuracy || 0) >= 0.5 ? 'text-yellow-400' : 'text-red-400'"
+                   x-text="((predictionMetrics.timing_accuracy || 0) * 100).toFixed(1) + '%'"></p>
+                <p class="text-xs text-slate-500 mt-1">Within 3-day window</p>
+            </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Predicted vs Actual Chart -->
+            <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center space-x-2">
+                        <i data-lucide="line-chart" class="w-5 h-5 text-primary-400"></i>
+                        <h3 class="text-lg font-bold">Predicted vs Actual</h3>
+                    </div>
+                    <button @click="loadPredictionTimeseries()"
+                        class="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm transition">
+                        <i data-lucide="refresh-cw" class="w-4 h-4 inline"></i>
+                    </button>
+                </div>
+                <div id="predictionChart" class="w-full" style="height: 350px;"></div>
+                <div x-show="predictionTimeseries.length === 0" class="flex flex-col items-center justify-center py-12 text-slate-500">
+                    <i data-lucide="bar-chart-2" class="w-12 h-12 mb-3 opacity-30"></i>
+                    <p class="text-sm">No prediction data yet</p>
+                    <p class="text-xs text-slate-600 mt-1">Predictions will appear here as the system records them</p>
+                </div>
+            </div>
+
+            <!-- Model Comparison Table -->
+            <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center space-x-2">
+                        <i data-lucide="git-compare" class="w-5 h-5 text-accent-400"></i>
+                        <h3 class="text-lg font-bold">Model Comparison</h3>
+                    </div>
+                    <button @click="loadModelComparison()"
+                        class="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm transition">
+                        <i data-lucide="refresh-cw" class="w-4 h-4 inline"></i>
+                    </button>
+                </div>
+                <div x-show="modelComparison.length > 0" class="overflow-y-auto" style="max-height: 350px;">
+                    <table class="w-full">
+                        <thead class="sticky top-0 bg-slate-800">
+                            <tr class="border-b border-slate-700">
+                                <th class="text-left py-2 px-3 text-sm font-medium text-slate-400">Model</th>
+                                <th class="text-right py-2 px-3 text-sm font-medium text-slate-400">Accuracy</th>
+                                <th class="text-right py-2 px-3 text-sm font-medium text-slate-400">MAPE</th>
+                                <th class="text-right py-2 px-3 text-sm font-medium text-slate-400">Predictions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="(model, idx) in modelComparison" :key="idx">
+                                <tr class="border-b border-slate-700/50 hover:bg-slate-700/50 transition">
+                                    <td class="py-3 px-3">
+                                        <div class="flex items-center space-x-2">
+                                            <div class="w-2 h-2 rounded-full" :class="{
+                                                'bg-green-400': idx === 0,
+                                                'bg-blue-400': idx === 1,
+                                                'bg-purple-400': idx === 2,
+                                                'bg-yellow-400': idx >= 3
+                                            }"></div>
+                                            <span class="text-sm font-medium" x-text="model.model_type || model.name || 'Unknown'"></span>
+                                        </div>
+                                    </td>
+                                    <td class="py-3 px-3 text-right">
+                                        <span class="px-2 py-1 rounded text-xs font-mono"
+                                            :class="(model.direction_accuracy || 0) >= 0.7 ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'"
+                                            x-text="((model.direction_accuracy || 0) * 100).toFixed(1) + '%'"></span>
+                                    </td>
+                                    <td class="py-3 px-3 text-right">
+                                        <span class="text-sm font-mono text-slate-300" x-text="(model.mape || 0).toFixed(1) + '%'"></span>
+                                    </td>
+                                    <td class="py-3 px-3 text-right">
+                                        <span class="text-sm text-slate-400" x-text="model.total_predictions || 0"></span>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+                <div x-show="modelComparison.length === 0" class="flex flex-col items-center justify-center py-12 text-slate-500">
+                    <i data-lucide="layers" class="w-12 h-12 mb-3 opacity-30"></i>
+                    <p class="text-sm">No model comparisons available</p>
+                    <p class="text-xs text-slate-600 mt-1">Comparisons appear when multiple models make predictions</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Service Layers Status -->
+        <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
+            <div class="flex items-center space-x-2 mb-4">
+                <i data-lucide="activity" class="w-5 h-5 text-green-400"></i>
+                <h3 class="text-lg font-bold">Service Layer Status</h3>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="flex items-center justify-between p-3 bg-slate-900/50 rounded-lg border border-slate-700">
+                    <div class="flex items-center space-x-2">
+                        <i data-lucide="database" class="w-4 h-4 text-blue-400"></i>
+                        <span class="text-sm">Prediction Storage</span>
+                    </div>
+                    <span class="px-2 py-0.5 rounded text-xs font-medium"
+                          :class="predictionLayers.storage ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'"
+                          x-text="predictionLayers.storage ? 'Online' : 'Offline'"></span>
+                </div>
+                <div class="flex items-center justify-between p-3 bg-slate-900/50 rounded-lg border border-slate-700">
+                    <div class="flex items-center space-x-2">
+                        <i data-lucide="refresh-cw" class="w-4 h-4 text-purple-400"></i>
+                        <span class="text-sm">Actual Updater</span>
+                    </div>
+                    <span class="px-2 py-0.5 rounded text-xs font-medium"
+                          :class="predictionLayers.updater ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'"
+                          x-text="predictionLayers.updater ? 'Online' : 'Offline'"></span>
+                </div>
+                <div class="flex items-center justify-between p-3 bg-slate-900/50 rounded-lg border border-slate-700">
+                    <div class="flex items-center space-x-2">
+                        <i data-lucide="bar-chart" class="w-4 h-4 text-accent-400"></i>
+                        <span class="text-sm">Analytics Service</span>
+                    </div>
+                    <span class="px-2 py-0.5 rounded text-xs font-medium"
+                          :class="predictionLayers.analytics ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'"
+                          x-text="predictionLayers.analytics ? 'Online' : 'Offline'"></span>
+                </div>
+            </div>
+            <div class="mt-3 flex items-center justify-between">
+                <p class="text-xs text-slate-500">Feature CA-002-10 | Prediction Accuracy Tracking</p>
+                <button @click="triggerActualUpdate()"
+                    :disabled="isUpdatingActuals"
+                    class="px-3 py-1 bg-primary-600 hover:bg-primary-700 disabled:bg-slate-700 disabled:text-slate-500 rounded text-xs font-medium transition flex items-center gap-1">
+                    <i data-lucide="play" class="w-3 h-3" :class="{'animate-spin': isUpdatingActuals}"></i>
+                    <span x-text="isUpdatingActuals ? 'Updating...' : 'Update Actuals'"></span>
+                </button>
             </div>
         </div>
     </div>

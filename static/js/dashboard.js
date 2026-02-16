@@ -66,6 +66,25 @@ function dashboardData() {
         deepAnalysis: null,
         isRunningDeepAnalysis: false,
         
+        // ============================================================
+        // PREDICTION ACCURACY TRACKING (CA-002-10)
+        // ============================================================
+        predictionServiceAvailable: true,
+        predictionMetrics: {
+            total_predictions: 0,
+            direction_accuracy: 0,
+            mape: 0,
+            timing_accuracy: 0
+        },
+        predictionTimeseries: [],
+        modelComparison: [],
+        predictionLayers: {
+            storage: false,
+            updater: false,
+            analytics: false
+        },
+        isUpdatingActuals: false,
+        
         async init() {
             console.log('Initializing dashboard...');
             await this.loadStats();
@@ -547,6 +566,178 @@ function dashboardData() {
             } finally {
                 this.isRunningDeepAnalysis = false;
                 setTimeout(() => lucide.createIcons(), 100);
+            }
+        },
+        
+        // ============================================================
+        // PREDICTION ACCURACY TRACKING (CA-002-10)
+        // ============================================================
+        
+        async loadPredictions() {
+            console.log('🎯 Loading Prediction Accuracy data (CA-002-10)...');
+            await Promise.all([
+                this.loadPredictionStatus(),
+                this.loadPredictionAccuracy(),
+                this.loadPredictionTimeseries(),
+                this.loadModelComparison()
+            ]);
+            setTimeout(() => lucide.createIcons(), 100);
+        },
+        
+        async loadPredictionStatus() {
+            try {
+                const response = await fetch('/api/causality/predictions/status');
+                if (response.ok) {
+                    const data = await response.json();
+                    this.predictionServiceAvailable = data.success !== false;
+                    if (data.data?.layers_available) {
+                        this.predictionLayers = {
+                            storage: data.data.layers_available.storage || false,
+                            updater: data.data.layers_available.updater || false,
+                            analytics: data.data.layers_available.analytics || false
+                        };
+                    }
+                    console.log('🎯 Prediction status:', data);
+                } else {
+                    this.predictionServiceAvailable = false;
+                }
+            } catch (error) {
+                console.error('Prediction status check failed:', error);
+                this.predictionServiceAvailable = false;
+            }
+        },
+        
+        async loadPredictionAccuracy() {
+            try {
+                const response = await fetch('/api/causality/predictions/accuracy');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.data) {
+                        this.predictionMetrics = {
+                            total_predictions: data.data.total_predictions || 0,
+                            direction_accuracy: data.data.direction_accuracy || 0,
+                            mape: data.data.mape || 0,
+                            timing_accuracy: data.data.timing_accuracy || 0
+                        };
+                    }
+                    console.log('🎯 Prediction accuracy:', this.predictionMetrics);
+                }
+            } catch (error) {
+                console.error('Prediction accuracy load failed:', error);
+            }
+        },
+        
+        async loadPredictionTimeseries() {
+            try {
+                const response = await fetch('/api/causality/predictions/accuracy/timeseries');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && Array.isArray(data.data)) {
+                        this.predictionTimeseries = data.data;
+                        this.$nextTick(() => this.renderPredictionChart());
+                    } else if (data.success && data.data) {
+                        // Data might be wrapped differently
+                        this.predictionTimeseries = data.data.timeseries || data.data.points || [];
+                        if (this.predictionTimeseries.length > 0) {
+                            this.$nextTick(() => this.renderPredictionChart());
+                        }
+                    }
+                    console.log('🎯 Prediction timeseries:', this.predictionTimeseries.length, 'points');
+                }
+            } catch (error) {
+                console.error('Prediction timeseries load failed:', error);
+            }
+        },
+        
+        renderPredictionChart() {
+            const el = document.getElementById('predictionChart');
+            if (!el || this.predictionTimeseries.length === 0) return;
+            
+            const dates = this.predictionTimeseries.map(p => p.target_date);
+            const predicted = this.predictionTimeseries.map(p => p.predicted_value);
+            const actual = this.predictionTimeseries.map(p => p.actual_value);
+            
+            const traces = [
+                {
+                    x: dates,
+                    y: predicted,
+                    name: 'Predicted',
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    line: { color: '#6366f1', width: 2 },
+                    marker: { size: 6 }
+                },
+                {
+                    x: dates,
+                    y: actual,
+                    name: 'Actual',
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    line: { color: '#22c55e', width: 2, dash: 'dot' },
+                    marker: { size: 6 }
+                }
+            ];
+            
+            const layout = {
+                paper_bgcolor: 'transparent',
+                plot_bgcolor: 'transparent',
+                font: { color: '#94a3b8', size: 11 },
+                margin: { t: 10, r: 20, b: 40, l: 50 },
+                xaxis: {
+                    gridcolor: '#334155',
+                    tickfont: { size: 10 }
+                },
+                yaxis: {
+                    gridcolor: '#334155',
+                    tickfont: { size: 10 }
+                },
+                legend: {
+                    orientation: 'h',
+                    y: 1.12,
+                    font: { size: 11 }
+                },
+                showlegend: true
+            };
+            
+            if (typeof Plotly !== 'undefined') {
+                Plotly.newPlot(el, traces, layout, { responsive: true, displayModeBar: false });
+            }
+        },
+        
+        async loadModelComparison() {
+            try {
+                const response = await fetch('/api/causality/predictions/models/compare');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && Array.isArray(data.data)) {
+                        this.modelComparison = data.data;
+                    } else if (data.success && data.data?.models) {
+                        this.modelComparison = data.data.models;
+                    } else {
+                        this.modelComparison = [];
+                    }
+                    console.log('🎯 Model comparison:', this.modelComparison.length, 'models');
+                }
+            } catch (error) {
+                console.error('Model comparison load failed:', error);
+            }
+        },
+        
+        async triggerActualUpdate() {
+            this.isUpdatingActuals = true;
+            try {
+                const response = await fetch('/api/causality/predictions/update-actuals', { method: 'POST' });
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('🎯 Actual update result:', data);
+                    // Reload metrics after updating actuals
+                    await this.loadPredictionAccuracy();
+                    await this.loadPredictionTimeseries();
+                }
+            } catch (error) {
+                console.error('Actual update failed:', error);
+            } finally {
+                this.isUpdatingActuals = false;
             }
         },
         
