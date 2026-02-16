@@ -1076,6 +1076,154 @@ async def debug_granger_results(variable_name: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/debug-cascade-query/{variable_name}")
+async def debug_cascade_query(variable_name: str):
+    """Debug: Run the EXACT same query as cascade-predictions and show what happens"""
+    try:
+        from database import get_db_session
+        from models import VariableMetadata, CorrelationResult
+        from sqlalchemy import or_, and_, desc
+        import urllib.parse
+        
+        variable_name = urllib.parse.unquote(variable_name)
+        
+        with get_db_session() as session:
+            # Step 1: Variable lookup (same as cascade-predictions)
+            layer1_var = session.query(VariableMetadata).filter(
+                VariableMetadata.name == variable_name
+            ).first()
+            
+            lookup_strategy = "exact_name"
+            if not layer1_var:
+                normalized = variable_name.lower().strip()
+                patterns = [
+                    f"wiki_{normalized.replace(' ', '_')}",
+                    f"wiki_{normalized.replace(' ', '-')}",
+                    f"reddit_{normalized.replace(' ', '_')}",
+                ]
+                for pattern in patterns:
+                    layer1_var = session.query(VariableMetadata).filter(
+                        VariableMetadata.name == pattern
+                    ).first()
+                    if layer1_var:
+                        lookup_strategy = f"pattern:{pattern}"
+                        break
+                
+                if not layer1_var:
+                    matches = session.query(VariableMetadata).filter(
+                        VariableMetadata.display_name.ilike(f"%{variable_name}%"),
+                        VariableMetadata.source.in_(['wikipedia', 'reddit'])
+                    ).limit(3).all()
+                    if matches:
+                        layer1_var = matches[0]
+                        lookup_strategy = f"display_name_match:{layer1_var.name}"
+            
+            if not layer1_var:
+                return {"error": f"Variable '{variable_name}' not found", "strategies_tried": ["exact", "wiki_patterns", "display_name"]}
+            
+            var_info = {
+                "id": layer1_var.id,
+                "name": layer1_var.name,
+                "display_name": layer1_var.display_name,
+                "source": layer1_var.source,
+                "lookup_strategy": lookup_strategy
+            }
+            
+            # Step 2: Run the EXACT cascade query
+            causality_results = session.query(CorrelationResult).filter(
+                or_(
+                    and_(
+                        CorrelationResult.variable1_id == layer1_var.id,
+                        CorrelationResult.granger_p_value_xy != None,
+                        CorrelationResult.granger_p_value_xy < 0.05
+                    ),
+                    and_(
+                        CorrelationResult.variable2_id == layer1_var.id,
+                        CorrelationResult.granger_p_value_yx != None,
+                        CorrelationResult.granger_p_value_yx < 0.05
+                    )
+                )
+            ).order_by(desc(CorrelationResult.abs_correlation)).limit(5).all()
+            
+            # Step 3: Show what we got
+            raw_results = []
+            filtered_results = []
+            for result in causality_results:
+                if result.variable1_id == layer1_var.id:
+                    outcome_var = result.variable2
+                    p_value = result.granger_p_value_xy
+                    direction_label = "signal→other (xy)"
+                else:
+                    outcome_var = result.variable1
+                    p_value = result.granger_p_value_yx
+                    direction_label = "signal→other (yx)"
+                
+                entry = {
+                    "outcome_name": outcome_var.name,
+                    "outcome_display": outcome_var.display_name,
+                    "outcome_source": outcome_var.source,
+                    "p_value": p_value,
+                    "abs_correlation": result.abs_correlation,
+                    "correlation": result.correlation_value,
+                    "direction": direction_label,
+                    "var1_id": result.variable1_id,
+                    "var2_id": result.variable2_id,
+                    "granger_xy": result.granger_p_value_xy,
+                    "granger_yx": result.granger_p_value_yx,
+                    "would_be_filtered": outcome_var.source == 'wikipedia'
+                }
+                raw_results.append(entry)
+                
+                if outcome_var.source != 'wikipedia':
+                    filtered_results.append(entry)
+            
+            # Step 4: Also check what the leading_indicators query would return
+            leading_results = session.query(CorrelationResult).filter(
+                or_(
+                    and_(
+                        CorrelationResult.variable1_id == layer1_var.id,
+                        CorrelationResult.granger_p_value_yx != None,
+                        CorrelationResult.granger_p_value_yx < 0.05
+                    ),
+                    and_(
+                        CorrelationResult.variable2_id == layer1_var.id,
+                        CorrelationResult.granger_p_value_xy != None,
+                        CorrelationResult.granger_p_value_xy < 0.05
+                    )
+                )
+            ).order_by(desc(CorrelationResult.abs_correlation)).limit(3).all()
+            
+            leading_raw = []
+            for result in leading_results:
+                if result.variable1_id == layer1_var.id:
+                    predictor_var = result.variable2
+                    p_value = result.granger_p_value_yx
+                else:
+                    predictor_var = result.variable1
+                    p_value = result.granger_p_value_xy
+                
+                leading_raw.append({
+                    "predictor_name": predictor_var.name,
+                    "predictor_display": predictor_var.display_name,
+                    "predictor_source": predictor_var.source,
+                    "p_value": p_value,
+                    "would_be_filtered": predictor_var.source == 'wikipedia'
+                })
+            
+            return {
+                "variable_lookup": var_info,
+                "cascade_query_count": len(causality_results),
+                "cascade_raw_results": raw_results,
+                "cascade_after_wiki_filter": filtered_results,
+                "leading_query_count": len(leading_results),
+                "leading_raw_results": leading_raw
+            }
+            
+    except Exception as e:
+        logger.error(f"Debug cascade query failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/significant-granger")
 async def get_significant_granger():
     """List all significant Granger causality pairs (p < 0.05)"""

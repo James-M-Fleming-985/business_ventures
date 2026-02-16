@@ -43,61 +43,53 @@ metadata:
 
 ui_integration:
   entry_point:
-    page: "PredictionDashboard.jsx"
-    location: "src/components/PredictionDashboard.jsx"
-    trigger: "User clicks '🎯 Predictions' in the nav sidebar"
+    type: "jinja2-alpinejs-tab"
+    page: "templates/dashboard.html"
+    js_file: "static/js/dashboard.js"
+    trigger: "User clicks 'Prediction Accuracy' tab in dashboard view tabs"
 
   navigation:
-    type: "new_nav_item"
-    nav_file: "src/components/Layout.jsx"
-    label: "🎯 Predictions"
-    route: "/predictions"
-    position: "After Signal Radar"
+    type: "alpine_tab"
+    view_name: "predictions"
+    label: "Prediction Accuracy"
+    icon: "target"  # Lucide icon name
+    position: "After Leaderboard tab"
 
   routing:
-    router_file: "src/App.jsx"
-    route_path: "/predictions"
-    component: "PredictionDashboard"
+    type: "alpine_activeView"
+    view_value: "predictions"
+    load_function: "loadPredictions()"
 
   new_components:
-    - name: "PredictionDashboard.jsx"
-      type: "React page component"
-      library: "Recharts, TailwindCSS"
+    - name: "Predictions view section"
+      type: "Jinja2/Alpine.js inline section"
+      library: "Alpine.js, Plotly, Tailwind CDN, Lucide"
       description: |
-        Full-page Prediction Analytics dashboard.  Three main sections:
-        1. Predicted-vs-Actual overlay chart (Recharts ComposedChart with
-           dashed prediction line, solid actual line, divergence shading)
-        2. Model Comparison table (sortable by Direction %, MAPE, N, Period)
-        3. Filter panel (domain, variable pair, date range, model version,
-           confidence level)
-
-    - name: "PredictionOverlayChart.jsx"
-      type: "React component"
-      library: "Recharts"
-      description: "Line chart overlay: predicted (dashed) vs actual (solid) with divergence area shading"
-
-    - name: "ModelComparisonTable.jsx"
-      type: "React component"
-      library: "TailwindCSS"
-      description: "Sortable table comparing Direction %, MAPE, N Predictions, Period across model versions"
-
-    - name: "PredictionFilters.jsx"
-      type: "React component"
-      library: "TailwindCSS"
-      description: "Filter controls: domain, variable pair, date range, model version, confidence level"
+        Alpine.js tab content in templates/dashboard.html with:
+        1. Accuracy summary cards (total, direction %, MAPE, timing %)
+        2. Predicted-vs-Actual overlay chart (Plotly scatter)
+        3. Model comparison table (sortable)
+        4. Service layer status panel with Update Actuals button
+        Alpine.js state and fetch methods in static/js/dashboard.js.
 
   user_flow: |
-    User clicks "🎯 Predictions" in the nav sidebar
-      → PredictionDashboard.jsx loads
+    User clicks "Prediction Accuracy" tab in dashboard view tabs
+      → activeView = 'predictions', loadPredictions() fires
+        → Calls GET /api/causality/predictions/status (service health)
         → Calls GET /api/causality/predictions/accuracy (summary metrics)
         → Calls GET /api/causality/predictions/accuracy/timeseries (chart data)
-          → PredictionOverlayChart renders predicted vs actual lines
+          → Plotly chart renders predicted vs actual lines
           → Summary cards show direction accuracy, MAPE, timing accuracy
-        → Bottom section shows ModelComparisonTable
-          → Calls GET /api/causality/predictions/models/compare
-          → Rows: model version, direction %, MAPE, N predictions, period
-        → User applies filters → API calls refresh with query params
-          → by_domain, by_variable_pair, date_range, model_version, confidence
+        → Calls GET /api/causality/predictions/models/compare
+          → Model comparison table renders
+        → User clicks 'Update Actuals' → POST /api/causality/predictions/update-actuals
+
+    Data flows IN via:
+      → User runs Granger deep-analysis in Signal Detail modal
+      → deep-analysis endpoint computes prediction dict
+      → Client-side JS auto-POSTs prediction to /api/causality/predictions/store
+      → Prediction stored in prediction_tracking table
+      → When target_date passes, ActualUpdater fills in actual values
 
 # ====================================================================================
 # FEATURE OVERVIEW
@@ -657,10 +649,88 @@ production_integration:
       orchestrator_method: "update_actuals"
       orchestrator_args: ""
 
-# Frontend integration: auto-wire React dashboard into the deployed UI
+# Frontend integration: auto-wire Jinja2/Alpine.js tab into production dashboard
 frontend_integration:
-  target_app_dir: "SYSTEM-CA-006_feedback_iteration/FEATURE-CA-006-06_dashboard_ui/dashboard-app-complete"
-  route_path: "/predictions"
-  nav_label: "Predictions"
-  nav_icon: "🎯"
-  page_component_name: "PredictionDashboard"
+  frontend_type: "jinja2-alpinejs"
+  nav_label: "Prediction Accuracy"
+  nav_icon: "target"
+  api_prefix: "/api/causality/predictions"
+  jinja2_alpinejs:
+    dashboard_template: "templates/dashboard.html"
+    dashboard_js: "static/js/dashboard.js"
+    view_name: "predictions"
+
+# ====================================================================================
+# DATA PIPELINE - How predictions flow INTO the tracking system
+# ====================================================================================
+
+data_pipeline:
+  producer_type: "hook_existing"
+
+  hook_existing:
+    source_file: "routers/dashboard_real.py"
+    source_function: "get_deep_analysis"
+    data_path: "prediction"
+    persist_via: "POST /api/causality/predictions/store"
+    hook_description: |
+      The deep-analysis endpoint (GET /api/dashboard/deep-analysis/{signal}/{target})
+      already computes a full prediction dict with direction, predicted_value,
+      current_target_value, r_squared, optimal_lag_days, confidence, etc.
+      Currently this prediction is displayed in the browser modal but never
+      persisted.  The hook adds a client-side POST in dashboard.js:
+      after runDeepAnalysis() succeeds and this.deepAnalysis.prediction exists,
+      POST to /api/causality/predictions/store with the prediction payload.
+      The server stores it in the prediction_tracking table.
+
+  new_producer:
+    type: "background_job"
+    schedule: "0 3 * * *"  # 3am daily
+    description: |
+      The ActualUpdater layer (Layer 02) runs daily to scan predictions where
+      target_date <= today AND actual_value IS NULL, fetches the actual value
+      from time_series_data, and updates direction_correct + value_error_pct.
+
+  backfill:
+    enabled: false
+    description: |
+      Not needed for initial deployment.  Future: scan granger_results and
+      deep-analysis logs to retroactively create prediction_tracking rows.
+
+# ====================================================================================
+# RUNTIME DEPENDENCIES - DB session injection
+# ====================================================================================
+
+runtime_dependencies:
+  database:
+    required: true
+    session_type: "sync"
+    provider: "database.get_db"
+    inject_into:
+      - "Layer 01 - Prediction Storage (store_prediction, record_actual, list_predictions)"
+      - "Layer 02 - Actual Updater (query pending predictions, fetch actuals)"
+      - "Layer 03 - Analytics Service (PredictionTracker queries)"
+
+  cache:
+    required: false
+
+  external_services: []
+
+  injection_pattern: |
+    The causality_router.py endpoints must pass db: Session = Depends(get_db)
+    to the FeatureOrchestrator on each request, NOT at module import time.
+    The orchestrator stores the session and passes it to layer constructors.
+
+    In causality_router.py:
+      @router.post("/predictions/store")
+      async def store_prediction(payload: dict, db: Session = Depends(get_db)):
+          svc = PredictionOrchestrator(db_session=db)
+          return svc.store_prediction(payload)
+
+    In feature_integration.py:
+      class FeatureOrchestrator:
+          def __init__(self, db_session=None, config=None):
+              self._db = db_session
+              if db_session and ANALYTICS_AVAILABLE:
+                  self._tracker = PredictionTracker(db_session)
+              if db_session and UPDATER_AVAILABLE:
+                  self._updater = ActualUpdater(db_session)
