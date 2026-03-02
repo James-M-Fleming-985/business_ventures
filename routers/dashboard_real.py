@@ -1356,6 +1356,7 @@ async def get_cascade_predictions(signal_name: str, db: Session = Depends(get_db
     - A variable name like "wiki_climate_change"
     """
     from sqlalchemy import or_, and_, desc
+    from sqlalchemy.orm import aliased
     import numpy as np
     
     predictions = []
@@ -1421,20 +1422,37 @@ async def get_cascade_predictions(signal_name: str, db: Session = Depends(get_db
         logger.info(f"Found Layer 1 variable: {layer1_var.name} (display: {layer1_var.display_name})")
         
         # Try to find empirical Granger causality first
-        causality_results = db.query(CorrelationResult).filter(
-            or_(
-                and_(
-                    CorrelationResult.variable1_id == layer1_var.id,
-                    CorrelationResult.granger_p_value_xy != None,
-                    CorrelationResult.granger_p_value_xy < 0.05
-                ),
-                and_(
-                    CorrelationResult.variable2_id == layer1_var.id,
-                    CorrelationResult.granger_p_value_yx != None,
-                    CorrelationResult.granger_p_value_yx < 0.05
-                )
-            )
+        # Two separate queries to properly exclude wikipedia outcomes BEFORE the LIMIT
+        # Case A: signal is var1, outcome is var2 (test: signal→outcome = granger_xy)
+        OutcomeVar = aliased(VariableMetadata)
+        results_as_var1 = db.query(CorrelationResult).join(
+            OutcomeVar, CorrelationResult.variable2_id == OutcomeVar.id
+        ).filter(
+            CorrelationResult.variable1_id == layer1_var.id,
+            CorrelationResult.granger_p_value_xy != None,
+            CorrelationResult.granger_p_value_xy < 0.05,
+            OutcomeVar.source != 'wikipedia'
         ).order_by(desc(CorrelationResult.abs_correlation)).limit(5).all()
+        
+        # Case B: signal is var2, outcome is var1 (test: signal→outcome = granger_yx)
+        OutcomeVar2 = aliased(VariableMetadata)
+        results_as_var2 = db.query(CorrelationResult).join(
+            OutcomeVar2, CorrelationResult.variable1_id == OutcomeVar2.id
+        ).filter(
+            CorrelationResult.variable2_id == layer1_var.id,
+            CorrelationResult.granger_p_value_yx != None,
+            CorrelationResult.granger_p_value_yx < 0.05,
+            OutcomeVar2.source != 'wikipedia'
+        ).order_by(desc(CorrelationResult.abs_correlation)).limit(5).all()
+        
+        # Combine, deduplicate, and take top 5 by abs_correlation
+        seen_ids = set()
+        causality_results = []
+        for r in sorted(results_as_var1 + results_as_var2, key=lambda x: x.abs_correlation or 0, reverse=True):
+            if r.id not in seen_ids:
+                seen_ids.add(r.id)
+                causality_results.append(r)
+        causality_results = causality_results[:5]
         
         # If no pre-computed results, compute Granger on-the-fly
         if not causality_results:
@@ -1533,8 +1551,7 @@ async def get_cascade_predictions(signal_name: str, db: Session = Depends(get_db
                 outcome_var = result.variable1
                 p_value = result.granger_p_value_yx
             
-            if outcome_var.source == 'wikipedia':
-                continue
+            # Wikipedia outcomes already excluded by SQL query
             
             # Calculate R² and confidence level
             r = result.correlation_value
@@ -1570,20 +1587,37 @@ async def get_cascade_predictions(signal_name: str, db: Session = Depends(get_db
         # If signal is var1: granger_yx means var2→var1 (other→signal)
         # If signal is var2: granger_xy means var1→var2 (other→signal)
         leading_indicators = []
-        leading_results = db.query(CorrelationResult).filter(
-            or_(
-                and_(
-                    CorrelationResult.variable1_id == layer1_var.id,
-                    CorrelationResult.granger_p_value_yx != None,
-                    CorrelationResult.granger_p_value_yx < 0.05
-                ),
-                and_(
-                    CorrelationResult.variable2_id == layer1_var.id,
-                    CorrelationResult.granger_p_value_xy != None,
-                    CorrelationResult.granger_p_value_xy < 0.05
-                )
-            )
+        # Same fix: exclude wikipedia predictors BEFORE the LIMIT
+        # Case A: signal is var1, predictor is var2 (test: predictor→signal = granger_yx)
+        PredictorVar = aliased(VariableMetadata)
+        leading_as_var1 = db.query(CorrelationResult).join(
+            PredictorVar, CorrelationResult.variable2_id == PredictorVar.id
+        ).filter(
+            CorrelationResult.variable1_id == layer1_var.id,
+            CorrelationResult.granger_p_value_yx != None,
+            CorrelationResult.granger_p_value_yx < 0.05,
+            PredictorVar.source != 'wikipedia'
         ).order_by(desc(CorrelationResult.abs_correlation)).limit(3).all()
+        
+        # Case B: signal is var2, predictor is var1 (test: predictor→signal = granger_xy)
+        PredictorVar2 = aliased(VariableMetadata)
+        leading_as_var2 = db.query(CorrelationResult).join(
+            PredictorVar2, CorrelationResult.variable1_id == PredictorVar2.id
+        ).filter(
+            CorrelationResult.variable2_id == layer1_var.id,
+            CorrelationResult.granger_p_value_xy != None,
+            CorrelationResult.granger_p_value_xy < 0.05,
+            PredictorVar2.source != 'wikipedia'
+        ).order_by(desc(CorrelationResult.abs_correlation)).limit(3).all()
+        
+        # Combine, deduplicate, and take top 3
+        seen_leading_ids = set()
+        leading_results = []
+        for r in sorted(leading_as_var1 + leading_as_var2, key=lambda x: x.abs_correlation or 0, reverse=True):
+            if r.id not in seen_leading_ids:
+                seen_leading_ids.add(r.id)
+                leading_results.append(r)
+        leading_results = leading_results[:3]
         
         for result in leading_results:
             if result.variable1_id == layer1_var.id:
@@ -1593,8 +1627,7 @@ async def get_cascade_predictions(signal_name: str, db: Session = Depends(get_db
                 predictor_var = result.variable1
                 p_value = result.granger_p_value_xy
             
-            if predictor_var.source == 'wikipedia':
-                continue
+            # Wikipedia predictors already excluded by SQL query
             
             # Calculate R² and confidence level
             r = result.correlation_value

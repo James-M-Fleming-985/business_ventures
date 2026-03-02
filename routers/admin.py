@@ -31,9 +31,9 @@ async def initialize_database():
         from data_ingestion_service import DataIngestionService
         from correlation_analysis_service import CorrelationAnalysisService
         from database import get_db_session
-        
+
         logger.info("Starting database initialization...")
-        
+
         # Phase 0: Run database migrations
         logger.info("Phase 0: Running database migrations...")
         try:
@@ -42,31 +42,31 @@ async def initialize_database():
             logger.info("✅ Granger causality migration complete")
         except Exception as e:
             logger.warning(f"Migration may have already run: {e}")
-        
+
         # Phase 1: Initialize database schema and seed variables
         logger.info("Phase 1: Creating tables and seeding variables...")
         init_result = init_db_main()
-        
+
         if not init_result:
             raise Exception("Database initialization failed")
-        
+
         # Phase 2A: Data ingestion
         logger.info("Phase 2A: Fetching data from APIs...")
         with get_db_session() as db:
             ingestion_service = DataIngestionService(db)
             ingestion_service.fetch_and_store_all_variables()
-        
+
         # Phase 2B: Correlation analysis
         logger.info("Phase 2B: Calculating correlations...")
         with get_db_session() as db:
             analysis_service = CorrelationAnalysisService(db)
             analysis_service.calculate_all_correlations()
-            
+
             # Get top correlations
             top_correlations = analysis_service.get_top_correlations(limit=10)
-        
+
         logger.info("✅ Database initialization complete!")
-        
+
         return JSONResponse({
             "status": "success",
             "message": "Database initialized successfully",
@@ -80,7 +80,7 @@ async def initialize_database():
                 for corr in top_correlations
             ]
         })
-        
+
     except Exception as e:
         logger.error(f"Database initialization failed: {e}", exc_info=True)
         raise HTTPException(
@@ -98,7 +98,7 @@ async def run_migrations():
     try:
         logger.info("Running database migrations...")
         migrations_run = []
-        
+
         # Run Granger causality migration
         try:
             from migrations.add_granger_causality_columns import upgrade as run_granger_migration
@@ -106,8 +106,9 @@ async def run_migrations():
             migrations_run.append("add_granger_causality_columns")
             logger.info("✅ Granger causality migration complete")
         except Exception as e:
-            logger.warning(f"Granger migration error (may already be applied): {e}")
-        
+            logger.warning(
+                f"Granger migration error (may already be applied): {e}")
+
         return {
             "status": "success",
             "message": "Migrations complete",
@@ -129,40 +130,43 @@ def _run_data_fetch_background(job_id: str, force: bool = False):
     try:
         _active_jobs[job_id]['status'] = 'running'
         _active_jobs[job_id]['updated_at'] = datetime.utcnow().isoformat()
-        
+
         sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
         from data_ingestion_service import DataIngestionService
         from database import get_db_session
         from models import TimeSeriesData
-        
+
         # If force=True, delete existing time series data first
         if force:
             _active_jobs[job_id]['stage'] = 'deleting_old_data'
-            logger.info(f"Job {job_id}: Force refetch - deleting existing time series data...")
-            
+            logger.info(
+                f"Job {job_id}: Force refetch - deleting existing time series data...")
+
             with get_db_session() as session:
                 deleted_count = session.query(TimeSeriesData).delete()
                 session.commit()
-                logger.info(f"Job {job_id}: Deleted {deleted_count} existing data points")
+                logger.info(
+                    f"Job {job_id}: Deleted {deleted_count} existing data points")
                 _active_jobs[job_id]['deleted_count'] = deleted_count
-        
+
         _active_jobs[job_id]['stage'] = 'fetching'
         _active_jobs[job_id]['updated_at'] = datetime.utcnow().isoformat()
-        
+
         logger.info(f"Job {job_id}: Starting data ingestion...")
-        
+
         ingestion_service = DataIngestionService()
         result = ingestion_service.fetch_and_store_all_variables()
-        
+
         _active_jobs[job_id]['status'] = 'completed'
         _active_jobs[job_id]['stage'] = 'done'
         _active_jobs[job_id]['result'] = result
         _active_jobs[job_id]['updated_at'] = datetime.utcnow().isoformat()
-        
+
         logger.info(f"Job {job_id}: ✅ Data ingestion complete!")
-        
+
     except Exception as e:
-        logger.error(f"Job {job_id}: Data ingestion failed: {e}", exc_info=True)
+        logger.error(
+            f"Job {job_id}: Data ingestion failed: {e}", exc_info=True)
         _active_jobs[job_id]['status'] = 'failed'
         _active_jobs[job_id]['error'] = str(e)
         _active_jobs[job_id]['updated_at'] = datetime.utcnow().isoformat()
@@ -172,14 +176,14 @@ def _run_data_fetch_background(job_id: str, force: bool = False):
 async def fetch_data(background_tasks: BackgroundTasks, force: bool = False):
     """
     Fetch data from APIs in background - returns job_id for polling
-    
+
     Args:
         force: If True, deletes existing data before refetching (use for fixing incomplete data)
     """
     try:
         # Create job ID
         job_id = f"fetch_{int(datetime.utcnow().timestamp())}"
-        
+
         # Initialize job status
         _active_jobs[job_id] = {
             'job_id': job_id,
@@ -190,12 +194,12 @@ async def fetch_data(background_tasks: BackgroundTasks, force: bool = False):
             'created_at': datetime.utcnow().isoformat(),
             'updated_at': datetime.utcnow().isoformat()
         }
-        
+
         # Queue background task
         background_tasks.add_task(_run_data_fetch_background, job_id, force)
-        
+
         logger.info(f"Job {job_id}: Queued data ingestion (force={force})")
-        
+
         return JSONResponse({
             "status": "queued",
             "message": f"Data fetch started in background (force refetch: {force})",
@@ -203,7 +207,7 @@ async def fetch_data(background_tasks: BackgroundTasks, force: bool = False):
             "poll_url": f"/api/admin/job-status/{job_id}",
             "force": force
         })
-        
+
     except Exception as e:
         logger.error(f"Failed to queue data fetch: {e}", exc_info=True)
         return JSONResponse({
@@ -218,18 +222,18 @@ def _run_correlation_calc_background(job_id: str):
         _active_jobs[job_id]['status'] = 'running'
         _active_jobs[job_id]['stage'] = 'calculating'
         _active_jobs[job_id]['updated_at'] = datetime.utcnow().isoformat()
-        
+
         sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
         from correlation_analysis_service import CorrelationAnalysisService
         from database import get_db_session
         from models import CorrelationResult
         from sqlalchemy.orm import joinedload
-        
+
         logger.info(f"Job {job_id}: Starting correlation calculation...")
-        
+
         analysis_service = CorrelationAnalysisService()
         analysis_service.calculate_all_correlations()
-        
+
         # Get top correlations
         with get_db_session() as db:
             top_correlations = (
@@ -241,7 +245,7 @@ def _run_correlation_calc_background(job_id: str):
                 .limit(10)
                 .all()
             )
-            
+
             top_corr_list = [
                 {
                     "variable1": corr.variable1.display_name,
@@ -252,16 +256,17 @@ def _run_correlation_calc_background(job_id: str):
                 }
                 for corr in top_correlations
             ]
-        
+
         _active_jobs[job_id]['status'] = 'completed'
         _active_jobs[job_id]['stage'] = 'done'
         _active_jobs[job_id]['result'] = {'top_correlations': top_corr_list}
         _active_jobs[job_id]['updated_at'] = datetime.utcnow().isoformat()
-        
+
         logger.info(f"Job {job_id}: ✅ Correlation calculation complete!")
-        
+
     except Exception as e:
-        logger.error(f"Job {job_id}: Correlation calc failed: {e}", exc_info=True)
+        logger.error(
+            f"Job {job_id}: Correlation calc failed: {e}", exc_info=True)
         _active_jobs[job_id]['status'] = 'failed'
         _active_jobs[job_id]['error'] = str(e)
         _active_jobs[job_id]['updated_at'] = datetime.utcnow().isoformat()
@@ -273,7 +278,7 @@ async def calculate_correlations(background_tasks: BackgroundTasks):
     try:
         # Create job ID
         job_id = f"corr_{int(datetime.utcnow().timestamp())}"
-        
+
         # Initialize job status
         _active_jobs[job_id] = {
             'job_id': job_id,
@@ -283,19 +288,19 @@ async def calculate_correlations(background_tasks: BackgroundTasks):
             'created_at': datetime.utcnow().isoformat(),
             'updated_at': datetime.utcnow().isoformat()
         }
-        
+
         # Queue background task
         background_tasks.add_task(_run_correlation_calc_background, job_id)
-        
+
         logger.info(f"Job {job_id}: Queued correlation calculation")
-        
+
         return JSONResponse({
             "status": "queued",
             "message": "Correlation calculation started in background",
             "job_id": job_id,
             "poll_url": f"/api/admin/job-status/{job_id}"
         })
-        
+
     except Exception as e:
         logger.error(f"Failed to queue correlation calc: {e}", exc_info=True)
         return JSONResponse({
@@ -309,7 +314,7 @@ async def get_job_status(job_id: str):
     """Poll status of background job"""
     if job_id not in _active_jobs:
         raise HTTPException(status_code=404, detail="Job not found")
-    
+
     return JSONResponse(_active_jobs[job_id])
 
 
@@ -321,15 +326,15 @@ async def calculate_correlations():
         from correlation_analysis_service import CorrelationAnalysisService
         from database import get_db_session
         from models import CorrelationResult
-        
+
         logger.info("Starting correlation calculation...")
-        
+
         analysis_service = CorrelationAnalysisService()
         result = analysis_service.calculate_all_correlations()
-        
+
         # Get top correlations from database with eagerly loaded relationships
         from sqlalchemy.orm import joinedload
-        
+
         with get_db_session() as db:
             top_correlations = (
                 db.query(CorrelationResult)
@@ -340,7 +345,7 @@ async def calculate_correlations():
                 .limit(10)
                 .all()
             )
-            
+
             # Build result list while still in session
             top_corr_list = [
                 {
@@ -352,7 +357,7 @@ async def calculate_correlations():
                 }
                 for corr in top_correlations
             ]
-        
+
         logger.info("✅ Correlation calculation complete!")
         return JSONResponse({
             "status": "success",
@@ -360,7 +365,7 @@ async def calculate_correlations():
             "stats": result,
             "top_correlations": top_corr_list
         })
-        
+
     except Exception as e:
         logger.error(f"Correlation calculation failed: {e}", exc_info=True)
         return JSONResponse({
@@ -378,25 +383,26 @@ async def get_data_quality():
         from models import VariableMetadata, TimeSeriesData, CorrelationResult
         from sqlalchemy import func
         from datetime import datetime, timedelta
-        
+
         with get_db_session() as db:
             # Total variables and data coverage
             total_vars = db.query(VariableMetadata).filter(
                 VariableMetadata.is_active.is_(True)
             ).count()
-            
-            vars_with_data = db.query(func.count(func.distinct(TimeSeriesData.variable_id))).scalar()
-            
+
+            vars_with_data = db.query(func.count(
+                func.distinct(TimeSeriesData.variable_id))).scalar()
+
             # Data freshness by source
             thirty_days_ago = datetime.utcnow() - timedelta(days=30)
             current_vars = db.query(func.count(func.distinct(TimeSeriesData.variable_id))).filter(
                 TimeSeriesData.timestamp >= thirty_days_ago
             ).scalar()
-            
+
             # Total data points and correlations
             total_points = db.query(TimeSeriesData).count()
             total_corrs = db.query(CorrelationResult).count()
-            
+
             # Sample size distribution
             sample_sizes = {
                 "0-2": db.query(CorrelationResult).filter(CorrelationResult.sample_size.between(0, 2)).count(),
@@ -405,13 +411,13 @@ async def get_data_quality():
                 "20-49": db.query(CorrelationResult).filter(CorrelationResult.sample_size.between(20, 49)).count(),
                 "50+": db.query(CorrelationResult).filter(CorrelationResult.sample_size >= 50).count()
             }
-            
+
             # Suspicious correlations (high correlation, low sample size)
             suspicious = db.query(CorrelationResult).filter(
                 CorrelationResult.abs_correlation > 0.95,
                 CorrelationResult.sample_size < 20
             ).count()
-            
+
             # Variables by source - dynamically get all sources
             source_query = db.query(
                 VariableMetadata.source,
@@ -419,9 +425,10 @@ async def get_data_quality():
             ).filter(
                 VariableMetadata.is_active.is_(True)
             ).group_by(VariableMetadata.source).all()
-            
-            source_dist = {source: count for source, count in source_query if source}
-            
+
+            source_dist = {source: count for source,
+                           count in source_query if source}
+
             return JSONResponse({
                 "status": "success",
                 "summary": {
@@ -437,7 +444,7 @@ async def get_data_quality():
                 "correlation_sample_sizes": sample_sizes,
                 "suspicious_correlations": suspicious
             })
-    
+
     except Exception as e:
         logger.error(f"Data quality check failed: {e}", exc_info=True)
         return JSONResponse({
@@ -478,27 +485,27 @@ async def data_quality_diagnostic():
         from sqlalchemy import and_
         from datetime import datetime
         from collections import defaultdict
-        
+
         with get_db_session() as session:
             # Variable inventory
             variables = session.query(VariableMetadata).filter(
                 VariableMetadata.is_active.is_(True)
             ).all()
-            
+
             source_counts = defaultdict(int)
             for v in variables:
                 source_counts[v.source] += 1
-            
+
             # Data coverage
             total_data_points = session.query(TimeSeriesData).count()
-            
+
             # Per-variable stats
             var_stats = []
             for var in variables:
                 data_count = session.query(TimeSeriesData).filter(
                     TimeSeriesData.variable_id == var.id
                 ).count()
-                
+
                 if data_count == 0:
                     var_stats.append({
                         'name': var.display_name,
@@ -509,17 +516,17 @@ async def data_quality_diagnostic():
                         'days_old': None
                     })
                     continue
-                
+
                 first = session.query(TimeSeriesData).filter(
                     TimeSeriesData.variable_id == var.id
                 ).order_by(TimeSeriesData.timestamp.asc()).first()
-                
+
                 last = session.query(TimeSeriesData).filter(
                     TimeSeriesData.variable_id == var.id
                 ).order_by(TimeSeriesData.timestamp.desc()).first()
-                
+
                 days_old = (datetime.utcnow() - last.timestamp).days
-                
+
                 var_stats.append({
                     'name': var.display_name,
                     'source': var.source,
@@ -528,10 +535,10 @@ async def data_quality_diagnostic():
                     'end': last.timestamp.strftime('%Y-%m-%d'),
                     'days_old': days_old
                 })
-            
+
             # Correlation quality
             total_corrs = session.query(CorrelationResult).count()
-            
+
             sample_size_bins = {
                 '0-2': session.query(CorrelationResult).filter(
                     CorrelationResult.sample_size < 3
@@ -558,7 +565,7 @@ async def data_quality_diagnostic():
                     CorrelationResult.sample_size >= 50
                 ).count()
             }
-            
+
             # Suspicious correlations
             suspicious = session.query(CorrelationResult).filter(
                 and_(
@@ -566,12 +573,14 @@ async def data_quality_diagnostic():
                     CorrelationResult.sample_size < 20
                 )
             ).count()
-            
+
             # Summary stats
-            current_vars = len([v for v in var_stats if v['days_old'] and v['days_old'] <= 30])
-            stale_vars = len([v for v in var_stats if v['days_old'] and v['days_old'] > 30])
+            current_vars = len(
+                [v for v in var_stats if v['days_old'] and v['days_old'] <= 30])
+            stale_vars = len(
+                [v for v in var_stats if v['days_old'] and v['days_old'] > 30])
             no_data_vars = len([v for v in var_stats if v['points'] == 0])
-            
+
             return {
                 "status": "success",
                 "summary": {
@@ -588,7 +597,7 @@ async def data_quality_diagnostic():
                 "suspicious_correlations": suspicious,
                 "variables": var_stats[:20]  # First 20 for preview
             }
-            
+
     except Exception as e:
         logger.error(f"Data quality diagnostic failed: {e}", exc_info=True)
         return JSONResponse({
@@ -606,26 +615,26 @@ async def disable_google_trends_variables():
         sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
         from database import get_db_session
         from models import VariableMetadata
-        
+
         disabled_count = 0
         with get_db_session() as session:
             trends_vars = session.query(VariableMetadata).filter(
                 VariableMetadata.source == 'google_trends',
                 VariableMetadata.is_active == True
             ).all()
-            
+
             for var in trends_vars:
                 var.is_active = False
                 disabled_count += 1
-            
+
             session.commit()
-        
+
         return {
             "status": "success",
             "message": f"Disabled {disabled_count} Google Trends variables",
             "reason": "pytrends is blocked from data centers - use Wikipedia pageviews instead"
         }
-        
+
     except Exception as e:
         logger.error(f"Error disabling Google Trends: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -641,34 +650,34 @@ async def disable_empty_environmental_vars():
         sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
         from database import get_db_session
         from models import VariableMetadata
-        
+
         # Categories with no events in EONET
         empty_categories = [
-            'env_floods', 'env_droughts', 'env_dust_haze', 
+            'env_floods', 'env_droughts', 'env_dust_haze',
             'env_landslides', 'env_snow', 'env_water_color'
         ]
-        
+
         disabled_count = 0
         with get_db_session() as session:
             for var_name in empty_categories:
                 var = session.query(VariableMetadata).filter(
                     VariableMetadata.name == var_name
                 ).first()
-                
+
                 if var and var.is_active:
                     var.is_active = False
                     disabled_count += 1
                     logger.info(f"Disabled {var.display_name} (no EONET data)")
-            
+
             session.commit()
-        
+
         return {
             "status": "success",
             "message": f"Disabled {disabled_count} empty environmental variables",
             "disabled_vars": empty_categories,
             "reason": "These categories have 0 events in NASA EONET API"
         }
-        
+
     except Exception as e:
         logger.error(f"Error disabling variables: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -685,7 +694,7 @@ async def get_sample_size_report():
         from models import CorrelationResult, VariableMetadata, TimeSeriesData
         from sqlalchemy import func
         from sqlalchemy.orm import joinedload
-        
+
         with get_db_session() as db:
             # Sample size distribution
             size_ranges = [
@@ -696,7 +705,7 @@ async def get_sample_size_report():
                 (50, 100, "50-100 (OK)"),
                 (100, 999999, "100+ (GOOD)")
             ]
-            
+
             distribution = {}
             for min_size, max_size, label in size_ranges:
                 count = db.query(CorrelationResult).filter(
@@ -704,7 +713,7 @@ async def get_sample_size_report():
                     CorrelationResult.sample_size < max_size
                 ).count()
                 distribution[label] = count
-            
+
             # Get worst offenders (sample size < 10)
             bad_correlations = db.query(CorrelationResult).filter(
                 CorrelationResult.sample_size < 10
@@ -712,7 +721,7 @@ async def get_sample_size_report():
                 joinedload(CorrelationResult.variable1),
                 joinedload(CorrelationResult.variable2)
             ).order_by(CorrelationResult.sample_size).limit(50).all()
-            
+
             bad_corr_list = [
                 {
                     "var1": corr.variable1.display_name if corr.variable1 else f"ID{corr.var1_id}",
@@ -723,7 +732,7 @@ async def get_sample_size_report():
                 }
                 for corr in bad_correlations
             ]
-            
+
             # Variables with insufficient data
             var_counts = db.query(
                 VariableMetadata.id,
@@ -740,7 +749,7 @@ async def get_sample_size_report():
             ).order_by(
                 func.count(TimeSeriesData.id)
             ).all()
-            
+
             low_data_vars = [
                 {
                     "name": name,
@@ -750,9 +759,9 @@ async def get_sample_size_report():
                 }
                 for _, name, source, active, count in var_counts
             ]
-            
+
             total_correlations = db.query(CorrelationResult).count()
-            
+
             return {
                 "status": "success",
                 "total_correlations": total_correlations,
@@ -762,7 +771,7 @@ async def get_sample_size_report():
                 "variables_under_20_points": len(low_data_vars),
                 "low_data_variables": low_data_vars
             }
-    
+
     except Exception as e:
         logger.error(f"Sample size report failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
@@ -777,34 +786,34 @@ async def setup_new_data_sources():
     try:
         logger.info("Setting up new data sources...")
         sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-        
+
         from setup_new_data_sources import (
             setup_google_trends_variables,
             setup_fred_variables,
             setup_usgs_enhanced_variables
         )
-        
+
         # Run each setup function and track results
         trends_count = 0
         fred_count = 0
         usgs_count = 0
-        
+
         logger.info("Setting up Google Trends variables...")
         setup_google_trends_variables()
         trends_count = 60  # Known count from setup
-        
+
         logger.info("Setting up FRED variables...")
         setup_fred_variables()
         fred_count = 50
-        
+
         logger.info("Setting up USGS Enhanced variables...")
         setup_usgs_enhanced_variables()
         usgs_count = 3
-        
+
         total = trends_count + fred_count + usgs_count
-        
+
         logger.info(f"✅ Setup complete: {total} new variables added")
-        
+
         return {
             "status": "success",
             "message": f"Added {total} new variables to database",
@@ -814,7 +823,7 @@ async def setup_new_data_sources():
             "total_added": total,
             "next_step": "Run data ingestion: POST /api/admin/full-data-refresh"
         }
-        
+
     except Exception as e:
         logger.error(f"Setup new data sources failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
@@ -825,20 +834,21 @@ async def setup_layer1_fast_signals():
     """
     Add Layer 1 (Fast/Behavioral) variables to database.
     Wikipedia Pageviews API is FREE with no rate limits - replaces Google Trends!
-    
+
     Layer 1 signals move faster than market/economic data (Layer 2/3),
     enabling early signal detection in the temporal cascade.
     """
     try:
         logger.info("Setting up Layer 1: Fast Behavioral Signals...")
         sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-        
+
         from setup_layer1_fast_signals import setup_wikipedia_variables
-        
+
         result = setup_wikipedia_variables()
-        
-        logger.info(f"✅ Layer 1 setup complete: {result['added']} new variables")
-        
+
+        logger.info(
+            f"✅ Layer 1 setup complete: {result['added']} new variables")
+
         return {
             "status": "success",
             "message": f"Added {result['added']} Wikipedia pageview variables",
@@ -852,7 +862,7 @@ async def setup_layer1_fast_signals():
                 "3. Recalculate correlations: POST /api/admin/calculate-correlations"
             ]
         }
-        
+
     except Exception as e:
         logger.error(f"Layer 1 setup failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
@@ -862,27 +872,27 @@ async def setup_layer1_fast_signals():
 async def validate_data_universe_endpoint():
     """
     Validate data universe consistency.
-    
+
     Checks:
     - All sources are registered in data_source_registry
     - Timestamps are on standard monthly grid (first of month)
     - Data coverage by layer
     - Variables with no data
-    
+
     Returns detailed report with issues and recommendations.
     """
     try:
         logger.info("Running data universe validation...")
         sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-        
+
         from validate_data_universe import validate_data_universe
-        
+
         report = validate_data_universe()
-        
+
         logger.info(f"Validation complete. Status: {report['status']}")
-        
+
         return report
-        
+
     except Exception as e:
         logger.error(f"Validation failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
@@ -896,7 +906,7 @@ async def list_data_sources():
     """
     try:
         from data_source_registry import DATA_SOURCES, get_active_sources, SignalLayer
-        
+
         sources_by_layer = {}
         for layer in SignalLayer:
             layer_sources = [
@@ -914,10 +924,10 @@ async def list_data_sources():
             ]
             if layer_sources:
                 sources_by_layer[layer.name] = layer_sources
-        
+
         active_count = len(get_active_sources())
         total_count = len(DATA_SOURCES)
-        
+
         return {
             "total_sources": total_count,
             "active_sources": active_count,
@@ -928,7 +938,7 @@ async def list_data_sources():
                 "description": "All data normalized to first-of-month timestamps"
             }
         }
-        
+
     except Exception as e:
         logger.error(f"Failed to list data sources: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
@@ -943,9 +953,9 @@ async def debug_wikipedia_fetch():
     try:
         from data_fetcher import DataFetcher
         f = DataFetcher()
-        
+
         article = "Layoff"
-        
+
         # Test monthly
         monthly = f.fetch_wikipedia_pageviews_monthly(article, months=60)
         monthly_info = None
@@ -956,7 +966,7 @@ async def debug_wikipedia_fetch():
                 "date_range": f"{sorted_dates[0]} to {sorted_dates[-1]}",
                 "sample": dict(list(monthly.items())[:3])
             }
-        
+
         # Test daily
         daily = f.fetch_wikipedia_pageviews_daily(article, days=90)
         daily_info = None
@@ -967,14 +977,14 @@ async def debug_wikipedia_fetch():
                 "date_range": f"{sorted_dates[0][0]} to {sorted_dates[-1][0]}",
                 "sample": dict(list(daily.items())[:3])
             }
-        
+
         return {
             "article": article,
             "monthly_fetch": monthly_info,
             "daily_fetch": daily_info,
             "status": "success" if monthly and daily else "partial" if monthly or daily else "failed"
         }
-        
+
     except Exception as e:
         logger.error(f"Debug fetch failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
@@ -986,28 +996,30 @@ async def debug_db_data(variable_name: str):
     try:
         from database import get_db_session
         from models import VariableMetadata, TimeSeriesData
-        
+
         with get_db_session() as session:
-            var = session.query(VariableMetadata).filter(VariableMetadata.name == variable_name).first()
+            var = session.query(VariableMetadata).filter(
+                VariableMetadata.name == variable_name).first()
             if not var:
                 return {"error": f"Variable {variable_name} not found"}
-            
+
             # Get all data points
             data = session.query(TimeSeriesData).filter(
                 TimeSeriesData.variable_id == var.id
             ).order_by(TimeSeriesData.timestamp).all()
-            
+
             if not data:
                 return {"variable": variable_name, "data_points": 0, "message": "No data"}
-            
+
             # Analyze the dates
             dates = [d.timestamp.strftime("%Y-%m-%d") for d in data]
-            values = [(d.timestamp.strftime("%Y-%m-%d"), d.value) for d in data]
-            
+            values = [(d.timestamp.strftime("%Y-%m-%d"), d.value)
+                      for d in data]
+
             # Check for monthly vs daily
             monthly_count = sum(1 for d in dates if d.endswith("-01"))
             daily_count = len(dates) - monthly_count
-            
+
             return {
                 "variable": variable_name,
                 "variable_id": var.id,
@@ -1017,7 +1029,7 @@ async def debug_db_data(variable_name: str):
                 "first_5": values[:5],
                 "last_5": values[-5:]
             }
-            
+
     except Exception as e:
         logger.error(f"Debug DB failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
@@ -1030,12 +1042,13 @@ async def debug_granger_results(variable_name: str):
         from database import get_db_session
         from models import VariableMetadata, CorrelationResult
         from sqlalchemy import or_
-        
+
         with get_db_session() as session:
-            var = session.query(VariableMetadata).filter(VariableMetadata.name == variable_name).first()
+            var = session.query(VariableMetadata).filter(
+                VariableMetadata.name == variable_name).first()
             if not var:
                 return {"error": f"Variable {variable_name} not found"}
-            
+
             # Find all correlations with Granger results
             granger_results = session.query(CorrelationResult).filter(
                 or_(
@@ -1047,7 +1060,7 @@ async def debug_granger_results(variable_name: str):
                     CorrelationResult.granger_p_value_yx != None
                 )
             ).all()
-            
+
             results = []
             for r in granger_results:
                 other_var = r.variable2 if r.variable1_id == var.id else r.variable1
@@ -1064,163 +1077,15 @@ async def debug_granger_results(variable_name: str):
                     "var1_id": r.variable1_id,
                     "var2_id": r.variable2_id
                 })
-            
+
             return {
                 "variable": variable_name,
                 "granger_results_count": len(results),
                 "results": results[:10]  # First 10
             }
-            
+
     except Exception as e:
         logger.error(f"Debug Granger failed: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/debug-cascade-query/{variable_name}")
-async def debug_cascade_query(variable_name: str):
-    """Debug: Run the EXACT same query as cascade-predictions and show what happens"""
-    try:
-        from database import get_db_session
-        from models import VariableMetadata, CorrelationResult
-        from sqlalchemy import or_, and_, desc
-        import urllib.parse
-        
-        variable_name = urllib.parse.unquote(variable_name)
-        
-        with get_db_session() as session:
-            # Step 1: Variable lookup (same as cascade-predictions)
-            layer1_var = session.query(VariableMetadata).filter(
-                VariableMetadata.name == variable_name
-            ).first()
-            
-            lookup_strategy = "exact_name"
-            if not layer1_var:
-                normalized = variable_name.lower().strip()
-                patterns = [
-                    f"wiki_{normalized.replace(' ', '_')}",
-                    f"wiki_{normalized.replace(' ', '-')}",
-                    f"reddit_{normalized.replace(' ', '_')}",
-                ]
-                for pattern in patterns:
-                    layer1_var = session.query(VariableMetadata).filter(
-                        VariableMetadata.name == pattern
-                    ).first()
-                    if layer1_var:
-                        lookup_strategy = f"pattern:{pattern}"
-                        break
-                
-                if not layer1_var:
-                    matches = session.query(VariableMetadata).filter(
-                        VariableMetadata.display_name.ilike(f"%{variable_name}%"),
-                        VariableMetadata.source.in_(['wikipedia', 'reddit'])
-                    ).limit(3).all()
-                    if matches:
-                        layer1_var = matches[0]
-                        lookup_strategy = f"display_name_match:{layer1_var.name}"
-            
-            if not layer1_var:
-                return {"error": f"Variable '{variable_name}' not found", "strategies_tried": ["exact", "wiki_patterns", "display_name"]}
-            
-            var_info = {
-                "id": layer1_var.id,
-                "name": layer1_var.name,
-                "display_name": layer1_var.display_name,
-                "source": layer1_var.source,
-                "lookup_strategy": lookup_strategy
-            }
-            
-            # Step 2: Run the EXACT cascade query
-            causality_results = session.query(CorrelationResult).filter(
-                or_(
-                    and_(
-                        CorrelationResult.variable1_id == layer1_var.id,
-                        CorrelationResult.granger_p_value_xy != None,
-                        CorrelationResult.granger_p_value_xy < 0.05
-                    ),
-                    and_(
-                        CorrelationResult.variable2_id == layer1_var.id,
-                        CorrelationResult.granger_p_value_yx != None,
-                        CorrelationResult.granger_p_value_yx < 0.05
-                    )
-                )
-            ).order_by(desc(CorrelationResult.abs_correlation)).limit(5).all()
-            
-            # Step 3: Show what we got
-            raw_results = []
-            filtered_results = []
-            for result in causality_results:
-                if result.variable1_id == layer1_var.id:
-                    outcome_var = result.variable2
-                    p_value = result.granger_p_value_xy
-                    direction_label = "signal→other (xy)"
-                else:
-                    outcome_var = result.variable1
-                    p_value = result.granger_p_value_yx
-                    direction_label = "signal→other (yx)"
-                
-                entry = {
-                    "outcome_name": outcome_var.name,
-                    "outcome_display": outcome_var.display_name,
-                    "outcome_source": outcome_var.source,
-                    "p_value": p_value,
-                    "abs_correlation": result.abs_correlation,
-                    "correlation": result.correlation_value,
-                    "direction": direction_label,
-                    "var1_id": result.variable1_id,
-                    "var2_id": result.variable2_id,
-                    "granger_xy": result.granger_p_value_xy,
-                    "granger_yx": result.granger_p_value_yx,
-                    "would_be_filtered": outcome_var.source == 'wikipedia'
-                }
-                raw_results.append(entry)
-                
-                if outcome_var.source != 'wikipedia':
-                    filtered_results.append(entry)
-            
-            # Step 4: Also check what the leading_indicators query would return
-            leading_results = session.query(CorrelationResult).filter(
-                or_(
-                    and_(
-                        CorrelationResult.variable1_id == layer1_var.id,
-                        CorrelationResult.granger_p_value_yx != None,
-                        CorrelationResult.granger_p_value_yx < 0.05
-                    ),
-                    and_(
-                        CorrelationResult.variable2_id == layer1_var.id,
-                        CorrelationResult.granger_p_value_xy != None,
-                        CorrelationResult.granger_p_value_xy < 0.05
-                    )
-                )
-            ).order_by(desc(CorrelationResult.abs_correlation)).limit(3).all()
-            
-            leading_raw = []
-            for result in leading_results:
-                if result.variable1_id == layer1_var.id:
-                    predictor_var = result.variable2
-                    p_value = result.granger_p_value_yx
-                else:
-                    predictor_var = result.variable1
-                    p_value = result.granger_p_value_xy
-                
-                leading_raw.append({
-                    "predictor_name": predictor_var.name,
-                    "predictor_display": predictor_var.display_name,
-                    "predictor_source": predictor_var.source,
-                    "p_value": p_value,
-                    "would_be_filtered": predictor_var.source == 'wikipedia'
-                })
-            
-            return {
-                "variable_lookup": var_info,
-                "cascade_query_count": len(causality_results),
-                "cascade_raw_results": raw_results,
-                "cascade_after_wiki_filter": filtered_results,
-                "leading_query_count": len(leading_results),
-                "leading_raw_results": leading_raw
-            }
-            
-    except Exception as e:
-        logger.error(f"Debug cascade query failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -1231,7 +1096,7 @@ async def get_significant_granger():
         from database import get_db_session
         from models import CorrelationResult
         from sqlalchemy import or_
-        
+
         with get_db_session() as session:
             # Find all correlations with significant Granger
             sig_results = session.query(CorrelationResult).filter(
@@ -1240,7 +1105,7 @@ async def get_significant_granger():
                     CorrelationResult.granger_p_value_yx < 0.05
                 )
             ).all()
-            
+
             results = []
             for r in sig_results:
                 if r.granger_p_value_xy and r.granger_p_value_xy < 0.05:
@@ -1263,15 +1128,15 @@ async def get_significant_granger():
                         "correlation": r.correlation_value,
                         "direction": "Y->X"
                     })
-            
+
             # Sort by p_value
             results.sort(key=lambda x: x["p_value"])
-            
+
             return {
                 "total_significant": len(results),
                 "results": results[:25]  # Top 25
             }
-            
+
     except Exception as e:
         logger.error(f"Significant Granger query failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
@@ -1283,20 +1148,20 @@ async def fetch_wikipedia_only():
     Quick fetch: Wikipedia data only (skips other sources).
     Use this to rapidly populate Layer 1 fast signals without waiting
     for the full data ingestion job.
-    
+
     Wikipedia API is FREE with no rate limits!
     """
     try:
         logger.info("Quick fetch: Wikipedia daily+monthly pageviews...")
         sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-        
+
         from data_ingestion_service import DataIngestionService
-        
+
         service = DataIngestionService()
         result = service._fetch_wikipedia_pageviews_data()
-        
+
         logger.info(f"Wikipedia quick fetch complete: {result}")
-        
+
         return {
             "status": "success",
             "message": f"Fetched {result.get('wikipedia_fetched', 0)} Wikipedia variables",
@@ -1304,7 +1169,7 @@ async def fetch_wikipedia_only():
             "layer": "Layer 1 - Fast/Behavioral",
             "next_step": "Check /api/dashboard/fast-signals for momentum data"
         }
-        
+
     except Exception as e:
         logger.error(f"Wikipedia fetch failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
@@ -1315,20 +1180,20 @@ async def fetch_reddit_only():
     """
     Quick fetch: Reddit subreddit activity only (Layer 1 fast signals).
     Cross-validates Wikipedia signals for higher confidence.
-    
+
     Reddit API: Free with rate limits (60 req/min with proper User-Agent)
     """
     try:
         logger.info("Quick fetch: Reddit subreddit activity only...")
         sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-        
+
         from data_ingestion_service import DataIngestionService
-        
+
         service = DataIngestionService()
         result = service._fetch_reddit_activity_data()
-        
+
         logger.info(f"Reddit quick fetch complete: {result}")
-        
+
         return {
             "status": "success",
             "message": f"Fetched {result.get('reddit_fetched', 0)} Reddit subreddits",
@@ -1336,7 +1201,7 @@ async def fetch_reddit_only():
             "layer": "Layer 1 - Fast/Behavioral",
             "next_step": "Check /api/dashboard/fast-signals for multi-source confidence"
         }
-        
+
     except Exception as e:
         logger.error(f"Reddit fetch failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
@@ -1348,9 +1213,9 @@ async def setup_reddit_variables_endpoint():
     try:
         sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
         from setup_layer1_fast_signals import setup_reddit_variables, REDDIT_SUBREDDITS
-        
+
         result = setup_reddit_variables()
-        
+
         return {
             "status": "success",
             "variables_added": result.get('added', 0),
@@ -1375,48 +1240,51 @@ async def fetch_reddit_historical():
         from models import VariableMetadata, TimeSeriesData
         from data_fetcher import DataFetcher
         from datetime import datetime
-        
+
         fetcher = DataFetcher()
         total_points = 0
         success_count = 0
-        
+
         with get_db_session() as session:
             # Get all Reddit variables
             reddit_vars = session.query(VariableMetadata).filter(
                 VariableMetadata.source == 'reddit',
                 VariableMetadata.is_active == True
             ).all()
-            
-            logger.info(f"Fetching historical data for {len(reddit_vars)} Reddit variables")
-            
+
+            logger.info(
+                f"Fetching historical data for {len(reddit_vars)} Reddit variables")
+
             for var in reddit_vars:
                 try:
                     import json
-                    params = json.loads(var.parameters) if var.parameters else {}
+                    params = json.loads(
+                        var.parameters) if var.parameters else {}
                     subreddit = params.get('subreddit')
-                    
+
                     if not subreddit:
                         continue
-                    
+
                     # Use Pullpush for 90 days of history
-                    historical_data = fetcher.fetch_reddit_historical(subreddit, days=90)
-                    
+                    historical_data = fetcher.fetch_reddit_historical(
+                        subreddit, days=90)
+
                     if not historical_data:
                         continue
-                    
+
                     # Store the data
                     for date_str, values in historical_data.items():
                         timestamp = datetime.strptime(date_str, "%Y-%m-%d")
-                        
+
                         # Check for existing
                         existing = session.query(TimeSeriesData).filter(
                             TimeSeriesData.variable_id == var.id,
                             TimeSeriesData.timestamp == timestamp
                         ).first()
-                        
+
                         # Use post count as the value
                         value = float(values.get('posts', 0))
-                        
+
                         if existing:
                             if existing.value != value:
                                 existing.value = value
@@ -1430,19 +1298,20 @@ async def fetch_reddit_historical():
                             )
                             session.add(data_point)
                             total_points += 1
-                    
+
                     success_count += 1
-                    
+
                     # Small delay between requests
                     import time
                     time.sleep(1)
-                    
+
                 except Exception as e:
-                    logger.warning(f"Failed to fetch historical for {var.name}: {e}")
+                    logger.warning(
+                        f"Failed to fetch historical for {var.name}: {e}")
                     continue
-            
+
             session.commit()
-        
+
         return {
             "status": "success",
             "message": f"Fetched historical data for {success_count} subreddits",
@@ -1450,7 +1319,7 @@ async def fetch_reddit_historical():
             "source": "Pullpush.io (90 days)",
             "next_step": "Reddit signals should now have enough data for momentum"
         }
-        
+
     except Exception as e:
         logger.error(f"Reddit historical fetch failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
@@ -1464,7 +1333,7 @@ async def calculate_granger_causality(background_tasks: BackgroundTasks):
     """
     try:
         job_id = f"granger_{int(datetime.utcnow().timestamp())}"
-        
+
         _active_jobs[job_id] = {
             'job_id': job_id,
             'type': 'granger_causality',
@@ -1473,9 +1342,9 @@ async def calculate_granger_causality(background_tasks: BackgroundTasks):
             'created_at': datetime.utcnow().isoformat(),
             'updated_at': datetime.utcnow().isoformat()
         }
-        
+
         background_tasks.add_task(_run_granger_background, job_id)
-        
+
         return {
             "status": "queued",
             "message": "Granger causality calculation started",
@@ -1493,14 +1362,15 @@ def _run_granger_background(job_id: str):
         _active_jobs[job_id]['status'] = 'running'
         _active_jobs[job_id]['stage'] = 'loading_correlations'
         _active_jobs[job_id]['updated_at'] = datetime.utcnow().isoformat()
-        
+
         sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
         from services.granger_causality_service import GrangerCausalityService
         from database import get_db_session
         from models import CorrelationResult, VariableMetadata
-        
-        granger_service = GrangerCausalityService(max_lag=12, confidence_level=0.05)
-        
+
+        granger_service = GrangerCausalityService(
+            max_lag=12, confidence_level=0.05)
+
         with get_db_session() as db:
             # Get Layer 1 variables (wikipedia, reddit)
             layer1_vars = db.query(VariableMetadata).filter(
@@ -1508,46 +1378,48 @@ def _run_granger_background(job_id: str):
                 VariableMetadata.is_active == True
             ).all()
             layer1_ids = {v.id for v in layer1_vars}
-            
+
             # Get Layer 2 variables (not Layer 1)
             layer2_vars = db.query(VariableMetadata).filter(
                 ~VariableMetadata.source.in_(['wikipedia', 'reddit']),
                 VariableMetadata.is_active == True
             ).all()
             layer2_ids = {v.id for v in layer2_vars}
-            
-            logger.info(f"Granger: {len(layer1_ids)} Layer 1 vars, {len(layer2_ids)} Layer 2 vars")
-            
+
+            logger.info(
+                f"Granger: {len(layer1_ids)} Layer 1 vars, {len(layer2_ids)} Layer 2 vars")
+
             # Find cross-layer correlations (Layer 1 ↔ Layer 2)
             cross_correlations = db.query(CorrelationResult).filter(
                 CorrelationResult.is_significant == True,
                 CorrelationResult.abs_correlation >= 0.3
             ).all()
-            
+
             # Filter to Layer 1 ↔ Layer 2 pairs only
             l1_l2_pairs = []
             for corr in cross_correlations:
                 if (corr.variable1_id in layer1_ids and corr.variable2_id in layer2_ids) or \
                    (corr.variable2_id in layer1_ids and corr.variable1_id in layer2_ids):
                     l1_l2_pairs.append(corr)
-            
-            logger.info(f"Found {len(l1_l2_pairs)} Layer 1 ↔ Layer 2 correlations for Granger testing")
+
+            logger.info(
+                f"Found {len(l1_l2_pairs)} Layer 1 ↔ Layer 2 correlations for Granger testing")
             _active_jobs[job_id]['stage'] = f'testing_{len(l1_l2_pairs)}_pairs'
-            
+
             tested = 0
             significant = 0
-            
+
             # Test all pairs (no limit) - each test is fast with aligned data
             for corr in l1_l2_pairs:
                 try:
                     _active_jobs[job_id]['stage'] = f'testing_pair_{tested+1}'
-                    
+
                     # Run Granger test
                     result = granger_service.test_causality(
-                        corr.variable1_id, 
+                        corr.variable1_id,
                         corr.variable2_id
                     )
-                    
+
                     # Update correlation with Granger results
                     if result.get('var1_to_var2', {}).get('p_value'):
                         corr.granger_p_value_xy = result['var1_to_var2']['p_value']
@@ -1555,19 +1427,19 @@ def _run_granger_background(job_id: str):
                         corr.granger_p_value_yx = result['var2_to_var1']['p_value']
                     if result.get('optimal_lag'):
                         corr.granger_lags = result['optimal_lag']
-                    
+
                     if result.get('var1_to_var2', {}).get('significant') or \
                        result.get('var2_to_var1', {}).get('significant'):
                         significant += 1
-                    
+
                     tested += 1
-                    
+
                 except Exception as e:
                     logger.warning(f"Granger test failed for pair: {e}")
                     continue
-            
+
             db.commit()
-        
+
         _active_jobs[job_id]['status'] = 'completed'
         _active_jobs[job_id]['stage'] = 'done'
         _active_jobs[job_id]['result'] = {
@@ -1577,9 +1449,10 @@ def _run_granger_background(job_id: str):
             'layer2_variables': len(layer2_ids)
         }
         _active_jobs[job_id]['updated_at'] = datetime.utcnow().isoformat()
-        
-        logger.info(f"Granger complete: {tested} tested, {significant} significant")
-        
+
+        logger.info(
+            f"Granger complete: {tested} tested, {significant} significant")
+
     except Exception as e:
         logger.error(f"Granger calc failed: {e}", exc_info=True)
         _active_jobs[job_id]['status'] = 'failed'
