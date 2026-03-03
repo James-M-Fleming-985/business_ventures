@@ -836,7 +836,13 @@ function dashboardData() {
                     const data = await response.json();
                     this.exploitationRecommendations = data.recommendations || [];
                     this.filteredExploitation = this.exploitationRecommendations;
-                    this.exploitationStats = data.stats || { total: 0, by_action_type: {}, avg_score: 0 };
+                    const summary = data.summary || {};
+                    this.exploitationStats = {
+                        total: data.total || 0,
+                        by_action_type: summary.by_action_type || {},
+                        by_status: summary.by_status || {},
+                        avg_score: summary.average_score || 0
+                    };
                     console.log(`📊 Loaded ${this.exploitationRecommendations.length} exploitation recommendations`);
                 }
             } catch (error) {
