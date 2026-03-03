@@ -43,6 +43,13 @@ async def initialize_database():
         except Exception as e:
             logger.warning(f"Migration may have already run: {e}")
 
+        try:
+            from migrations.add_exploitation_recommendations_table import upgrade as run_exploitation_migration
+            run_exploitation_migration()
+            logger.info("✅ Exploitation recommendations migration complete")
+        except Exception as e:
+            logger.warning(f"Exploitation migration may have already run: {e}")
+
         # Phase 1: Initialize database schema and seed variables
         logger.info("Phase 1: Creating tables and seeding variables...")
         init_result = init_db_main()
@@ -108,6 +115,16 @@ async def run_migrations():
         except Exception as e:
             logger.warning(
                 f"Granger migration error (may already be applied): {e}")
+
+        # Run exploitation recommendations migration
+        try:
+            from migrations.add_exploitation_recommendations_table import upgrade as run_exploitation_migration
+            run_exploitation_migration()
+            migrations_run.append("add_exploitation_recommendations_table")
+            logger.info("✅ Exploitation recommendations migration complete")
+        except Exception as e:
+            logger.warning(
+                f"Exploitation migration error (may already be applied): {e}")
 
         return {
             "status": "success",

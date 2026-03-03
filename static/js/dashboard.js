@@ -67,6 +67,16 @@ function dashboardData() {
         isRunningDeepAnalysis: false,
         
         // ============================================================
+        // EXPLOITATION BOARD
+        // ============================================================
+        exploitationRecommendations: [],
+        filteredExploitation: [],
+        exploitationFilterAction: '',
+        exploitationFilterStatus: '',
+        isGeneratingRecommendations: false,
+        exploitationStats: { total: 0, by_action_type: {}, avg_score: 0 },
+
+        // ============================================================
         // PREDICTION ACCURACY TRACKING (CA-002-10)
         // ============================================================
         predictionServiceAvailable: true,
@@ -795,17 +805,105 @@ function dashboardData() {
         async triggerActualUpdate() {
             this.isUpdatingActuals = true;
             try {
-                const response = await fetch('/api/causality/predictions/update-actuals', { method: 'POST' });
+                const response = await fetch('/api/dashboard/predictions/validate', { method: 'POST' });
                 if (response.ok) {
                     const data = await response.json();
-                    console.log('🎯 Actual update result:', data);
+                    console.log('🎯 Validation result:', data);
+                    if (data.validated > 0) {
+                        console.log(`✅ Validated ${data.validated} predictions. Direction accuracy: ${data.accuracy_stats?.direction_accuracy}%`);
+                    }
                 }
-                // Reload all predictions data after updating actuals
+                // Reload all predictions data after validating
                 await this.loadPredictions();
             } catch (error) {
-                console.error('Actual update failed:', error);
+                console.error('Prediction validation failed:', error);
             } finally {
                 this.isUpdatingActuals = false;
+            }
+        },
+
+        // ============================================================
+        // EXPLOITATION BOARD METHODS
+        // ============================================================
+        async loadExploitationRecommendations() {
+            try {
+                const params = new URLSearchParams();
+                if (this.exploitationFilterAction) params.set('action_type', this.exploitationFilterAction);
+                if (this.exploitationFilterStatus) params.set('status', this.exploitationFilterStatus);
+                const url = '/api/dashboard/exploitation/recommendations' + (params.toString() ? '?' + params : '');
+                const response = await fetch(url);
+                if (response.ok) {
+                    const data = await response.json();
+                    this.exploitationRecommendations = data.recommendations || [];
+                    this.filteredExploitation = this.exploitationRecommendations;
+                    this.exploitationStats = data.stats || { total: 0, by_action_type: {}, avg_score: 0 };
+                    console.log(`📊 Loaded ${this.exploitationRecommendations.length} exploitation recommendations`);
+                }
+            } catch (error) {
+                console.error('Failed to load exploitation recommendations:', error);
+            }
+        },
+
+        async generateRecommendations() {
+            this.isGeneratingRecommendations = true;
+            try {
+                const response = await fetch('/api/dashboard/exploitation/generate');
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('🚀 Generated recommendations:', data);
+                    // Reload the recommendations list
+                    await this.loadExploitationRecommendations();
+                } else {
+                    const err = await response.json();
+                    console.error('Generation failed:', err);
+                }
+            } catch (error) {
+                console.error('Failed to generate recommendations:', error);
+            } finally {
+                this.isGeneratingRecommendations = false;
+            }
+        },
+
+        filterExploitation() {
+            this.filteredExploitation = this.exploitationRecommendations.filter(rec => {
+                if (this.exploitationFilterAction && rec.action_type !== this.exploitationFilterAction) return false;
+                if (this.exploitationFilterStatus && rec.status !== this.exploitationFilterStatus) return false;
+                return true;
+            });
+        },
+
+        async updateRecommendationStatus(id, newStatus) {
+            try {
+                const response = await fetch(`/api/dashboard/exploitation/recommendations/${id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus })
+                });
+                if (response.ok) {
+                    // Update local state
+                    const rec = this.exploitationRecommendations.find(r => r.id === id);
+                    if (rec) rec.status = newStatus;
+                    console.log(`✅ Updated recommendation ${id} to ${newStatus}`);
+                }
+            } catch (error) {
+                console.error('Failed to update recommendation status:', error);
+            }
+        },
+
+        async updateRecommendationNotes(id, notes) {
+            try {
+                const response = await fetch(`/api/dashboard/exploitation/recommendations/${id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ notes: notes })
+                });
+                if (response.ok) {
+                    // Update local state
+                    const rec = this.exploitationRecommendations.find(r => r.id === id);
+                    if (rec) rec.notes = notes;
+                }
+            } catch (error) {
+                console.error('Failed to update recommendation notes:', error);
             }
         },
         

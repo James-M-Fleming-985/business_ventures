@@ -10,7 +10,8 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import (
     VariableMetadata, TimeSeriesData, CorrelationResult,
-    RollingCorrelation, APIStatus, AnalysisJob, PredictionTracking
+    RollingCorrelation, APIStatus, AnalysisJob, PredictionTracking,
+    ExploitationRecommendation
 )
 from correlation_analysis_service import CorrelationAnalysisService
 from services.granger_causality_service import GrangerCausalityService
@@ -1919,11 +1920,41 @@ async def store_prediction(request: Request, db: Session = Depends(get_db)):
 
     try:
         payload = await request.json()
-        prediction_id = str(uuid.uuid4())[:12]
-
+        
+        signal_name = payload.get("signal_name", "unknown")
+        target_name = payload.get("target_name", "unknown")
+        
+        # Check for existing pending prediction for same signal→target pair
+        existing = db.query(PredictionTracking).filter(
+            PredictionTracking.signal_name == signal_name,
+            PredictionTracking.target_name == target_name,
+            PredictionTracking.status == 'pending'
+        ).first()
+        
         # Calculate target_date from optimal_lag_days
         optimal_lag = payload.get("optimal_lag_days", 7)
         target_date = datetime.utcnow() + timedelta(days=optimal_lag)
+        
+        if existing:
+            # Update existing prediction instead of creating duplicate
+            existing.predicted_at = datetime.utcnow()
+            existing.target_date = target_date
+            existing.optimal_lag_days = optimal_lag
+            existing.predicted_direction = payload.get("direction")
+            existing.predicted_value = payload.get("predicted_value")
+            existing.predicted_change_pct = payload.get("predicted_pct_change")
+            existing.current_target_value = payload.get("current_target_value")
+            existing.current_signal_value = payload.get("current_signal_value")
+            existing.signal_momentum = payload.get("signal_momentum")
+            existing.r_squared = payload.get("r_squared")
+            existing.confidence = payload.get("confidence", "medium")
+            existing.updated_at = datetime.utcnow()
+            db.commit()
+            
+            logger.info(f"Updated existing prediction {existing.prediction_id}: {signal_name} → {target_name}")
+            return {"status": "updated", "prediction_id": existing.prediction_id}
+        
+        prediction_id = str(uuid.uuid4())[:12]
 
         row = PredictionTracking(
             prediction_id=prediction_id,
@@ -2170,3 +2201,505 @@ async def get_variable_data(variable_name: str, db: Session = Depends(get_db)):
         }
     except Exception as e:
         return {"error": str(e)}
+
+
+# ============================================================================
+# EXPLOITATION BOARD — Actionable Recommendations from Granger Causality
+# ============================================================================
+
+def classify_action_type(target_source: str, target_name: str, correlation: float, signal_momentum: float) -> str:
+    """Classify what action to take based on the target variable type and signal direction.
+    
+    Returns: BUY, SELL, BUILD, or MONITOR
+    """
+    # Stocks and crypto → BUY or SELL
+    if target_source in ('stock', 'crypto') or target_name.startswith('stock_'):
+        # Signal rising + positive correlation = target goes up → BUY
+        # Signal rising + negative correlation = target goes down → SELL
+        # Signal falling + positive correlation = target goes down → SELL
+        # Signal falling + negative correlation = target goes up → BUY
+        if (signal_momentum > 0 and correlation > 0) or (signal_momentum < 0 and correlation < 0):
+            return 'BUY'
+        else:
+            return 'SELL'
+    
+    # Research, clinical trials, app/traffic metrics → BUILD opportunity
+    if target_source in ('arxiv', 'clinicaltrials', 'openalex'):
+        return 'BUILD'
+    
+    # Economic indicators (FRED) → MONITOR
+    if target_source in ('fred',) or target_name.startswith('fred_'):
+        return 'MONITOR'
+    
+    # Default: if it looks like something tradeable, BUY/SELL; otherwise MONITOR
+    return 'MONITOR'
+
+
+def compute_opportunity_score(p_value: float, correlation: float, sample_size: int, momentum: float) -> float:
+    """Compute a 0-100 opportunity score from statistical evidence + current momentum.
+    
+    Factors:
+    - p_value_score (0-40): Lower p = higher score, scaled from 0.05 threshold
+    - correlation_score (0-30): Stronger absolute correlation = higher
+    - sample_size_score (0-15): More data = more reliable, capped at 100
+    - momentum_score (0-15): Faster signal change = more urgent opportunity
+    """
+    # P-value: 0.05 → 0 pts, 0.00 → 40 pts
+    p_value_score = max(0, (1 - (p_value or 1.0) / 0.05)) * 40
+    
+    # Correlation: |r| × 30
+    correlation_score = min(abs(correlation or 0), 1.0) * 30
+    
+    # Sample size: capped at 100 observations
+    sample_size_score = min((sample_size or 0) / 100, 1.0) * 15
+    
+    # Momentum: capped at 100% change rate
+    momentum_score = min(abs(momentum or 0) / 100, 1.0) * 15
+    
+    return round(p_value_score + correlation_score + sample_size_score + momentum_score, 1)
+
+
+def generate_reasoning(signal_display: str, target_display: str, target_source: str,
+                       action_type: str, p_value: float, correlation: float, 
+                       lag: int, momentum: float, predicted_direction: str,
+                       predicted_change_pct: float) -> str:
+    """Generate natural language reasoning for a recommendation."""
+    
+    # Direction of signal
+    signal_dir = "rising" if momentum and momentum > 0 else "falling"
+    mom_str = f"{abs(momentum or 0):.1f}%"
+    
+    # Correlation direction
+    corr_str = f"r={correlation:.3f}" if correlation else "r=?"
+    p_str = f"p={p_value:.4f}" if p_value else "p=?"
+    lag_str = f"lag={lag}mo" if lag else ""
+    
+    stats = f"({p_str}, {corr_str}" + (f", {lag_str}" if lag_str else "") + ")"
+    
+    # Action-specific phrasing
+    if action_type == 'BUY':
+        action_phrase = f"Consider BUYING {target_display}."
+    elif action_type == 'SELL':
+        action_phrase = f"Consider SELLING/SHORTING {target_display}."
+    elif action_type == 'BUILD':
+        action_phrase = f"Opportunity to build a product/service related to {target_display}."
+    else:
+        action_phrase = f"Monitor {target_display} for strategic positioning."
+    
+    # Predicted change
+    change_str = ""
+    if predicted_change_pct is not None:
+        change_str = f" Predicted {predicted_direction or '?'} ~{abs(predicted_change_pct):.1f}%."
+    
+    return (
+        f"{signal_display} pageviews {signal_dir} ({mom_str}) → "
+        f"Granger-causes {target_display} {stats}.{change_str} "
+        f"{action_phrase}"
+    )
+
+
+@router.get("/exploitation/generate")
+async def generate_exploitation_recommendations(db: Session = Depends(get_db)):
+    """Scan all FMV signals and generate actionable recommendations from Granger data.
+    
+    For each Layer 1 signal with significant Granger relationships to non-Wikipedia targets,
+    auto-classifies (BUY/SELL/BUILD/MONITOR), scores (0-100), and stores recommendations.
+    Deduplicates by signal+target pair — updates existing recommendations.
+    """
+    from sqlalchemy import or_, and_, desc
+    from sqlalchemy.orm import aliased
+    import numpy as np
+    
+    try:
+        # Get all Layer 1 signals (Wikipedia + Reddit FMVs)
+        layer1_vars = db.query(VariableMetadata).filter(
+            VariableMetadata.source.in_(['wikipedia', 'reddit']),
+            VariableMetadata.is_active == True
+        ).all()
+        
+        if not layer1_vars:
+            return {"status": "no_signals", "message": "No Layer 1 signals found", "generated": 0}
+        
+        # Calculate current momentum for all signals
+        now = datetime.utcnow()
+        week_ago = now - timedelta(days=7)
+        two_weeks_ago = now - timedelta(days=14)
+        
+        signal_momentum = {}
+        for var in layer1_vars:
+            recent_data = db.query(TimeSeriesData).filter(
+                TimeSeriesData.variable_id == var.id,
+                TimeSeriesData.timestamp >= two_weeks_ago
+            ).order_by(TimeSeriesData.timestamp).all()
+            
+            if len(recent_data) >= 2:
+                this_week = [d.value for d in recent_data if d.timestamp >= week_ago]
+                last_week = [d.value for d in recent_data if d.timestamp < week_ago]
+                
+                if this_week and last_week:
+                    this_avg = sum(this_week) / len(this_week)
+                    last_avg = sum(last_week) / len(last_week)
+                    if last_avg > 0:
+                        signal_momentum[var.id] = round(((this_avg - last_avg) / last_avg) * 100, 1)
+                    else:
+                        signal_momentum[var.id] = 0.0
+                else:
+                    signal_momentum[var.id] = 0.0
+            else:
+                signal_momentum[var.id] = 0.0
+        
+        generated = 0
+        updated = 0
+        skipped = 0
+        
+        for var in layer1_vars:
+            momentum = signal_momentum.get(var.id, 0.0)
+            
+            # Find significant Granger targets (same fixed query as cascade-predictions)
+            OutcomeVar = aliased(VariableMetadata)
+            results_as_var1 = db.query(CorrelationResult).join(
+                OutcomeVar, CorrelationResult.variable2_id == OutcomeVar.id
+            ).filter(
+                CorrelationResult.variable1_id == var.id,
+                CorrelationResult.granger_p_value_xy != None,
+                CorrelationResult.granger_p_value_xy < 0.05,
+                OutcomeVar.source != 'wikipedia',
+                OutcomeVar.source != 'reddit'
+            ).order_by(desc(CorrelationResult.abs_correlation)).limit(10).all()
+            
+            OutcomeVar2 = aliased(VariableMetadata)
+            results_as_var2 = db.query(CorrelationResult).join(
+                OutcomeVar2, CorrelationResult.variable1_id == OutcomeVar2.id
+            ).filter(
+                CorrelationResult.variable2_id == var.id,
+                CorrelationResult.granger_p_value_yx != None,
+                CorrelationResult.granger_p_value_yx < 0.05,
+                OutcomeVar2.source != 'wikipedia',
+                OutcomeVar2.source != 'reddit'
+            ).order_by(desc(CorrelationResult.abs_correlation)).limit(10).all()
+            
+            # Combine and deduplicate
+            seen_ids = set()
+            all_results = []
+            for r in sorted(results_as_var1 + results_as_var2,
+                          key=lambda x: x.abs_correlation or 0, reverse=True):
+                if r.id not in seen_ids:
+                    seen_ids.add(r.id)
+                    all_results.append(r)
+            
+            # Process top 5 targets per signal
+            for result in all_results[:5]:
+                if result.variable1_id == var.id:
+                    target_var = result.variable2
+                    p_value = result.granger_p_value_xy
+                else:
+                    target_var = result.variable1
+                    p_value = result.granger_p_value_yx
+                
+                corr = result.correlation_value
+                lag = result.granger_lags
+                sample = result.sample_size or 30
+                
+                # Predict direction from correlation + momentum
+                if momentum > 0:
+                    predicted_direction = 'up' if corr > 0 else 'down'
+                else:
+                    predicted_direction = 'down' if corr > 0 else 'up'
+                
+                # Rough predicted change % from correlation × momentum
+                predicted_change_pct = round(abs(corr) * abs(momentum) * 0.01 * 100, 2) if momentum else None
+                
+                # Classify action
+                action_type = classify_action_type(
+                    target_var.source, target_var.name, corr, momentum
+                )
+                
+                # Score
+                score = compute_opportunity_score(p_value, corr, sample, momentum)
+                
+                # Generate reasoning
+                reasoning = generate_reasoning(
+                    var.display_name, target_var.display_name, target_var.source,
+                    action_type, p_value, corr, lag, momentum,
+                    predicted_direction, predicted_change_pct
+                )
+                
+                # Upsert: update existing or create new
+                existing = db.query(ExploitationRecommendation).filter(
+                    ExploitationRecommendation.signal_name == var.name,
+                    ExploitationRecommendation.target_name == target_var.name
+                ).first()
+                
+                if existing:
+                    # Update stats but preserve user status/notes
+                    existing.granger_p_value = p_value
+                    existing.correlation = corr
+                    existing.optimal_lag = lag
+                    existing.sample_size = sample
+                    existing.predicted_direction = predicted_direction
+                    existing.predicted_change_pct = predicted_change_pct
+                    existing.signal_momentum = momentum
+                    existing.opportunity_score = score
+                    existing.action_type = action_type
+                    existing.reasoning = reasoning
+                    existing.updated_at = datetime.utcnow()
+                    updated += 1
+                else:
+                    rec = ExploitationRecommendation(
+                        signal_name=var.name,
+                        signal_display_name=var.display_name,
+                        target_name=target_var.name,
+                        target_display_name=target_var.display_name,
+                        target_source=target_var.source,
+                        action_type=action_type,
+                        reasoning=reasoning,
+                        granger_p_value=p_value,
+                        correlation=corr,
+                        optimal_lag=lag,
+                        sample_size=sample,
+                        predicted_direction=predicted_direction,
+                        predicted_change_pct=predicted_change_pct,
+                        signal_momentum=momentum,
+                        opportunity_score=score,
+                        status='NEW',
+                    )
+                    db.add(rec)
+                    generated += 1
+        
+        db.commit()
+        
+        # Return summary
+        total = db.query(ExploitationRecommendation).count()
+        by_action = {}
+        for action in ['BUY', 'SELL', 'BUILD', 'MONITOR']:
+            by_action[action] = db.query(ExploitationRecommendation).filter(
+                ExploitationRecommendation.action_type == action
+            ).count()
+        
+        return {
+            "status": "success",
+            "generated": generated,
+            "updated": updated,
+            "skipped": skipped,
+            "total_recommendations": total,
+            "by_action_type": by_action,
+            "signals_processed": len(layer1_vars)
+        }
+        
+    except Exception as e:
+        logger.error(f"Exploitation generation failed: {e}", exc_info=True)
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/exploitation/recommendations")
+async def get_exploitation_recommendations(
+    status: Optional[str] = None,
+    action_type: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """Get all exploitation recommendations, optionally filtered by status and action type."""
+    from sqlalchemy import desc
+    
+    try:
+        query = db.query(ExploitationRecommendation)
+        
+        if status:
+            query = query.filter(ExploitationRecommendation.status == status.upper())
+        if action_type:
+            query = query.filter(ExploitationRecommendation.action_type == action_type.upper())
+        
+        results = query.order_by(desc(ExploitationRecommendation.opportunity_score)).all()
+        
+        # Summary stats
+        all_recs = db.query(ExploitationRecommendation).all()
+        by_action = {}
+        by_status = {}
+        for rec in all_recs:
+            by_action[rec.action_type] = by_action.get(rec.action_type, 0) + 1
+            by_status[rec.status] = by_status.get(rec.status, 0) + 1
+        
+        avg_score = sum(r.opportunity_score or 0 for r in all_recs) / max(len(all_recs), 1)
+        
+        return {
+            "recommendations": [r.to_dict() for r in results],
+            "total": len(all_recs),
+            "filtered_count": len(results),
+            "summary": {
+                "by_action_type": by_action,
+                "by_status": by_status,
+                "average_score": round(avg_score, 1)
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Get exploitation recommendations failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.patch("/exploitation/recommendations/{rec_id}")
+async def update_exploitation_recommendation(rec_id: int, request: Request, db: Session = Depends(get_db)):
+    """Update status and/or notes on a recommendation.
+    
+    Body: {"status": "REVIEWING", "notes": "Looking into this..."}
+    Valid statuses: NEW, REVIEWING, PURSUING, COMPLETED, DISMISSED
+    """
+    try:
+        body = await request.json()
+        
+        rec = db.query(ExploitationRecommendation).filter(
+            ExploitationRecommendation.id == rec_id
+        ).first()
+        
+        if not rec:
+            raise HTTPException(status_code=404, detail=f"Recommendation {rec_id} not found")
+        
+        valid_statuses = {'NEW', 'REVIEWING', 'PURSUING', 'COMPLETED', 'DISMISSED'}
+        
+        if 'status' in body:
+            new_status = body['status'].upper()
+            if new_status not in valid_statuses:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Invalid status '{new_status}'. Must be one of: {', '.join(valid_statuses)}"
+                )
+            rec.status = new_status
+        
+        if 'notes' in body:
+            rec.notes = body['notes']
+        
+        rec.updated_at = datetime.utcnow()
+        db.commit()
+        
+        return rec.to_dict()
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Update exploitation recommendation failed: {e}", exc_info=True)
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
+# PREDICTION ACCURACY — Validate predictions against actual outcomes
+# ============================================================================
+
+@router.post("/predictions/validate")
+async def validate_predictions(db: Session = Depends(get_db)):
+    """Validate matured predictions by comparing against actual data.
+    
+    Finds all 'pending' predictions where target_date has passed, looks up the
+    actual value from TimeSeriesData, and computes direction accuracy and error %.
+    """
+    from sqlalchemy import desc
+    
+    try:
+        now = datetime.utcnow()
+        
+        # Find matured predictions
+        matured = db.query(PredictionTracking).filter(
+            PredictionTracking.status == 'pending',
+            PredictionTracking.target_date != None,
+            PredictionTracking.target_date <= now
+        ).all()
+        
+        if not matured:
+            return {"status": "no_matured", "validated": 0, "message": "No matured predictions to validate"}
+        
+        validated_count = 0
+        errors = []
+        
+        for pred in matured:
+            try:
+                # Look up the target variable by name
+                # target_name could be display name like "NVDA Stock Price" or variable name like "stock_nvda"
+                target_var = db.query(VariableMetadata).filter(
+                    VariableMetadata.display_name == pred.target_name
+                ).first()
+                
+                if not target_var:
+                    # Try matching on name
+                    target_var = db.query(VariableMetadata).filter(
+                        VariableMetadata.name == pred.target_name
+                    ).first()
+                
+                if not target_var:
+                    # Try partial match
+                    target_var = db.query(VariableMetadata).filter(
+                        VariableMetadata.display_name.ilike(f"%{pred.target_name}%")
+                    ).first()
+                
+                if not target_var:
+                    errors.append(f"Target variable not found: {pred.target_name}")
+                    pred.status = 'expired'
+                    continue
+                
+                # Find the closest data point to the target date
+                actual_data = db.query(TimeSeriesData).filter(
+                    TimeSeriesData.variable_id == target_var.id,
+                    TimeSeriesData.timestamp <= pred.target_date + timedelta(days=7),
+                    TimeSeriesData.timestamp >= pred.target_date - timedelta(days=7)
+                ).order_by(
+                    # Closest to target_date  
+                    desc(TimeSeriesData.timestamp)
+                ).first()
+                
+                if not actual_data:
+                    # No data available yet — don't expire, check next time
+                    errors.append(f"No actual data near target date for {pred.target_name}")
+                    continue
+                
+                # Compute actuals
+                actual_value = float(actual_data.value)
+                baseline = pred.current_target_value
+                
+                if baseline and baseline != 0:
+                    actual_direction = 'up' if actual_value > baseline else 'down'
+                    direction_correct = (actual_direction == pred.predicted_direction)
+                    value_error_pct = abs((actual_value - (pred.predicted_value or baseline)) / baseline) * 100
+                else:
+                    actual_direction = 'unknown'
+                    direction_correct = None
+                    value_error_pct = None
+                
+                # Update prediction
+                pred.actual_value = actual_value
+                pred.actual_direction = actual_direction
+                pred.direction_correct = direction_correct
+                pred.value_error_pct = round(value_error_pct, 2) if value_error_pct is not None else None
+                pred.status = 'validated'
+                pred.updated_at = datetime.utcnow()
+                validated_count += 1
+                
+            except Exception as pred_err:
+                errors.append(f"Error validating {pred.prediction_id}: {str(pred_err)}")
+                continue
+        
+        db.commit()
+        
+        # Compute updated accuracy stats
+        all_validated = db.query(PredictionTracking).filter(
+            PredictionTracking.status == 'validated'
+        ).all()
+        
+        direction_correct_count = sum(1 for p in all_validated if p.direction_correct)
+        direction_accuracy = (direction_correct_count / len(all_validated) * 100) if all_validated else 0
+        avg_error = sum(p.value_error_pct or 0 for p in all_validated) / max(len(all_validated), 1)
+        
+        return {
+            "status": "success",
+            "validated": validated_count,
+            "total_matured": len(matured),
+            "errors": errors,
+            "accuracy_stats": {
+                "total_validated": len(all_validated),
+                "direction_accuracy": round(direction_accuracy, 1),
+                "average_error_pct": round(avg_error, 2)
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Prediction validation failed: {e}", exc_info=True)
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))

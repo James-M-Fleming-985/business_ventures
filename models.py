@@ -307,3 +307,84 @@ class User(Base):
         if self.subscription_expires_at is None:
             return False
         return self.subscription_expires_at > datetime.utcnow()
+
+
+class ExploitationRecommendation(Base):
+    """Actionable recommendations generated from Granger causality analysis.
+    
+    Each recommendation represents an exploitable signal→target relationship
+    classified as BUY/SELL (stocks/crypto), BUILD (apps/products), or MONITOR
+    (economic indicators). Recommendations have a manual status lifecycle:
+    NEW → REVIEWING → PURSUING → COMPLETED/DISMISSED.
+    """
+    __tablename__ = 'exploitation_recommendations'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+    # Signal (Layer 1 — what we observe)
+    signal_name = Column(String(255), nullable=False)          # e.g. "wiki_interest-rate"
+    signal_display_name = Column(String(255), nullable=False)  # e.g. "Interest Rate"
+
+    # Target (Layer 2/3 — what the signal predicts)
+    target_name = Column(String(255), nullable=False)          # e.g. "stock_nvda"
+    target_display_name = Column(String(255), nullable=False)  # e.g. "NVDA Stock Price"
+    target_source = Column(String(100))                        # e.g. "stock", "fred", "arxiv"
+
+    # Action classification
+    action_type = Column(String(20), nullable=False)           # BUY, SELL, BUILD, MONITOR
+    reasoning = Column(Text)                                   # Natural language explanation
+
+    # Statistical basis
+    granger_p_value = Column(Float)
+    correlation = Column(Float)
+    optimal_lag = Column(Integer)                              # Lag in periods (months)
+    sample_size = Column(Integer)
+
+    # Prediction
+    predicted_direction = Column(String(10))                   # 'up' or 'down'
+    predicted_change_pct = Column(Float)
+    signal_momentum = Column(Float)                            # Current signal momentum %
+
+    # Scoring
+    opportunity_score = Column(Float)                          # 0-100 composite score
+
+    # Lifecycle
+    status = Column(String(20), nullable=False, default='NEW') # NEW, REVIEWING, PURSUING, COMPLETED, DISMISSED
+    notes = Column(Text)                                       # User free-text notes
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        Index('ix_exploit_status', 'status'),
+        Index('ix_exploit_action', 'action_type'),
+        Index('ix_exploit_score', 'opportunity_score'),
+        Index('ix_exploit_signal_target', 'signal_name', 'target_name', unique=True),
+    )
+
+    def __repr__(self):
+        return f"<Exploitation {self.action_type} {self.signal_display_name}→{self.target_display_name} score={self.opportunity_score}>"
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "signal_name": self.signal_name,
+            "signal_display_name": self.signal_display_name,
+            "target_name": self.target_name,
+            "target_display_name": self.target_display_name,
+            "target_source": self.target_source,
+            "action_type": self.action_type,
+            "reasoning": self.reasoning,
+            "granger_p_value": self.granger_p_value,
+            "correlation": self.correlation,
+            "optimal_lag": self.optimal_lag,
+            "sample_size": self.sample_size,
+            "predicted_direction": self.predicted_direction,
+            "predicted_change_pct": self.predicted_change_pct,
+            "signal_momentum": self.signal_momentum,
+            "opportunity_score": self.opportunity_score,
+            "status": self.status,
+            "notes": self.notes,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }

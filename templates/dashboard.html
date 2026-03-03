@@ -305,11 +305,17 @@
             <i data-lucide="award" class="w-4 h-4 inline mr-1"></i>
             Leaderboard
         </button>
-        <button @click="activeView = 'predictions'; loadPredictions()" 
+        <button @click="activeView = 'predictions'; triggerActualUpdate().then(() => loadPredictions())" 
                 :class="activeView === 'predictions' ? 'bg-primary-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'"
                 class="px-4 py-2 rounded-lg text-sm font-medium transition">
             <i data-lucide="target" class="w-4 h-4 inline mr-1"></i>
             Prediction Accuracy
+        </button>
+        <button @click="activeView = 'exploitation'; loadExploitationRecommendations()" 
+                :class="activeView === 'exploitation' ? 'bg-amber-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'"
+                class="px-4 py-2 rounded-lg text-sm font-medium transition">
+            <i data-lucide="rocket" class="w-4 h-4 inline mr-1"></i>
+            Exploitation Board
         </button>
     </div>
 
@@ -696,6 +702,157 @@
             <i data-lucide="inbox" class="w-10 h-10 mb-2 opacity-30"></i>
             <p class="text-sm">No predictions recorded yet</p>
             <p class="text-xs text-slate-600 mt-1">Run a deep analysis from the Causality tab to generate predictions</p>
+        </div>
+    </div>
+
+    <!-- ==================== EXPLOITATION BOARD TAB ==================== -->
+    <div x-show="activeView === 'exploitation'" x-transition class="space-y-6">
+        
+        <!-- Header + Controls -->
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+                <h2 class="text-xl font-bold text-white">Exploitation Board</h2>
+                <p class="text-sm text-slate-400">Actionable recommendations from empirical Granger causality analysis</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <!-- Filters -->
+                <select x-model="exploitationFilterAction" @change="filterExploitation()"
+                    class="px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white">
+                    <option value="">All Actions</option>
+                    <option value="BUY">BUY</option>
+                    <option value="SELL">SELL</option>
+                    <option value="BUILD">BUILD</option>
+                    <option value="MONITOR">MONITOR</option>
+                </select>
+                <select x-model="exploitationFilterStatus" @change="filterExploitation()"
+                    class="px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white">
+                    <option value="">All Statuses</option>
+                    <option value="NEW">NEW</option>
+                    <option value="REVIEWING">REVIEWING</option>
+                    <option value="PURSUING">PURSUING</option>
+                    <option value="COMPLETED">COMPLETED</option>
+                    <option value="DISMISSED">DISMISSED</option>
+                </select>
+                <button @click="generateRecommendations()" 
+                        :disabled="isGeneratingRecommendations"
+                        class="px-4 py-2 bg-amber-600 hover:bg-amber-700 disabled:bg-amber-800 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition flex items-center gap-2">
+                    <i data-lucide="refresh-cw" class="w-4 h-4" :class="isGeneratingRecommendations && 'animate-spin'"></i>
+                    <span x-text="isGeneratingRecommendations ? 'Generating...' : 'Generate Recommendations'"></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div class="bg-slate-800 rounded-lg p-4 border border-slate-700 text-center">
+                <p class="text-2xl font-bold text-white" x-text="exploitationStats.total || 0"></p>
+                <p class="text-xs text-slate-400">Total</p>
+            </div>
+            <div class="bg-slate-800 rounded-lg p-4 border border-green-800/50 text-center">
+                <p class="text-2xl font-bold text-green-400" x-text="(exploitationStats.by_action_type || {}).BUY || 0"></p>
+                <p class="text-xs text-green-500">BUY</p>
+            </div>
+            <div class="bg-slate-800 rounded-lg p-4 border border-red-800/50 text-center">
+                <p class="text-2xl font-bold text-red-400" x-text="(exploitationStats.by_action_type || {}).SELL || 0"></p>
+                <p class="text-xs text-red-500">SELL</p>
+            </div>
+            <div class="bg-slate-800 rounded-lg p-4 border border-blue-800/50 text-center">
+                <p class="text-2xl font-bold text-blue-400" x-text="(exploitationStats.by_action_type || {}).BUILD || 0"></p>
+                <p class="text-xs text-blue-500">BUILD</p>
+            </div>
+            <div class="bg-slate-800 rounded-lg p-4 border border-slate-600 text-center">
+                <p class="text-2xl font-bold text-slate-300" x-text="(exploitationStats.by_action_type || {}).MONITOR || 0"></p>
+                <p class="text-xs text-slate-400">MONITOR</p>
+            </div>
+        </div>
+
+        <!-- Recommendation Cards -->
+        <div class="space-y-3">
+            <template x-for="rec in filteredExploitation" :key="rec.id">
+                <div class="bg-slate-800 rounded-lg border border-slate-700 p-5 hover:border-slate-500 transition">
+                    <div class="flex flex-col md:flex-row md:items-start gap-4">
+                        <!-- Left: Action Badge + Info -->
+                        <div class="flex-1">
+                            <div class="flex items-center gap-3 mb-2">
+                                <!-- Action Badge -->
+                                <span class="px-3 py-1 rounded-full text-xs font-bold uppercase"
+                                    :class="{
+                                        'bg-green-500/20 text-green-400 border border-green-500/30': rec.action_type === 'BUY',
+                                        'bg-red-500/20 text-red-400 border border-red-500/30': rec.action_type === 'SELL',
+                                        'bg-blue-500/20 text-blue-400 border border-blue-500/30': rec.action_type === 'BUILD',
+                                        'bg-slate-500/20 text-slate-400 border border-slate-500/30': rec.action_type === 'MONITOR'
+                                    }" x-text="rec.action_type"></span>
+                                
+                                <!-- Signal → Target -->
+                                <h3 class="text-white font-semibold">
+                                    <span x-text="rec.signal_display_name"></span>
+                                    <span class="text-slate-500 mx-1">→</span>
+                                    <span x-text="rec.target_display_name"></span>
+                                </h3>
+                            </div>
+                            
+                            <!-- Stats Row -->
+                            <div class="flex flex-wrap gap-4 text-xs text-slate-400 mb-2">
+                                <span>p=<span x-text="rec.granger_p_value?.toFixed(4) || '?'" class="text-white"></span></span>
+                                <span>r=<span x-text="rec.correlation?.toFixed(3) || '?'" class="text-white"></span></span>
+                                <span>lag=<span x-text="(rec.optimal_lag || '?') + 'mo'" class="text-white"></span></span>
+                                <span>n=<span x-text="rec.sample_size || '?'" class="text-white"></span></span>
+                                <span :class="rec.predicted_direction === 'up' ? 'text-green-400' : 'text-red-400'">
+                                    <span x-text="rec.predicted_direction === 'up' ? '↑' : '↓'"></span>
+                                    <span x-text="(rec.predicted_change_pct?.toFixed(1) || '?') + '%'"></span>
+                                </span>
+                            </div>
+
+                            <!-- Reasoning -->
+                            <p class="text-sm text-slate-300 leading-relaxed" x-text="rec.reasoning"></p>
+                        </div>
+
+                        <!-- Right: Score + Status + Notes -->
+                        <div class="flex flex-col gap-3 md:w-64 md:min-w-64">
+                            <!-- Opportunity Score -->
+                            <div>
+                                <div class="flex justify-between text-xs mb-1">
+                                    <span class="text-slate-400">Opportunity Score</span>
+                                    <span class="text-white font-bold" x-text="rec.opportunity_score?.toFixed(0) || 0"></span>
+                                </div>
+                                <div class="w-full bg-slate-700 rounded-full h-2">
+                                    <div class="h-2 rounded-full transition-all"
+                                        :class="{
+                                            'bg-green-500': rec.opportunity_score >= 70,
+                                            'bg-amber-500': rec.opportunity_score >= 40 && rec.opportunity_score < 70,
+                                            'bg-red-500': rec.opportunity_score < 40
+                                        }"
+                                        :style="'width:' + Math.min(rec.opportunity_score || 0, 100) + '%'"></div>
+                                </div>
+                            </div>
+
+                            <!-- Status Dropdown -->
+                            <select :value="rec.status" @change="updateRecommendationStatus(rec.id, $event.target.value)"
+                                class="px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white w-full">
+                                <option value="NEW">NEW</option>
+                                <option value="REVIEWING">REVIEWING</option>
+                                <option value="PURSUING">PURSUING</option>
+                                <option value="COMPLETED">COMPLETED</option>
+                                <option value="DISMISSED">DISMISSED</option>
+                            </select>
+
+                            <!-- Notes -->
+                            <textarea :value="rec.notes || ''" 
+                                @blur="updateRecommendationNotes(rec.id, $event.target.value)"
+                                placeholder="Add notes..."
+                                rows="2"
+                                class="px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-slate-300 w-full resize-none placeholder:text-slate-500"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+            <!-- Empty State -->
+            <div x-show="(filteredExploitation || []).length === 0" class="flex flex-col items-center justify-center py-12 text-slate-500">
+                <i data-lucide="rocket" class="w-12 h-12 mb-3 opacity-30"></i>
+                <p class="text-sm">No recommendations yet</p>
+                <p class="text-xs text-slate-600 mt-1">Click "Generate Recommendations" to scan all signals for exploitable opportunities</p>
+            </div>
         </div>
     </div>
 
