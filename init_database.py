@@ -87,6 +87,7 @@ def seed_initial_data(session):
     env_categories = [
         'wildfires', 'severe_storms', 'volcanoes', 'sea_lake_ice'
     ]
+    for category in env_categories:
         display = category.replace('_', ' ').title()
         session.add(VariableMetadata(
             name=f'env_{category}',
