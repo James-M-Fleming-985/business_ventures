@@ -50,6 +50,13 @@ async def initialize_database():
         except Exception as e:
             logger.warning(f"Exploitation migration may have already run: {e}")
 
+        try:
+            from migrations.add_prediction_accuracy_columns import upgrade as run_pred_accuracy_migration
+            run_pred_accuracy_migration()
+            logger.info("✅ Prediction accuracy columns migration complete")
+        except Exception as e:
+            logger.warning(f"Prediction accuracy migration may have already run: {e}")
+
         # Phase 1: Initialize database schema and seed variables
         logger.info("Phase 1: Creating tables and seeding variables...")
         init_result = init_db_main()
@@ -125,6 +132,16 @@ async def run_migrations():
         except Exception as e:
             logger.warning(
                 f"Exploitation migration error (may already be applied): {e}")
+
+        # Run prediction accuracy columns migration
+        try:
+            from migrations.add_prediction_accuracy_columns import upgrade as run_pred_accuracy_migration
+            run_pred_accuracy_migration()
+            migrations_run.append("add_prediction_accuracy_columns")
+            logger.info("✅ Prediction accuracy columns migration complete")
+        except Exception as e:
+            logger.warning(
+                f"Prediction accuracy migration error (may already be applied): {e}")
 
         return {
             "status": "success",

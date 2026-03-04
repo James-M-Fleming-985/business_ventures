@@ -214,6 +214,11 @@ class PredictionTracking(Base):
     actual_direction = Column(String(10))
     direction_correct = Column(Boolean)
     value_error_pct = Column(Float)
+    actual_change_pct = Column(Float)            # Actual % change from baseline
+    actual_lag_days = Column(Integer)             # Days to actual peak/trough
+    lag_error_days = Column(Integer)              # actual_lag - predicted_lag
+    granger_p_value = Column(Float)               # p-value at prediction time
+    target_source = Column(String(100))           # e.g. 'stock', 'arxiv', 'fred'
 
     # Status: 'pending', 'validated', 'expired'
     status = Column(String(20), default='pending')
@@ -252,6 +257,11 @@ class PredictionTracking(Base):
             "actual_direction": self.actual_direction,
             "direction_correct": self.direction_correct,
             "value_error_pct": self.value_error_pct,
+            "actual_change_pct": self.actual_change_pct,
+            "actual_lag_days": self.actual_lag_days,
+            "lag_error_days": self.lag_error_days,
+            "granger_p_value": self.granger_p_value,
+            "target_source": self.target_source,
             "status": self.status,
         }
 

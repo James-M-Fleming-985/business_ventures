@@ -82,12 +82,15 @@ function dashboardData() {
         predictionServiceAvailable: true,
         predictionMetrics: {
             total_predictions: 0,
-            direction_accuracy: 0,
-            mape: 0,
-            timing_accuracy: 0
+            pending: 0,
+            validated: 0,
+            direction_accuracy: null,
+            avg_error_pct: null,
+            avg_lag_error_days: null,
+            avg_change_error_pct: null
         },
         predictionTimeseries: [],
-        modelComparison: [],
+        sourceComparison: [],
         predictionLayers: {
             storage: false,
             updater: false,
@@ -95,6 +98,15 @@ function dashboardData() {
         },
         isUpdatingActuals: false,
         recentPredictions: [],
+        detailChartExpanded: false,
+        detailChartMetrics: {
+            changePred: true,
+            changeActual: true,
+            lagPred: false,
+            lagActual: false,
+            r2: false,
+            pValue: false
+        },
         
         async init() {
             console.log('Initializing dashboard...');
@@ -602,54 +614,66 @@ function dashboardData() {
         async loadPredictions() {
             console.log('🎯 Loading Prediction Accuracy data (CA-002-10)...');
             try {
-                const response = await fetch('/api/dashboard/predictions?limit=100');
+                const response = await fetch('/api/dashboard/predictions?limit=500');
                 if (response.ok) {
                     const data = await response.json();
                     console.log('🎯 Predictions loaded:', data.total, 'total');
                     
                     this.predictionServiceAvailable = true;
-                    this.predictionLayers = { storage: true, updater: true, analytics: true };
                     
-                    // Populate metrics from real data
-                    this.predictionMetrics = {
-                        total_predictions: data.total || 0,
-                        direction_accuracy: (data.accuracy?.direction_accuracy || 0) / 100,
-                        mape: data.accuracy?.avg_error_pct || 0,
-                        timing_accuracy: 0
+                    // Derive service layer status from actual data
+                    const hasAny = (data.total || 0) > 0;
+                    const hasValidated = (data.predictions || []).some(p => p.status === 'validated');
+                    this.predictionLayers = {
+                        storage: hasAny,
+                        updater: hasValidated || hasAny,  // updater is online if validation has been attempted
+                        analytics: hasValidated
                     };
                     
-                    // Build timeseries from predictions list
+                    // Populate metrics from accuracy object
+                    const acc = data.accuracy || {};
+                    const pendingCount = (data.predictions || []).filter(p => p.status === 'pending').length;
+                    const validatedCount = (data.predictions || []).filter(p => p.status === 'validated').length;
+                    this.predictionMetrics = {
+                        total_predictions: data.total || 0,
+                        pending: pendingCount,
+                        validated: validatedCount,
+                        direction_accuracy: acc.direction_accuracy != null ? acc.direction_accuracy : null,
+                        avg_error_pct: acc.avg_error_pct != null ? acc.avg_error_pct : null,
+                        avg_lag_error_days: acc.avg_lag_error_days != null ? acc.avg_lag_error_days : null,
+                        avg_change_error_pct: acc.avg_change_error_pct != null ? acc.avg_change_error_pct : null
+                    };
+                    
+                    // Build full timeseries for charts
                     if (data.predictions && data.predictions.length > 0) {
                         this.predictionTimeseries = data.predictions.map(p => ({
                             target_date: p.target_date,
+                            predicted_at: p.predicted_at,
                             predicted_value: p.predicted_value,
                             actual_value: p.actual_value,
-                            direction: p.predicted_direction,
+                            predicted_change_pct: p.predicted_change_pct,
+                            actual_change_pct: p.actual_change_pct,
+                            optimal_lag_days: p.optimal_lag_days,
+                            actual_lag_days: p.actual_lag_days,
+                            lag_error_days: p.lag_error_days,
+                            predicted_direction: p.predicted_direction,
                             direction_correct: p.direction_correct,
                             signal_name: p.signal_name,
                             target_name: p.target_name,
+                            target_source: p.target_source,
                             status: p.status,
                             r_squared: p.r_squared,
+                            granger_p_value: p.granger_p_value,
                             confidence: p.confidence
                         }));
-                        this.$nextTick(() => this.renderPredictionChart());
+                        this.$nextTick(() => {
+                            this.renderMiniCharts();
+                            if (this.detailChartExpanded) this.renderDetailChart();
+                        });
                     }
                     
-                    // Model comparison: aggregate by model_version
-                    const byModel = {};
-                    (data.predictions || []).forEach(p => {
-                        const mv = p.model_version || 'granger_v1';
-                        if (!byModel[mv]) byModel[mv] = { name: mv, total: 0, correct: 0 };
-                        byModel[mv].total++;
-                        if (p.direction_correct) byModel[mv].correct++;
-                    });
-                    this.modelComparison = Object.values(byModel).map(m => ({
-                        ...m,
-                        model_type: m.name,
-                        direction_accuracy: m.total > 0 ? m.correct / m.total : 0,
-                        mape: 0,
-                        total_predictions: m.total
-                    }));
+                    // Source comparison from API
+                    this.sourceComparison = data.source_comparison || [];
                     
                     // Store raw predictions for the table
                     this.recentPredictions = data.predictions || [];
@@ -663,143 +687,269 @@ function dashboardData() {
             setTimeout(() => lucide.createIcons(), 100);
         },
         
-        async loadPredictionStatus() {
-            try {
-                const response = await fetch('/api/causality/predictions/status');
-                if (response.ok) {
-                    const data = await response.json();
-                    this.predictionServiceAvailable = data.success !== false;
-                    if (data.data?.layers_available) {
-                        this.predictionLayers = {
-                            storage: data.data.layers_available.storage || false,
-                            updater: data.data.layers_available.updater || false,
-                            analytics: data.data.layers_available.analytics || false
-                        };
-                    }
-                    console.log('🎯 Prediction status:', data);
-                } else {
-                    this.predictionServiceAvailable = false;
-                }
-            } catch (error) {
-                console.error('Prediction status check failed:', error);
-                this.predictionServiceAvailable = false;
-            }
-        },
-        
-        async loadPredictionAccuracy() {
-            try {
-                const response = await fetch('/api/causality/predictions/accuracy');
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.success && data.data) {
-                        this.predictionMetrics = {
-                            total_predictions: data.data.total_predictions || 0,
-                            direction_accuracy: data.data.direction_accuracy || 0,
-                            mape: data.data.mape || 0,
-                            timing_accuracy: data.data.timing_accuracy || 0
-                        };
-                    }
-                    console.log('🎯 Prediction accuracy:', this.predictionMetrics);
-                }
-            } catch (error) {
-                console.error('Prediction accuracy load failed:', error);
-            }
-        },
-        
-        async loadPredictionTimeseries() {
-            try {
-                const response = await fetch('/api/causality/predictions/accuracy/timeseries');
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.success && Array.isArray(data.data)) {
-                        this.predictionTimeseries = data.data;
-                        this.$nextTick(() => this.renderPredictionChart());
-                    } else if (data.success && data.data) {
-                        // Data might be wrapped differently
-                        this.predictionTimeseries = data.data.timeseries || data.data.points || [];
-                        if (this.predictionTimeseries.length > 0) {
-                            this.$nextTick(() => this.renderPredictionChart());
+        renderMiniCharts() {
+            if (typeof Plotly === 'undefined') return;
+            const validated = this.predictionTimeseries.filter(p => p.status === 'validated');
+            const all = this.predictionTimeseries;
+            
+            const miniLayout = (title) => ({
+                paper_bgcolor: 'transparent',
+                plot_bgcolor: 'transparent',
+                font: { color: '#94a3b8', size: 9 },
+                margin: { t: 5, r: 10, b: 25, l: 40 },
+                xaxis: { gridcolor: '#1e293b', tickfont: { size: 8 }, showgrid: false },
+                yaxis: { gridcolor: '#1e293b', tickfont: { size: 8 } },
+                legend: { orientation: 'h', y: 1.15, font: { size: 9 } },
+                showlegend: true
+            });
+            const miniConfig = { responsive: true, displayModeBar: false };
+            
+            // 1. Direction Accuracy (scatter: green correct, red wrong)
+            if (validated.length > 0) {
+                const el = document.getElementById('miniChartDirection');
+                if (el) {
+                    const correct = validated.filter(p => p.direction_correct);
+                    const wrong = validated.filter(p => !p.direction_correct);
+                    const traces = [
+                        {
+                            x: correct.map(p => p.target_date),
+                            y: correct.map(() => 1),
+                            name: 'Correct',
+                            mode: 'markers',
+                            marker: { color: '#22c55e', size: 8, symbol: 'circle' },
+                            type: 'scatter'
+                        },
+                        {
+                            x: wrong.map(p => p.target_date),
+                            y: wrong.map(() => 0),
+                            name: 'Wrong',
+                            mode: 'markers',
+                            marker: { color: '#ef4444', size: 8, symbol: 'x' },
+                            type: 'scatter'
                         }
-                    }
-                    console.log('🎯 Prediction timeseries:', this.predictionTimeseries.length, 'points');
+                    ];
+                    Plotly.newPlot(el, traces, {
+                        ...miniLayout(),
+                        yaxis: { ...miniLayout().yaxis, tickvals: [0, 1], ticktext: ['✗', '✓'], range: [-0.3, 1.3] }
+                    }, miniConfig);
                 }
-            } catch (error) {
-                console.error('Prediction timeseries load failed:', error);
+            }
+            
+            // 2. Change % — Predicted vs Actual
+            if (validated.length > 0) {
+                const el = document.getElementById('miniChartChange');
+                if (el) {
+                    const sorted = [...validated].sort((a, b) => (a.target_date || '').localeCompare(b.target_date || ''));
+                    Plotly.newPlot(el, [
+                        {
+                            x: sorted.map(p => p.target_date),
+                            y: sorted.map(p => p.predicted_change_pct),
+                            name: 'Predicted',
+                            type: 'scatter', mode: 'lines+markers',
+                            line: { color: '#6366f1', width: 1.5 }, marker: { size: 4 }
+                        },
+                        {
+                            x: sorted.map(p => p.target_date),
+                            y: sorted.map(p => p.actual_change_pct),
+                            name: 'Actual',
+                            type: 'scatter', mode: 'lines+markers',
+                            line: { color: '#22c55e', width: 1.5, dash: 'dot' }, marker: { size: 4 }
+                        }
+                    ], miniLayout(), miniConfig);
+                }
+            }
+            
+            // 3. Value — Predicted vs Actual
+            if (validated.length > 0) {
+                const el = document.getElementById('miniChartValue');
+                if (el) {
+                    const sorted = [...validated].sort((a, b) => (a.target_date || '').localeCompare(b.target_date || ''));
+                    Plotly.newPlot(el, [
+                        {
+                            x: sorted.map(p => p.target_date),
+                            y: sorted.map(p => p.predicted_value),
+                            name: 'Predicted',
+                            type: 'scatter', mode: 'lines+markers',
+                            line: { color: '#6366f1', width: 1.5 }, marker: { size: 4 }
+                        },
+                        {
+                            x: sorted.map(p => p.target_date),
+                            y: sorted.map(p => p.actual_value),
+                            name: 'Actual',
+                            type: 'scatter', mode: 'lines+markers',
+                            line: { color: '#22c55e', width: 1.5, dash: 'dot' }, marker: { size: 4 }
+                        }
+                    ], miniLayout(), miniConfig);
+                }
+            }
+            
+            // 4. Lag — Predicted vs Actual
+            if (validated.length > 0) {
+                const el = document.getElementById('miniChartLag');
+                if (el) {
+                    const withLag = validated.filter(p => p.actual_lag_days != null);
+                    if (withLag.length > 0) {
+                        const sorted = [...withLag].sort((a, b) => (a.target_date || '').localeCompare(b.target_date || ''));
+                        Plotly.newPlot(el, [
+                            {
+                                x: sorted.map(p => p.target_date),
+                                y: sorted.map(p => p.optimal_lag_days),
+                                name: 'Predicted',
+                                type: 'scatter', mode: 'lines+markers',
+                                line: { color: '#a855f7', width: 1.5 }, marker: { size: 4 }
+                            },
+                            {
+                                x: sorted.map(p => p.target_date),
+                                y: sorted.map(p => p.actual_lag_days),
+                                name: 'Actual',
+                                type: 'scatter', mode: 'lines+markers',
+                                line: { color: '#f59e0b', width: 1.5, dash: 'dot' }, marker: { size: 4 }
+                            }
+                        ], miniLayout(), miniConfig);
+                    }
+                }
+            }
+            
+            // 5. R² Quality
+            if (all.length > 0) {
+                const el = document.getElementById('miniChartR2');
+                if (el) {
+                    const sorted = [...all].filter(p => p.r_squared != null).sort((a, b) => (a.target_date || '').localeCompare(b.target_date || ''));
+                    Plotly.newPlot(el, [{
+                        x: sorted.map(p => p.target_date),
+                        y: sorted.map(p => p.r_squared),
+                        name: 'R²',
+                        type: 'scatter', mode: 'lines+markers',
+                        line: { color: '#06b6d4', width: 1.5 },
+                        marker: { size: 4 },
+                        fill: 'tozeroy',
+                        fillcolor: 'rgba(6,182,212,0.1)'
+                    }], {
+                        ...miniLayout(),
+                        yaxis: { ...miniLayout().yaxis, range: [0, 1] }
+                    }, miniConfig);
+                }
+            }
+            
+            // 6. p-value (Signal Strength)
+            if (all.length > 0) {
+                const el = document.getElementById('miniChartPValue');
+                if (el) {
+                    const sorted = [...all].filter(p => p.granger_p_value != null).sort((a, b) => (a.target_date || '').localeCompare(b.target_date || ''));
+                    if (sorted.length > 0) {
+                        Plotly.newPlot(el, [
+                            {
+                                x: sorted.map(p => p.target_date),
+                                y: sorted.map(p => p.granger_p_value),
+                                name: 'p-value',
+                                type: 'scatter', mode: 'lines+markers',
+                                line: { color: '#ef4444', width: 1.5 },
+                                marker: { size: 4 }
+                            },
+                            {
+                                x: [sorted[0]?.target_date, sorted[sorted.length-1]?.target_date],
+                                y: [0.05, 0.05],
+                                name: 'Significance (0.05)',
+                                type: 'scatter', mode: 'lines',
+                                line: { color: '#475569', width: 1, dash: 'dash' }
+                            }
+                        ], miniLayout(), miniConfig);
+                    }
+                }
             }
         },
         
-        renderPredictionChart() {
-            const el = document.getElementById('predictionChart');
-            if (!el || this.predictionTimeseries.length === 0) return;
+        renderDetailChart() {
+            const el = document.getElementById('detailChart');
+            if (!el || typeof Plotly === 'undefined') return;
+            const validated = this.predictionTimeseries.filter(p => p.status === 'validated');
+            const all = this.predictionTimeseries;
+            if (all.length === 0) return;
             
-            const dates = this.predictionTimeseries.map(p => p.target_date);
-            const predicted = this.predictionTimeseries.map(p => p.predicted_value);
-            const actual = this.predictionTimeseries.map(p => p.actual_value);
+            const sorted = [...validated].sort((a, b) => (a.target_date || '').localeCompare(b.target_date || ''));
+            const allSorted = [...all].sort((a, b) => (a.target_date || '').localeCompare(b.target_date || ''));
+            const m = this.detailChartMetrics;
+            const traces = [];
             
-            const traces = [
-                {
-                    x: dates,
-                    y: predicted,
-                    name: 'Predicted',
-                    type: 'scatter',
-                    mode: 'lines+markers',
-                    line: { color: '#6366f1', width: 2 },
-                    marker: { size: 6 }
-                },
-                {
-                    x: dates,
-                    y: actual,
-                    name: 'Actual',
-                    type: 'scatter',
-                    mode: 'lines+markers',
-                    line: { color: '#22c55e', width: 2, dash: 'dot' },
-                    marker: { size: 6 }
-                }
-            ];
+            if (m.changePred && sorted.length > 0) {
+                traces.push({
+                    x: sorted.map(p => p.target_date),
+                    y: sorted.map(p => p.predicted_change_pct),
+                    name: 'Change % Predicted',
+                    type: 'scatter', mode: 'lines+markers',
+                    line: { color: '#6366f1', width: 2 }, marker: { size: 5 },
+                    yaxis: 'y'
+                });
+            }
+            if (m.changeActual && sorted.length > 0) {
+                traces.push({
+                    x: sorted.map(p => p.target_date),
+                    y: sorted.map(p => p.actual_change_pct),
+                    name: 'Change % Actual',
+                    type: 'scatter', mode: 'lines+markers',
+                    line: { color: '#22c55e', width: 2, dash: 'dot' }, marker: { size: 5 },
+                    yaxis: 'y'
+                });
+            }
+            if (m.lagPred && sorted.length > 0) {
+                traces.push({
+                    x: sorted.map(p => p.target_date),
+                    y: sorted.map(p => p.optimal_lag_days),
+                    name: 'Lag Predicted (days)',
+                    type: 'scatter', mode: 'lines+markers',
+                    line: { color: '#a855f7', width: 2 }, marker: { size: 5 },
+                    yaxis: 'y2'
+                });
+            }
+            if (m.lagActual && sorted.length > 0) {
+                const withLag = sorted.filter(p => p.actual_lag_days != null);
+                traces.push({
+                    x: withLag.map(p => p.target_date),
+                    y: withLag.map(p => p.actual_lag_days),
+                    name: 'Lag Actual (days)',
+                    type: 'scatter', mode: 'lines+markers',
+                    line: { color: '#f59e0b', width: 2, dash: 'dot' }, marker: { size: 5 },
+                    yaxis: 'y2'
+                });
+            }
+            if (m.r2) {
+                const withR2 = allSorted.filter(p => p.r_squared != null);
+                traces.push({
+                    x: withR2.map(p => p.target_date),
+                    y: withR2.map(p => p.r_squared),
+                    name: 'R²',
+                    type: 'scatter', mode: 'lines+markers',
+                    line: { color: '#06b6d4', width: 2 }, marker: { size: 5 },
+                    yaxis: 'y3'
+                });
+            }
+            if (m.pValue) {
+                const withP = allSorted.filter(p => p.granger_p_value != null);
+                traces.push({
+                    x: withP.map(p => p.target_date),
+                    y: withP.map(p => p.granger_p_value),
+                    name: 'p-value',
+                    type: 'scatter', mode: 'lines+markers',
+                    line: { color: '#ef4444', width: 2 }, marker: { size: 5 },
+                    yaxis: 'y3'
+                });
+            }
             
+            // Build layout with up to 3 y-axes
             const layout = {
                 paper_bgcolor: 'transparent',
                 plot_bgcolor: 'transparent',
                 font: { color: '#94a3b8', size: 11 },
-                margin: { t: 10, r: 20, b: 40, l: 50 },
-                xaxis: {
-                    gridcolor: '#334155',
-                    tickfont: { size: 10 }
-                },
-                yaxis: {
-                    gridcolor: '#334155',
-                    tickfont: { size: 10 }
-                },
-                legend: {
-                    orientation: 'h',
-                    y: 1.12,
-                    font: { size: 11 }
-                },
+                margin: { t: 10, r: 80, b: 40, l: 60 },
+                xaxis: { gridcolor: '#1e293b', tickfont: { size: 10 } },
+                yaxis: { title: '% Change', gridcolor: '#1e293b', tickfont: { size: 10 }, titlefont: { color: '#6366f1', size: 11 } },
+                yaxis2: { title: 'Lag (days)', overlaying: 'y', side: 'right', gridcolor: '#1e293b', tickfont: { size: 10 }, titlefont: { color: '#a855f7', size: 11 } },
+                yaxis3: { title: 'Quality (0-1)', overlaying: 'y', side: 'right', position: 0.95, gridcolor: '#1e293b', tickfont: { size: 10 }, titlefont: { color: '#06b6d4', size: 11 }, range: [0, 1] },
+                legend: { orientation: 'h', y: 1.12, font: { size: 10 } },
                 showlegend: true
             };
             
-            if (typeof Plotly !== 'undefined') {
-                Plotly.newPlot(el, traces, layout, { responsive: true, displayModeBar: false });
-            }
-        },
-        
-        async loadModelComparison() {
-            try {
-                const response = await fetch('/api/causality/predictions/models/compare');
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.success && Array.isArray(data.data)) {
-                        this.modelComparison = data.data;
-                    } else if (data.success && data.data?.models) {
-                        this.modelComparison = data.data.models;
-                    } else {
-                        this.modelComparison = [];
-                    }
-                    console.log('🎯 Model comparison:', this.modelComparison.length, 'models');
-                }
-            } catch (error) {
-                console.error('Model comparison load failed:', error);
-            }
+            Plotly.newPlot(el, traces, layout, { responsive: true, displayModeBar: false });
         },
         
         async triggerActualUpdate() {

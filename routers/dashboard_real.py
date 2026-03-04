@@ -1994,7 +1994,9 @@ async def get_predictions(
 ):
     """
     Retrieve stored predictions for the Prediction Accuracy tab.
-    Returns predictions newest-first with accuracy stats.
+    Returns predictions newest-first with rich accuracy stats,
+    grouped by target_source for the model comparison table,
+    and dimensional accuracy metrics for mini charts.
     """
     from sqlalchemy import desc
 
@@ -2007,12 +2009,57 @@ async def get_predictions(
         # Compute accuracy summary
         total = len(predictions)
         validated = [p for p in predictions if p.status == "validated"]
+        pending_list = [p for p in predictions if p.status == "pending"]
         correct = [p for p in validated if p.direction_correct is True]
+        
+        # Lag accuracy
+        lag_errors = [p.lag_error_days for p in validated if p.lag_error_days is not None]
+        avg_lag_error = round(sum(abs(e) for e in lag_errors) / len(lag_errors), 1) if lag_errors else None
+        
+        # Change accuracy
+        change_errors = [
+            abs((p.actual_change_pct or 0) - (p.predicted_change_pct or 0))
+            for p in validated
+            if p.actual_change_pct is not None and p.predicted_change_pct is not None
+        ]
+        avg_change_error = round(sum(change_errors) / len(change_errors), 1) if change_errors else None
+        
+        # Group by target_source for comparison table
+        by_source = {}
+        for p in predictions:
+            src = p.target_source or 'unknown'
+            if src not in by_source:
+                by_source[src] = {'name': src, 'total': 0, 'correct': 0, 'errors': [], 'lag_errors': []}
+            by_source[src]['total'] += 1
+            if p.status == 'validated':
+                if p.direction_correct:
+                    by_source[src]['correct'] += 1
+                if p.value_error_pct is not None:
+                    by_source[src]['errors'].append(p.value_error_pct)
+                if p.lag_error_days is not None:
+                    by_source[src]['lag_errors'].append(abs(p.lag_error_days))
+        
+        source_comparison = []
+        for src, data in sorted(by_source.items(), key=lambda x: x[1]['total'], reverse=True):
+            validated_in_src = data['correct'] + len(data['errors']) - data['correct'] if data['errors'] else 0
+            source_comparison.append({
+                'source': src,
+                'total_predictions': data['total'],
+                'direction_accuracy': round(data['correct'] / max(1, len(data['errors']) + data['correct'] - len(data['errors'])) if data['errors'] or data['correct'] else 0, 3),
+                'avg_error_pct': round(sum(data['errors']) / len(data['errors']), 1) if data['errors'] else None,
+                'avg_lag_error_days': round(sum(data['lag_errors']) / len(data['lag_errors']), 1) if data['lag_errors'] else None,
+            })
+            # Fix direction accuracy calculation
+            v_count = sum(1 for p in validated if (p.target_source or 'unknown') == src)
+            if v_count > 0:
+                source_comparison[-1]['direction_accuracy'] = round(
+                    sum(1 for p in validated if (p.target_source or 'unknown') == src and p.direction_correct) / v_count, 3
+                )
 
         return {
             "predictions": [p.to_dict() for p in predictions],
             "total": total,
-            "pending": sum(1 for p in predictions if p.status == "pending"),
+            "pending": len(pending_list),
             "validated": len(validated),
             "accuracy": {
                 "direction_accuracy": (
@@ -2027,12 +2074,15 @@ async def get_predictions(
                     )
                     if validated else None
                 ),
+                "avg_lag_error_days": avg_lag_error,
+                "avg_change_error_pct": avg_change_error,
             },
+            "source_comparison": source_comparison,
         }
 
     except Exception as e:
         logger.error(f"Failed to fetch predictions: {e}")
-        return {"predictions": [], "total": 0, "pending": 0, "validated": 0, "accuracy": {}}
+        return {"predictions": [], "total": 0, "pending": 0, "validated": 0, "accuracy": {}, "source_comparison": []}
 
 
 # Curated mappings: which L1 signals predict which L2 outcomes
@@ -2305,10 +2355,12 @@ async def generate_exploitation_recommendations(db: Session = Depends(get_db)):
     For each Layer 1 signal with significant Granger relationships to non-Wikipedia targets,
     auto-classifies (BUY/SELL/BUILD/MONITOR), scores (0-100), and stores recommendations.
     Deduplicates by signal+target pair — updates existing recommendations.
+    Also batch-creates PredictionTracking records for each recommendation.
     """
-    from sqlalchemy import or_, and_, desc
+    from sqlalchemy import or_, and_, desc, asc
     from sqlalchemy.orm import aliased
     import numpy as np
+    import uuid
     
     try:
         # Get all Layer 1 signals (Wikipedia + Reddit FMVs)
@@ -2465,6 +2517,73 @@ async def generate_exploitation_recommendations(db: Session = Depends(get_db)):
                     )
                     db.add(rec)
                     generated += 1
+                
+                # --- Also create/update a PredictionTracking record ---
+                # Get latest target value for baseline
+                latest_target = db.query(TimeSeriesData).filter(
+                    TimeSeriesData.variable_id == target_var.id
+                ).order_by(desc(TimeSeriesData.timestamp)).first()
+                
+                latest_signal = db.query(TimeSeriesData).filter(
+                    TimeSeriesData.variable_id == var.id
+                ).order_by(desc(TimeSeriesData.timestamp)).first()
+                
+                baseline_value = float(latest_target.value) if latest_target else None
+                signal_value = float(latest_signal.value) if latest_signal else None
+                
+                # Calculate predicted value
+                predicted_value = None
+                if baseline_value is not None and predicted_change_pct is not None:
+                    predicted_value = baseline_value * (1 + predicted_change_pct / 100)
+                
+                # Lag in days (Granger lag is typically in months for this dataset)
+                lag_days = (lag or 1) * 30
+                target_date = datetime.utcnow() + timedelta(days=lag_days)
+                
+                # Check for existing pending prediction for same signal→target
+                existing_pred = db.query(PredictionTracking).filter(
+                    PredictionTracking.signal_name == var.display_name,
+                    PredictionTracking.target_name == target_var.display_name,
+                    PredictionTracking.status == 'pending'
+                ).first()
+                
+                if existing_pred:
+                    existing_pred.predicted_at = datetime.utcnow()
+                    existing_pred.target_date = target_date
+                    existing_pred.optimal_lag_days = lag_days
+                    existing_pred.predicted_direction = predicted_direction
+                    existing_pred.predicted_value = round(predicted_value, 4) if predicted_value else None
+                    existing_pred.predicted_change_pct = predicted_change_pct
+                    existing_pred.current_target_value = baseline_value
+                    existing_pred.current_signal_value = signal_value
+                    existing_pred.signal_momentum = momentum
+                    existing_pred.r_squared = abs(corr) ** 2 if corr else None
+                    existing_pred.confidence = 'high' if abs(corr or 0) > 0.5 else 'medium' if abs(corr or 0) > 0.3 else 'low'
+                    existing_pred.granger_p_value = p_value
+                    existing_pred.target_source = target_var.source
+                    existing_pred.updated_at = datetime.utcnow()
+                else:
+                    pred_record = PredictionTracking(
+                        prediction_id=str(uuid.uuid4())[:12],
+                        signal_name=var.display_name,
+                        target_name=target_var.display_name,
+                        predicted_at=datetime.utcnow(),
+                        target_date=target_date,
+                        optimal_lag_days=lag_days,
+                        predicted_direction=predicted_direction,
+                        predicted_value=round(predicted_value, 4) if predicted_value else None,
+                        predicted_change_pct=predicted_change_pct,
+                        current_target_value=baseline_value,
+                        current_signal_value=signal_value,
+                        signal_momentum=momentum,
+                        r_squared=abs(corr) ** 2 if corr else None,
+                        confidence='high' if abs(corr or 0) > 0.5 else 'medium' if abs(corr or 0) > 0.3 else 'low',
+                        model_version='granger_v1',
+                        granger_p_value=p_value,
+                        target_source=target_var.source,
+                        status='pending',
+                    )
+                    db.add(pred_record)
         
         db.commit()
         
@@ -2476,12 +2595,17 @@ async def generate_exploitation_recommendations(db: Session = Depends(get_db)):
                 ExploitationRecommendation.action_type == action
             ).count()
         
+        total_predictions = db.query(PredictionTracking).filter(
+            PredictionTracking.status == 'pending'
+        ).count()
+        
         return {
             "status": "success",
             "generated": generated,
             "updated": updated,
             "skipped": skipped,
             "total_recommendations": total,
+            "total_predictions": total_predictions,
             "by_action_type": by_action,
             "signals_processed": len(layer1_vars)
         }
@@ -2590,9 +2714,14 @@ async def validate_predictions(db: Session = Depends(get_db)):
     """Validate matured predictions by comparing against actual data.
     
     Finds all 'pending' predictions where target_date has passed, looks up the
-    actual value from TimeSeriesData, and computes direction accuracy and error %.
+    actual value from TimeSeriesData, computes:
+    - direction accuracy (up/down correct?)
+    - value error % (predicted vs actual value)
+    - actual change % (from baseline)
+    - actual lag days (when did the peak/trough actually occur?)
+    - lag error (actual lag - predicted lag)
     """
-    from sqlalchemy import desc
+    from sqlalchemy import desc, asc
     
     try:
         now = datetime.utcnow()
@@ -2613,19 +2742,16 @@ async def validate_predictions(db: Session = Depends(get_db)):
         for pred in matured:
             try:
                 # Look up the target variable by name
-                # target_name could be display name like "NVDA Stock Price" or variable name like "stock_nvda"
                 target_var = db.query(VariableMetadata).filter(
                     VariableMetadata.display_name == pred.target_name
                 ).first()
                 
                 if not target_var:
-                    # Try matching on name
                     target_var = db.query(VariableMetadata).filter(
                         VariableMetadata.name == pred.target_name
                     ).first()
                 
                 if not target_var:
-                    # Try partial match
                     target_var = db.query(VariableMetadata).filter(
                         VariableMetadata.display_name.ilike(f"%{pred.target_name}%")
                     ).first()
@@ -2640,17 +2766,13 @@ async def validate_predictions(db: Session = Depends(get_db)):
                     TimeSeriesData.variable_id == target_var.id,
                     TimeSeriesData.timestamp <= pred.target_date + timedelta(days=7),
                     TimeSeriesData.timestamp >= pred.target_date - timedelta(days=7)
-                ).order_by(
-                    # Closest to target_date  
-                    desc(TimeSeriesData.timestamp)
-                ).first()
+                ).order_by(desc(TimeSeriesData.timestamp)).first()
                 
                 if not actual_data:
-                    # No data available yet — don't expire, check next time
                     errors.append(f"No actual data near target date for {pred.target_name}")
                     continue
                 
-                # Compute actuals
+                # Compute basic actuals
                 actual_value = float(actual_data.value)
                 baseline = pred.current_target_value
                 
@@ -2658,16 +2780,46 @@ async def validate_predictions(db: Session = Depends(get_db)):
                     actual_direction = 'up' if actual_value > baseline else 'down'
                     direction_correct = (actual_direction == pred.predicted_direction)
                     value_error_pct = abs((actual_value - (pred.predicted_value or baseline)) / baseline) * 100
+                    actual_change_pct = ((actual_value - baseline) / abs(baseline)) * 100
                 else:
                     actual_direction = 'unknown'
                     direction_correct = None
                     value_error_pct = None
+                    actual_change_pct = None
                 
-                # Update prediction
+                # --- Compute actual lag: find when peak/trough occurred ---
+                # Scan from prediction date to 2x the predicted lag window
+                scan_window = max((pred.optimal_lag_days or 30) * 2, 60)
+                ts_data = db.query(TimeSeriesData).filter(
+                    TimeSeriesData.variable_id == target_var.id,
+                    TimeSeriesData.timestamp >= pred.predicted_at,
+                    TimeSeriesData.timestamp <= pred.predicted_at + timedelta(days=scan_window)
+                ).order_by(asc(TimeSeriesData.timestamp)).all()
+                
+                actual_lag_days = None
+                lag_error_days = None
+                
+                if ts_data and baseline and baseline != 0:
+                    if pred.predicted_direction == 'up':
+                        # Find the peak value and when it occurred
+                        peak_point = max(ts_data, key=lambda d: d.value)
+                        actual_lag_days = (peak_point.timestamp - pred.predicted_at).days
+                    else:
+                        # Find the trough value and when it occurred
+                        trough_point = min(ts_data, key=lambda d: d.value)
+                        actual_lag_days = (trough_point.timestamp - pred.predicted_at).days
+                    
+                    if actual_lag_days is not None and pred.optimal_lag_days:
+                        lag_error_days = actual_lag_days - pred.optimal_lag_days
+                
+                # Update prediction record
                 pred.actual_value = actual_value
                 pred.actual_direction = actual_direction
                 pred.direction_correct = direction_correct
                 pred.value_error_pct = round(value_error_pct, 2) if value_error_pct is not None else None
+                pred.actual_change_pct = round(actual_change_pct, 2) if actual_change_pct is not None else None
+                pred.actual_lag_days = actual_lag_days
+                pred.lag_error_days = lag_error_days
                 pred.status = 'validated'
                 pred.updated_at = datetime.utcnow()
                 validated_count += 1
@@ -2687,6 +2839,16 @@ async def validate_predictions(db: Session = Depends(get_db)):
         direction_accuracy = (direction_correct_count / len(all_validated) * 100) if all_validated else 0
         avg_error = sum(p.value_error_pct or 0 for p in all_validated) / max(len(all_validated), 1)
         
+        lag_errors = [p.lag_error_days for p in all_validated if p.lag_error_days is not None]
+        avg_lag_error = sum(abs(e) for e in lag_errors) / max(len(lag_errors), 1) if lag_errors else None
+        
+        change_errors = [
+            abs((p.actual_change_pct or 0) - (p.predicted_change_pct or 0))
+            for p in all_validated
+            if p.actual_change_pct is not None and p.predicted_change_pct is not None
+        ]
+        avg_change_error = sum(change_errors) / max(len(change_errors), 1) if change_errors else None
+        
         return {
             "status": "success",
             "validated": validated_count,
@@ -2695,7 +2857,9 @@ async def validate_predictions(db: Session = Depends(get_db)):
             "accuracy_stats": {
                 "total_validated": len(all_validated),
                 "direction_accuracy": round(direction_accuracy, 1),
-                "average_error_pct": round(avg_error, 2)
+                "average_error_pct": round(avg_error, 2),
+                "avg_lag_error_days": round(avg_lag_error, 1) if avg_lag_error is not None else None,
+                "avg_change_error_pct": round(avg_change_error, 1) if avg_change_error is not None else None,
             }
         }
         

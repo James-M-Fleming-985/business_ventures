@@ -464,13 +464,17 @@
         </div>
 
         <!-- Accuracy Summary Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div class="bg-slate-800 rounded-lg p-5 border border-slate-700">
                 <div class="flex items-center justify-between mb-2">
-                    <p class="text-xs text-slate-400 uppercase tracking-wider">Total Predictions</p>
+                    <p class="text-xs text-slate-400 uppercase tracking-wider">Total</p>
                     <i data-lucide="hash" class="w-4 h-4 text-blue-400"></i>
                 </div>
                 <p class="text-3xl font-bold text-white" x-text="predictionMetrics.total_predictions || 0"></p>
+                <p class="text-xs text-slate-500 mt-1">
+                    <span x-text="predictionMetrics.pending || 0" class="text-blue-400"></span> pending · 
+                    <span x-text="predictionMetrics.validated || 0" class="text-green-400"></span> validated
+                </p>
             </div>
             <div class="bg-slate-800 rounded-lg p-5 border border-slate-700">
                 <div class="flex items-center justify-between mb-2">
@@ -478,114 +482,237 @@
                     <i data-lucide="compass" class="w-4 h-4 text-green-400"></i>
                 </div>
                 <p class="text-3xl font-bold" 
-                   :class="(predictionMetrics.direction_accuracy || 0) >= 0.7 ? 'text-green-400' : (predictionMetrics.direction_accuracy || 0) >= 0.5 ? 'text-yellow-400' : 'text-red-400'"
-                   x-text="((predictionMetrics.direction_accuracy || 0) * 100).toFixed(1) + '%'"></p>
+                   :class="(predictionMetrics.direction_accuracy || 0) >= 70 ? 'text-green-400' : (predictionMetrics.direction_accuracy || 0) >= 50 ? 'text-yellow-400' : 'text-red-400'"
+                   x-text="predictionMetrics.direction_accuracy !== null ? predictionMetrics.direction_accuracy + '%' : '—'"></p>
+                <p class="text-xs text-slate-500 mt-1">Up/down correct</p>
             </div>
             <div class="bg-slate-800 rounded-lg p-5 border border-slate-700">
                 <div class="flex items-center justify-between mb-2">
-                    <p class="text-xs text-slate-400 uppercase tracking-wider">MAPE</p>
+                    <p class="text-xs text-slate-400 uppercase tracking-wider">Value Error</p>
                     <i data-lucide="percent" class="w-4 h-4 text-accent-400"></i>
                 </div>
                 <p class="text-3xl font-bold"
-                   :class="(predictionMetrics.mape || 0) <= 10 ? 'text-green-400' : (predictionMetrics.mape || 0) <= 25 ? 'text-yellow-400' : 'text-red-400'"
-                   x-text="(predictionMetrics.mape || 0).toFixed(1) + '%'"></p>
-                <p class="text-xs text-slate-500 mt-1">Mean Absolute % Error</p>
+                   :class="(predictionMetrics.avg_error_pct || 0) <= 10 ? 'text-green-400' : (predictionMetrics.avg_error_pct || 0) <= 25 ? 'text-yellow-400' : 'text-red-400'"
+                   x-text="predictionMetrics.avg_error_pct !== null ? predictionMetrics.avg_error_pct.toFixed(1) + '%' : '—'"></p>
+                <p class="text-xs text-slate-500 mt-1">Avg |predicted - actual|</p>
             </div>
             <div class="bg-slate-800 rounded-lg p-5 border border-slate-700">
                 <div class="flex items-center justify-between mb-2">
-                    <p class="text-xs text-slate-400 uppercase tracking-wider">Timing Accuracy</p>
+                    <p class="text-xs text-slate-400 uppercase tracking-wider">Lag Error</p>
                     <i data-lucide="clock" class="w-4 h-4 text-purple-400"></i>
                 </div>
                 <p class="text-3xl font-bold"
-                   :class="(predictionMetrics.timing_accuracy || 0) >= 0.7 ? 'text-green-400' : (predictionMetrics.timing_accuracy || 0) >= 0.5 ? 'text-yellow-400' : 'text-red-400'"
-                   x-text="((predictionMetrics.timing_accuracy || 0) * 100).toFixed(1) + '%'"></p>
-                <p class="text-xs text-slate-500 mt-1">Within 3-day window</p>
+                   :class="(predictionMetrics.avg_lag_error_days || 0) <= 7 ? 'text-green-400' : (predictionMetrics.avg_lag_error_days || 0) <= 14 ? 'text-yellow-400' : 'text-red-400'"
+                   x-text="predictionMetrics.avg_lag_error_days !== null ? predictionMetrics.avg_lag_error_days + 'd' : '—'"></p>
+                <p class="text-xs text-slate-500 mt-1">Avg |predicted lag - actual lag|</p>
+            </div>
+            <div class="bg-slate-800 rounded-lg p-5 border border-slate-700">
+                <div class="flex items-center justify-between mb-2">
+                    <p class="text-xs text-slate-400 uppercase tracking-wider">Change Error</p>
+                    <i data-lucide="trending-up" class="w-4 h-4 text-amber-400"></i>
+                </div>
+                <p class="text-3xl font-bold"
+                   :class="(predictionMetrics.avg_change_error_pct || 0) <= 5 ? 'text-green-400' : (predictionMetrics.avg_change_error_pct || 0) <= 15 ? 'text-yellow-400' : 'text-red-400'"
+                   x-text="predictionMetrics.avg_change_error_pct !== null ? predictionMetrics.avg_change_error_pct.toFixed(1) + '%' : '—'"></p>
+                <p class="text-xs text-slate-500 mt-1">Avg |predicted Δ% - actual Δ%|</p>
             </div>
         </div>
 
-        <!-- Main Content Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Predicted vs Actual Chart -->
-            <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="flex items-center space-x-2">
-                        <i data-lucide="line-chart" class="w-5 h-5 text-primary-400"></i>
-                        <h3 class="text-lg font-bold">Predicted vs Actual</h3>
-                    </div>
-                    <button @click="loadPredictions()"
-                        class="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm transition">
-                        <i data-lucide="refresh-cw" class="w-4 h-4 inline"></i>
-                    </button>
+        <!-- Mini Chart Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- Mini Chart 1: Direction Accuracy Over Time -->
+            <div class="bg-slate-800 rounded-lg p-4 border border-slate-700">
+                <div class="flex items-center justify-between mb-2">
+                    <h4 class="text-sm font-medium text-slate-300">Direction (Correct/Wrong)</h4>
+                    <span class="text-xs px-2 py-0.5 rounded bg-slate-700 text-slate-400">validated only</span>
                 </div>
-                <div id="predictionChart" class="w-full" style="height: 350px;"></div>
-                <div x-show="predictionTimeseries.length === 0" class="flex flex-col items-center justify-center py-12 text-slate-500">
-                    <i data-lucide="bar-chart-2" class="w-12 h-12 mb-3 opacity-30"></i>
-                    <p class="text-sm">No prediction data yet</p>
-                    <p class="text-xs text-slate-600 mt-1">Predictions will appear here as the system records them</p>
+                <div id="miniChartDirection" class="w-full" style="height: 180px;"></div>
+                <div x-show="(predictionTimeseries || []).filter(p => p.status === 'validated').length === 0" 
+                     class="flex items-center justify-center" style="height: 180px;">
+                    <p class="text-xs text-slate-600">No validated predictions yet</p>
+                </div>
+            </div>
+            
+            <!-- Mini Chart 2: Change % — Predicted vs Actual -->
+            <div class="bg-slate-800 rounded-lg p-4 border border-slate-700">
+                <div class="flex items-center justify-between mb-2">
+                    <h4 class="text-sm font-medium text-slate-300">Change % — Predicted vs Actual</h4>
+                    <span class="text-xs px-2 py-0.5 rounded bg-slate-700 text-slate-400">validated only</span>
+                </div>
+                <div id="miniChartChange" class="w-full" style="height: 180px;"></div>
+                <div x-show="(predictionTimeseries || []).filter(p => p.status === 'validated').length === 0" 
+                     class="flex items-center justify-center" style="height: 180px;">
+                    <p class="text-xs text-slate-600">No validated predictions yet</p>
                 </div>
             </div>
 
-            <!-- Model Comparison Table -->
-            <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="flex items-center space-x-2">
-                        <i data-lucide="git-compare" class="w-5 h-5 text-accent-400"></i>
-                        <h3 class="text-lg font-bold">Model Comparison</h3>
-                    </div>
-                    <button @click="loadPredictions()"
-                        class="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm transition">
-                        <i data-lucide="refresh-cw" class="w-4 h-4 inline"></i>
-                    </button>
+            <!-- Mini Chart 3: Value — Predicted vs Actual -->
+            <div class="bg-slate-800 rounded-lg p-4 border border-slate-700">
+                <div class="flex items-center justify-between mb-2">
+                    <h4 class="text-sm font-medium text-slate-300">Value — Predicted vs Actual</h4>
+                    <span class="text-xs px-2 py-0.5 rounded bg-slate-700 text-slate-400">validated only</span>
                 </div>
-                <div x-show="modelComparison.length > 0" class="overflow-y-auto" style="max-height: 350px;">
-                    <table class="w-full">
-                        <thead class="sticky top-0 bg-slate-800">
-                            <tr class="border-b border-slate-700">
-                                <th class="text-left py-2 px-3 text-sm font-medium text-slate-400">Model</th>
-                                <th class="text-right py-2 px-3 text-sm font-medium text-slate-400">Accuracy</th>
-                                <th class="text-right py-2 px-3 text-sm font-medium text-slate-400">MAPE</th>
-                                <th class="text-right py-2 px-3 text-sm font-medium text-slate-400">Predictions</th>
+                <div id="miniChartValue" class="w-full" style="height: 180px;"></div>
+                <div x-show="(predictionTimeseries || []).filter(p => p.status === 'validated').length === 0" 
+                     class="flex items-center justify-center" style="height: 180px;">
+                    <p class="text-xs text-slate-600">No validated predictions yet</p>
+                </div>
+            </div>
+
+            <!-- Mini Chart 4: Lag — Predicted vs Actual -->
+            <div class="bg-slate-800 rounded-lg p-4 border border-slate-700">
+                <div class="flex items-center justify-between mb-2">
+                    <h4 class="text-sm font-medium text-slate-300">Lag (days) — Predicted vs Actual</h4>
+                    <span class="text-xs px-2 py-0.5 rounded bg-slate-700 text-slate-400">validated only</span>
+                </div>
+                <div id="miniChartLag" class="w-full" style="height: 180px;"></div>
+                <div x-show="(predictionTimeseries || []).filter(p => p.status === 'validated').length === 0" 
+                     class="flex items-center justify-center" style="height: 180px;">
+                    <p class="text-xs text-slate-600">No validated predictions yet</p>
+                </div>
+            </div>
+
+            <!-- Mini Chart 5: R² Quality Over Time -->
+            <div class="bg-slate-800 rounded-lg p-4 border border-slate-700">
+                <div class="flex items-center justify-between mb-2">
+                    <h4 class="text-sm font-medium text-slate-300">R² (Model Quality)</h4>
+                    <span class="text-xs px-2 py-0.5 rounded bg-slate-700 text-slate-400">all predictions</span>
+                </div>
+                <div id="miniChartR2" class="w-full" style="height: 180px;"></div>
+                <div x-show="(predictionTimeseries || []).length === 0" 
+                     class="flex items-center justify-center" style="height: 180px;">
+                    <p class="text-xs text-slate-600">No predictions yet</p>
+                </div>
+            </div>
+
+            <!-- Mini Chart 6: p-value (Signal Strength) -->
+            <div class="bg-slate-800 rounded-lg p-4 border border-slate-700">
+                <div class="flex items-center justify-between mb-2">
+                    <h4 class="text-sm font-medium text-slate-300">p-value (Signal Strength)</h4>
+                    <span class="text-xs px-2 py-0.5 rounded bg-slate-700 text-slate-400">all predictions</span>
+                </div>
+                <div id="miniChartPValue" class="w-full" style="height: 180px;"></div>
+                <div x-show="(predictionTimeseries || []).length === 0" 
+                     class="flex items-center justify-center" style="height: 180px;">
+                    <p class="text-xs text-slate-600">No predictions yet</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Expandable Detail Chart -->
+        <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="line-chart" class="w-5 h-5 text-primary-400"></i>
+                    <h3 class="text-lg font-bold">Detailed Metric Overlay</h3>
+                </div>
+                <button @click="detailChartExpanded = !detailChartExpanded"
+                    class="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm transition flex items-center gap-1">
+                    <i data-lucide="maximize-2" class="w-4 h-4 inline" x-show="!detailChartExpanded"></i>
+                    <i data-lucide="minimize-2" class="w-4 h-4 inline" x-show="detailChartExpanded"></i>
+                    <span x-text="detailChartExpanded ? 'Collapse' : 'Expand'"></span>
+                </button>
+            </div>
+            <div x-show="detailChartExpanded" x-transition>
+                <!-- Metric Checkboxes -->
+                <div class="flex flex-wrap gap-3 mb-4">
+                    <label class="flex items-center gap-2 text-sm cursor-pointer">
+                        <input type="checkbox" x-model="detailChartMetrics.changePred" @change="renderDetailChart()" class="rounded bg-slate-700 border-slate-600 text-blue-500">
+                        <span class="text-blue-400">Change % Predicted</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-sm cursor-pointer">
+                        <input type="checkbox" x-model="detailChartMetrics.changeActual" @change="renderDetailChart()" class="rounded bg-slate-700 border-slate-600 text-green-500">
+                        <span class="text-green-400">Change % Actual</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-sm cursor-pointer">
+                        <input type="checkbox" x-model="detailChartMetrics.lagPred" @change="renderDetailChart()" class="rounded bg-slate-700 border-slate-600 text-purple-500">
+                        <span class="text-purple-400">Lag Predicted</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-sm cursor-pointer">
+                        <input type="checkbox" x-model="detailChartMetrics.lagActual" @change="renderDetailChart()" class="rounded bg-slate-700 border-slate-600 text-amber-500">
+                        <span class="text-amber-400">Lag Actual</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-sm cursor-pointer">
+                        <input type="checkbox" x-model="detailChartMetrics.r2" @change="renderDetailChart()" class="rounded bg-slate-700 border-slate-600 text-cyan-500">
+                        <span class="text-cyan-400">R²</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-sm cursor-pointer">
+                        <input type="checkbox" x-model="detailChartMetrics.pValue" @change="renderDetailChart()" class="rounded bg-slate-700 border-slate-600 text-red-500">
+                        <span class="text-red-400">p-value</span>
+                    </label>
+                </div>
+                <div id="detailChart" class="w-full" style="height: 400px;"></div>
+            </div>
+            <div x-show="!detailChartExpanded" class="text-center py-4">
+                <p class="text-xs text-slate-500">Click Expand to overlay multiple metrics on a single chart with toggle-able series</p>
+            </div>
+        </div>
+
+        <!-- Source Comparison Table (was Model Comparison) -->
+        <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="git-compare" class="w-5 h-5 text-accent-400"></i>
+                    <h3 class="text-lg font-bold">Accuracy by Target Source</h3>
+                </div>
+                <button @click="loadPredictions()"
+                    class="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm transition">
+                    <i data-lucide="refresh-cw" class="w-4 h-4 inline"></i>
+                </button>
+            </div>
+            <div x-show="sourceComparison.length > 0" class="overflow-y-auto" style="max-height: 350px;">
+                <table class="w-full">
+                    <thead class="sticky top-0 bg-slate-800">
+                        <tr class="border-b border-slate-700">
+                            <th class="text-left py-2 px-3 text-sm font-medium text-slate-400">Source</th>
+                            <th class="text-right py-2 px-3 text-sm font-medium text-slate-400">Direction</th>
+                            <th class="text-right py-2 px-3 text-sm font-medium text-slate-400">Value Err</th>
+                            <th class="text-right py-2 px-3 text-sm font-medium text-slate-400">Lag Err</th>
+                            <th class="text-right py-2 px-3 text-sm font-medium text-slate-400">Count</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="(src, idx) in sourceComparison" :key="idx">
+                            <tr class="border-b border-slate-700/50 hover:bg-slate-700/50 transition">
+                                <td class="py-3 px-3">
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-2 h-2 rounded-full" :class="{
+                                            'bg-green-400': src.source === 'stock',
+                                            'bg-blue-400': src.source === 'arxiv',
+                                            'bg-purple-400': src.source === 'fred',
+                                            'bg-amber-400': src.source === 'crypto',
+                                            'bg-slate-400': !['stock','arxiv','fred','crypto'].includes(src.source)
+                                        }"></div>
+                                        <span class="text-sm font-medium capitalize" x-text="src.source"></span>
+                                    </div>
+                                </td>
+                                <td class="py-3 px-3 text-right">
+                                    <span class="px-2 py-1 rounded text-xs font-mono"
+                                        :class="(src.direction_accuracy || 0) >= 0.7 ? 'bg-green-500/20 text-green-400' : (src.direction_accuracy || 0) >= 0.5 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'"
+                                        x-text="src.direction_accuracy !== null ? ((src.direction_accuracy || 0) * 100).toFixed(0) + '%' : '—'"></span>
+                                </td>
+                                <td class="py-3 px-3 text-right">
+                                    <span class="text-sm font-mono text-slate-300" x-text="src.avg_error_pct !== null ? src.avg_error_pct.toFixed(1) + '%' : '—'"></span>
+                                </td>
+                                <td class="py-3 px-3 text-right">
+                                    <span class="text-sm font-mono text-slate-300" x-text="src.avg_lag_error_days !== null ? src.avg_lag_error_days + 'd' : '—'"></span>
+                                </td>
+                                <td class="py-3 px-3 text-right">
+                                    <span class="text-sm text-slate-400" x-text="src.total_predictions || 0"></span>
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            <template x-for="(model, idx) in modelComparison" :key="idx">
-                                <tr class="border-b border-slate-700/50 hover:bg-slate-700/50 transition">
-                                    <td class="py-3 px-3">
-                                        <div class="flex items-center space-x-2">
-                                            <div class="w-2 h-2 rounded-full" :class="{
-                                                'bg-green-400': idx === 0,
-                                                'bg-blue-400': idx === 1,
-                                                'bg-purple-400': idx === 2,
-                                                'bg-yellow-400': idx >= 3
-                                            }"></div>
-                                            <span class="text-sm font-medium" x-text="model.model_type || model.name || 'Unknown'"></span>
-                                        </div>
-                                    </td>
-                                    <td class="py-3 px-3 text-right">
-                                        <span class="px-2 py-1 rounded text-xs font-mono"
-                                            :class="(model.direction_accuracy || 0) >= 0.7 ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'"
-                                            x-text="((model.direction_accuracy || 0) * 100).toFixed(1) + '%'"></span>
-                                    </td>
-                                    <td class="py-3 px-3 text-right">
-                                        <span class="text-sm font-mono text-slate-300" x-text="(model.mape || 0).toFixed(1) + '%'"></span>
-                                    </td>
-                                    <td class="py-3 px-3 text-right">
-                                        <span class="text-sm text-slate-400" x-text="model.total_predictions || 0"></span>
-                                    </td>
-                                </tr>
-                            </template>
-                        </tbody>
-                    </table>
-                </div>
-                <div x-show="modelComparison.length === 0" class="flex flex-col items-center justify-center py-12 text-slate-500">
-                    <i data-lucide="layers" class="w-12 h-12 mb-3 opacity-30"></i>
-                    <p class="text-sm">No model comparisons available</p>
-                    <p class="text-xs text-slate-600 mt-1">Comparisons appear when multiple models make predictions</p>
-                </div>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+            <div x-show="sourceComparison.length === 0" class="flex flex-col items-center justify-center py-12 text-slate-500">
+                <i data-lucide="layers" class="w-12 h-12 mb-3 opacity-30"></i>
+                <p class="text-sm">No source comparisons available</p>
+                <p class="text-xs text-slate-600 mt-1">Generate recommendations to populate predictions by source</p>
             </div>
         </div>
 
-        <!-- Service Layers Status -->
+        <!-- Service Layer Status -->
         <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
             <div class="flex items-center space-x-2 mb-4">
                 <i data-lucide="activity" class="w-5 h-5 text-green-400"></i>
@@ -604,7 +731,7 @@
                 <div class="flex items-center justify-between p-3 bg-slate-900/50 rounded-lg border border-slate-700">
                     <div class="flex items-center space-x-2">
                         <i data-lucide="refresh-cw" class="w-4 h-4 text-purple-400"></i>
-                        <span class="text-sm">Actual Updater</span>
+                        <span class="text-sm">Validation Engine</span>
                     </div>
                     <span class="px-2 py-0.5 rounded text-xs font-medium"
                           :class="predictionLayers.updater ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'"
@@ -613,7 +740,7 @@
                 <div class="flex items-center justify-between p-3 bg-slate-900/50 rounded-lg border border-slate-700">
                     <div class="flex items-center space-x-2">
                         <i data-lucide="bar-chart" class="w-4 h-4 text-accent-400"></i>
-                        <span class="text-sm">Analytics Service</span>
+                        <span class="text-sm">Analytics</span>
                     </div>
                     <span class="px-2 py-0.5 rounded text-xs font-medium"
                           :class="predictionLayers.analytics ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'"
@@ -626,14 +753,14 @@
                     :disabled="isUpdatingActuals"
                     class="px-3 py-1 bg-primary-600 hover:bg-primary-700 disabled:bg-slate-700 disabled:text-slate-500 rounded text-xs font-medium transition flex items-center gap-1">
                     <i data-lucide="play" class="w-3 h-3" :class="{'animate-spin': isUpdatingActuals}"></i>
-                    <span x-text="isUpdatingActuals ? 'Updating...' : 'Update Actuals'"></span>
+                    <span x-text="isUpdatingActuals ? 'Validating...' : 'Validate Predictions'"></span>
                 </button>
             </div>
         </div>
     </div>
 
     <!-- Recent Predictions Table -->
-    <div class="mt-6 bg-slate-800 rounded-lg p-6 border border-slate-700">
+    <div x-show="activeView === 'predictions'" class="mt-6 bg-slate-800 rounded-lg p-6 border border-slate-700">
         <div class="flex items-center justify-between mb-4">
             <div class="flex items-center space-x-2">
                 <i data-lucide="list" class="w-5 h-5 text-primary-400"></i>
@@ -647,40 +774,50 @@
                 <thead>
                     <tr class="border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider">
                         <th class="text-left py-2 px-3">Signal → Target</th>
-                        <th class="text-center py-2 px-3">Direction</th>
-                        <th class="text-right py-2 px-3">Predicted Change</th>
+                        <th class="text-center py-2 px-3">Dir</th>
+                        <th class="text-right py-2 px-3">Pred Δ%</th>
+                        <th class="text-right py-2 px-3">Act Δ%</th>
+                        <th class="text-right py-2 px-3">Lag (d)</th>
+                        <th class="text-right py-2 px-3">Act Lag</th>
                         <th class="text-right py-2 px-3">R²</th>
-                        <th class="text-center py-2 px-3">Confidence</th>
+                        <th class="text-center py-2 px-3">Source</th>
                         <th class="text-center py-2 px-3">Status</th>
-                        <th class="text-right py-2 px-3">Date</th>
+                        <th class="text-right py-2 px-3">Matures</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <template x-for="(pred, idx) in (recentPredictions || []).slice(0, 20)" :key="idx">
+                    <template x-for="(pred, idx) in (recentPredictions || []).slice(0, 50)" :key="idx">
                         <tr class="border-b border-slate-700/50 hover:bg-slate-700/30 transition">
                             <td class="py-2 px-3">
-                                <span class="text-slate-300" x-text="pred.signal_name"></span>
-                                <span class="text-slate-500 mx-1">→</span>
-                                <span class="text-slate-300" x-text="pred.target_name"></span>
+                                <span class="text-slate-300 text-xs" x-text="pred.signal_name"></span>
+                                <span class="text-slate-600 mx-0.5">→</span>
+                                <span class="text-slate-300 text-xs" x-text="pred.target_name"></span>
                             </td>
                             <td class="py-2 px-3 text-center">
-                                <span class="px-2 py-0.5 rounded text-xs font-medium"
-                                      :class="pred.predicted_direction === 'up' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'"
-                                      x-text="pred.predicted_direction === 'up' ? '↑ Up' : '↓ Down'"></span>
+                                <span class="text-xs"
+                                      :class="pred.predicted_direction === 'up' ? 'text-green-400' : 'text-red-400'"
+                                      x-text="pred.predicted_direction === 'up' ? '↑' : '↓'"></span>
+                                <template x-if="pred.status === 'validated'">
+                                    <span class="ml-1 text-xs" :class="pred.direction_correct ? 'text-green-400' : 'text-red-400'"
+                                          x-text="pred.direction_correct ? '✓' : '✗'"></span>
+                                </template>
                             </td>
-                            <td class="py-2 px-3 text-right font-mono text-slate-300" 
-                                x-text="(pred.predicted_change_pct || 0).toFixed(1) + '%'"></td>
-                            <td class="py-2 px-3 text-right font-mono"
+                            <td class="py-2 px-3 text-right font-mono text-xs text-slate-300" 
+                                x-text="pred.predicted_change_pct != null ? pred.predicted_change_pct.toFixed(1) + '%' : '—'"></td>
+                            <td class="py-2 px-3 text-right font-mono text-xs"
+                                :class="pred.actual_change_pct != null ? (pred.actual_change_pct >= 0 ? 'text-green-400' : 'text-red-400') : 'text-slate-600'"
+                                x-text="pred.actual_change_pct != null ? pred.actual_change_pct.toFixed(1) + '%' : '—'"></td>
+                            <td class="py-2 px-3 text-right font-mono text-xs text-slate-300" 
+                                x-text="pred.optimal_lag_days || '—'"></td>
+                            <td class="py-2 px-3 text-right font-mono text-xs"
+                                :class="pred.actual_lag_days != null ? 'text-amber-400' : 'text-slate-600'"
+                                x-text="pred.actual_lag_days != null ? pred.actual_lag_days + 'd' : '—'"></td>
+                            <td class="py-2 px-3 text-right font-mono text-xs"
                                 :class="(pred.r_squared || 0) > 0.3 ? 'text-green-400' : 'text-yellow-400'"
-                                x-text="(pred.r_squared || 0).toFixed(3)"></td>
+                                x-text="pred.r_squared != null ? pred.r_squared.toFixed(3) : '—'"></td>
                             <td class="py-2 px-3 text-center">
-                                <span class="px-2 py-0.5 rounded text-xs"
-                                      :class="{
-                                          'bg-green-500/20 text-green-400': pred.confidence === 'high',
-                                          'bg-yellow-500/20 text-yellow-400': pred.confidence === 'medium',
-                                          'bg-red-500/20 text-red-400': pred.confidence === 'low'
-                                      }"
-                                      x-text="pred.confidence"></span>
+                                <span class="px-1.5 py-0.5 rounded text-xs capitalize bg-slate-700 text-slate-400" 
+                                      x-text="pred.target_source || '—'"></span>
                             </td>
                             <td class="py-2 px-3 text-center">
                                 <span class="px-2 py-0.5 rounded text-xs font-medium"
@@ -692,7 +829,7 @@
                                       x-text="pred.status"></span>
                             </td>
                             <td class="py-2 px-3 text-right text-slate-500 text-xs" 
-                                x-text="pred.predicted_at ? new Date(pred.predicted_at).toLocaleDateString() : '-'"></td>
+                                x-text="pred.target_date ? new Date(pred.target_date).toLocaleDateString() : '—'"></td>
                         </tr>
                     </template>
                 </tbody>
@@ -701,7 +838,7 @@
         <div x-show="(recentPredictions || []).length === 0" class="flex flex-col items-center justify-center py-8 text-slate-500">
             <i data-lucide="inbox" class="w-10 h-10 mb-2 opacity-30"></i>
             <p class="text-sm">No predictions recorded yet</p>
-            <p class="text-xs text-slate-600 mt-1">Run a deep analysis from the Causality tab to generate predictions</p>
+            <p class="text-xs text-slate-600 mt-1">Go to the Exploitation Board and click "Generate Recommendations" to batch-create predictions</p>
         </div>
     </div>
 
