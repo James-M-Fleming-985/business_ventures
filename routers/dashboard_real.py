@@ -2062,8 +2062,11 @@ async def get_predictions(
                     sum(1 for p in validated if (p.target_source or 'unknown') == src and p.direction_correct) / v_count, 3
                 )
 
-        # Build time series: group validated by predicted_at month, compute mean predicted vs actual
+        # Build time series: group validated by predicted_at month
+        # Use median for change_pct (robust to extreme outliers like Wildfires Events)
+        # Use mean for lag (no extreme outliers expected)
         from collections import defaultdict
+        from statistics import median
         monthly = defaultdict(lambda: {
             'pred_change': [], 'act_change': [],
             'pred_lag': [], 'act_lag': [],
@@ -2091,8 +2094,8 @@ async def get_predictions(
             time_series.append({
                 'month': month_key,
                 'count': m['count'],
-                'avg_predicted_change_pct': round(sum(m['pred_change']) / len(m['pred_change']), 2) if m['pred_change'] else None,
-                'avg_actual_change_pct': round(sum(m['act_change']) / len(m['act_change']), 2) if m['act_change'] else None,
+                'avg_predicted_change_pct': round(median(m['pred_change']), 2) if m['pred_change'] else None,
+                'avg_actual_change_pct': round(median(m['act_change']), 2) if m['act_change'] else None,
                 'avg_predicted_lag': round(sum(m['pred_lag']) / len(m['pred_lag']), 1) if m['pred_lag'] else None,
                 'avg_actual_lag': round(sum(m['act_lag']) / len(m['act_lag']), 1) if m['act_lag'] else None,
                 'direction_accuracy': round(sum(m['direction_correct']) / len(m['direction_correct']) * 100, 1) if m['direction_correct'] else None,
