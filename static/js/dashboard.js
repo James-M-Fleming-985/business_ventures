@@ -98,6 +98,7 @@ function dashboardData() {
         },
         isUpdatingActuals: false,
         recentPredictions: [],
+        predictionFilter: '',
         detailChartExpanded: false,
         detailChartMetrics: {
             changePred: true,
@@ -614,7 +615,11 @@ function dashboardData() {
         async loadPredictions() {
             console.log('🎯 Loading Prediction Accuracy data (CA-002-10)...');
             try {
-                const response = await fetch('/api/dashboard/predictions?limit=500');
+                let url = '/api/dashboard/predictions?limit=500';
+                if (this.predictionFilter) {
+                    url += '&model_version=' + encodeURIComponent(this.predictionFilter);
+                }
+                const response = await fetch(url);
                 if (response.ok) {
                     const data = await response.json();
                     console.log('🎯 Predictions loaded:', data.total, 'total');

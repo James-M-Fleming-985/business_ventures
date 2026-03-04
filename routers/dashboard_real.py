@@ -1990,6 +1990,7 @@ async def store_prediction(request: Request, db: Session = Depends(get_db)):
 async def get_predictions(
     limit: int = Query(50, ge=1, le=500),
     status: Optional[str] = Query(None),
+    model_version: Optional[str] = Query(None),
     db: Session = Depends(get_db),
 ):
     """
@@ -1997,6 +1998,9 @@ async def get_predictions(
     Returns predictions newest-first with rich accuracy stats,
     grouped by target_source for the model comparison table,
     and dimensional accuracy metrics for mini charts.
+    
+    Args:
+        model_version: Filter by model version (e.g. 'backtest_walkforward', 'granger_v1')
     """
     from sqlalchemy import desc
 
@@ -2004,6 +2008,8 @@ async def get_predictions(
         q = db.query(PredictionTracking)
         if status:
             q = q.filter(PredictionTracking.status == status)
+        if model_version:
+            q = q.filter(PredictionTracking.model_version == model_version)
         predictions = q.order_by(desc(PredictionTracking.predicted_at)).limit(limit).all()
 
         # Compute accuracy summary

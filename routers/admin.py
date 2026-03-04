@@ -352,6 +352,340 @@ async def get_job_status(job_id: str):
     return JSONResponse(_active_jobs[job_id])
 
 
+def _run_backtest_background(job_id: str, months_back: int = 24, max_pairs: int = 0):
+    """Walk-forward backtest: recompute correlations at each historical point and validate."""
+    import uuid
+    import warnings
+    import numpy as np
+    import pandas as pd
+    from scipy.stats import pearsonr
+    from datetime import timedelta
+
+    try:
+        _active_jobs[job_id]['status'] = 'running'
+        _active_jobs[job_id]['stage'] = 'loading_data'
+        _active_jobs[job_id]['updated_at'] = datetime.utcnow().isoformat()
+
+        sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+        from database import get_db_session
+        from models import ExploitationRecommendation, VariableMetadata, TimeSeriesData, PredictionTracking
+
+        try:
+            from statsmodels.tsa.stattools import grangercausalitytests
+            granger_available = True
+        except ImportError:
+            granger_available = False
+            logger.warning("statsmodels not available for backtest Granger tests")
+
+        with get_db_session() as db:
+            # Get all exploitation recommendation pairs
+            recs = db.query(ExploitationRecommendation).all()
+            if max_pairs > 0:
+                recs = recs[:max_pairs]
+
+            total_pairs = len(recs)
+            logger.info(f"Job {job_id}: Starting walk-forward backtest with {total_pairs} pairs, {months_back} months")
+            _active_jobs[job_id]['total_pairs'] = total_pairs
+
+            # Build variable lookup: display_name -> (id, name)
+            all_vars = db.query(VariableMetadata).filter(VariableMetadata.is_active == True).all()
+            var_by_display = {v.display_name: v for v in all_vars}
+            var_by_name = {v.name: v for v in all_vars}
+
+            # Pre-fetch all time series data keyed by variable_id
+            from sqlalchemy import asc
+            all_ts = db.query(TimeSeriesData).order_by(asc(TimeSeriesData.timestamp)).all()
+            ts_by_var = {}
+            for ts in all_ts:
+                ts_by_var.setdefault(ts.variable_id, []).append((ts.timestamp, ts.value))
+            del all_ts  # Free memory
+
+            now = datetime.utcnow()
+            predictions_created = 0
+            predictions_skipped = 0
+            direction_correct_count = 0
+            direction_total = 0
+
+            for pair_idx, rec in enumerate(recs):
+                try:
+                    # Resolve variable IDs
+                    sig_var = var_by_display.get(rec.signal_display_name) or var_by_name.get(rec.signal_name)
+                    tgt_var = var_by_display.get(rec.target_display_name) or var_by_name.get(rec.target_name)
+                    if not sig_var or not tgt_var:
+                        predictions_skipped += 1
+                        continue
+
+                    sig_ts = ts_by_var.get(sig_var.id)
+                    tgt_ts = ts_by_var.get(tgt_var.id)
+                    if not sig_ts or not tgt_ts:
+                        predictions_skipped += 1
+                        continue
+
+                    # Convert to pandas Series
+                    sig_series = pd.Series(
+                        [v for _, v in sig_ts],
+                        index=pd.DatetimeIndex([t for t, _ in sig_ts])
+                    ).sort_index()
+                    tgt_series = pd.Series(
+                        [v for _, v in tgt_ts],
+                        index=pd.DatetimeIndex([t for t, _ in tgt_ts])
+                    ).sort_index()
+
+                    lag_months = rec.optimal_lag or 1
+                    lag_days = lag_months * 30
+
+                    # Walk-forward: step backward from 2 months ago to months_back
+                    for m in range(2, months_back + 1):
+                        prediction_date = now - timedelta(days=m * 30)
+                        target_date = prediction_date + timedelta(days=lag_days)
+
+                        # Must have actual data after target_date
+                        if target_date > now - timedelta(days=15):
+                            continue
+
+                        # Slice data to only what was available at prediction_date
+                        sig_slice = sig_series[sig_series.index <= prediction_date]
+                        tgt_slice = tgt_series[tgt_series.index <= prediction_date]
+
+                        # Align
+                        aligned = pd.DataFrame({'sig': sig_slice, 'tgt': tgt_slice}).sort_index()
+                        aligned = aligned.interpolate(method='time', limit_direction='both').dropna()
+
+                        if len(aligned) < 30:
+                            continue
+
+                        x = aligned['sig'].values
+                        y = aligned['tgt'].values
+
+                        # Compute correlation
+                        try:
+                            corr, p_val = pearsonr(x, y)
+                        except Exception:
+                            continue
+
+                        if p_val is None or p_val >= 0.05:
+                            continue
+
+                        # Compute Granger
+                        granger_p = None
+                        granger_lag = lag_months
+                        if granger_available and len(aligned) >= 30:
+                            try:
+                                max_lag = min(4, len(aligned) // 10)
+                                if max_lag < 1:
+                                    max_lag = 1
+                                with warnings.catch_warnings():
+                                    warnings.simplefilter("ignore")
+                                    data_xy = np.column_stack([y, x])
+                                    results = grangercausalitytests(data_xy, maxlag=max_lag, verbose=False)
+                                    best_p = 1.0
+                                    for lag in range(1, max_lag + 1):
+                                        if lag in results:
+                                            p = results[lag][0]['ssr_ftest'][1]
+                                            if p < best_p:
+                                                best_p = p
+                                                granger_lag = lag
+                                    granger_p = float(best_p)
+                            except Exception:
+                                granger_p = None
+
+                        if granger_p is not None and granger_p >= 0.05:
+                            continue  # Walk-forward: only keep if Granger significant at this point
+
+                        # Compute momentum at prediction_date
+                        sig_at_pred = sig_slice.iloc[-1] if len(sig_slice) > 0 else None
+                        sig_prev = sig_slice.iloc[-2] if len(sig_slice) > 1 else sig_at_pred
+                        if sig_at_pred is None or sig_prev is None or sig_prev == 0:
+                            continue
+                        momentum = ((sig_at_pred - sig_prev) / abs(sig_prev)) * 100
+
+                        # Predicted direction
+                        if momentum > 0:
+                            predicted_direction = 'up' if corr > 0 else 'down'
+                        else:
+                            predicted_direction = 'down' if corr > 0 else 'up'
+
+                        # Predicted change %
+                        predicted_change_pct = round(abs(corr) * abs(momentum), 2)
+
+                        # Baseline target value at prediction_date
+                        baseline = tgt_slice.iloc[-1] if len(tgt_slice) > 0 else None
+                        if baseline is None or baseline == 0:
+                            continue
+                        predicted_value = baseline * (1 + predicted_change_pct / 100)
+
+                        # Get actual value near target_date (±15 day window for monthly data)
+                        tgt_near_target = tgt_series[
+                            (tgt_series.index >= target_date - timedelta(days=15)) &
+                            (tgt_series.index <= target_date + timedelta(days=15))
+                        ]
+                        if len(tgt_near_target) == 0:
+                            # Fallback: nearest point before target_date
+                            tgt_before = tgt_series[tgt_series.index <= target_date + timedelta(days=30)]
+                            if len(tgt_before) == 0:
+                                continue
+                            actual_value = float(tgt_before.iloc[-1])
+                        else:
+                            # Pick closest to target_date
+                            diffs = abs(tgt_near_target.index - target_date)
+                            actual_value = float(tgt_near_target.iloc[diffs.argmin()])
+
+                        # Compute accuracy metrics
+                        actual_direction = 'up' if actual_value > baseline else 'down'
+                        direction_correct = (actual_direction == predicted_direction)
+                        value_error_pct = abs((actual_value - predicted_value) / abs(baseline)) * 100
+                        actual_change_pct_val = ((actual_value - baseline) / abs(baseline)) * 100
+
+                        # Compute actual lag (peak/trough scan)
+                        scan_end = prediction_date + timedelta(days=max(lag_days * 2, 60))
+                        tgt_scan = tgt_series[
+                            (tgt_series.index >= prediction_date) &
+                            (tgt_series.index <= scan_end)
+                        ]
+                        actual_lag_days_val = None
+                        lag_error_days_val = None
+                        if len(tgt_scan) > 0:
+                            if predicted_direction == 'up':
+                                peak_idx = tgt_scan.idxmax()
+                            else:
+                                peak_idx = tgt_scan.idxmin()
+                            actual_lag_days_val = (peak_idx - prediction_date).days
+                            lag_error_days_val = actual_lag_days_val - lag_days
+
+                        # Dedup check
+                        existing = db.query(PredictionTracking).filter(
+                            PredictionTracking.signal_name == rec.signal_display_name,
+                            PredictionTracking.target_name == rec.target_display_name,
+                            PredictionTracking.model_version == 'backtest_walkforward',
+                            PredictionTracking.predicted_at >= prediction_date - timedelta(days=2),
+                            PredictionTracking.predicted_at <= prediction_date + timedelta(days=2),
+                        ).first()
+                        if existing:
+                            predictions_skipped += 1
+                            continue
+
+                        # Create validated prediction record
+                        pred = PredictionTracking(
+                            prediction_id=str(uuid.uuid4())[:12],
+                            signal_name=rec.signal_display_name or rec.signal_name,
+                            target_name=rec.target_display_name or rec.target_name,
+                            predicted_at=prediction_date,
+                            target_date=target_date,
+                            optimal_lag_days=lag_days,
+                            predicted_direction=predicted_direction,
+                            predicted_value=round(predicted_value, 4),
+                            predicted_change_pct=predicted_change_pct,
+                            current_target_value=round(float(baseline), 4),
+                            current_signal_value=round(float(sig_at_pred), 4),
+                            signal_momentum=round(momentum, 2),
+                            r_squared=round(corr ** 2, 6),
+                            confidence='high' if abs(corr) > 0.5 else 'medium' if abs(corr) > 0.3 else 'low',
+                            model_version='backtest_walkforward',
+                            actual_value=round(actual_value, 4),
+                            actual_direction=actual_direction,
+                            direction_correct=direction_correct,
+                            value_error_pct=round(value_error_pct, 2),
+                            actual_change_pct=round(actual_change_pct_val, 2),
+                            actual_lag_days=actual_lag_days_val,
+                            lag_error_days=lag_error_days_val,
+                            granger_p_value=granger_p,
+                            target_source=rec.target_source or 'unknown',
+                            status='validated',
+                            created_at=datetime.utcnow(),
+                            updated_at=datetime.utcnow(),
+                        )
+                        db.add(pred)
+                        predictions_created += 1
+                        if direction_correct:
+                            direction_correct_count += 1
+                        direction_total += 1
+
+                        # Batch commit every 50 records
+                        if predictions_created % 50 == 0:
+                            db.commit()
+
+                except Exception as e:
+                    logger.warning(f"Job {job_id}: Pair {pair_idx} failed: {e}")
+                    predictions_skipped += 1
+                    continue
+
+                # Update progress
+                if (pair_idx + 1) % 10 == 0 or pair_idx == total_pairs - 1:
+                    pct = round((pair_idx + 1) / total_pairs * 100, 1)
+                    _active_jobs[job_id]['stage'] = f'pair {pair_idx + 1}/{total_pairs} ({pct}%)'
+                    _active_jobs[job_id]['predictions_created'] = predictions_created
+                    _active_jobs[job_id]['updated_at'] = datetime.utcnow().isoformat()
+
+            # Final commit
+            db.commit()
+
+        direction_accuracy = round(direction_correct_count / max(1, direction_total) * 100, 1)
+
+        _active_jobs[job_id]['status'] = 'completed'
+        _active_jobs[job_id]['stage'] = 'done'
+        _active_jobs[job_id]['result'] = {
+            'predictions_created': predictions_created,
+            'predictions_skipped': predictions_skipped,
+            'direction_accuracy': direction_accuracy,
+            'direction_correct': direction_correct_count,
+            'direction_total': direction_total,
+            'total_pairs': total_pairs,
+            'months_back': months_back,
+        }
+        _active_jobs[job_id]['updated_at'] = datetime.utcnow().isoformat()
+
+        logger.info(f"Job {job_id}: ✅ Backtest complete! {predictions_created} predictions created, {direction_accuracy}% direction accuracy")
+
+    except Exception as e:
+        logger.error(f"Job {job_id}: Backtest failed: {e}", exc_info=True)
+        _active_jobs[job_id]['status'] = 'failed'
+        _active_jobs[job_id]['error'] = str(e)
+        _active_jobs[job_id]['updated_at'] = datetime.utcnow().isoformat()
+
+
+@router.post("/run-backtest")
+async def run_backtest(
+    background_tasks: BackgroundTasks,
+    months_back: int = 24,
+    max_pairs: int = 0,
+):
+    """Run walk-forward historical backtest in background.
+    
+    Uses existing exploitation recommendation pairs, recomputes correlations
+    and Granger tests at each historical point using only data available at
+    that time, generates predictions, and immediately validates against
+    known outcomes.
+    
+    Args:
+        months_back: How many months to backtest (default 24)
+        max_pairs: Max signal-target pairs to process (0 = all)
+    """
+    job_id = f"backtest_{int(datetime.utcnow().timestamp())}"
+
+    _active_jobs[job_id] = {
+        'job_id': job_id,
+        'type': 'backtest',
+        'status': 'queued',
+        'stage': 'initializing',
+        'months_back': months_back,
+        'max_pairs': max_pairs,
+        'predictions_created': 0,
+        'created_at': datetime.utcnow().isoformat(),
+        'updated_at': datetime.utcnow().isoformat(),
+    }
+
+    background_tasks.add_task(_run_backtest_background, job_id, months_back, max_pairs)
+
+    logger.info(f"Job {job_id}: Queued walk-forward backtest ({months_back} months, max_pairs={max_pairs})")
+
+    return JSONResponse({
+        "status": "queued",
+        "message": f"Walk-forward backtest started ({months_back} months, {max_pairs or 'all'} pairs)",
+        "job_id": job_id,
+        "poll_url": f"/api/admin/job-status/{job_id}",
+    })
+
+
 @router.post("/calculate-correlations")
 async def calculate_correlations():
     """Calculate correlations for all variable pairs"""
