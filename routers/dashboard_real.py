@@ -1988,7 +1988,7 @@ async def store_prediction(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/predictions")
 async def get_predictions(
-    limit: int = Query(50, ge=1, le=500),
+    limit: int = Query(50, ge=1, le=2000),
     status: Optional[str] = Query(None),
     model_version: Optional[str] = Query(None),
     db: Session = Depends(get_db),

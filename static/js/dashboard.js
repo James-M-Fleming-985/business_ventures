@@ -615,7 +615,7 @@ function dashboardData() {
         async loadPredictions() {
             console.log('🎯 Loading Prediction Accuracy data (CA-002-10)...');
             try {
-                let url = '/api/dashboard/predictions?limit=500';
+                let url = '/api/dashboard/predictions?limit=1500';
                 if (this.predictionFilter) {
                     url += '&model_version=' + encodeURIComponent(this.predictionFilter);
                 }
