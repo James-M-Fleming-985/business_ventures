@@ -508,7 +508,9 @@
                 <p class="text-3xl font-bold" 
                    :class="(predictionMetrics.direction_accuracy || 0) >= 70 ? 'text-green-400' : (predictionMetrics.direction_accuracy || 0) >= 50 ? 'text-yellow-400' : 'text-red-400'"
                    x-text="predictionMetrics.direction_accuracy !== null ? predictionMetrics.direction_accuracy + '%' : '—'"></p>
-                <p class="text-xs text-slate-500 mt-1">Up/down correct</p>
+                <p class="text-xs text-slate-500 mt-1">
+                    Up/down correct · <span x-text="predictionMetrics.pair_count || 0" class="text-slate-400"></span> pairs
+                </p>
             </div>
             <div class="bg-slate-800 rounded-lg p-5 border border-slate-700">
                 <div class="flex items-center justify-between mb-2">
@@ -542,197 +544,54 @@
             </div>
         </div>
 
-        <!-- Mini Chart Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <!-- Mini Chart 1: Direction Accuracy Over Time -->
-            <div class="bg-slate-800 rounded-lg p-4 border border-slate-700">
-                <div class="flex items-center justify-between mb-2">
-                    <h4 class="text-sm font-medium text-slate-300">Direction (Correct/Wrong)</h4>
+        <!-- Predicted vs Actual Time Series Charts -->
+        <div class="space-y-4">
+            <!-- Chart 1: Change % — Predicted vs Actual -->
+            <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                <div class="flex items-center justify-between mb-1">
+                    <div class="flex items-center space-x-2">
+                        <i data-lucide="trending-up" class="w-5 h-5 text-primary-400"></i>
+                        <h3 class="text-lg font-bold">Change % — Predicted vs Actual</h3>
+                    </div>
                     <span class="text-xs px-2 py-0.5 rounded bg-slate-700 text-slate-400">validated only</span>
                 </div>
-                <div id="miniChartDirection" class="w-full" style="height: 180px;"></div>
-                <div x-show="(predictionTimeseries || []).filter(p => p.status === 'validated').length === 0" 
-                     class="flex items-center justify-center" style="height: 180px;">
-                    <p class="text-xs text-slate-600">No validated predictions yet</p>
+                <p class="text-xs text-slate-500 mb-3">Mean predicted change% (blue) vs mean actual change% (green) across all pairs, per month</p>
+                <div id="chartChangePct" class="w-full" style="height: 300px;" x-show="timeSeriesData.length > 0"></div>
+                <div x-show="timeSeriesData.length === 0" class="flex items-center justify-center" style="height: 200px;">
+                    <p class="text-sm text-slate-600">No validated predictions yet — run backtest or wait for live predictions to mature</p>
                 </div>
             </div>
-            
-            <!-- Mini Chart 2: Change % — Predicted vs Actual -->
-            <div class="bg-slate-800 rounded-lg p-4 border border-slate-700">
-                <div class="flex items-center justify-between mb-2">
-                    <h4 class="text-sm font-medium text-slate-300">Change % — Predicted vs Actual</h4>
+
+            <!-- Chart 2: Lag — Predicted vs Actual -->
+            <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                <div class="flex items-center justify-between mb-1">
+                    <div class="flex items-center space-x-2">
+                        <i data-lucide="clock" class="w-5 h-5 text-purple-400"></i>
+                        <h3 class="text-lg font-bold">Lag — Predicted vs Actual</h3>
+                    </div>
                     <span class="text-xs px-2 py-0.5 rounded bg-slate-700 text-slate-400">validated only</span>
                 </div>
-                <div id="miniChartChange" class="w-full" style="height: 180px;"></div>
-                <div x-show="(predictionTimeseries || []).filter(p => p.status === 'validated').length === 0" 
-                     class="flex items-center justify-center" style="height: 180px;">
-                    <p class="text-xs text-slate-600">No validated predictions yet</p>
+                <p class="text-xs text-slate-500 mb-3">Mean predicted lag days (blue) vs mean actual lag to peak/trough (green) across all pairs, per month</p>
+                <div id="chartLag" class="w-full" style="height: 300px;" x-show="timeSeriesData.length > 0"></div>
+                <div x-show="timeSeriesData.length === 0" class="flex items-center justify-center" style="height: 200px;">
+                    <p class="text-sm text-slate-600">No validated predictions yet</p>
                 </div>
             </div>
 
-            <!-- Mini Chart 3: Value — Predicted vs Actual -->
-            <div class="bg-slate-800 rounded-lg p-4 border border-slate-700">
-                <div class="flex items-center justify-between mb-2">
-                    <h4 class="text-sm font-medium text-slate-300">Value — Predicted vs Actual</h4>
+            <!-- Chart 3: Direction Accuracy Over Time -->
+            <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                <div class="flex items-center justify-between mb-1">
+                    <div class="flex items-center space-x-2">
+                        <i data-lucide="compass" class="w-5 h-5 text-amber-400"></i>
+                        <h3 class="text-lg font-bold">Direction Accuracy Over Time</h3>
+                    </div>
                     <span class="text-xs px-2 py-0.5 rounded bg-slate-700 text-slate-400">validated only</span>
                 </div>
-                <div id="miniChartValue" class="w-full" style="height: 180px;"></div>
-                <div x-show="(predictionTimeseries || []).filter(p => p.status === 'validated').length === 0" 
-                     class="flex items-center justify-center" style="height: 180px;">
-                    <p class="text-xs text-slate-600">No validated predictions yet</p>
+                <p class="text-xs text-slate-500 mb-3">% of predictions with correct up/down direction per month — dashed line shows 50% random baseline</p>
+                <div id="chartDirectionAcc" class="w-full" style="height: 250px;" x-show="timeSeriesData.length > 0"></div>
+                <div x-show="timeSeriesData.length === 0" class="flex items-center justify-center" style="height: 200px;">
+                    <p class="text-sm text-slate-600">No validated predictions yet</p>
                 </div>
-            </div>
-
-            <!-- Mini Chart 4: Lag — Predicted vs Actual -->
-            <div class="bg-slate-800 rounded-lg p-4 border border-slate-700">
-                <div class="flex items-center justify-between mb-2">
-                    <h4 class="text-sm font-medium text-slate-300">Lag (days) — Predicted vs Actual</h4>
-                    <span class="text-xs px-2 py-0.5 rounded bg-slate-700 text-slate-400">validated only</span>
-                </div>
-                <div id="miniChartLag" class="w-full" style="height: 180px;"></div>
-                <div x-show="(predictionTimeseries || []).filter(p => p.status === 'validated').length === 0" 
-                     class="flex items-center justify-center" style="height: 180px;">
-                    <p class="text-xs text-slate-600">No validated predictions yet</p>
-                </div>
-            </div>
-
-            <!-- Mini Chart 5: R² Quality Over Time -->
-            <div class="bg-slate-800 rounded-lg p-4 border border-slate-700">
-                <div class="flex items-center justify-between mb-2">
-                    <h4 class="text-sm font-medium text-slate-300">R² (Model Quality)</h4>
-                    <span class="text-xs px-2 py-0.5 rounded bg-slate-700 text-slate-400">all predictions</span>
-                </div>
-                <div id="miniChartR2" class="w-full" style="height: 180px;"></div>
-                <div x-show="(predictionTimeseries || []).length === 0" 
-                     class="flex items-center justify-center" style="height: 180px;">
-                    <p class="text-xs text-slate-600">No predictions yet</p>
-                </div>
-            </div>
-
-            <!-- Mini Chart 6: p-value (Signal Strength) -->
-            <div class="bg-slate-800 rounded-lg p-4 border border-slate-700">
-                <div class="flex items-center justify-between mb-2">
-                    <h4 class="text-sm font-medium text-slate-300">p-value (Signal Strength)</h4>
-                    <span class="text-xs px-2 py-0.5 rounded bg-slate-700 text-slate-400">all predictions</span>
-                </div>
-                <div id="miniChartPValue" class="w-full" style="height: 180px;"></div>
-                <div x-show="(predictionTimeseries || []).length === 0" 
-                     class="flex items-center justify-center" style="height: 180px;">
-                    <p class="text-xs text-slate-600">No predictions yet</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Expandable Detail Chart -->
-        <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
-            <div class="flex items-center justify-between mb-4">
-                <div class="flex items-center space-x-2">
-                    <i data-lucide="line-chart" class="w-5 h-5 text-primary-400"></i>
-                    <h3 class="text-lg font-bold">Detailed Metric Overlay</h3>
-                </div>
-                <button @click="detailChartExpanded = !detailChartExpanded"
-                    class="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm transition flex items-center gap-1">
-                    <i data-lucide="maximize-2" class="w-4 h-4 inline" x-show="!detailChartExpanded"></i>
-                    <i data-lucide="minimize-2" class="w-4 h-4 inline" x-show="detailChartExpanded"></i>
-                    <span x-text="detailChartExpanded ? 'Collapse' : 'Expand'"></span>
-                </button>
-            </div>
-            <div x-show="detailChartExpanded" x-transition>
-                <!-- Metric Checkboxes -->
-                <div class="flex flex-wrap gap-3 mb-4">
-                    <label class="flex items-center gap-2 text-sm cursor-pointer">
-                        <input type="checkbox" x-model="detailChartMetrics.changePred" @change="renderDetailChart()" class="rounded bg-slate-700 border-slate-600 text-blue-500">
-                        <span class="text-blue-400">Change % Predicted</span>
-                    </label>
-                    <label class="flex items-center gap-2 text-sm cursor-pointer">
-                        <input type="checkbox" x-model="detailChartMetrics.changeActual" @change="renderDetailChart()" class="rounded bg-slate-700 border-slate-600 text-green-500">
-                        <span class="text-green-400">Change % Actual</span>
-                    </label>
-                    <label class="flex items-center gap-2 text-sm cursor-pointer">
-                        <input type="checkbox" x-model="detailChartMetrics.lagPred" @change="renderDetailChart()" class="rounded bg-slate-700 border-slate-600 text-purple-500">
-                        <span class="text-purple-400">Lag Predicted</span>
-                    </label>
-                    <label class="flex items-center gap-2 text-sm cursor-pointer">
-                        <input type="checkbox" x-model="detailChartMetrics.lagActual" @change="renderDetailChart()" class="rounded bg-slate-700 border-slate-600 text-amber-500">
-                        <span class="text-amber-400">Lag Actual</span>
-                    </label>
-                    <label class="flex items-center gap-2 text-sm cursor-pointer">
-                        <input type="checkbox" x-model="detailChartMetrics.r2" @change="renderDetailChart()" class="rounded bg-slate-700 border-slate-600 text-cyan-500">
-                        <span class="text-cyan-400">R²</span>
-                    </label>
-                    <label class="flex items-center gap-2 text-sm cursor-pointer">
-                        <input type="checkbox" x-model="detailChartMetrics.pValue" @change="renderDetailChart()" class="rounded bg-slate-700 border-slate-600 text-red-500">
-                        <span class="text-red-400">p-value</span>
-                    </label>
-                </div>
-                <div id="detailChart" class="w-full" style="height: 400px;"></div>
-            </div>
-            <div x-show="!detailChartExpanded" class="text-center py-4">
-                <p class="text-xs text-slate-500">Click Expand to overlay multiple metrics on a single chart with toggle-able series</p>
-            </div>
-        </div>
-
-        <!-- Source Comparison Table (was Model Comparison) -->
-        <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
-            <div class="flex items-center justify-between mb-4">
-                <div class="flex items-center space-x-2">
-                    <i data-lucide="git-compare" class="w-5 h-5 text-accent-400"></i>
-                    <h3 class="text-lg font-bold">Accuracy by Target Source</h3>
-                </div>
-                <button @click="loadPredictions()"
-                    class="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm transition">
-                    <i data-lucide="refresh-cw" class="w-4 h-4 inline"></i>
-                </button>
-            </div>
-            <div x-show="sourceComparison.length > 0" class="overflow-y-auto" style="max-height: 350px;">
-                <table class="w-full">
-                    <thead class="sticky top-0 bg-slate-800">
-                        <tr class="border-b border-slate-700">
-                            <th class="text-left py-2 px-3 text-sm font-medium text-slate-400">Source</th>
-                            <th class="text-right py-2 px-3 text-sm font-medium text-slate-400">Direction</th>
-                            <th class="text-right py-2 px-3 text-sm font-medium text-slate-400">Value Err</th>
-                            <th class="text-right py-2 px-3 text-sm font-medium text-slate-400">Lag Err</th>
-                            <th class="text-right py-2 px-3 text-sm font-medium text-slate-400">Count</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <template x-for="(src, idx) in sourceComparison" :key="idx">
-                            <tr class="border-b border-slate-700/50 hover:bg-slate-700/50 transition">
-                                <td class="py-3 px-3">
-                                    <div class="flex items-center space-x-2">
-                                        <div class="w-2 h-2 rounded-full" :class="{
-                                            'bg-green-400': src.source === 'stock',
-                                            'bg-blue-400': src.source === 'arxiv',
-                                            'bg-purple-400': src.source === 'fred',
-                                            'bg-amber-400': src.source === 'crypto',
-                                            'bg-slate-400': !['stock','arxiv','fred','crypto'].includes(src.source)
-                                        }"></div>
-                                        <span class="text-sm font-medium capitalize" x-text="src.source"></span>
-                                    </div>
-                                </td>
-                                <td class="py-3 px-3 text-right">
-                                    <span class="px-2 py-1 rounded text-xs font-mono"
-                                        :class="(src.direction_accuracy || 0) >= 0.7 ? 'bg-green-500/20 text-green-400' : (src.direction_accuracy || 0) >= 0.5 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'"
-                                        x-text="src.direction_accuracy !== null ? ((src.direction_accuracy || 0) * 100).toFixed(0) + '%' : '—'"></span>
-                                </td>
-                                <td class="py-3 px-3 text-right">
-                                    <span class="text-sm font-mono text-slate-300" x-text="src.avg_error_pct !== null ? src.avg_error_pct.toFixed(1) + '%' : '—'"></span>
-                                </td>
-                                <td class="py-3 px-3 text-right">
-                                    <span class="text-sm font-mono text-slate-300" x-text="src.avg_lag_error_days !== null ? src.avg_lag_error_days + 'd' : '—'"></span>
-                                </td>
-                                <td class="py-3 px-3 text-right">
-                                    <span class="text-sm text-slate-400" x-text="src.total_predictions || 0"></span>
-                                </td>
-                            </tr>
-                        </template>
-                    </tbody>
-                </table>
-            </div>
-            <div x-show="sourceComparison.length === 0" class="flex flex-col items-center justify-center py-12 text-slate-500">
-                <i data-lucide="layers" class="w-12 h-12 mb-3 opacity-30"></i>
-                <p class="text-sm">No source comparisons available</p>
-                <p class="text-xs text-slate-600 mt-1">Generate recommendations to populate predictions by source</p>
             </div>
         </div>
 

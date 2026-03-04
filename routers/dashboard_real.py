@@ -2062,11 +2062,54 @@ async def get_predictions(
                     sum(1 for p in validated if (p.target_source or 'unknown') == src and p.direction_correct) / v_count, 3
                 )
 
+        # Build time series: group validated by predicted_at month, compute mean predicted vs actual
+        from collections import defaultdict
+        monthly = defaultdict(lambda: {
+            'pred_change': [], 'act_change': [],
+            'pred_lag': [], 'act_lag': [],
+            'direction_correct': [],
+            'count': 0
+        })
+        for p in validated:
+            if p.predicted_at:
+                month_key = p.predicted_at.strftime('%Y-%m')
+                monthly[month_key]['count'] += 1
+                if p.predicted_change_pct is not None:
+                    monthly[month_key]['pred_change'].append(p.predicted_change_pct)
+                if p.actual_change_pct is not None:
+                    monthly[month_key]['act_change'].append(p.actual_change_pct)
+                if p.optimal_lag_days is not None:
+                    monthly[month_key]['pred_lag'].append(p.optimal_lag_days)
+                if p.actual_lag_days is not None:
+                    monthly[month_key]['act_lag'].append(p.actual_lag_days)
+                if p.direction_correct is not None:
+                    monthly[month_key]['direction_correct'].append(p.direction_correct)
+
+        time_series = []
+        for month_key in sorted(monthly.keys()):
+            m = monthly[month_key]
+            time_series.append({
+                'month': month_key,
+                'count': m['count'],
+                'avg_predicted_change_pct': round(sum(m['pred_change']) / len(m['pred_change']), 2) if m['pred_change'] else None,
+                'avg_actual_change_pct': round(sum(m['act_change']) / len(m['act_change']), 2) if m['act_change'] else None,
+                'avg_predicted_lag': round(sum(m['pred_lag']) / len(m['pred_lag']), 1) if m['pred_lag'] else None,
+                'avg_actual_lag': round(sum(m['act_lag']) / len(m['act_lag']), 1) if m['act_lag'] else None,
+                'direction_accuracy': round(sum(m['direction_correct']) / len(m['direction_correct']) * 100, 1) if m['direction_correct'] else None,
+            })
+
+        # Count unique pairs
+        pair_set = set()
+        for p in predictions:
+            pair_set.add((p.signal_name, p.target_name))
+        pair_count = len(pair_set)
+
         return {
             "predictions": [p.to_dict() for p in predictions],
             "total": total,
             "pending": len(pending_list),
             "validated": len(validated),
+            "pair_count": pair_count,
             "accuracy": {
                 "direction_accuracy": (
                     round(len(correct) / len(validated) * 100, 1)
@@ -2083,6 +2126,7 @@ async def get_predictions(
                 "avg_lag_error_days": avg_lag_error,
                 "avg_change_error_pct": avg_change_error,
             },
+            "time_series": time_series,
             "source_comparison": source_comparison,
         }
 
