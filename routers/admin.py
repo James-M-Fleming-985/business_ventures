@@ -352,14 +352,21 @@ async def get_job_status(job_id: str):
     return JSONResponse(_active_jobs[job_id])
 
 
-def _run_backtest_background(job_id: str, months_back: int = 24, max_pairs: int = 0):
-    """Walk-forward backtest: recompute correlations at each historical point and validate."""
+def _run_backtest_background(job_id: str, months_back: int = 24, max_pairs: int = 0, use_regression: bool = False):
+    """Walk-forward backtest: recompute correlations at each historical point and validate.
+    
+    Args:
+        use_regression: If True, use OLS regression slope for predictions (model_version='backtest_regression').
+                       If False, use |correlation| * |momentum| formula (model_version='backtest_walkforward').
+    """
     import uuid
     import warnings
     import numpy as np
     import pandas as pd
     from scipy.stats import pearsonr
     from datetime import timedelta
+
+    mv_label = 'backtest_regression' if use_regression else 'backtest_walkforward'
 
     try:
         _active_jobs[job_id]['status'] = 'running'
@@ -499,20 +506,50 @@ def _run_backtest_background(job_id: str, months_back: int = 24, max_pairs: int 
                             continue
                         momentum = ((sig_at_pred - sig_prev) / abs(sig_prev)) * 100
 
-                        # Predicted direction
-                        if momentum > 0:
-                            predicted_direction = 'up' if corr > 0 else 'down'
-                        else:
-                            predicted_direction = 'down' if corr > 0 else 'up'
-
-                        # Predicted change %
-                        predicted_change_pct = round(abs(corr) * abs(momentum), 2)
-
                         # Baseline target value at prediction_date
                         baseline = tgt_slice.iloc[-1] if len(tgt_slice) > 0 else None
                         if baseline is None or baseline == 0:
                             continue
-                        predicted_value = baseline * (1 + predicted_change_pct / 100)
+
+                        if use_regression:
+                            # OLS regression: shift x/y by lag, compute slope
+                            lag_shift = max(1, lag_months)
+                            if len(x) <= lag_shift + 10:
+                                continue
+                            x_reg = x[:-lag_shift]
+                            y_reg = y[lag_shift:]
+                            x_mean = float(np.mean(x_reg))
+                            x_var = float(np.sum((x_reg - x_mean) ** 2))
+                            if x_var == 0:
+                                continue
+                            slope = float(np.sum((x_reg - x_mean) * (y_reg - np.mean(y_reg))) / x_var)
+                            y_pred_reg = slope * x_reg + (np.mean(y_reg) - slope * x_mean)
+                            ss_res = float(np.sum((y_reg - y_pred_reg) ** 2))
+                            ss_tot = float(np.sum((y_reg - np.mean(y_reg)) ** 2))
+                            r_sq = 1 - ss_res / ss_tot if ss_tot > 0 else 0
+
+                            # Prediction: slope * actual signal change
+                            signal_change = (momentum / 100.0) * abs(float(sig_at_pred))
+                            predicted_change = slope * signal_change
+                            predicted_change_pct = round(abs(predicted_change / baseline) * 100, 2)
+                            predicted_value = baseline + predicted_change
+
+                            # Direction from sign of predicted change
+                            if predicted_change > 0:
+                                predicted_direction = 'up'
+                            elif predicted_change < 0:
+                                predicted_direction = 'down'
+                            else:
+                                predicted_direction = 'up' if corr > 0 else 'down'
+                        else:
+                            # Original formula: |correlation| * |momentum|
+                            r_sq = corr ** 2
+                            if momentum > 0:
+                                predicted_direction = 'up' if corr > 0 else 'down'
+                            else:
+                                predicted_direction = 'down' if corr > 0 else 'up'
+                            predicted_change_pct = round(abs(corr) * abs(momentum), 2)
+                            predicted_value = baseline * (1 + predicted_change_pct / 100)
 
                         # Get actual value near target_date (±15 day window for monthly data)
                         tgt_near_target = tgt_series[
@@ -556,7 +593,7 @@ def _run_backtest_background(job_id: str, months_back: int = 24, max_pairs: int 
                         existing = db.query(PredictionTracking).filter(
                             PredictionTracking.signal_name == rec.signal_display_name,
                             PredictionTracking.target_name == rec.target_display_name,
-                            PredictionTracking.model_version == 'backtest_walkforward',
+                            PredictionTracking.model_version == mv_label,
                             PredictionTracking.predicted_at >= prediction_date - timedelta(days=2),
                             PredictionTracking.predicted_at <= prediction_date + timedelta(days=2),
                         ).first()
@@ -578,9 +615,9 @@ def _run_backtest_background(job_id: str, months_back: int = 24, max_pairs: int 
                             current_target_value=round(float(baseline), 4),
                             current_signal_value=round(float(sig_at_pred), 4),
                             signal_momentum=round(momentum, 2),
-                            r_squared=round(corr ** 2, 6),
-                            confidence='high' if abs(corr) > 0.5 else 'medium' if abs(corr) > 0.3 else 'low',
-                            model_version='backtest_walkforward',
+                            r_squared=round(r_sq, 6),
+                            confidence='high' if r_sq > 0.25 else 'medium' if r_sq > 0.09 else 'low',
+                            model_version=mv_label,
                             actual_value=round(actual_value, 4),
                             actual_direction=actual_direction,
                             direction_correct=direction_correct,
@@ -648,6 +685,7 @@ async def run_backtest(
     background_tasks: BackgroundTasks,
     months_back: int = 24,
     max_pairs: int = 0,
+    use_regression: bool = False,
 ):
     """Run walk-forward historical backtest in background.
     
@@ -659,6 +697,7 @@ async def run_backtest(
     Args:
         months_back: How many months to backtest (default 24)
         max_pairs: Max signal-target pairs to process (0 = all)
+        use_regression: If True, use OLS regression slope instead of |corr|*|momentum|
     """
     job_id = f"backtest_{int(datetime.utcnow().timestamp())}"
 
@@ -674,13 +713,14 @@ async def run_backtest(
         'updated_at': datetime.utcnow().isoformat(),
     }
 
-    background_tasks.add_task(_run_backtest_background, job_id, months_back, max_pairs)
+    background_tasks.add_task(_run_backtest_background, job_id, months_back, max_pairs, use_regression)
 
-    logger.info(f"Job {job_id}: Queued walk-forward backtest ({months_back} months, max_pairs={max_pairs})")
+    formula = 'OLS regression slope' if use_regression else '|corr|*|momentum|'
+    logger.info(f"Job {job_id}: Queued walk-forward backtest ({months_back} months, max_pairs={max_pairs}, formula={formula})")
 
     return JSONResponse({
         "status": "queued",
-        "message": f"Walk-forward backtest started ({months_back} months, {max_pairs or 'all'} pairs)",
+        "message": f"Walk-forward backtest started ({months_back} months, {max_pairs or 'all'} pairs, formula: {formula})",
         "job_id": job_id,
         "poll_url": f"/api/admin/job-status/{job_id}",
     })

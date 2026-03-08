@@ -473,9 +473,15 @@
                     :class="predictionFilter === 'granger_v1' ? 'bg-primary-600 text-white' : 'bg-slate-700 text-slate-400 hover:bg-slate-600'">
                     Live
                 </button>
+                <button @click="predictionFilter = 'backtest_regression'; loadPredictions()"
+                    class="px-3 py-1 rounded text-xs font-medium transition"
+                    :class="predictionFilter === 'backtest_regression' ? 'bg-primary-600 text-white' : 'bg-slate-700 text-slate-400 hover:bg-slate-600'">
+                    Regression
+                </button>
             </div>
             <span class="text-xs text-slate-600" x-show="predictionFilter === 'backtest_walkforward'">Walk-forward historical accuracy — correlations recomputed at each point</span>
             <span class="text-xs text-slate-600" x-show="predictionFilter === 'granger_v1'">Forward-looking predictions from exploitation recommendations</span>
+            <span class="text-xs text-slate-600" x-show="predictionFilter === 'backtest_regression'">Walk-forward with OLS regression slope — calibrated magnitude predictions</span>
         </div>
 
         <!-- Service Status Banner -->
