@@ -2326,8 +2326,8 @@ def classify_action_type(target_source: str, target_name: str, correlation: floa
         else:
             return 'SELL'
     
-    # Research, clinical trials, app/traffic metrics → BUILD opportunity
-    if target_source in ('arxiv', 'clinicaltrials', 'openalex'):
+    # Research, clinical trials → BUILD opportunity
+    if target_source in ('arxiv', 'clinicaltrials'):
         return 'BUILD'
     
     # Economic indicators (FRED) → MONITOR
@@ -2385,7 +2385,7 @@ def generate_reasoning(signal_display: str, target_display: str, target_source: 
     elif action_type == 'SELL':
         action_phrase = f"Consider SELLING/SHORTING {target_display}."
     elif action_type == 'BUILD':
-        action_phrase = f"Opportunity to build a product/service related to {target_display}."
+        action_phrase = f"BUILD opportunity: create a product/tool in the {target_display} space."
     else:
         action_phrase = f"Monitor {target_display} for strategic positioning."
     
@@ -2398,6 +2398,195 @@ def generate_reasoning(signal_display: str, target_display: str, target_source: 
         f"{signal_display} pageviews {signal_dir} ({mom_str}) → "
         f"Granger-causes {target_display} {stats}.{change_str} "
         f"{action_phrase}"
+    )
+
+
+# Market category mapping for BUILD targets
+_MARKET_CATEGORIES = {
+    'artificial_intelligence': 'ai_tools', 'machine_learning': 'ai_tools',
+    'robotics': 'ai_tools', 'chatgpt': 'ai_tools',
+    'quantum': 'deep_tech', 'cryptography': 'deep_tech',
+    'nanotechnology': 'deep_tech', 'astrophysics': 'deep_tech',
+    'biotechnology': 'health_tech', 'neuroscience': 'health_tech',
+    'cancer': 'health_tech', 'diabetes': 'health_tech',
+    'alzheimer': 'health_tech', 'heart_disease': 'health_tech',
+    'obesity': 'health_tech', 'depression': 'mental_health',
+    'asthma': 'health_tech', 'hiv_aids': 'health_tech',
+    'parkinson': 'health_tech', 'covid': 'health_tech',
+    'climate': 'climate_tech', 'climate_science': 'climate_tech',
+}
+
+
+def _categorize_market(target_name: str) -> str:
+    """Derive market category from target variable name."""
+    name_lower = target_name.lower()
+    for keyword, category in _MARKET_CATEGORIES.items():
+        if keyword in name_lower:
+            return category
+    if 'trials_' in name_lower or 'clinical' in name_lower:
+        return 'health_tech'
+    if 'arxiv_' in name_lower:
+        return 'research_tools'
+    return 'general'
+
+
+def compute_build_viability(signal_var, target_var, p_value, correlation,
+                            lag, momentum, db) -> dict:
+    """Compute BUILD-specific viability score from existing data.
+
+    Uses Wikipedia pageviews as a demand proxy, time-series growth trends,
+    Granger lag for opportunity window, and target paper/trial density
+    for competition assessment.
+
+    Returns dict with all viability fields ready for model assignment.
+    """
+    from sqlalchemy import desc
+    import numpy as np
+
+    now = datetime.utcnow()
+    three_months_ago = now - timedelta(days=90)
+    six_months_ago = now - timedelta(days=180)
+
+    # ---- 1. Demand score (0-30): Wikipedia pageviews for signal topic ----
+    recent_views = db.query(TimeSeriesData).filter(
+        TimeSeriesData.variable_id == signal_var.id,
+        TimeSeriesData.timestamp >= three_months_ago
+    ).order_by(TimeSeriesData.timestamp).all()
+
+    if recent_views:
+        avg_daily = sum(float(d.value) for d in recent_views) / max(len(recent_views), 1)
+        estimated_monthly = int(avg_daily * 30)
+    else:
+        avg_daily = 0
+        estimated_monthly = 0
+
+    if estimated_monthly >= 50_000:
+        demand_score = 30
+    elif estimated_monthly >= 10_000:
+        demand_score = 20
+    elif estimated_monthly >= 1_000:
+        demand_score = 10
+    else:
+        demand_score = 5
+
+    # ---- 2. Growth score (0-25): 3-month trend ----
+    older_views = db.query(TimeSeriesData).filter(
+        TimeSeriesData.variable_id == signal_var.id,
+        TimeSeriesData.timestamp >= six_months_ago,
+        TimeSeriesData.timestamp < three_months_ago
+    ).all()
+
+    if recent_views and older_views:
+        recent_avg = sum(float(d.value) for d in recent_views) / len(recent_views)
+        older_avg = sum(float(d.value) for d in older_views) / len(older_views)
+        if older_avg > 0:
+            growth_pct = ((recent_avg - older_avg) / older_avg) * 100
+        else:
+            growth_pct = 0.0
+    else:
+        growth_pct = 0.0
+
+    if growth_pct > 10:
+        growth_score = 25
+        trend_dir = 'growing'
+    elif growth_pct > 0:
+        growth_score = 15
+        trend_dir = 'growing'
+    elif growth_pct > -5:
+        growth_score = 10
+        trend_dir = 'stable'
+    else:
+        growth_score = 5
+        trend_dir = 'declining'
+
+    # ---- 3. Timing score (0-20): longer lag = wider window ----
+    lag_months = lag or 1
+    if lag_months >= 3:
+        timing_score = 20
+        duration = lag_months * 2  # opportunity window ~2× the lag
+    elif lag_months >= 1:
+        timing_score = 15
+        duration = max(lag_months * 2, 3)
+    else:
+        timing_score = 10
+        duration = 2
+
+    # ---- 4. Evidence score (0-15): statistical strength ----
+    p_score = max(0, (1 - (p_value or 1.0) / 0.05)) * 10
+    sample_score = min((correlation or 0) ** 2 * 5, 5)  # r² contribution
+    evidence_score = round(p_score + sample_score, 1)
+
+    # ---- 5. Competition proxy (0-10): target density ----
+    target_data = db.query(TimeSeriesData).filter(
+        TimeSeriesData.variable_id == target_var.id,
+        TimeSeriesData.timestamp >= three_months_ago
+    ).all()
+
+    if target_data:
+        avg_target = sum(float(d.value) for d in target_data) / len(target_data)
+        # More papers/trials = more competition
+        if avg_target > 100:
+            competition = 'HIGH'
+            comp_score = 3
+        elif avg_target > 30:
+            competition = 'MEDIUM'
+            comp_score = 7
+        else:
+            competition = 'LOW'
+            comp_score = 10
+    else:
+        competition = 'LOW'
+        comp_score = 10
+
+    # ---- Composite viability ----
+    viability = round(demand_score + growth_score + timing_score + evidence_score + comp_score, 1)
+    viability = min(viability, 100.0)
+
+    # ---- Revenue potential T-shirt sizing ----
+    if estimated_monthly >= 50_000 and trend_dir == 'growing' and competition != 'HIGH':
+        revenue = 'HIGH'
+    elif estimated_monthly >= 10_000 or (trend_dir == 'growing' and competition != 'HIGH'):
+        revenue = 'MEDIUM'
+    else:
+        revenue = 'LOW'
+
+    return {
+        'build_viability_score': viability,
+        'estimated_monthly_searches': estimated_monthly,
+        'search_trend_direction': trend_dir,
+        'search_growth_pct': round(growth_pct, 1),
+        'opportunity_duration_months': duration,
+        'revenue_potential': revenue,
+        'competition_level': competition,
+        'market_category': _categorize_market(target_var.name),
+    }
+
+
+def generate_build_reasoning(signal_display: str, target_display: str,
+                             viability: dict, p_value, correlation,
+                             lag, momentum, predicted_direction,
+                             predicted_change_pct) -> str:
+    """Generate enriched reasoning text for BUILD recommendations."""
+    signal_dir = 'rising' if momentum and momentum > 0 else 'falling'
+    mom_str = f"{abs(momentum or 0):.1f}%"
+    stats = f"(p={p_value:.4f}, r={correlation:.3f}" + (f", lag={lag}mo" if lag else "") + ")"
+
+    searches = viability.get('estimated_monthly_searches', 0)
+    trend = viability.get('search_trend_direction', 'stable')
+    revenue = viability.get('revenue_potential', 'LOW')
+    duration = viability.get('opportunity_duration_months', 0)
+    category = viability.get('market_category', 'general')
+
+    demand_str = f"~{searches:,}/mo searches" if searches else "limited search volume"
+    trend_str = f"{trend} demand"
+    window_str = f"~{duration}mo opportunity window" if duration else ""
+
+    return (
+        f"{signal_display} {signal_dir} ({mom_str}) → "
+        f"Granger-causes {target_display} {stats}. "
+        f"BUILD opportunity in {category.replace('_', ' ')}: "
+        f"{demand_str}, {trend_str}, {revenue} revenue potential"
+        + (f", {window_str}" if window_str else "") + "."
     )
 
 
@@ -2522,12 +2711,24 @@ async def generate_exploitation_recommendations(db: Session = Depends(get_db)):
                 # Score
                 score = compute_opportunity_score(p_value, corr, sample, momentum)
                 
-                # Generate reasoning
-                reasoning = generate_reasoning(
-                    var.display_name, target_var.display_name, target_var.source,
-                    action_type, p_value, corr, lag, momentum,
-                    predicted_direction, predicted_change_pct
-                )
+                # BUILD-specific viability scoring
+                viability = None
+                if action_type == 'BUILD':
+                    viability = compute_build_viability(
+                        var, target_var, p_value, corr, lag, momentum, db
+                    )
+                    reasoning = generate_build_reasoning(
+                        var.display_name, target_var.display_name,
+                        viability, p_value, corr, lag, momentum,
+                        predicted_direction, predicted_change_pct
+                    )
+                else:
+                    # Generate standard reasoning for BUY/SELL/MONITOR
+                    reasoning = generate_reasoning(
+                        var.display_name, target_var.display_name, target_var.source,
+                        action_type, p_value, corr, lag, momentum,
+                        predicted_direction, predicted_change_pct
+                    )
                 
                 # Upsert: update existing or create new
                 existing = db.query(ExploitationRecommendation).filter(
@@ -2547,6 +2748,15 @@ async def generate_exploitation_recommendations(db: Session = Depends(get_db)):
                     existing.opportunity_score = score
                     existing.action_type = action_type
                     existing.reasoning = reasoning
+                    if viability:
+                        existing.build_viability_score = viability['build_viability_score']
+                        existing.estimated_monthly_searches = viability['estimated_monthly_searches']
+                        existing.search_trend_direction = viability['search_trend_direction']
+                        existing.search_growth_pct = viability['search_growth_pct']
+                        existing.opportunity_duration_months = viability['opportunity_duration_months']
+                        existing.revenue_potential = viability['revenue_potential']
+                        existing.competition_level = viability['competition_level']
+                        existing.market_category = viability['market_category']
                     existing.updated_at = datetime.utcnow()
                     updated += 1
                 else:
@@ -2566,6 +2776,14 @@ async def generate_exploitation_recommendations(db: Session = Depends(get_db)):
                         predicted_change_pct=predicted_change_pct,
                         signal_momentum=momentum,
                         opportunity_score=score,
+                        build_viability_score=viability['build_viability_score'] if viability else None,
+                        estimated_monthly_searches=viability['estimated_monthly_searches'] if viability else None,
+                        search_trend_direction=viability['search_trend_direction'] if viability else None,
+                        search_growth_pct=viability['search_growth_pct'] if viability else None,
+                        opportunity_duration_months=viability['opportunity_duration_months'] if viability else None,
+                        revenue_potential=viability['revenue_potential'] if viability else None,
+                        competition_level=viability['competition_level'] if viability else None,
+                        market_category=viability['market_category'] if viability else None,
                         status='NEW',
                     )
                     db.add(rec)

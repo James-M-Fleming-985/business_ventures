@@ -358,6 +358,16 @@ class ExploitationRecommendation(Base):
     # Scoring
     opportunity_score = Column(Float)                          # 0-100 composite score
 
+    # BUILD-specific viability (NULL for BUY/SELL/MONITOR)
+    build_viability_score = Column(Float)                      # 0-100 BUILD viability composite
+    estimated_monthly_searches = Column(Integer)               # Wikipedia pageview demand proxy
+    search_trend_direction = Column(String(10))                # 'growing', 'stable', 'declining'
+    search_growth_pct = Column(Float)                          # Monthly growth rate %
+    opportunity_duration_months = Column(Integer)              # Window duration from lag stability
+    revenue_potential = Column(String(10))                     # 'LOW', 'MEDIUM', 'HIGH'
+    competition_level = Column(String(10))                     # 'LOW', 'MEDIUM', 'HIGH'
+    market_category = Column(String(100))                      # e.g. 'health_tech', 'ai_tools'
+
     # Lifecycle
     status = Column(String(20), nullable=False, default='NEW') # NEW, REVIEWING, PURSUING, COMPLETED, DISMISSED
     notes = Column(Text)                                       # User free-text notes
@@ -393,6 +403,14 @@ class ExploitationRecommendation(Base):
             "predicted_change_pct": self.predicted_change_pct,
             "signal_momentum": self.signal_momentum,
             "opportunity_score": self.opportunity_score,
+            "build_viability_score": self.build_viability_score,
+            "estimated_monthly_searches": self.estimated_monthly_searches,
+            "search_trend_direction": self.search_trend_direction,
+            "search_growth_pct": self.search_growth_pct,
+            "opportunity_duration_months": self.opportunity_duration_months,
+            "revenue_potential": self.revenue_potential,
+            "competition_level": self.competition_level,
+            "market_category": self.market_category,
             "status": self.status,
             "notes": self.notes,
             "created_at": self.created_at.isoformat() if self.created_at else None,
