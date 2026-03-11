@@ -167,14 +167,21 @@ async def fetch_fresh_data_background():
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize database tables and fetch fresh data on startup."""
+    """Initialize database tables, start scheduler, and fetch fresh data on startup."""
     import asyncio
     
     try:
-        from database import engine
+        from database import engine, SessionLocal
         from models import Base
         Base.metadata.create_all(bind=engine)
         logger.info("✅ Database tables initialized")
+        
+        # Start APScheduler for M0 automated validation
+        try:
+            from scheduled_tasks import init_scheduler
+            app.state.scheduler = init_scheduler(SessionLocal)
+        except Exception as sched_err:
+            logger.warning(f"Scheduler init skipped: {sched_err}")
         
         # Start background data fetch (non-blocking)
         asyncio.create_task(fetch_fresh_data_background())
@@ -182,6 +189,15 @@ async def startup_event():
         
     except Exception as e:
         logger.error(f"Failed to initialize database: {e}")
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Shut down scheduler gracefully."""
+    scheduler = getattr(app.state, 'scheduler', None)
+    if scheduler:
+        scheduler.shutdown(wait=False)
+        logger.info("APScheduler shut down")
 
 
 # ============================================================================

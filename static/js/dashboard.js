@@ -101,6 +101,25 @@ function dashboardData() {
         recentPredictions: [],
         predictionFilter: '',
         
+        // ============================================================
+        // PROGRAMME BASELINES (M0)
+        // ============================================================
+        baselines: null,
+        baselinesLoading: false,
+        
+        // Exploitation Validation Modal
+        validationModalOpen: false,
+        validationRecId: null,
+        validationRecName: '',
+        validationForm: {
+            actual_outcome: 'UNKNOWN',
+            outcome_notes: '',
+            demand_accurate: null,
+            competition_accurate: null,
+            revenue_potential_accurate: null,
+            actual_revenue: null,
+        },
+        
         async init() {
             console.log('Initializing dashboard...');
             await this.loadStats();
@@ -767,6 +786,13 @@ function dashboardData() {
                         name: 'Random Baseline (50%)',
                         type: 'scatter', mode: 'lines',
                         line: { color: '#475569', width: 1.5, dash: 'dash' }
+                    },
+                    {
+                        x: [months[0], months[months.length - 1]],
+                        y: [90, 90],
+                        name: 'M0 Target (90%)',
+                        type: 'scatter', mode: 'lines',
+                        line: { color: '#ef4444', width: 1.5, dash: 'dot' }
                     }
                 ], {
                     ...chartLayout('Accuracy %'),
@@ -1985,6 +2011,104 @@ function dashboardData() {
                 { var1: 'Temperature', var2: 'Research Papers', r: 0.15, p: 0.154 },
                 { var1: 'GDP', var2: 'Earthquakes', r: -0.12, p: 0.245 }
             ];
+        },
+
+        // ============================================================
+        // PROGRAMME BASELINES (M0)
+        // ============================================================
+
+        async loadBaselines() {
+            this.baselinesLoading = true;
+            try {
+                const response = await fetch('/api/dashboard/baselines');
+                if (response.ok) {
+                    this.baselines = await response.json();
+                    console.log('📊 Baselines loaded:', this.baselines);
+                    this.$nextTick(() => this.renderBaselineSparklines());
+                } else {
+                    console.error('Failed to load baselines:', response.status);
+                    this.baselines = null;
+                }
+            } catch (e) {
+                console.error('Baselines fetch error:', e);
+                this.baselines = null;
+            }
+            this.baselinesLoading = false;
+        },
+
+        renderBaselineSparklines() {
+            const darkLayout = {
+                margin: { t: 2, r: 4, b: 2, l: 4 },
+                paper_bgcolor: 'transparent',
+                plot_bgcolor: 'transparent',
+                xaxis: { visible: false },
+                yaxis: { visible: false },
+                showlegend: false,
+            };
+            const config = { responsive: true, displayModeBar: false };
+
+            // Model accuracy sparkline
+            const modelTrend = this.baselines?.model_accuracy?.trend || [];
+            if (modelTrend.length > 0) {
+                Plotly.newPlot('baseline-model-sparkline', [{
+                    x: modelTrend.map(t => t.month),
+                    y: modelTrend.map(t => t.accuracy),
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    line: { color: '#3b82f6', width: 2 },
+                    marker: { size: 4 },
+                }], { ...darkLayout, yaxis: { visible: false, range: [0, 100] } }, config);
+            }
+
+            // Build quality sparkline
+            const buildTrend = this.baselines?.build_errors?.trend || [];
+            if (buildTrend.length > 0) {
+                Plotly.newPlot('baseline-build-sparkline', [{
+                    x: buildTrend.map((t, i) => i),
+                    y: buildTrend.map(t => t.success ? 1 : 0),
+                    type: 'bar',
+                    marker: { color: buildTrend.map(t => t.success ? '#22c55e' : '#ef4444') },
+                }], darkLayout, config);
+            }
+        },
+
+        // Exploitation Validation Modal
+        openValidationModal(recId, recName) {
+            this.validationRecId = recId;
+            this.validationRecName = recName;
+            this.validationForm = {
+                actual_outcome: 'UNKNOWN',
+                outcome_notes: '',
+                demand_accurate: null,
+                competition_accurate: null,
+                revenue_potential_accurate: null,
+                actual_revenue: null,
+            };
+            this.validationModalOpen = true;
+        },
+
+        async submitValidation() {
+            try {
+                const payload = {
+                    recommendation_id: this.validationRecId,
+                    ...this.validationForm,
+                };
+                const response = await fetch('/api/dashboard/exploitation/validate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+                if (response.ok) {
+                    console.log('✅ Validation saved');
+                    this.validationModalOpen = false;
+                    // Refresh exploitation list
+                    await this.loadExploitationRecommendations();
+                } else {
+                    console.error('Validation save failed:', response.status);
+                }
+            } catch (e) {
+                console.error('Validation error:', e);
+            }
         }
     };
 }

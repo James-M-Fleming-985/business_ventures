@@ -416,3 +416,53 @@ class ExploitationRecommendation(Base):
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
+
+
+class ExploitationValidation(Base):
+    """Manual validation records for exploitation recommendations.
+    
+    Tracks whether BUILD viability assessments were accurate by recording
+    real-world outcomes. Used to compute exploitation accuracy baseline (M0).
+    """
+    __tablename__ = 'exploitation_validations'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    recommendation_id = Column(Integer, ForeignKey('exploitation_recommendations.id'), nullable=False)
+    validated_at = Column(DateTime, default=datetime.utcnow)
+    validator = Column(String(100), default='manual')
+
+    # Outcome assessment
+    actual_outcome = Column(String(20), nullable=False)  # SUCCESS, PARTIAL, FAILED, UNKNOWN
+    outcome_notes = Column(Text)
+
+    # Market reality checks
+    demand_accurate = Column(Boolean)         # Was estimated search volume roughly right?
+    competition_accurate = Column(Boolean)     # Was competition level assessment correct?
+    revenue_potential_accurate = Column(Boolean)  # Was revenue potential assessment correct?
+    actual_revenue = Column(Float, nullable=True)
+
+    # Score snapshot at validation time
+    viability_score_at_validation = Column(Float)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        Index('ix_validation_rec_id', 'recommendation_id'),
+        Index('ix_validation_outcome', 'actual_outcome'),
+    )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "recommendation_id": self.recommendation_id,
+            "validated_at": self.validated_at.isoformat() if self.validated_at else None,
+            "validator": self.validator,
+            "actual_outcome": self.actual_outcome,
+            "outcome_notes": self.outcome_notes,
+            "demand_accurate": self.demand_accurate,
+            "competition_accurate": self.competition_accurate,
+            "revenue_potential_accurate": self.revenue_potential_accurate,
+            "actual_revenue": self.actual_revenue,
+            "viability_score_at_validation": self.viability_score_at_validation,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }

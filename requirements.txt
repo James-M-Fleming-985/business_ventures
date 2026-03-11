@@ -44,3 +44,6 @@ psycopg2-binary==2.9.9
 asyncpg==0.29.0
 alembic==1.12.1
 fredapi
+
+# Scheduled Tasks
+apscheduler==3.10.4

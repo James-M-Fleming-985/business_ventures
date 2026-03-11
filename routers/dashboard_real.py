@@ -11,7 +11,7 @@ from database import get_db
 from models import (
     VariableMetadata, TimeSeriesData, CorrelationResult,
     RollingCorrelation, APIStatus, AnalysisJob, PredictionTracking,
-    ExploitationRecommendation
+    ExploitationRecommendation, ExploitationValidation
 )
 from correlation_analysis_service import CorrelationAnalysisService
 from services.granger_causality_service import GrangerCausalityService
@@ -3138,3 +3138,161 @@ async def validate_predictions(db: Session = Depends(get_db)):
         logger.error(f"Prediction validation failed: {e}", exc_info=True)
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==============================================================================
+# M0 Programme Baselines Endpoints
+# ==============================================================================
+
+@router.get("/revenue-baseline")
+async def get_revenue_baseline():
+    """Return manually-configured revenue baseline from JSON config."""
+    import json
+    from pathlib import Path
+    
+    config_path = Path(__file__).parent.parent / "revenue_baseline.json"
+    if not config_path.exists():
+        return {"total_mrr": 0, "total_subscribers": 0, "apps": [], "snapshot_date": None}
+    
+    with open(config_path) as f:
+        return json.load(f)
+
+
+@router.post("/exploitation/validate")
+async def validate_exploitation_recommendation(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """Record a manual validation result for a BUILD recommendation."""
+    body = await request.json()
+    
+    recommendation_id = body.get("recommendation_id")
+    if not recommendation_id:
+        raise HTTPException(status_code=400, detail="recommendation_id is required")
+    
+    rec = db.query(ExploitationRecommendation).filter(
+        ExploitationRecommendation.id == recommendation_id
+    ).first()
+    if not rec:
+        raise HTTPException(status_code=404, detail="Recommendation not found")
+    
+    validation = ExploitationValidation(
+        recommendation_id=recommendation_id,
+        actual_outcome=body.get("actual_outcome", "UNKNOWN"),
+        outcome_notes=body.get("outcome_notes", ""),
+        demand_accurate=body.get("demand_accurate"),
+        competition_accurate=body.get("competition_accurate"),
+        revenue_potential_accurate=body.get("revenue_potential_accurate"),
+        actual_revenue=body.get("actual_revenue"),
+        viability_score_at_validation=rec.build_viability_score,
+    )
+    db.add(validation)
+    db.commit()
+    db.refresh(validation)
+    
+    return {"status": "success", "validation": validation.to_dict()}
+
+
+@router.get("/exploitation/validations")
+async def get_exploitation_validations(db: Session = Depends(get_db)):
+    """Return all exploitation validation records."""
+    validations = db.query(ExploitationValidation).order_by(
+        ExploitationValidation.validated_at.desc()
+    ).all()
+    return {"validations": [v.to_dict() for v in validations]}
+
+
+@router.get("/baselines")
+async def get_programme_baselines(db: Session = Depends(get_db)):
+    """Consolidated M0 Programme Baselines — all 4 metrics in one response."""
+    import json
+    from pathlib import Path
+    
+    # 1. Model Accuracy
+    validated_predictions = db.query(PredictionTracking).filter(
+        PredictionTracking.status == 'validated'
+    ).all()
+    
+    direction_correct = sum(1 for p in validated_predictions if p.direction_correct)
+    model_accuracy = (direction_correct / len(validated_predictions) * 100) if validated_predictions else 0.0
+    
+    avg_error = 0.0
+    if validated_predictions:
+        errors = [abs(p.value_error_pct or 0) for p in validated_predictions]
+        avg_error = sum(errors) / len(errors) if errors else 0.0
+    
+    # Model accuracy trend — group validated predictions by month
+    model_trend = []
+    monthly_groups = {}
+    for p in validated_predictions:
+        if p.actual_recorded_at:
+            key = p.actual_recorded_at.strftime("%Y-%m")
+            monthly_groups.setdefault(key, []).append(p)
+    for month in sorted(monthly_groups.keys()):
+        preds = monthly_groups[month]
+        correct = sum(1 for p in preds if p.direction_correct)
+        model_trend.append({
+            "month": month,
+            "accuracy": round(correct / len(preds) * 100, 1) if preds else 0,
+            "count": len(preds),
+        })
+    
+    # 2. Build Errors — fetch from control_tower build_error_tracker
+    build_metrics = {"total_builds": 0, "error_rate_pct": 0.0, "trend": []}
+    try:
+        import sys
+        control_tower_path = Path(__file__).parent.parent.parent.parent
+        if str(control_tower_path) not in sys.path:
+            sys.path.insert(0, str(control_tower_path))
+        from build_error_tracker import get_metrics_summary
+        build_metrics = get_metrics_summary()
+    except Exception as e:
+        logger.warning(f"Build metrics unavailable: {e}")
+    
+    # 3. Exploitation Accuracy
+    validations = db.query(ExploitationValidation).all()
+    exploit_correct = sum(1 for v in validations if v.actual_outcome in ('SUCCESS', 'PARTIAL'))
+    exploit_accuracy = (exploit_correct / len(validations) * 100) if validations else 0.0
+    
+    total_build_recs = db.query(ExploitationRecommendation).filter(
+        ExploitationRecommendation.action_type == 'BUILD'
+    ).count()
+    
+    # 4. Revenue
+    revenue_data = {"total_mrr": 0, "total_subscribers": 0, "apps": [], "snapshot_date": None}
+    config_path = Path(__file__).parent.parent / "revenue_baseline.json"
+    if config_path.exists():
+        with open(config_path) as f:
+            revenue_data = json.load(f)
+    
+    return {
+        "model_accuracy": {
+            "direction_accuracy_pct": round(model_accuracy, 1),
+            "total_predictions": len(validated_predictions),
+            "avg_error_pct": round(avg_error, 2),
+            "target": 90,
+            "trend": model_trend,
+        },
+        "build_errors": {
+            "error_rate_pct": build_metrics.get("error_rate_pct", 0),
+            "total_builds": build_metrics.get("total_builds", 0),
+            "successful_builds": build_metrics.get("successful_builds", 0),
+            "failed_builds": build_metrics.get("failed_builds", 0),
+            "target": 5,
+            "trend": build_metrics.get("trend", []),
+        },
+        "exploitation": {
+            "viability_accuracy_pct": round(exploit_accuracy, 1),
+            "validated_count": len(validations),
+            "total_build_recommendations": total_build_recs,
+            "target": 90,
+        },
+        "revenue": {
+            "total_mrr": revenue_data.get("total_mrr", 0),
+            "total_subscribers": revenue_data.get("total_subscribers", 0),
+            "app_count": len(revenue_data.get("apps", [])),
+            "apps": revenue_data.get("apps", []),
+            "target_mrr": 20000,
+            "snapshot_date": revenue_data.get("snapshot_date"),
+        },
+    }

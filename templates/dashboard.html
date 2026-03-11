@@ -317,6 +317,12 @@
             <i data-lucide="rocket" class="w-4 h-4 inline mr-1"></i>
             Exploitation Board
         </button>
+        <button @click="activeView = 'baselines'; loadBaselines()" 
+                :class="activeView === 'baselines' ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'"
+                class="px-4 py-2 rounded-lg text-sm font-medium transition">
+            <i data-lucide="bar-chart-3" class="w-4 h-4 inline mr-1"></i>
+            Programme Baselines
+        </button>
     </div>
 
     <!-- Main Dashboard Grid (now secondary/tabbed) -->
@@ -517,6 +523,7 @@
                 <p class="text-xs text-slate-500 mt-1">
                     Up/down correct · <span x-text="predictionMetrics.pair_count || 0" class="text-slate-400"></span> pairs
                 </p>
+                <p class="text-xs text-slate-600 mt-0.5">M0 target: 90%</p>
             </div>
             <div class="bg-slate-800 rounded-lg p-5 border border-slate-700">
                 <div class="flex items-center justify-between mb-2">
@@ -634,6 +641,13 @@
                     <span class="px-2 py-0.5 rounded text-xs font-medium"
                           :class="predictionLayers.analytics ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'"
                           x-text="predictionLayers.analytics ? 'Online' : 'Offline'"></span>
+                </div>
+                <div class="flex items-center justify-between p-3 bg-slate-900/50 rounded-lg border border-slate-700">
+                    <div class="flex items-center space-x-2">
+                        <i data-lucide="timer" class="w-4 h-4 text-emerald-400"></i>
+                        <span class="text-sm">Auto-Validation</span>
+                    </div>
+                    <span class="px-2 py-0.5 rounded text-xs font-medium bg-green-500/20 text-green-400">Daily 02:00 UTC</span>
                 </div>
             </div>
             <div class="mt-3 flex items-center justify-between">
@@ -922,6 +936,15 @@
                                 placeholder="Add notes..."
                                 rows="2"
                                 class="px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-slate-300 w-full resize-none placeholder:text-slate-500"></textarea>
+
+                            <!-- Validate Button (BUILD recs) -->
+                            <template x-if="rec.action_type === 'BUILD'">
+                                <button @click="openValidationModal(rec.id, rec.signal_display_name + ' → ' + rec.target_display_name)"
+                                    class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-medium transition flex items-center justify-center gap-2 w-full">
+                                    <i data-lucide="check-circle" class="w-4 h-4"></i>
+                                    Validate Prediction
+                                </button>
+                            </template>
                         </div>
                     </div>
                 </div>
@@ -933,6 +956,226 @@
                 <p class="text-sm">No recommendations yet</p>
                 <p class="text-xs text-slate-600 mt-1">Click "Generate Recommendations" to scan all signals for exploitable opportunities</p>
             </div>
+        </div>
+
+        <!-- Validation Modal -->
+        <div x-show="validationModalOpen" x-transition 
+             class="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+             @click.self="validationModalOpen = false">
+            <div class="bg-slate-800 rounded-xl border border-slate-600 p-6 w-full max-w-lg shadow-2xl">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-white">Validate Exploitation Prediction</h3>
+                    <button @click="validationModalOpen = false" class="text-slate-400 hover:text-white">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <p class="text-sm text-slate-400 mb-4" x-text="validationRecName"></p>
+
+                <div class="space-y-4">
+                    <!-- Outcome -->
+                    <div>
+                        <label class="block text-xs text-slate-400 uppercase tracking-wider mb-1">Outcome</label>
+                        <select x-model="validationForm.actual_outcome"
+                            class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white">
+                            <option value="SUCCESS">SUCCESS — prediction was accurate</option>
+                            <option value="PARTIAL">PARTIAL — partially correct</option>
+                            <option value="FAILED">FAILED — prediction was wrong</option>
+                            <option value="UNKNOWN">UNKNOWN — insufficient data</option>
+                        </select>
+                    </div>
+
+                    <!-- Accuracy Checkboxes -->
+                    <div class="grid grid-cols-3 gap-3">
+                        <label class="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                            <input type="checkbox" x-model="validationForm.demand_accurate" class="rounded border-slate-600 bg-slate-700 text-emerald-500">
+                            Demand accurate
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                            <input type="checkbox" x-model="validationForm.competition_accurate" class="rounded border-slate-600 bg-slate-700 text-emerald-500">
+                            Competition accurate
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                            <input type="checkbox" x-model="validationForm.revenue_potential_accurate" class="rounded border-slate-600 bg-slate-700 text-emerald-500">
+                            Revenue accurate
+                        </label>
+                    </div>
+
+                    <!-- Actual Revenue -->
+                    <div>
+                        <label class="block text-xs text-slate-400 uppercase tracking-wider mb-1">Actual Monthly Revenue ($)</label>
+                        <input type="number" x-model.number="validationForm.actual_revenue" placeholder="0"
+                            class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white placeholder:text-slate-500">
+                    </div>
+
+                    <!-- Notes -->
+                    <div>
+                        <label class="block text-xs text-slate-400 uppercase tracking-wider mb-1">Notes</label>
+                        <textarea x-model="validationForm.outcome_notes" rows="2" placeholder="What happened..."
+                            class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-slate-300 resize-none placeholder:text-slate-500"></textarea>
+                    </div>
+
+                    <!-- Submit -->
+                    <button @click="submitValidation()"
+                        class="w-full px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition">
+                        Submit Validation
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- PROGRAMME BASELINES TAB (M0) -->
+    <!-- ============================================================ -->
+    <div x-show="activeView === 'baselines'" x-transition class="space-y-6">
+        
+        <!-- Header -->
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-xl font-bold text-white">Programme Baselines</h2>
+                <p class="text-sm text-slate-400">M0 — Instrument &amp; Measure: Track all 4 scaling dimensions</p>
+            </div>
+            <button @click="loadBaselines()" class="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm transition flex items-center gap-2">
+                <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                Refresh
+            </button>
+        </div>
+
+        <!-- Loading State -->
+        <div x-show="baselinesLoading" class="flex items-center justify-center py-12">
+            <div class="animate-spin w-8 h-8 border-2 border-primary-400 border-t-transparent rounded-full"></div>
+        </div>
+
+        <!-- 4-Quadrant Grid -->
+        <div x-show="!baselinesLoading && baselines" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            <!-- Q1: Model Accuracy -->
+            <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                            <i data-lucide="target" class="w-5 h-5 text-blue-400"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold text-white">Model Accuracy</h3>
+                    </div>
+                    <button @click="activeView = 'predictions'; triggerActualUpdate().then(() => loadPredictions())" 
+                            class="text-xs text-primary-400 hover:text-primary-300 transition">View Detail →</button>
+                </div>
+                <div class="flex items-end gap-4 mb-4">
+                    <p class="text-4xl font-bold" :class="(baselines?.model_accuracy?.direction_accuracy_pct || 0) >= 90 ? 'text-green-400' : (baselines?.model_accuracy?.direction_accuracy_pct || 0) >= 50 ? 'text-amber-400' : 'text-red-400'"
+                       x-text="(baselines?.model_accuracy?.direction_accuracy_pct || 0) + '%'"></p>
+                    <div class="flex flex-col text-xs text-slate-400 mb-1">
+                        <span>Target: <span class="text-green-400">90%</span></span>
+                        <span x-text="(baselines?.model_accuracy?.total_predictions || 0) + ' predictions validated'"></span>
+                    </div>
+                </div>
+                <!-- Progress bar -->
+                <div class="w-full bg-slate-700 rounded-full h-2 mb-3">
+                    <div class="bg-blue-500 h-2 rounded-full transition-all duration-500" 
+                         :style="'width: ' + Math.min((baselines?.model_accuracy?.direction_accuracy_pct || 0) / 90 * 100, 100) + '%'"></div>
+                </div>
+                <!-- Sparkline -->
+                <div id="baseline-model-sparkline" class="h-16"></div>
+            </div>
+
+            <!-- Q2: Build Quality -->
+            <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                            <i data-lucide="hammer" class="w-5 h-5 text-purple-400"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold text-white">Build Quality</h3>
+                    </div>
+                </div>
+                <div class="flex items-end gap-4 mb-4">
+                    <p class="text-4xl font-bold" :class="(baselines?.build_errors?.error_rate_pct || 0) <= 5 ? 'text-green-400' : (baselines?.build_errors?.error_rate_pct || 0) <= 20 ? 'text-amber-400' : 'text-red-400'"
+                       x-text="(baselines?.build_errors?.error_rate_pct || 0) + '%'"></p>
+                    <div class="flex flex-col text-xs text-slate-400 mb-1">
+                        <span>Target: <span class="text-green-400">&lt;5% errors</span></span>
+                        <span x-text="(baselines?.build_errors?.total_builds || 0) + ' total builds (' + (baselines?.build_errors?.failed_builds || 0) + ' failed)'"></span>
+                    </div>
+                </div>
+                <!-- Progress bar (inverted — lower is better) -->
+                <div class="w-full bg-slate-700 rounded-full h-2 mb-3">
+                    <div class="h-2 rounded-full transition-all duration-500"
+                         :class="(baselines?.build_errors?.error_rate_pct || 0) <= 5 ? 'bg-green-500' : (baselines?.build_errors?.error_rate_pct || 0) <= 20 ? 'bg-amber-500' : 'bg-red-500'"
+                         :style="'width: ' + Math.min(100 - (baselines?.build_errors?.error_rate_pct || 0), 100) + '%'"></div>
+                </div>
+                <!-- Sparkline -->
+                <div id="baseline-build-sparkline" class="h-16"></div>
+                <!-- No data state -->
+                <p x-show="(baselines?.build_errors?.total_builds || 0) === 0" class="text-xs text-slate-500 italic mt-2">No builds recorded yet — run build_feature.py to start tracking</p>
+            </div>
+
+            <!-- Q3: Exploitation Accuracy -->
+            <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 bg-amber-500/20 rounded-lg flex items-center justify-center">
+                            <i data-lucide="rocket" class="w-5 h-5 text-amber-400"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold text-white">Exploitation Accuracy</h3>
+                    </div>
+                    <button @click="activeView = 'exploitation'; loadExploitationRecommendations()" 
+                            class="text-xs text-primary-400 hover:text-primary-300 transition">View Detail →</button>
+                </div>
+                <div class="flex items-end gap-4 mb-4">
+                    <p class="text-4xl font-bold" :class="(baselines?.exploitation?.viability_accuracy_pct || 0) >= 90 ? 'text-green-400' : (baselines?.exploitation?.viability_accuracy_pct || 0) >= 50 ? 'text-amber-400' : 'text-red-400'"
+                       x-text="(baselines?.exploitation?.viability_accuracy_pct || 0) + '%'"></p>
+                    <div class="flex flex-col text-xs text-slate-400 mb-1">
+                        <span>Target: <span class="text-green-400">90%</span></span>
+                        <span x-text="(baselines?.exploitation?.validated_count || 0) + '/' + (baselines?.exploitation?.total_build_recommendations || 0) + ' BUILD recs validated'"></span>
+                    </div>
+                </div>
+                <!-- Progress bar -->
+                <div class="w-full bg-slate-700 rounded-full h-2 mb-3">
+                    <div class="bg-amber-500 h-2 rounded-full transition-all duration-500" 
+                         :style="'width: ' + Math.min((baselines?.exploitation?.viability_accuracy_pct || 0) / 90 * 100, 100) + '%'"></div>
+                </div>
+                <p x-show="(baselines?.exploitation?.validated_count || 0) === 0" class="text-xs text-slate-500 italic mt-2">No validations yet — use Exploitation Board to validate BUILD recommendations</p>
+            </div>
+
+            <!-- Q4: Revenue -->
+            <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center">
+                            <i data-lucide="dollar-sign" class="w-5 h-5 text-green-400"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold text-white">Revenue</h3>
+                    </div>
+                </div>
+                <div class="flex items-end gap-4 mb-4">
+                    <p class="text-4xl font-bold text-green-400" x-text="'$' + (baselines?.revenue?.total_mrr || 0).toLocaleString()"></p>
+                    <div class="flex flex-col text-xs text-slate-400 mb-1">
+                        <span>Target: <span class="text-green-400">$20,000 MRR</span></span>
+                        <span x-text="(baselines?.revenue?.total_subscribers || 0) + ' subscribers across ' + (baselines?.revenue?.app_count || 0) + ' apps'"></span>
+                    </div>
+                </div>
+                <!-- Progress bar -->
+                <div class="w-full bg-slate-700 rounded-full h-2 mb-3">
+                    <div class="bg-green-500 h-2 rounded-full transition-all duration-500" 
+                         :style="'width: ' + Math.min((baselines?.revenue?.total_mrr || 0) / 20000 * 100, 100) + '%'"></div>
+                </div>
+                <!-- Per-app breakdown -->
+                <div class="space-y-2 mt-3">
+                    <template x-for="app in (baselines?.revenue?.apps || [])" :key="app.name">
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-slate-300" x-text="app.name"></span>
+                            <span class="text-slate-400" x-text="'$' + (app.mrr || 0).toLocaleString() + ' MRR · ' + (app.subscribers || 0) + ' subs'"></span>
+                        </div>
+                    </template>
+                </div>
+                <p class="text-xs text-slate-600 mt-3" x-text="baselines?.revenue?.snapshot_date ? 'Snapshot: ' + baselines.revenue.snapshot_date : 'Update revenue_baseline.json to record MRR'"></p>
+            </div>
+        </div>
+
+        <!-- No Data State -->
+        <div x-show="!baselinesLoading && !baselines" class="flex flex-col items-center justify-center py-12 text-slate-500">
+            <i data-lucide="bar-chart-3" class="w-12 h-12 mb-3 opacity-30"></i>
+            <p class="text-sm">Failed to load baselines</p>
+            <p class="text-xs text-slate-600 mt-1">Check console for errors</p>
         </div>
     </div>
 
