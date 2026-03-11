@@ -3209,9 +3209,13 @@ async def get_programme_baselines(db: Session = Depends(get_db)):
     from pathlib import Path
     
     # 1. Model Accuracy
-    validated_predictions = db.query(PredictionTracking).filter(
-        PredictionTracking.status == 'validated'
-    ).all()
+    try:
+        validated_predictions = db.query(PredictionTracking).filter(
+            PredictionTracking.status == 'validated'
+        ).all()
+    except Exception as e:
+        logger.warning(f"PredictionTracking query failed: {e}")
+        validated_predictions = []
     
     direction_correct = sum(1 for p in validated_predictions if p.direction_correct)
     model_accuracy = (direction_correct / len(validated_predictions) * 100) if validated_predictions else 0.0
@@ -3250,13 +3254,21 @@ async def get_programme_baselines(db: Session = Depends(get_db)):
         logger.warning(f"Build metrics unavailable: {e}")
     
     # 3. Exploitation Accuracy
-    validations = db.query(ExploitationValidation).all()
-    exploit_correct = sum(1 for v in validations if v.actual_outcome in ('SUCCESS', 'PARTIAL'))
-    exploit_accuracy = (exploit_correct / len(validations) * 100) if validations else 0.0
-    
-    total_build_recs = db.query(ExploitationRecommendation).filter(
-        ExploitationRecommendation.action_type == 'BUILD'
-    ).count()
+    validations = []
+    exploit_accuracy = 0.0
+    total_build_recs = 0
+    try:
+        # Ensure table exists before querying
+        from database import engine
+        ExploitationValidation.__table__.create(bind=engine, checkfirst=True)
+        validations = db.query(ExploitationValidation).all()
+        exploit_correct = sum(1 for v in validations if v.actual_outcome in ('SUCCESS', 'PARTIAL'))
+        exploit_accuracy = (exploit_correct / len(validations) * 100) if validations else 0.0
+        total_build_recs = db.query(ExploitationRecommendation).filter(
+            ExploitationRecommendation.action_type == 'BUILD'
+        ).count()
+    except Exception as e:
+        logger.warning(f"Exploitation validation query failed (table may not exist yet): {e}")
     
     # 4. Revenue
     revenue_data = {"total_mrr": 0, "total_subscribers": 0, "apps": [], "snapshot_date": None}
