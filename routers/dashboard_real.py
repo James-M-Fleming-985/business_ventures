@@ -3206,105 +3206,119 @@ async def get_exploitation_validations(db: Session = Depends(get_db)):
 async def get_programme_baselines(db: Session = Depends(get_db)):
     """Consolidated M0 Programme Baselines — all 4 metrics in one response."""
     import json
+    import traceback
     from pathlib import Path
-    
-    # 1. Model Accuracy
-    try:
-        validated_predictions = db.query(PredictionTracking).filter(
-            PredictionTracking.status == 'validated'
-        ).all()
-    except Exception as e:
-        logger.warning(f"PredictionTracking query failed: {e}")
-        validated_predictions = []
-    
-    direction_correct = sum(1 for p in validated_predictions if p.direction_correct)
-    model_accuracy = (direction_correct / len(validated_predictions) * 100) if validated_predictions else 0.0
-    
-    avg_error = 0.0
-    if validated_predictions:
-        errors = [abs(p.value_error_pct or 0) for p in validated_predictions]
-        avg_error = sum(errors) / len(errors) if errors else 0.0
-    
-    # Model accuracy trend — group validated predictions by month
-    model_trend = []
-    monthly_groups = {}
-    for p in validated_predictions:
-        if p.actual_recorded_at:
-            key = p.actual_recorded_at.strftime("%Y-%m")
-            monthly_groups.setdefault(key, []).append(p)
-    for month in sorted(monthly_groups.keys()):
-        preds = monthly_groups[month]
-        correct = sum(1 for p in preds if p.direction_correct)
-        model_trend.append({
-            "month": month,
-            "accuracy": round(correct / len(preds) * 100, 1) if preds else 0,
-            "count": len(preds),
-        })
-    
-    # 2. Build Errors — fetch from control_tower build_error_tracker
-    build_metrics = {"total_builds": 0, "error_rate_pct": 0.0, "trend": []}
-    try:
-        import sys
-        control_tower_path = Path(__file__).parent.parent.parent.parent
-        if str(control_tower_path) not in sys.path:
-            sys.path.insert(0, str(control_tower_path))
-        from build_error_tracker import get_metrics_summary
-        build_metrics = get_metrics_summary()
-    except Exception as e:
-        logger.warning(f"Build metrics unavailable: {e}")
-    
-    # 3. Exploitation Accuracy
-    validations = []
-    exploit_accuracy = 0.0
-    total_build_recs = 0
-    try:
-        # Ensure table exists before querying
-        from database import engine
-        ExploitationValidation.__table__.create(bind=engine, checkfirst=True)
-        validations = db.query(ExploitationValidation).all()
-        exploit_correct = sum(1 for v in validations if v.actual_outcome in ('SUCCESS', 'PARTIAL'))
-        exploit_accuracy = (exploit_correct / len(validations) * 100) if validations else 0.0
-        total_build_recs = db.query(ExploitationRecommendation).filter(
-            ExploitationRecommendation.action_type == 'BUILD'
-        ).count()
-    except Exception as e:
-        logger.warning(f"Exploitation validation query failed (table may not exist yet): {e}")
-    
-    # 4. Revenue
-    revenue_data = {"total_mrr": 0, "total_subscribers": 0, "apps": [], "snapshot_date": None}
-    config_path = Path(__file__).parent.parent / "revenue_baseline.json"
-    if config_path.exists():
-        with open(config_path) as f:
-            revenue_data = json.load(f)
-    
-    return {
-        "model_accuracy": {
-            "direction_accuracy_pct": round(model_accuracy, 1),
-            "total_predictions": len(validated_predictions),
-            "avg_error_pct": round(avg_error, 2),
-            "target": 90,
-            "trend": model_trend,
-        },
-        "build_errors": {
-            "error_rate_pct": build_metrics.get("error_rate_pct", 0),
-            "total_builds": build_metrics.get("total_builds", 0),
-            "successful_builds": build_metrics.get("successful_builds", 0),
-            "failed_builds": build_metrics.get("failed_builds", 0),
-            "target": 5,
-            "trend": build_metrics.get("trend", []),
-        },
-        "exploitation": {
-            "viability_accuracy_pct": round(exploit_accuracy, 1),
-            "validated_count": len(validations),
-            "total_build_recommendations": total_build_recs,
-            "target": 90,
-        },
-        "revenue": {
-            "total_mrr": revenue_data.get("total_mrr", 0),
-            "total_subscribers": revenue_data.get("total_subscribers", 0),
-            "app_count": len(revenue_data.get("apps", [])),
-            "apps": revenue_data.get("apps", []),
-            "target_mrr": 20000,
-            "snapshot_date": revenue_data.get("snapshot_date"),
-        },
+
+    # Safe defaults — returned on any unhandled error
+    _empty = {
+        "model_accuracy": {"direction_accuracy_pct": 0, "total_predictions": 0, "avg_error_pct": 0, "target": 90, "trend": []},
+        "build_errors": {"error_rate_pct": 0, "total_builds": 0, "successful_builds": 0, "failed_builds": 0, "target": 5, "trend": []},
+        "exploitation": {"viability_accuracy_pct": 0, "validated_count": 0, "total_build_recommendations": 0, "target": 90},
+        "revenue": {"total_mrr": 0, "total_subscribers": 0, "app_count": 0, "apps": [], "target_mrr": 20000, "snapshot_date": None},
     }
+
+    try:
+        # 1. Model Accuracy
+        validated_predictions = []
+        try:
+            validated_predictions = db.query(PredictionTracking).filter(
+                PredictionTracking.status == 'validated'
+            ).all()
+        except Exception as e:
+            logger.warning(f"PredictionTracking query failed: {e}")
+
+        direction_correct = sum(1 for p in validated_predictions if getattr(p, 'direction_correct', False))
+        model_accuracy = (direction_correct / len(validated_predictions) * 100) if validated_predictions else 0.0
+
+        avg_error = 0.0
+        if validated_predictions:
+            errors = [abs(getattr(p, 'value_error_pct', 0) or 0) for p in validated_predictions]
+            avg_error = sum(errors) / len(errors) if errors else 0.0
+
+        # Model accuracy trend — group validated predictions by month
+        model_trend = []
+        monthly_groups = {}
+        for p in validated_predictions:
+            recorded = getattr(p, 'actual_recorded_at', None)
+            if recorded:
+                key = recorded.strftime("%Y-%m")
+                monthly_groups.setdefault(key, []).append(p)
+        for month in sorted(monthly_groups.keys()):
+            preds = monthly_groups[month]
+            correct = sum(1 for p in preds if getattr(p, 'direction_correct', False))
+            model_trend.append({
+                "month": month,
+                "accuracy": round(correct / len(preds) * 100, 1) if preds else 0,
+                "count": len(preds),
+            })
+
+        # 2. Build Errors — fetch from control_tower build_error_tracker
+        build_metrics = {"total_builds": 0, "error_rate_pct": 0.0, "trend": []}
+        try:
+            import sys
+            control_tower_path = Path(__file__).parent.parent.parent.parent
+            if str(control_tower_path) not in sys.path:
+                sys.path.insert(0, str(control_tower_path))
+            from build_error_tracker import get_metrics_summary
+            build_metrics = get_metrics_summary()
+        except Exception as e:
+            logger.warning(f"Build metrics unavailable: {e}")
+
+        # 3. Exploitation Accuracy
+        validations = []
+        exploit_accuracy = 0.0
+        total_build_recs = 0
+        try:
+            from database import engine
+            ExploitationValidation.__table__.create(bind=engine, checkfirst=True)
+            validations = db.query(ExploitationValidation).all()
+            exploit_correct = sum(1 for v in validations if v.actual_outcome in ('SUCCESS', 'PARTIAL'))
+            exploit_accuracy = (exploit_correct / len(validations) * 100) if validations else 0.0
+            total_build_recs = db.query(ExploitationRecommendation).filter(
+                ExploitationRecommendation.action_type == 'BUILD'
+            ).count()
+        except Exception as e:
+            logger.warning(f"Exploitation validation query failed: {e}")
+
+        # 4. Revenue
+        revenue_data = {"total_mrr": 0, "total_subscribers": 0, "apps": [], "snapshot_date": None}
+        config_path = Path(__file__).parent.parent / "revenue_baseline.json"
+        if config_path.exists():
+            with open(config_path) as f:
+                revenue_data = json.load(f)
+
+        return {
+            "model_accuracy": {
+                "direction_accuracy_pct": round(model_accuracy, 1),
+                "total_predictions": len(validated_predictions),
+                "avg_error_pct": round(avg_error, 2),
+                "target": 90,
+                "trend": model_trend,
+            },
+            "build_errors": {
+                "error_rate_pct": build_metrics.get("error_rate_pct", 0),
+                "total_builds": build_metrics.get("total_builds", 0),
+                "successful_builds": build_metrics.get("successful_builds", 0),
+                "failed_builds": build_metrics.get("failed_builds", 0),
+                "target": 5,
+                "trend": build_metrics.get("trend", []),
+            },
+            "exploitation": {
+                "viability_accuracy_pct": round(exploit_accuracy, 1),
+                "validated_count": len(validations),
+                "total_build_recommendations": total_build_recs,
+                "target": 90,
+            },
+            "revenue": {
+                "total_mrr": revenue_data.get("total_mrr", 0),
+                "total_subscribers": revenue_data.get("total_subscribers", 0),
+                "app_count": len(revenue_data.get("apps", [])),
+                "apps": revenue_data.get("apps", []),
+                "target_mrr": 20000,
+                "snapshot_date": revenue_data.get("snapshot_date"),
+            },
+        }
+
+    except Exception as e:
+        logger.error(f"Baselines endpoint failed: {e}\n{traceback.format_exc()}")
+        return _empty
