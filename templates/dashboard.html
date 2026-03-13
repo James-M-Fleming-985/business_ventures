@@ -1047,7 +1047,7 @@
         </div>
 
         <!-- 4-Quadrant Grid -->
-        <div x-show="!baselinesLoading && baselines" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div x-show="!baselinesLoading && baselines" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
             
             <!-- Q1: Model Accuracy -->
             <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
@@ -1085,6 +1085,123 @@
                 </div>
                 <!-- Sparkline -->
                 <div id="baseline-model-sparkline" class="h-16"></div>
+            </div>
+
+            <!-- Q1b: MAPE (Mean Absolute Percentage Error) -->
+            <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 bg-orange-500/20 rounded-lg flex items-center justify-center">
+                            <i data-lucide="percent" class="w-5 h-5 text-orange-400"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold text-white">MAPE</h3>
+                        <div class="relative group">
+                            <i data-lucide="info" class="w-4 h-4 text-slate-500 cursor-help"></i>
+                            <div class="absolute z-50 hidden group-hover:block bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 p-3 bg-slate-900 border border-slate-600 rounded-lg shadow-xl text-xs text-slate-300">
+                                <p class="font-semibold text-white mb-1">Mean Absolute Percentage Error</p>
+                                <p>Average magnitude of prediction error as a percentage. Measures how far off predicted values are from actual values, regardless of direction.</p>
+                                <p class="mt-1 text-slate-400 font-mono">= mean(abs(actual - predicted) / predicted &times; 100)</p>
+                                <p class="mt-1">Lower is better. Auto-validated daily at 02:00 UTC.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-end gap-4 mb-4">
+                    <p class="text-4xl font-bold" :class="(baselines?.mape?.mape_pct || 0) <= 5 ? 'text-green-400' : (baselines?.mape?.mape_pct || 0) <= 20 ? 'text-amber-400' : 'text-red-400'"
+                       x-text="(baselines?.mape?.mape_pct || 0) + '%'"></p>
+                    <div class="flex flex-col text-xs text-slate-400 mb-1">
+                        <span>Target: <span class="text-green-400">&lt;5%</span></span>
+                        <span x-text="(baselines?.mape?.total_validated || 0) + ' predictions validated'"></span>
+                    </div>
+                </div>
+                <!-- Progress bar (inverted — lower is better) -->
+                <div class="w-full bg-slate-700 rounded-full h-2 mb-3">
+                    <div class="h-2 rounded-full transition-all duration-500"
+                         :class="(baselines?.mape?.mape_pct || 0) <= 5 ? 'bg-green-500' : (baselines?.mape?.mape_pct || 0) <= 20 ? 'bg-amber-500' : 'bg-red-500'"
+                         :style="'width: ' + Math.min(100 - Math.min((baselines?.mape?.mape_pct || 0), 100), 100) + '%'"></div>
+                </div>
+                <p x-show="(baselines?.mape?.total_validated || 0) === 0" class="text-xs text-slate-500 italic mt-2">No validated predictions yet</p>
+            </div>
+
+            <!-- Q1c: Timing Accuracy -->
+            <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 bg-cyan-500/20 rounded-lg flex items-center justify-center">
+                            <i data-lucide="clock" class="w-5 h-5 text-cyan-400"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold text-white">Timing Accuracy</h3>
+                        <div class="relative group">
+                            <i data-lucide="info" class="w-4 h-4 text-slate-500 cursor-help"></i>
+                            <div class="absolute z-50 hidden group-hover:block bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 p-3 bg-slate-900 border border-slate-600 rounded-lg shadow-xl text-xs text-slate-300">
+                                <p class="font-semibold text-white mb-1">Timing Accuracy</p>
+                                <p>Percentage of predictions where the actual outcome was recorded within &plusmn;3 days of the predicted target date. Measures temporal precision of forecasts.</p>
+                                <p class="mt-1 text-slate-400 font-mono">= count(|target_date &minus; actual_date| &le; 3d) / total &times; 100</p>
+                                <p class="mt-1">Higher is better. Tracks whether predictions are timely, not just directionally correct.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-end gap-4 mb-4">
+                    <p class="text-4xl font-bold" :class="(baselines?.timing?.timing_accuracy_pct || 0) >= 90 ? 'text-green-400' : (baselines?.timing?.timing_accuracy_pct || 0) >= 50 ? 'text-amber-400' : 'text-red-400'"
+                       x-text="(baselines?.timing?.timing_accuracy_pct || 0) + '%'"></p>
+                    <div class="flex flex-col text-xs text-slate-400 mb-1">
+                        <span>Target: <span class="text-green-400">90%</span></span>
+                        <span x-text="(baselines?.timing?.within_window || 0) + '/' + (baselines?.timing?.total_validated || 0) + ' within \u00b13 days'"></span>
+                    </div>
+                </div>
+                <!-- Progress bar -->
+                <div class="w-full bg-slate-700 rounded-full h-2 mb-3">
+                    <div class="bg-cyan-500 h-2 rounded-full transition-all duration-500" 
+                         :style="'width: ' + Math.min((baselines?.timing?.timing_accuracy_pct || 0) / 90 * 100, 100) + '%'"></div>
+                </div>
+                <p x-show="(baselines?.timing?.total_validated || 0) === 0" class="text-xs text-slate-500 italic mt-2">No timing data available yet</p>
+            </div>
+
+            <!-- Q1d: Lag Comparison (granger_v1 vs lag_opt) -->
+            <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 bg-violet-500/20 rounded-lg flex items-center justify-center">
+                            <i data-lucide="git-compare" class="w-5 h-5 text-violet-400"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold text-white">Optimal Lag</h3>
+                        <div class="relative group">
+                            <i data-lucide="info" class="w-4 h-4 text-slate-500 cursor-help"></i>
+                            <div class="absolute z-50 hidden group-hover:block bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 p-3 bg-slate-900 border border-slate-600 rounded-lg shadow-xl text-xs text-slate-300">
+                                <p class="font-semibold text-white mb-1">Optimal Lag Improvement</p>
+                                <p>Compares accuracy between the base Granger model (fixed lag) and the lag-optimised variant (tests lags 1-12 months). Shows whether dynamic lag selection improves direction accuracy.</p>
+                                <p class="mt-1 text-slate-400 font-mono">= lag_opt_accuracy &minus; base_accuracy</p>
+                                <p class="mt-1">Positive means lag optimisation helps. Negative means fixed lag is better for current data.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-end gap-4 mb-4">
+                    <p class="text-4xl font-bold" :class="(baselines?.lag_comparison?.improvement_pct || 0) > 0 ? 'text-green-400' : (baselines?.lag_comparison?.improvement_pct || 0) === 0 ? 'text-slate-400' : 'text-red-400'"
+                       x-text="((baselines?.lag_comparison?.improvement_pct || 0) > 0 ? '+' : '') + (baselines?.lag_comparison?.improvement_pct || 0) + '%'"></p>
+                    <div class="flex flex-col text-xs text-slate-400 mb-1">
+                        <span>Target: <span class="text-green-400">lag_opt > base</span></span>
+                        <span x-text="'v1: ' + (baselines?.lag_comparison?.base_model?.direction_accuracy_pct || '—') + '% | lag_opt: ' + (baselines?.lag_comparison?.lag_optimized?.direction_accuracy_pct || '—') + '%'"></span>
+                    </div>
+                </div>
+                <!-- Progress bar — shows base vs lag_opt side by side -->
+                <div class="w-full bg-slate-700 rounded-full h-2 mb-3">
+                    <div class="bg-violet-500 h-2 rounded-full transition-all duration-500" 
+                         :style="'width: ' + Math.min(Math.max((baselines?.lag_comparison?.lag_optimized?.direction_accuracy_pct || 0), (baselines?.lag_comparison?.base_model?.direction_accuracy_pct || 0)) / 90 * 100, 100) + '%'"></div>
+                </div>
+                <!-- Per-model breakdown -->
+                <div class="space-y-1 mt-2" x-show="baselines?.lag_comparison?.base_model || baselines?.lag_comparison?.lag_optimized">
+                    <div class="flex items-center justify-between text-xs" x-show="baselines?.lag_comparison?.base_model">
+                        <span class="text-slate-400">granger_v1</span>
+                        <span class="text-slate-300" x-text="(baselines?.lag_comparison?.base_model?.direction_accuracy_pct || 0) + '% · ' + (baselines?.lag_comparison?.base_model?.n_predictions || 0) + ' preds'"></span>
+                    </div>
+                    <div class="flex items-center justify-between text-xs" x-show="baselines?.lag_comparison?.lag_optimized">
+                        <span class="text-slate-400">lag_optimised</span>
+                        <span class="text-slate-300" x-text="(baselines?.lag_comparison?.lag_optimized?.direction_accuracy_pct || 0) + '% · ' + (baselines?.lag_comparison?.lag_optimized?.n_predictions || 0) + ' preds'"></span>
+                    </div>
+                </div>
+                <p x-show="!baselines?.lag_comparison?.base_model && !baselines?.lag_comparison?.lag_optimized" class="text-xs text-slate-500 italic mt-2">No lag-optimised predictions yet</p>
             </div>
 
             <!-- Q2: Build Quality -->

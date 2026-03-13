@@ -3212,6 +3212,9 @@ async def get_programme_baselines(db: Session = Depends(get_db)):
     # Safe defaults — returned on any unhandled error
     _empty = {
         "model_accuracy": {"direction_accuracy_pct": 0, "total_predictions": 0, "avg_error_pct": 0, "target": 90, "trend": []},
+        "mape": {"mape_pct": 0, "total_validated": 0, "target": 5},
+        "timing": {"timing_accuracy_pct": 0, "within_window": 0, "total_validated": 0, "target": 90},
+        "lag_comparison": {"base_model": None, "lag_optimized": None, "improvement_pct": 0},
         "build_errors": {"error_rate_pct": 0, "total_builds": 0, "successful_builds": 0, "failed_builds": 0, "target": 5, "trend": []},
         "exploitation": {"viability_accuracy_pct": 0, "validated_count": 0, "total_build_recommendations": 0, "target": 90},
         "revenue": {"total_mrr": 0, "total_subscribers": 0, "app_count": 0, "apps": [], "target_mrr": 20000, "snapshot_date": None},
@@ -3234,6 +3237,45 @@ async def get_programme_baselines(db: Session = Depends(get_db)):
         if validated_predictions:
             errors = [abs(getattr(p, 'value_error_pct', 0) or 0) for p in validated_predictions]
             avg_error = sum(errors) / len(errors) if errors else 0.0
+
+        # MAPE — Mean Absolute Percentage Error (same data, standalone metric)
+        mape_pct = round(avg_error, 2)
+
+        # Timing Accuracy — % of predictions validated within ±3 days of target
+        timing_accurate = 0
+        timing_total = 0
+        for p in validated_predictions:
+            target_dt = getattr(p, 'target_date', None)
+            actual_dt = getattr(p, 'actual_recorded_at', None)
+            if target_dt and actual_dt:
+                timing_total += 1
+                delta_days = abs((actual_dt - target_dt).days) if hasattr(actual_dt - target_dt, 'days') else abs((actual_dt.date() - target_dt.date()).days) if hasattr(target_dt, 'date') else 999
+                if delta_days <= 3:
+                    timing_accurate += 1
+        timing_accuracy_pct = round((timing_accurate / timing_total * 100) if timing_total else 0.0, 1)
+
+        # Lag Comparison — granger_v1 vs granger_v1+lag_opt
+        model_groups = {}
+        for p in validated_predictions:
+            mv = getattr(p, 'model_version', 'granger_v1') or 'granger_v1'
+            model_groups.setdefault(mv, []).append(p)
+
+        lag_comparison = {"base_model": None, "lag_optimized": None, "improvement_pct": 0}
+        for version_key, label_key in [('granger_v1', 'base_model'), ('granger_v1+lag_opt', 'lag_optimized')]:
+            preds = model_groups.get(version_key, [])
+            if preds:
+                correct = sum(1 for p in preds if getattr(p, 'direction_correct', False))
+                errs = [abs(getattr(p, 'value_error_pct', 0) or 0) for p in preds]
+                lag_comparison[label_key] = {
+                    "version": version_key,
+                    "direction_accuracy_pct": round(correct / len(preds) * 100, 1),
+                    "mape_pct": round(sum(errs) / len(errs), 2) if errs else 0,
+                    "n_predictions": len(preds),
+                }
+        if lag_comparison["base_model"] and lag_comparison["lag_optimized"]:
+            lag_comparison["improvement_pct"] = round(
+                lag_comparison["lag_optimized"]["direction_accuracy_pct"] - lag_comparison["base_model"]["direction_accuracy_pct"], 1
+            )
 
         # Model accuracy trend — group validated predictions by month
         model_trend = []
@@ -3295,6 +3337,18 @@ async def get_programme_baselines(db: Session = Depends(get_db)):
                 "target": 90,
                 "trend": model_trend,
             },
+            "mape": {
+                "mape_pct": mape_pct,
+                "total_validated": len(validated_predictions),
+                "target": 5,
+            },
+            "timing": {
+                "timing_accuracy_pct": timing_accuracy_pct,
+                "within_window": timing_accurate,
+                "total_validated": timing_total,
+                "target": 90,
+            },
+            "lag_comparison": lag_comparison,
             "build_errors": {
                 "error_rate_pct": build_metrics.get("error_rate_pct", 0),
                 "total_builds": build_metrics.get("total_builds", 0),
