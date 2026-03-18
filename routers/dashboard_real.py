@@ -3213,7 +3213,6 @@ async def get_programme_baselines(db: Session = Depends(get_db)):
     _empty = {
         "model_accuracy": {"direction_accuracy_pct": 0, "total_predictions": 0, "avg_error_pct": 0, "target": 90, "trend": []},
         "mape": {"mape_pct": 0, "total_validated": 0, "target": 5},
-        "timing": {"timing_accuracy_pct": 0, "within_window": 0, "total_validated": 0, "target": 90},
         "lag_error": {"avg_lag_error_days": None, "total_with_lag_data": 0, "target": 7},
         "build_errors": {"error_rate_pct": 0, "total_builds": 0, "successful_builds": 0, "failed_builds": 0, "target": 5, "trend": []},
         "exploitation": {"viability_accuracy_pct": 0, "validated_count": 0, "total_build_recommendations": 0, "target": 90},
@@ -3240,19 +3239,6 @@ async def get_programme_baselines(db: Session = Depends(get_db)):
 
         # MAPE — Mean Absolute Percentage Error (same data, standalone metric)
         mape_pct = round(avg_error, 2)
-
-        # Timing Accuracy — % of predictions validated within ±3 days of target
-        timing_accurate = 0
-        timing_total = 0
-        for p in validated_predictions:
-            target_dt = getattr(p, 'target_date', None)
-            actual_dt = getattr(p, 'actual_recorded_at', None)
-            if target_dt and actual_dt:
-                timing_total += 1
-                delta_days = abs((actual_dt - target_dt).days) if hasattr(actual_dt - target_dt, 'days') else abs((actual_dt.date() - target_dt.date()).days) if hasattr(target_dt, 'date') else 999
-                if delta_days <= 3:
-                    timing_accurate += 1
-        timing_accuracy_pct = round((timing_accurate / timing_total * 100) if timing_total else 0.0, 1)
 
         # Lag Error — how accurately we predict when the peak/trough occurs
         lag_errors = [getattr(p, 'lag_error_days', None) for p in validated_predictions]
@@ -3323,12 +3309,6 @@ async def get_programme_baselines(db: Session = Depends(get_db)):
                 "mape_pct": mape_pct,
                 "total_validated": len(validated_predictions),
                 "target": 5,
-            },
-            "timing": {
-                "timing_accuracy_pct": timing_accuracy_pct,
-                "within_window": timing_accurate,
-                "total_validated": timing_total,
-                "target": 90,
             },
             "lag_error": {
                 "avg_lag_error_days": avg_lag_error,

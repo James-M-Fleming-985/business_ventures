@@ -1046,8 +1046,8 @@
             <div class="animate-spin w-8 h-8 border-2 border-primary-400 border-t-transparent rounded-full"></div>
         </div>
 
-        <!-- 4-Quadrant Grid -->
-        <div x-show="!baselinesLoading && baselines" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+        <!-- Baselines Grid -->
+        <div x-show="!baselinesLoading && baselines" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             
             <!-- Q1: Model Accuracy -->
             <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
@@ -1123,42 +1123,7 @@
                 <p x-show="(baselines?.mape?.total_validated || 0) === 0" class="text-xs text-slate-500 italic mt-2">No validated predictions yet</p>
             </div>
 
-            <!-- Q1c: Timing Accuracy -->
-            <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="flex items-center gap-2">
-                        <div class="w-8 h-8 bg-cyan-500/20 rounded-lg flex items-center justify-center">
-                            <i data-lucide="clock" class="w-5 h-5 text-cyan-400"></i>
-                        </div>
-                        <h3 class="text-lg font-semibold text-white">Timing Accuracy</h3>
-                        <div class="relative group">
-                            <i data-lucide="info" class="w-4 h-4 text-slate-500 cursor-help"></i>
-                            <div class="absolute z-50 hidden group-hover:block bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 p-3 bg-slate-900 border border-slate-600 rounded-lg shadow-xl text-xs text-slate-300">
-                                <p class="font-semibold text-white mb-1">Timing Accuracy</p>
-                                <p>Percentage of predictions where the actual outcome was recorded within &plusmn;3 days of the predicted target date. Measures temporal precision of forecasts.</p>
-                                <p class="mt-1 text-slate-400 font-mono">= count(|target_date &minus; actual_date| &le; 3d) / total &times; 100</p>
-                                <p class="mt-1">Higher is better. Tracks whether predictions are timely, not just directionally correct.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="flex items-end gap-4 mb-4">
-                    <p class="text-4xl font-bold" :class="(baselines?.timing?.timing_accuracy_pct || 0) >= 90 ? 'text-green-400' : (baselines?.timing?.timing_accuracy_pct || 0) >= 50 ? 'text-amber-400' : 'text-red-400'"
-                       x-text="(baselines?.timing?.timing_accuracy_pct || 0) + '%'"></p>
-                    <div class="flex flex-col text-xs text-slate-400 mb-1">
-                        <span>Target: <span class="text-green-400">90%</span></span>
-                        <span x-text="(baselines?.timing?.within_window || 0) + '/' + (baselines?.timing?.total_validated || 0) + ' within \u00b13 days'"></span>
-                    </div>
-                </div>
-                <!-- Progress bar -->
-                <div class="w-full bg-slate-700 rounded-full h-2 mb-3">
-                    <div class="bg-cyan-500 h-2 rounded-full transition-all duration-500" 
-                         :style="'width: ' + Math.min((baselines?.timing?.timing_accuracy_pct || 0) / 90 * 100, 100) + '%'"></div>
-                </div>
-                <p x-show="(baselines?.timing?.total_validated || 0) === 0" class="text-xs text-slate-500 italic mt-2">No timing data available yet</p>
-            </div>
-
-            <!-- Q1d: Lag Error (how accurately we predict when peak/trough occurs) -->
+            <!-- Q1c: Lag Error (how accurately we predict when peak/trough occurs) -->
             <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
                 <div class="flex items-center justify-between mb-4">
                     <div class="flex items-center gap-2">
