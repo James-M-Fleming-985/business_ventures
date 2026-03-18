@@ -1158,50 +1158,39 @@
                 <p x-show="(baselines?.timing?.total_validated || 0) === 0" class="text-xs text-slate-500 italic mt-2">No timing data available yet</p>
             </div>
 
-            <!-- Q1d: Lag Comparison (granger_v1 vs lag_opt) -->
+            <!-- Q1d: Lag Error (how accurately we predict when peak/trough occurs) -->
             <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
                 <div class="flex items-center justify-between mb-4">
                     <div class="flex items-center gap-2">
                         <div class="w-8 h-8 bg-violet-500/20 rounded-lg flex items-center justify-center">
-                            <i data-lucide="git-compare" class="w-5 h-5 text-violet-400"></i>
+                            <i data-lucide="clock" class="w-5 h-5 text-violet-400"></i>
                         </div>
-                        <h3 class="text-lg font-semibold text-white">Optimal Lag</h3>
+                        <h3 class="text-lg font-semibold text-white">Lag Error</h3>
                         <div class="relative group">
                             <i data-lucide="info" class="w-4 h-4 text-slate-500 cursor-help"></i>
                             <div class="absolute z-50 hidden group-hover:block bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 p-3 bg-slate-900 border border-slate-600 rounded-lg shadow-xl text-xs text-slate-300">
-                                <p class="font-semibold text-white mb-1">Optimal Lag Improvement</p>
-                                <p>Compares accuracy between the base Granger model (fixed lag) and the lag-optimised variant (tests lags 1-12 months). Shows whether dynamic lag selection improves direction accuracy.</p>
-                                <p class="mt-1 text-slate-400 font-mono">= lag_opt_accuracy &minus; base_accuracy</p>
-                                <p class="mt-1">Positive means lag optimisation helps. Negative means fixed lag is better for current data.</p>
+                                <p class="font-semibold text-white mb-1">Lag Prediction Error</p>
+                                <p>Average difference (in days) between when we predicted the peak/trough would occur and when it actually occurred.</p>
+                                <p class="mt-1 text-slate-400 font-mono">= avg |actual_lag_days &minus; predicted_lag_days|</p>
+                                <p class="mt-1">Lower is better. Target: &le;7 days.</p>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="flex items-end gap-4 mb-4">
-                    <p class="text-4xl font-bold" :class="(baselines?.lag_comparison?.improvement_pct || 0) > 0 ? 'text-green-400' : (baselines?.lag_comparison?.improvement_pct || 0) === 0 ? 'text-slate-400' : 'text-red-400'"
-                       x-text="((baselines?.lag_comparison?.improvement_pct || 0) > 0 ? '+' : '') + (baselines?.lag_comparison?.improvement_pct || 0) + '%'"></p>
+                    <p class="text-4xl font-bold" :class="(baselines?.lag_error?.avg_lag_error_days || 0) <= 7 ? 'text-green-400' : (baselines?.lag_error?.avg_lag_error_days || 0) <= 14 ? 'text-yellow-400' : 'text-red-400'"
+                       x-text="baselines?.lag_error?.avg_lag_error_days !== null ? baselines.lag_error.avg_lag_error_days + 'd' : '—'"></p>
                     <div class="flex flex-col text-xs text-slate-400 mb-1">
-                        <span>Target: <span class="text-green-400">lag_opt > base</span></span>
-                        <span x-text="'v1: ' + (baselines?.lag_comparison?.base_model?.direction_accuracy_pct || '—') + '% | lag_opt: ' + (baselines?.lag_comparison?.lag_optimized?.direction_accuracy_pct || '—') + '%'"></span>
+                        <span>Target: <span class="text-green-400">&le;7 days</span></span>
+                        <span x-text="(baselines?.lag_error?.total_with_lag_data || 0) + ' predictions with lag data'"></span>
                     </div>
                 </div>
-                <!-- Progress bar — shows base vs lag_opt side by side -->
+                <!-- Progress bar — lower is better, invert for display -->
                 <div class="w-full bg-slate-700 rounded-full h-2 mb-3">
                     <div class="bg-violet-500 h-2 rounded-full transition-all duration-500" 
-                         :style="'width: ' + Math.min(Math.max((baselines?.lag_comparison?.lag_optimized?.direction_accuracy_pct || 0), (baselines?.lag_comparison?.base_model?.direction_accuracy_pct || 0)) / 90 * 100, 100) + '%'"></div>
+                         :style="'width: ' + Math.min(Math.max(100 - ((baselines?.lag_error?.avg_lag_error_days || 0) / 30 * 100), 0), 100) + '%'"></div>
                 </div>
-                <!-- Per-model breakdown -->
-                <div class="space-y-1 mt-2" x-show="baselines?.lag_comparison?.base_model || baselines?.lag_comparison?.lag_optimized">
-                    <div class="flex items-center justify-between text-xs" x-show="baselines?.lag_comparison?.base_model">
-                        <span class="text-slate-400">granger_v1</span>
-                        <span class="text-slate-300" x-text="(baselines?.lag_comparison?.base_model?.direction_accuracy_pct || 0) + '% · ' + (baselines?.lag_comparison?.base_model?.n_predictions || 0) + ' preds'"></span>
-                    </div>
-                    <div class="flex items-center justify-between text-xs" x-show="baselines?.lag_comparison?.lag_optimized">
-                        <span class="text-slate-400">lag_optimised</span>
-                        <span class="text-slate-300" x-text="(baselines?.lag_comparison?.lag_optimized?.direction_accuracy_pct || 0) + '% · ' + (baselines?.lag_comparison?.lag_optimized?.n_predictions || 0) + ' preds'"></span>
-                    </div>
-                </div>
-                <p x-show="!baselines?.lag_comparison?.base_model && !baselines?.lag_comparison?.lag_optimized" class="text-xs text-slate-500 italic mt-2">No lag-optimised predictions yet</p>
+                <p x-show="(baselines?.lag_error?.total_with_lag_data || 0) === 0" class="text-xs text-slate-500 italic mt-2">No lag data available yet</p>
             </div>
 
             <!-- Q2: Build Quality -->

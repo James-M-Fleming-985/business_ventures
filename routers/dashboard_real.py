@@ -3214,7 +3214,7 @@ async def get_programme_baselines(db: Session = Depends(get_db)):
         "model_accuracy": {"direction_accuracy_pct": 0, "total_predictions": 0, "avg_error_pct": 0, "target": 90, "trend": []},
         "mape": {"mape_pct": 0, "total_validated": 0, "target": 5},
         "timing": {"timing_accuracy_pct": 0, "within_window": 0, "total_validated": 0, "target": 90},
-        "lag_comparison": {"base_model": None, "lag_optimized": None, "improvement_pct": 0},
+        "lag_error": {"avg_lag_error_days": None, "total_with_lag_data": 0, "target": 7},
         "build_errors": {"error_rate_pct": 0, "total_builds": 0, "successful_builds": 0, "failed_builds": 0, "target": 5, "trend": []},
         "exploitation": {"viability_accuracy_pct": 0, "validated_count": 0, "total_build_recommendations": 0, "target": 90},
         "revenue": {"total_mrr": 0, "total_subscribers": 0, "app_count": 0, "apps": [], "target_mrr": 20000, "snapshot_date": None},
@@ -3254,28 +3254,10 @@ async def get_programme_baselines(db: Session = Depends(get_db)):
                     timing_accurate += 1
         timing_accuracy_pct = round((timing_accurate / timing_total * 100) if timing_total else 0.0, 1)
 
-        # Lag Comparison — granger_v1 vs granger_v1+lag_opt
-        model_groups = {}
-        for p in validated_predictions:
-            mv = getattr(p, 'model_version', 'granger_v1') or 'granger_v1'
-            model_groups.setdefault(mv, []).append(p)
-
-        lag_comparison = {"base_model": None, "lag_optimized": None, "improvement_pct": 0}
-        for version_key, label_key in [('granger_v1', 'base_model'), ('granger_v1+lag_opt', 'lag_optimized')]:
-            preds = model_groups.get(version_key, [])
-            if preds:
-                correct = sum(1 for p in preds if getattr(p, 'direction_correct', False))
-                errs = [abs(getattr(p, 'value_error_pct', 0) or 0) for p in preds]
-                lag_comparison[label_key] = {
-                    "version": version_key,
-                    "direction_accuracy_pct": round(correct / len(preds) * 100, 1),
-                    "mape_pct": round(sum(errs) / len(errs), 2) if errs else 0,
-                    "n_predictions": len(preds),
-                }
-        if lag_comparison["base_model"] and lag_comparison["lag_optimized"]:
-            lag_comparison["improvement_pct"] = round(
-                lag_comparison["lag_optimized"]["direction_accuracy_pct"] - lag_comparison["base_model"]["direction_accuracy_pct"], 1
-            )
+        # Lag Error — how accurately we predict when the peak/trough occurs
+        lag_errors = [getattr(p, 'lag_error_days', None) for p in validated_predictions]
+        lag_errors = [e for e in lag_errors if e is not None]
+        avg_lag_error = round(sum(abs(e) for e in lag_errors) / len(lag_errors), 1) if lag_errors else None
 
         # Model accuracy trend — group validated predictions by month
         model_trend = []
@@ -3348,7 +3330,11 @@ async def get_programme_baselines(db: Session = Depends(get_db)):
                 "total_validated": timing_total,
                 "target": 90,
             },
-            "lag_comparison": lag_comparison,
+            "lag_error": {
+                "avg_lag_error_days": avg_lag_error,
+                "total_with_lag_data": len(lag_errors),
+                "target": 7,
+            },
             "build_errors": {
                 "error_rate_pct": build_metrics.get("error_rate_pct", 0),
                 "total_builds": build_metrics.get("total_builds", 0),
