@@ -2122,8 +2122,9 @@ function dashboardData() {
         // MVP Build
         // ============================================================
         async startBuild(recId) {
+            console.log('🔨 startBuild called for rec', recId);
             const complexity = this.buildComplexity[recId] || 'LOW';
-            this.buildInProgress[recId] = true;
+            this.buildInProgress = {...this.buildInProgress, [recId]: true};
             try {
                 const res = await fetch('/api/dashboard/exploitation/build', {
                     method: 'POST',
@@ -2133,16 +2134,16 @@ function dashboardData() {
                 if (!res.ok) {
                     const err = await res.json().catch(() => ({}));
                     console.error('Build start failed:', err.detail || res.status);
-                    this.buildInProgress[recId] = false;
+                    this.buildInProgress = {...this.buildInProgress, [recId]: false};
                     return;
                 }
                 const data = await res.json();
                 console.log('🔨 Build started:', data.build_id);
-                this.builds[recId] = { status: data.status, build_id: data.build_id };
+                this.builds = {...this.builds, [recId]: { status: data.status, build_id: data.build_id }};
                 this.pollBuildStatus(recId, data.build_id);
             } catch (e) {
                 console.error('Build error:', e);
-                this.buildInProgress[recId] = false;
+                this.buildInProgress = {...this.buildInProgress, [recId]: false};
             }
         },
 
@@ -2152,15 +2153,15 @@ function dashboardData() {
                     const res = await fetch(`/api/dashboard/exploitation/builds/${buildId}`);
                     if (!res.ok) return;
                     const data = await res.json();
-                    this.builds[recId] = data;
+                    this.builds = {...this.builds, [recId]: data};
                     if (['QUEUED', 'GENERATING', 'UPLOADING', 'DEPLOYING'].includes(data.status)) {
                         setTimeout(poll, 5000);
                     } else {
-                        this.buildInProgress[recId] = false;
+                        this.buildInProgress = {...this.buildInProgress, [recId]: false};
                     }
                 } catch (e) {
                     console.error('Poll error:', e);
-                    this.buildInProgress[recId] = false;
+                    this.buildInProgress = {...this.buildInProgress, [recId]: false};
                 }
             };
             setTimeout(poll, 3000);
@@ -2171,9 +2172,11 @@ function dashboardData() {
                 const res = await fetch('/api/dashboard/exploitation/builds');
                 if (!res.ok) return;
                 const data = await res.json();
+                const updated = {...this.builds};
                 for (const b of (data.builds || [])) {
-                    this.builds[b.recommendation_id] = b;
+                    updated[b.recommendation_id] = b;
                 }
+                this.builds = updated;
             } catch (e) {
                 console.error('Load builds error:', e);
             }

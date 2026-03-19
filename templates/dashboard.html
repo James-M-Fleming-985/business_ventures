@@ -952,7 +952,7 @@
                                     <!-- Complexity Selector -->
                                     <div class="flex gap-1 w-full">
                                         <template x-for="lvl in ['LOW','MEDIUM','HIGH']" :key="lvl">
-                                            <button @click="buildComplexity[rec.id] = lvl"
+                                            <button @click="buildComplexity = Object.assign({}, buildComplexity, {[rec.id]: lvl})"
                                                 :class="(buildComplexity[rec.id] || 'LOW') === lvl
                                                     ? 'bg-violet-600 text-white'
                                                     : 'bg-slate-700 text-slate-400 hover:bg-slate-600'"
