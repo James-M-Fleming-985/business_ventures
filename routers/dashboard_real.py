@@ -3263,15 +3263,32 @@ async def get_programme_baselines(db: Session = Depends(get_db)):
                 "count": len(preds),
             })
 
-        # 2. Build Errors — fetch from control_tower build_error_tracker
-        build_metrics = {"total_builds": 0, "error_rate_pct": 0.0, "trend": []}
+        # 2. Build Errors — from MVPBuild table (in-app builds)
+        build_metrics = {"total_builds": 0, "error_rate_pct": 0.0, "successful_builds": 0, "failed_builds": 0, "trend": []}
         try:
-            import sys
-            control_tower_path = Path(__file__).parent.parent.parent.parent
-            if str(control_tower_path) not in sys.path:
-                sys.path.insert(0, str(control_tower_path))
-            from build_error_tracker import get_metrics_summary
-            build_metrics = get_metrics_summary()
+            all_builds = db.query(MVPBuild).order_by(MVPBuild.created_at.asc()).all()
+            total_builds = len(all_builds)
+            failed_builds = sum(1 for b in all_builds if b.status == 'FAILED')
+            successful_builds = sum(1 for b in all_builds if b.status == 'LIVE')
+            error_rate = (failed_builds / total_builds * 100) if total_builds else 0.0
+
+            # Build trend — group by date
+            build_trend = []
+            for b in all_builds:
+                build_trend.append({
+                    "date": b.created_at.strftime("%Y-%m-%d") if b.created_at else None,
+                    "success": b.status == 'LIVE',
+                    "errors": b.total_errors or 0,
+                    "duration": b.duration_seconds or 0,
+                })
+
+            build_metrics = {
+                "total_builds": total_builds,
+                "successful_builds": successful_builds,
+                "failed_builds": failed_builds,
+                "error_rate_pct": round(error_rate, 1),
+                "trend": build_trend,
+            }
         except Exception as e:
             logger.warning(f"Build metrics unavailable: {e}")
 
