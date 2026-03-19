@@ -962,17 +962,13 @@
                                     </div>
                                     <!-- Build Button -->
                                     <button @click="startBuild(rec.id)"
-                                        :disabled="buildInProgress[rec.id]"
-                                        :class="buildInProgress[rec.id]
+                                        :disabled="buildInProgress[rec.id] === true"
+                                        :class="buildInProgress[rec.id] === true
                                             ? 'bg-slate-600 cursor-wait'
                                             : 'bg-violet-600 hover:bg-violet-700'"
                                         class="px-3 py-2 text-white rounded-lg text-xs font-medium transition flex items-center justify-center gap-2 w-full">
-                                        <template x-if="!buildInProgress[rec.id]">
-                                            <span class="flex items-center gap-2"><i data-lucide="hammer" class="w-4 h-4"></i> Build MVP</span>
-                                        </template>
-                                        <template x-if="buildInProgress[rec.id]">
-                                            <span class="flex items-center gap-2"><i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Building...</span>
-                                        </template>
+                                        <span x-show="buildInProgress[rec.id] !== true" class="flex items-center gap-2"><i data-lucide="hammer" class="w-4 h-4"></i> Build MVP</span>
+                                        <span x-show="buildInProgress[rec.id] === true" class="flex items-center gap-2"><i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Building...</span>
                                     </button>
                                     <!-- Build Status Badge -->
                                     <template x-if="builds[rec.id]">
@@ -1189,7 +1185,7 @@
                 </div>
                 <div class="flex items-end gap-4 mb-4">
                     <p class="text-4xl font-bold" :class="(baselines?.lag_error?.avg_lag_error_days || 0) <= 7 ? 'text-green-400' : (baselines?.lag_error?.avg_lag_error_days || 0) <= 14 ? 'text-yellow-400' : 'text-red-400'"
-                       x-text="baselines?.lag_error?.avg_lag_error_days !== null ? baselines.lag_error.avg_lag_error_days + 'd' : '—'"></p>
+                       x-text="(baselines?.lag_error?.avg_lag_error_days != null) ? (baselines?.lag_error?.avg_lag_error_days + 'd') : '—'"></p>
                     <div class="flex flex-col text-xs text-slate-400 mb-1">
                         <span>Target: <span class="text-green-400">&le;7 days</span></span>
                         <span x-text="(baselines?.lag_error?.total_with_lag_data || 0) + ' predictions with lag data'"></span>
