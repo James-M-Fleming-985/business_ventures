@@ -1,0 +1,285 @@
+# {{ calculator_name }}
+
+{{ calculator_description }}
+
+Generated from template: `tpl-correlation-analysis` v{{ version | default('2.0.0') }}
+
+## Overview
+
+This module provides a comprehensive correlation analysis engine with:
+
+{% for method in correlation_methods -%}
+- **{{ method.name|title }} Correlation**: {{ method.description }}
+{% endfor %}
+- **Concurrent Processing**: Parallel computation for large datasets
+- **Missing Data Handling**: Multiple strategies ({{ missing_data_strategy }}, drop, fill)
+- **Feature Orchestrator Integration**: Seamless integration with orchestrator patterns
+- **Comprehensive Testing**: Full test coverage with benchmarks
+
+## Quick Start
+
+### Basic Usage
+
+```python
+from correlation_engine import {{ calculator_class }}, {{ config_class }}
+import numpy as np
+
+# Create sample data
+data = np.random.randn(1000, 10)
+
+# Initialize calculator with default configuration
+calculator = {{ calculator_class }}()
+
+# Calculate correlations
+result = calculator.calculate(data)
+
+print(f"Processing time: {result['metadata']['processing_time']:.3f}s")
+print(f"Data shape: {result['metadata']['shape']}")
+print(f"Method used: {result['config']['method']}")
+```
+
+### Advanced Configuration
+
+```python
+# Custom configuration
+config = {{ config_class }}(
+    method='{{ default_method }}',
+    missing_data_strategy='{{ missing_data_strategy }}',
+    concurrent={{ concurrent_processing | lower }},
+    normalize={{ normalize_results | lower }},
+    max_workers={{ max_workers or 'None' }},
+    chunk_size={{ chunk_size }}
+)
+
+calculator = {{ calculator_class }}(config)
+result = calculator.calculate(data)
+```
+
+### Feature Orchestrator Integration
+
+{% if integrate_orchestrator -%}
+```python
+# Register with feature orchestrator
+orchestrator = YourFeatureOrchestrator()
+calculator.register_with_orchestrator(orchestrator)
+
+# Calculator is now registered as '{{ method_name }}'
+result = calculator.calculate(data)
+```
+{% endif %}
+
+## Configuration Options
+
+The `{{ config_class }}` class supports the following parameters:
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `method` | str | `'{{ default_method }}'` | Correlation calculation method |
+| `missing_data_strategy` | str | `'{{ missing_data_strategy }}'` | How to handle missing data |
+| `fill_value` | float | `{{ fill_value }}` | Value for 'fill' strategy |
+| `normalize` | bool | `{{ normalize_results | lower }}` | Whether to normalize results |
+| `concurrent` | bool | `{{ concurrent_processing | lower }}` | Enable concurrent processing |
+| `max_workers` | int/None | `{{ max_workers or 'None' }}` | Number of worker threads |
+| `chunk_size` | int | `{{ chunk_size }}` | Data chunk size for processing |
+| `timeout` | int | `{{ timeout_seconds }}` | Processing timeout in seconds |
+
+## Supported Methods
+
+{% for method in correlation_methods %}
+### {{ method.name|title }} Correlation
+
+{{ method.description }}
+
+```python
+config = {{ config_class }}(method='{{ method.name }}')
+calculator = {{ calculator_class }}(config)
+result = calculator.calculate(data)
+```
+{% if method.parameters %}
+**Parameters:**
+{% for param, value in method.parameters.items() %}
+- `{{ param }}`: {{ value }}
+{% endfor %}
+{% endif %}
+
+{% endfor %}
+
+## Missing Data Strategies
+
+### Interpolate (Default)
+Linear interpolation fills missing values based on surrounding data points.
+
+```python
+config = {{ config_class }}(missing_data_strategy='interpolate')
+```
+
+### Drop
+Removes rows containing any missing values.
+
+```python
+config = {{ config_class }}(missing_data_strategy='drop')
+```
+
+### Fill
+Replaces missing values with a constant.
+
+```python
+config = {{ config_class }}(
+    missing_data_strategy='fill',
+    fill_value={{ fill_value }}
+)
+```
+
+## Performance
+
+The calculator includes several performance optimizations:
+
+- **Concurrent Processing**: Automatically enabled for datasets > {{ chunk_size }} elements
+- **Chunked Processing**: Data split into {{ chunk_size }}-element chunks
+- **Memory Efficient**: Streaming processing for large datasets
+- **Timeout Protection**: {{ timeout_seconds }}s timeout prevents hanging
+
+### Benchmarks
+
+Typical performance on modern hardware:
+
+| Data Size | Method | Processing Time | Memory Usage |
+|-----------|--------|-----------------|--------------|
+| 1K x 10 | {{ default_method }} | ~0.01s | ~1MB |
+| 10K x 50 | {{ default_method }} | ~0.1s | ~10MB |
+| 100K x 100 | {{ default_method }} | ~2s | ~100MB |
+
+{% if concurrent_processing %}
+With concurrent processing enabled, performance scales with available CPU cores.
+{% endif %}
+
+## Error Handling
+
+The calculator includes comprehensive error handling:
+
+- **Type Validation**: Input data type checking
+- **Shape Validation**: Ensures compatible data dimensions
+- **Timeout Protection**: Prevents infinite processing
+- **Graceful Degradation**: Falls back to simpler methods on errors
+
+```python
+try:
+    result = calculator.calculate(problematic_data)
+except TypeError as e:
+    print(f"Data type error: {e}")
+except ValueError as e:
+    print(f"Data value error: {e}")
+except Exception as e:
+    print(f"Calculation error: {e}")
+```
+
+## Testing
+
+Run the comprehensive test suite:
+
+```bash
+pytest tests/test_correlation_engine.py -v
+```
+
+The test suite includes:
+- Unit tests for all methods
+- Integration tests
+- Performance benchmarks
+- Error handling validation
+- Concurrent processing tests
+
+## Dependencies
+
+{% if frameworks %}
+Required packages:
+{% for framework in frameworks %}
+- `{{ framework }}`
+{% endfor %}
+{% endif %}
+
+Install dependencies:
+
+```bash
+{% for framework in frameworks -%}
+pip install {{ framework }}{% if not loop.last %} \{% endif %}
+{% endfor %}
+```
+
+## Integration Examples
+
+### With Pandas DataFrames
+
+```python
+import pandas as pd
+
+# Load data
+df = pd.read_csv('financial_data.csv')
+
+# Calculate correlations
+calculator = {{ calculator_class }}()
+result = calculator.calculate(df)
+
+# Convert back to DataFrame for analysis
+correlation_matrix = pd.DataFrame(
+    result['data'], 
+    index=df.columns, 
+    columns=df.columns
+)
+```
+
+### With Time Series Data
+
+```python
+# Time series correlation with lag analysis
+config = {{ config_class }}(method='lagged')
+calculator = {{ calculator_class }}(config)
+
+# Calculate lagged correlations
+result = calculator.calculate(time_series_data)
+```
+
+### Batch Processing
+
+```python
+# Process multiple datasets
+datasets = [data1, data2, data3]
+results = []
+
+calculator = {{ calculator_class }}()
+for i, dataset in enumerate(datasets):
+    result = calculator.calculate(dataset)
+    result['dataset_id'] = i
+    results.append(result)
+```
+
+## API Reference
+
+### {{ calculator_class }}
+
+Main correlation calculation engine.
+
+#### Methods
+
+- `__init__(config: Optional[{{ config_class }}] = None)`: Initialize calculator
+- `calculate(data: Union[np.ndarray, pd.DataFrame, List, Dict], **kwargs) -> Dict[str, Any]`: Main calculation method
+- `set_feature_orchestrator(orchestrator: Any) -> None`: Set orchestrator integration
+{% if integrate_orchestrator -%}
+- `register_with_orchestrator(orchestrator: Any) -> None`: Register with orchestrator
+{% endif %}
+
+### {{ config_class }}
+
+Configuration dataclass for correlation calculations.
+
+#### Attributes
+
+All configuration parameters as listed in the configuration table above.
+
+## License
+
+Generated code follows your project's licensing terms.
+
+---
+
+*Template: tpl-correlation-analysis v{{ version | default('2.0.0') }}*  
+*Generated: {{ generated_at | default('') }}*

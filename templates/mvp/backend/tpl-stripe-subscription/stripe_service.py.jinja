@@ -1,0 +1,187 @@
+"""
+Stripe Service for {{ app_name }}
+Business logic for handling Stripe payments and subscriptions
+"""
+import stripe
+import os
+from typing import Dict, Any, Optional
+from datetime import datetime
+
+
+class StripeService:
+    """Service for handling Stripe payment operations"""
+    
+    def __init__(self):
+        self.api_key = os.getenv("STRIPE_SECRET_KEY")
+        stripe.api_key = self.api_key
+    
+    def create_checkout_session(
+        self,
+        price_id: str,
+        success_url: str,
+        cancel_url: str,
+        customer_email: Optional[str] = None
+    ) -> stripe.checkout.Session:
+        """
+        Create a Stripe Checkout session for subscription
+        
+        Args:
+            price_id: Stripe Price ID (e.g., price_1234...)
+            success_url: URL to redirect on success
+            cancel_url: URL to redirect on cancel
+            customer_email: Pre-fill customer email (optional)
+        
+        Returns:
+            Stripe Checkout Session object
+        """
+        session_params = {
+            "mode": "subscription",
+            "line_items": [
+                {
+                    "price": price_id,
+                    "quantity": 1,
+                }
+            ],
+            "success_url": success_url,
+            "cancel_url": cancel_url,
+            "allow_promotion_codes": True,
+            "billing_address_collection": "auto",
+        }
+        
+        if customer_email:
+            session_params["customer_email"] = customer_email
+        
+        return stripe.checkout.Session.create(**session_params)
+    
+    def create_portal_session(
+        self,
+        customer_id: str,
+        return_url: str
+    ) -> stripe.billing_portal.Session:
+        """
+        Create a Customer Portal session for managing subscriptions
+        
+        Args:
+            customer_id: Stripe Customer ID
+            return_url: URL to return to after portal session
+        
+        Returns:
+            Stripe Portal Session object
+        """
+        return stripe.billing_portal.Session.create(
+            customer=customer_id,
+            return_url=return_url,
+        )
+    
+    async def handle_checkout_completed(self, session: Dict[str, Any]) -> None:
+        """
+        Handle successful checkout completion
+        
+        Actions:
+        - Create/update user in database
+        - Send welcome email
+        - Track conversion event
+        """
+        customer_id = session.get("customer")
+        customer_email = session.get("customer_email") or session.get("customer_details", {}).get("email")
+        subscription_id = session.get("subscription")
+        
+        print(f"✅ Checkout completed for {customer_email}")
+        print(f"   Customer ID: {customer_id}")
+        print(f"   Subscription ID: {subscription_id}")
+        
+        # TODO: Implement your business logic
+        # - Update user in database with subscription details
+        # - Send welcome email (SendGrid)
+        # - Track analytics event (Amplitude)
+        # Example:
+        # await db.users.update(
+        #     email=customer_email,
+        #     stripe_customer_id=customer_id,
+        #     subscription_id=subscription_id,
+        #     subscription_status="active",
+        #     subscribed_at=datetime.utcnow()
+        # )
+        # await email_service.send_welcome_email(customer_email)
+        # analytics.track('subscribed', user_id=customer_email, plan='pro', amount={{ pro_amount }})
+    
+    async def handle_subscription_updated(self, subscription: Dict[str, Any]) -> None:
+        """
+        Handle subscription update (upgrade, downgrade, renewal)
+        """
+        customer_id = subscription.get("customer")
+        subscription_id = subscription.get("id")
+        status = subscription.get("status")
+        
+        print(f"🔄 Subscription updated: {subscription_id}")
+        print(f"   Customer: {customer_id}")
+        print(f"   Status: {status}")
+        
+        # TODO: Update database
+        # await db.users.update_subscription_status(
+        #     stripe_customer_id=customer_id,
+        #     subscription_status=status
+        # )
+    
+    async def handle_subscription_deleted(self, subscription: Dict[str, Any]) -> None:
+        """
+        Handle subscription cancellation
+        """
+        customer_id = subscription.get("customer")
+        subscription_id = subscription.get("id")
+        
+        print(f"❌ Subscription cancelled: {subscription_id}")
+        print(f"   Customer: {customer_id}")
+        
+        # TODO: Update database and send email
+        # await db.users.update_subscription_status(
+        #     stripe_customer_id=customer_id,
+        #     subscription_status="cancelled"
+        # )
+        # await email_service.send_cancellation_email(customer_email)
+        # analytics.track('unsubscribed', user_id=customer_email, reason='user_cancelled')
+    
+    async def handle_payment_failed(self, invoice: Dict[str, Any]) -> None:
+        """
+        Handle failed payment (e.g., card declined)
+        """
+        customer_id = invoice.get("customer")
+        
+        print(f"⚠️ Payment failed for customer: {customer_id}")
+        
+        # TODO: Send payment failed email
+        # await email_service.send_payment_failed_email(customer_email)
+    
+    async def get_subscription_status(self, customer_id: str) -> Dict[str, Any]:
+        """
+        Get current subscription status for a customer
+        
+        Returns:
+            {
+                "status": "active" | "cancelled" | "past_due" | "none",
+                "current_period_end": timestamp,
+                "cancel_at_period_end": boolean,
+                "plan": "pro"
+            }
+        """
+        try:
+            subscriptions = stripe.Subscription.list(
+                customer=customer_id,
+                status="all",
+                limit=1
+            )
+            
+            if not subscriptions.data:
+                return {"status": "none"}
+            
+            sub = subscriptions.data[0]
+            
+            return {
+                "status": sub.status,
+                "current_period_end": sub.current_period_end,
+                "cancel_at_period_end": sub.cancel_at_period_end,
+                "plan": sub.items.data[0].price.id if sub.items.data else None
+            }
+        except Exception as e:
+            print(f"Error fetching subscription: {e}")
+            return {"status": "error", "message": str(e)}

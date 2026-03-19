@@ -1,0 +1,25 @@
+/**
+ * Simple React + TypeScript landing component
+ * Variables:
+ *  - component_name
+ *  - title
+ */
+import React from 'react';
+
+type Props = {
+  title?: string;
+};
+
+export const {{ component_name }}: React.FC<Props> = ({ title = "{{ title }}" }) => {
+  return (
+    <div className="landing-hero">
+      <header className="hero-header">
+        <h1>{title}</h1>
+        <p>Welcome to the generated landing page.</p>
+        <button onClick={() => alert('CTA clicked!')}>Get Started</button>
+      </header>
+    </div>
+  );
+};
+
+export default {{ component_name }};

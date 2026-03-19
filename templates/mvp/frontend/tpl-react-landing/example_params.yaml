@@ -1,0 +1,35 @@
+# Example parameters for React Landing Page template
+# This demonstrates a SaaS product landing page
+
+component_name: "LandingPage"
+brand_name: "MVPBuilder"
+
+hero_title: "Build Your MVP in Minutes, Not Months"
+hero_subtitle: "Generate production-ready code with AI-powered templates. Ship faster, validate ideas quicker, and focus on what matters."
+
+cta_text: "Start Free Trial"
+cta_secondary_text: "See Demo"
+
+features:
+  - title: "Lightning Fast"
+    description: "Generate complete features in seconds with our template library. No more boilerplate code."
+    icon: "Zap"
+  
+  - title: "Production Ready"
+    description: "All templates follow best practices and include tests, documentation, and deployment configs."
+    icon: "Shield"
+  
+  - title: "Cost Effective"
+    description: "Save 83% on development costs compared to traditional AI code generation."
+    icon: "DollarSign"
+  
+  - title: "Easy Integration"
+    description: "Seamlessly integrates with your existing codebase. Works with FastAPI, React, and more."
+    icon: "Puzzle"
+
+include_email_capture: true
+email_capture_title: "Join 1000+ Developers"
+email_capture_subtitle: "Get early access to new templates and exclusive resources"
+
+api_endpoint: "/api/waitlist"
+output_dir: "src"

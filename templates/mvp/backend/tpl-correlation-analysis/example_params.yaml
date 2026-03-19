@@ -1,0 +1,76 @@
+# Example parameters for Statistical Correlation Analysis Engine
+# Based on real AI Code Generator patterns
+
+# Core configuration class name
+config_class: "CorrelationConfig"
+
+# Calculator class name and description
+calculator_class: "CorrelationCalculator"
+calculator_name: "Correlation Analysis"
+calculator_description: "Advanced correlation calculator supporting multiple methods with concurrent processing"
+
+# Default correlation method
+default_method: "pearson"  # pearson, spearman, kendall, partial, lagged
+
+# Processing configuration
+concurrent_processing: true
+max_workers: 4
+chunk_size: 1000
+timeout_seconds: 300
+
+# Missing data handling
+missing_data_strategy: "interpolate"  # interpolate, drop, fill
+fill_value: 0.0
+
+# Normalization
+normalize_results: true
+
+# Feature orchestrator integration
+integrate_orchestrator: true
+method_name: "correlation_analysis"
+
+# Framework dependencies (required for template)
+frameworks:
+  - "numpy"
+  - "scipy" 
+  - "pandas"
+  - "concurrent.futures"
+
+# Version info
+version: "2.0.0"
+generated_at: "2025-10-31T10:00:00Z"
+
+# Supported correlation methods
+correlation_methods:
+  - name: "pearson"
+    description: "Pearson product-moment correlation coefficient"
+    parameters: {}
+  - name: "spearman"
+    description: "Spearman rank correlation coefficient"  
+    parameters: {}
+  - name: "kendall"
+    description: "Kendall tau rank correlation coefficient"
+    parameters: {}
+  - name: "partial"
+    description: "Partial correlation controlling for other variables"
+    parameters:
+      control_variables: []
+  - name: "lagged"
+    description: "Lagged correlation for time series"
+    parameters:
+      max_lag: 10
+
+# Output format configuration
+output_format:
+  include_statistics: true
+  include_metadata: true
+  include_visualization_data: true
+  
+# Example usage patterns
+usage_examples:
+  - name: "Simple correlation matrix"
+    description: "Calculate Pearson correlation matrix for DataFrame"
+  - name: "Time series lagged correlation"
+    description: "Find optimal lag for time series correlation"
+  - name: "Partial correlation network"
+    description: "Build partial correlation network controlling for confounders"

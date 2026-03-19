@@ -1,0 +1,12 @@
+# Example parameters for Mixpanel Analytics Template
+# Copy this file and customize for your application
+
+project_token: "abc123def456ghi789"  # Your Mixpanel Project Token
+app_name: "My SaaS App"
+environment: "production"
+enable_debug: false
+track_pageviews: true
+persistence_type: "localStorage"  # or "cookie"
+
+# Output directory (relative to project root)
+output_dir: "src/analytics"

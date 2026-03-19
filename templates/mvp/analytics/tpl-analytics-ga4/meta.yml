@@ -1,0 +1,102 @@
+id: tpl-analytics-ga4
+name: Google Analytics 4 Integration
+version: 1.0.0
+status: approved
+layer_type: analytics
+cacheable: true
+
+description: |
+  Google Analytics 4 tracking integration for web applications.
+  Includes pageview tracking, event tracking, and conversion tracking.
+  Supports both React and vanilla JavaScript implementations.
+
+frameworks:
+  - google-analytics
+  - gtag.js
+
+tags:
+  - analytics
+  - tracking
+  - ga4
+  - metrics
+  - conversion
+
+variables:
+  - name: measurement_id
+    type: string
+    required: true
+    description: "GA4 Measurement ID (format: G-XXXXXXXXXX)"
+    example: "G-ABC123DEF4"
+  
+  - name: app_name
+    type: string
+    required: true
+    description: "Application name for tracking"
+    example: "My SaaS App"
+  
+  - name: environment
+    type: string
+    required: false
+    default: "production"
+    description: "Environment (production/staging/development)"
+  
+  - name: enable_debug
+    type: boolean
+    required: false
+    default: false
+    description: "Enable GA4 debug mode"
+  
+  - name: custom_events
+    type: array
+    required: false
+    default: []
+    description: "List of custom event names to track"
+
+outputs:
+  - path: "analytics/ga4-config.js"
+    description: "GA4 configuration and initialization"
+  
+  - path: "analytics/ga4-events.js"
+    description: "Event tracking helpers"
+  
+  - path: "analytics/ga4-react.tsx"
+    description: "React component wrapper for GA4"
+  
+  - path: "public/index.html.snippet"
+    description: "HTML snippet to inject into <head>"
+
+cost_estimate_tokens: 400
+estimated_generation_time: "~2 seconds"
+
+dependencies:
+  npm:
+    - "react-ga4: ^2.1.0 (optional, for React)"
+
+environment_variables:
+  - name: VITE_GA4_MEASUREMENT_ID
+    description: "GA4 Measurement ID"
+    required: true
+    example: "G-ABC123DEF4"
+  
+  - name: VITE_GA4_DEBUG
+    description: "Enable debug mode"
+    required: false
+    example: "false"
+
+usage_example: |
+  # Generate GA4 tracking setup
+  python mvp_generator.py --template tpl-analytics-ga4 \
+    --var measurement_id=G-ABC123DEF4 \
+    --var app_name="My App"
+  
+  # Track custom event
+  trackEvent('button_click', { button_name: 'signup' });
+  
+  # Track pageview (auto in React Router)
+  trackPageview('/pricing');
+
+integration_notes: |
+  - Add VITE_GA4_MEASUREMENT_ID to .env
+  - Import and initialize in main app entry point
+  - Use React component wrapper for SPA tracking
+  - Events are automatically batched and sent

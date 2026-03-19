@@ -3,7 +3,7 @@ Database Models for Correlation Discovery Engine
 SQLAlchemy models for time series data, correlations, and metadata
 """
 
-from sqlalchemy import Column, Integer, String, Float, DateTime, Text, Boolean, ForeignKey, Index
+from sqlalchemy import Column, Integer, String, Float, DateTime, Text, Boolean, ForeignKey, Index, JSON
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -464,5 +464,98 @@ class ExploitationValidation(Base):
             "revenue_potential_accurate": self.revenue_potential_accurate,
             "actual_revenue": self.actual_revenue,
             "viability_score_at_validation": self.viability_score_at_validation,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+class MVPBuild(Base):
+    """Tracks MVP builds triggered from exploitation recommendations.
+    
+    Each build generates code from templates + AI, stores artifacts in S3,
+    and optionally auto-deploys to Railway as a standalone service.
+    """
+    __tablename__ = 'mvp_builds'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    recommendation_id = Column(Integer, ForeignKey('exploitation_recommendations.id'), nullable=False)
+    complexity = Column(String(10), nullable=False)  # LOW, MEDIUM, HIGH
+    status = Column(String(20), nullable=False, default='QUEUED')  # QUEUED, GENERATING, UPLOADING, DEPLOYING, LIVE, FAILED
+
+    # Build configuration
+    build_config = Column(JSON)  # Template matches, params, layers selected
+
+    # Storage
+    s3_prefix = Column(String(500))  # S3 path: mvps/{build_id}/
+
+    # Railway deployment
+    railway_project_id = Column(String(100))
+    railway_service_id = Column(String(100))
+    railway_url = Column(String(500))  # Live MVP URL
+
+    # Error tracking
+    error_message = Column(Text)
+    total_errors = Column(Integer, default=0)
+    error_breakdown = Column(JSON)  # {syntax: 0, test: 0, import: 0, ...}
+
+    # Metrics
+    duration_seconds = Column(Float)
+    ai_cost_usd = Column(Float)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    recommendation = relationship('ExploitationRecommendation', backref='builds')
+    files = relationship('MVPBuildFile', back_populates='build', cascade='all, delete-orphan')
+
+    __table_args__ = (
+        Index('ix_build_status', 'status'),
+        Index('ix_build_rec_id', 'recommendation_id'),
+    )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "recommendation_id": self.recommendation_id,
+            "complexity": self.complexity,
+            "status": self.status,
+            "build_config": self.build_config,
+            "s3_prefix": self.s3_prefix,
+            "railway_project_id": self.railway_project_id,
+            "railway_service_id": self.railway_service_id,
+            "railway_url": self.railway_url,
+            "error_message": self.error_message,
+            "total_errors": self.total_errors,
+            "error_breakdown": self.error_breakdown,
+            "duration_seconds": self.duration_seconds,
+            "ai_cost_usd": self.ai_cost_usd,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "file_count": len(self.files) if self.files else 0,
+        }
+
+
+class MVPBuildFile(Base):
+    """Individual files generated during an MVP build."""
+    __tablename__ = 'mvp_build_files'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    build_id = Column(Integer, ForeignKey('mvp_builds.id'), nullable=False)
+    file_path = Column(String(500), nullable=False)  # Relative path: backend/app/router.py
+    s3_key = Column(String(500), nullable=False)  # Full S3 key
+    file_size_bytes = Column(Integer, default=0)
+    template_id = Column(String(100))  # Which template generated this file
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    build = relationship('MVPBuild', back_populates='files')
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "build_id": self.build_id,
+            "file_path": self.file_path,
+            "s3_key": self.s3_key,
+            "file_size_bytes": self.file_size_bytes,
+            "template_id": self.template_id,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }

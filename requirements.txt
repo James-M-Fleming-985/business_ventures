@@ -24,6 +24,9 @@ pytrends
 # AWS S3 Storage
 boto3==1.34.0
 
+# AI Code Generation
+anthropic>=0.18.0
+
 # Security
 cryptography==41.0.7
 python-jose[cryptography]==3.3.0

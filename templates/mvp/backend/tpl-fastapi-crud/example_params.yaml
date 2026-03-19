@@ -1,0 +1,37 @@
+# Example parameters for FastAPI CRUD template
+# This demonstrates a User model with authentication fields
+
+model_name: "User"
+model_name_snake: "user"
+table_name: "users"
+
+fields:
+  - name: "email"
+    type: "String"
+    nullable: false
+    unique: true
+    index: true
+  
+  - name: "username"
+    type: "String"
+    nullable: false
+    unique: true
+    index: true
+  
+  - name: "full_name"
+    type: "String"
+    nullable: true
+  
+  - name: "is_active"
+    type: "Boolean"
+    default: true
+    nullable: false
+  
+  - name: "is_superuser"
+    type: "Boolean"
+    default: false
+    nullable: false
+
+output_dir: "src"
+use_async: false
+include_timestamps: true

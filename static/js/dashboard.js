@@ -119,6 +119,11 @@ function dashboardData() {
             revenue_potential_accurate: null,
             actual_revenue: null,
         },
+
+        // MVP Build state
+        builds: {},
+        buildComplexity: {},
+        buildInProgress: {},
         
         async init() {
             console.log('Initializing dashboard...');
@@ -843,6 +848,8 @@ function dashboardData() {
                         avg_score: summary.average_score || 0
                     };
                     console.log(`📊 Loaded ${this.exploitationRecommendations.length} exploitation recommendations`);
+                    // Load build statuses for BUILD cards
+                    await this.loadBuilds();
                 }
             } catch (error) {
                 console.error('Failed to load exploitation recommendations:', error);
@@ -2108,6 +2115,67 @@ function dashboardData() {
                 }
             } catch (e) {
                 console.error('Validation error:', e);
+            }
+        },
+
+        // ============================================================
+        // MVP Build
+        // ============================================================
+        async startBuild(recId) {
+            const complexity = this.buildComplexity[recId] || 'LOW';
+            this.buildInProgress[recId] = true;
+            try {
+                const res = await fetch('/api/dashboard/exploitation/build', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ recommendation_id: recId, complexity }),
+                });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    console.error('Build start failed:', err.detail || res.status);
+                    this.buildInProgress[recId] = false;
+                    return;
+                }
+                const data = await res.json();
+                console.log('🔨 Build started:', data.build_id);
+                this.builds[recId] = { status: data.status, build_id: data.build_id };
+                this.pollBuildStatus(recId, data.build_id);
+            } catch (e) {
+                console.error('Build error:', e);
+                this.buildInProgress[recId] = false;
+            }
+        },
+
+        async pollBuildStatus(recId, buildId) {
+            const poll = async () => {
+                try {
+                    const res = await fetch(`/api/dashboard/exploitation/builds/${buildId}`);
+                    if (!res.ok) return;
+                    const data = await res.json();
+                    this.builds[recId] = data;
+                    if (['QUEUED', 'GENERATING', 'UPLOADING', 'DEPLOYING'].includes(data.status)) {
+                        setTimeout(poll, 5000);
+                    } else {
+                        this.buildInProgress[recId] = false;
+                    }
+                } catch (e) {
+                    console.error('Poll error:', e);
+                    this.buildInProgress[recId] = false;
+                }
+            };
+            setTimeout(poll, 3000);
+        },
+
+        async loadBuilds() {
+            try {
+                const res = await fetch('/api/dashboard/exploitation/builds');
+                if (!res.ok) return;
+                const data = await res.json();
+                for (const b of (data.builds || [])) {
+                    this.builds[b.recommendation_id] = b;
+                }
+            } catch (e) {
+                console.error('Load builds error:', e);
             }
         }
     };

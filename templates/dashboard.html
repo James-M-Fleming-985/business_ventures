@@ -945,6 +945,51 @@
                                     Validate Prediction
                                 </button>
                             </template>
+
+                            <!-- Build MVP (BUILD recs) -->
+                            <template x-if="rec.action_type === 'BUILD'">
+                                <div class="space-y-2 w-full">
+                                    <!-- Complexity Selector -->
+                                    <div class="flex gap-1 w-full">
+                                        <template x-for="lvl in ['LOW','MEDIUM','HIGH']" :key="lvl">
+                                            <button @click="buildComplexity[rec.id] = lvl"
+                                                :class="(buildComplexity[rec.id] || 'LOW') === lvl
+                                                    ? 'bg-violet-600 text-white'
+                                                    : 'bg-slate-700 text-slate-400 hover:bg-slate-600'"
+                                                class="flex-1 px-2 py-1 rounded text-[10px] font-semibold uppercase transition"
+                                                x-text="lvl"></button>
+                                        </template>
+                                    </div>
+                                    <!-- Build Button -->
+                                    <button @click="startBuild(rec.id)"
+                                        :disabled="buildInProgress[rec.id]"
+                                        :class="buildInProgress[rec.id]
+                                            ? 'bg-slate-600 cursor-wait'
+                                            : 'bg-violet-600 hover:bg-violet-700'"
+                                        class="px-3 py-2 text-white rounded-lg text-xs font-medium transition flex items-center justify-center gap-2 w-full">
+                                        <template x-if="!buildInProgress[rec.id]">
+                                            <span class="flex items-center gap-2"><i data-lucide="hammer" class="w-4 h-4"></i> Build MVP</span>
+                                        </template>
+                                        <template x-if="buildInProgress[rec.id]">
+                                            <span class="flex items-center gap-2"><i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Building...</span>
+                                        </template>
+                                    </button>
+                                    <!-- Build Status Badge -->
+                                    <template x-if="builds[rec.id]">
+                                        <div class="text-[10px] font-medium px-2 py-1 rounded text-center"
+                                             :class="{
+                                                 'bg-yellow-900/40 text-yellow-400': ['QUEUED','GENERATING','UPLOADING','DEPLOYING'].includes(builds[rec.id].status),
+                                                 'bg-green-900/40 text-green-400': builds[rec.id].status === 'LIVE',
+                                                 'bg-red-900/40 text-red-400': builds[rec.id].status === 'FAILED'
+                                             }">
+                                            <span x-text="builds[rec.id].status"></span>
+                                            <template x-if="builds[rec.id].railway_url">
+                                                <a :href="builds[rec.id].railway_url" target="_blank" class="ml-1 underline">View</a>
+                                            </template>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
                         </div>
                     </div>
                 </div>

@@ -1,0 +1,31 @@
+# Example parameters for Railway deployment template
+# This demonstrates a FastAPI backend service
+
+service_name: "user-api"
+runtime: "python"
+python_version: "3.11"
+
+build_command: "pip install -r requirements.txt"
+start_command: "uvicorn src.main:app --host 0.0.0.0 --port $PORT"
+
+include_postgres: true
+include_redis: false
+include_health_check: true
+
+health_check_path: "/health"
+health_check_interval: 30
+
+environment_variables:
+  - name: "DATABASE_URL"
+    description: "PostgreSQL connection string"
+    required: true
+  
+  - name: "SECRET_KEY"
+    description: "Application secret key for JWT"
+    required: true
+  
+  - name: "ENVIRONMENT"
+    description: "Deployment environment"
+    required: false
+
+output_dir: "src"

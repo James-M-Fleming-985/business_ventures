@@ -1,0 +1,138 @@
+"""
+Stripe Payment Routes for {{ app_name }}
+Handles checkout session creation and webhook events
+"""
+from fastapi import APIRouter, Request, HTTPException, Depends
+from fastapi.responses import JSONResponse
+import stripe
+import os
+from typing import Dict, Any
+from .stripe_service import StripeService
+
+router = APIRouter(tags=["payments"])
+
+# Initialize Stripe
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
+
+stripe_service = StripeService()
+
+
+@router.post("/create-checkout-session")
+async def create_checkout_session(request: Request) -> Dict[str, Any]:
+    """
+    Create a Stripe Checkout session for Pro subscription
+    
+    Request body:
+    {
+        "tier": "pro",
+        "email": "user@example.com" (optional)
+    }
+    """
+    try:
+        data = await request.json()
+        tier = data.get("tier", "pro")
+        email = data.get("email")
+        
+        if tier != "pro":
+            raise HTTPException(status_code=400, detail="Invalid tier")
+        
+        # Create checkout session
+        session = stripe_service.create_checkout_session(
+            price_id="{{ price_id_pro }}",
+            success_url="{{ success_url }}?session_id={CHECKOUT_SESSION_ID}",
+            cancel_url="{{ cancel_url }}",
+            customer_email=email
+        )
+        
+        return {"sessionId": session.id, "url": session.url}
+        
+    except stripe.error.StripeError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error creating checkout session: {str(e)}")
+
+
+@router.post("/create-portal-session")
+async def create_portal_session(request: Request) -> Dict[str, Any]:
+    """
+    Create a Stripe Customer Portal session for managing subscriptions
+    
+    Request body:
+    {
+        "customer_id": "cus_..."
+    }
+    """
+    try:
+        data = await request.json()
+        customer_id = data.get("customer_id")
+        
+        if not customer_id:
+            raise HTTPException(status_code=400, detail="customer_id required")
+        
+        session = stripe_service.create_portal_session(
+            customer_id=customer_id,
+            return_url="{{ success_url }}"
+        )
+        
+        return {"url": session.url}
+        
+    except stripe.error.StripeError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error creating portal session: {str(e)}")
+
+
+@router.post("/webhook")
+async def stripe_webhook(request: Request):
+    """
+    Handle Stripe webhook events
+    Validates signature and processes subscription events
+    """
+    payload = await request.body()
+    sig_header = request.headers.get("stripe-signature")
+    
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, STRIPE_WEBHOOK_SECRET
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail="Invalid payload")
+    except stripe.error.SignatureVerificationError as e:
+        raise HTTPException(status_code=400, detail="Invalid signature")
+    
+    # Handle the event
+    event_type = event["type"]
+    event_data = event["data"]["object"]
+    
+    if event_type == "checkout.session.completed":
+        # Payment successful - activate subscription
+        await stripe_service.handle_checkout_completed(event_data)
+        
+    elif event_type == "customer.subscription.updated":
+        # Subscription changed (upgraded, downgraded)
+        await stripe_service.handle_subscription_updated(event_data)
+        
+    elif event_type == "customer.subscription.deleted":
+        # Subscription cancelled
+        await stripe_service.handle_subscription_deleted(event_data)
+        
+    elif event_type == "invoice.payment_failed":
+        # Payment failed - notify customer
+        await stripe_service.handle_payment_failed(event_data)
+    
+    return JSONResponse(content={"status": "success"}, status_code=200)
+
+
+@router.get("/subscription-status/{customer_id}")
+async def get_subscription_status(customer_id: str) -> Dict[str, Any]:
+    """
+    Get current subscription status for a customer
+    """
+    try:
+        status = await stripe_service.get_subscription_status(customer_id)
+        return status
+    except stripe.error.StripeError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching subscription: {str(e)}")

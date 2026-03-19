@@ -1,0 +1,12 @@
+# Example parameters for Amplitude Analytics Template
+# Copy this file and customize for your application
+
+api_key: "abc123def456ghi789jkl"  # Your Amplitude API Key
+app_name: "My SaaS App"
+environment: "production"
+enable_debug: false
+track_sessions: true
+save_events: true
+
+# Output directory (relative to project root)
+output_dir: "src/analytics"

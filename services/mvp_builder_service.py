@@ -1,0 +1,420 @@
+"""
+MVP Builder Service for Causal Affect Platform
+
+Self-contained build engine that generates MVP code from exploitation
+recommendations using templates + AI, uploads to S3, and tracks build state.
+Migrated from control_tower for Level 5 autonomy.
+"""
+
+import io
+import json
+import logging
+import os
+import re
+import time
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
+
+import jinja2
+import yaml
+
+logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Template metadata structures (migrated from mvp_semantic_mapper.py)
+# ---------------------------------------------------------------------------
+
+@dataclass
+class TemplateMetadata:
+    id: str
+    name: str
+    path: str
+    layer_type: str  # api, ui, infra, composite, analytics
+    frameworks: List[str]
+    tags: List[str]
+    version: str
+    status: str
+    description: str
+    cost_estimate_tokens: int
+    outputs: Optional[List[Dict[str, str]]] = None
+
+
+@dataclass
+class TemplateMatch:
+    template: TemplateMetadata
+    confidence: float
+    matched_keywords: List[str]
+    reasons: List[str]
+
+
+# ---------------------------------------------------------------------------
+# Keyword-based requirement analysis
+# ---------------------------------------------------------------------------
+
+KEYWORD_MAPPINGS = {
+    'frontend': ['landing', 'page', 'ui', 'website', 'react', 'interface', 'form', 'dashboard'],
+    'backend': ['api', 'server', 'endpoint', 'service', 'backend', 'fastapi'],
+    'database': ['store', 'save', 'persist', 'database', 'data', 'record', 'user'],
+    'auth': ['login', 'signup', 'register', 'authenticate', 'auth', 'user', 'password'],
+    'deployment': ['deploy', 'host', 'railway', 'production', 'serve'],
+    'payments': ['payment', 'stripe', 'checkout', 'subscription', 'billing', 'saas'],
+    'analytics': ['analytics', 'tracking', 'ga4', 'mixpanel', 'amplitude', 'metrics', 'events'],
+    'crud': ['create', 'read', 'update', 'delete', 'crud', 'manage', 'list'],
+}
+
+COMPLEXITY_LIMITS = {
+    'LOW': 2,
+    'MEDIUM': 5,
+    'HIGH': 12,
+}
+
+ERROR_CATEGORIES = ['syntax', 'test', 'frontend', 'import', 'wiring', 'config', 'runtime']
+
+
+def _analyse_requirement(text: str) -> Dict[str, bool]:
+    """Return which capability categories a requirement needs."""
+    lower = text.lower()
+    return {cat: any(kw in lower for kw in kws) for cat, kws in KEYWORD_MAPPINGS.items()}
+
+
+def _score_template(template: TemplateMetadata, requirement: str, needs: Dict[str, bool]) -> Tuple[float, List[str]]:
+    """Score how well *template* matches *requirement*. Returns (score, reasons)."""
+    score = 0.0
+    reasons: List[str] = []
+    req_lower = requirement.lower()
+
+    # Layer alignment
+    layer_map = {'ui': 'frontend', 'api': 'backend', 'infra': 'deployment'}
+    cat = layer_map.get(template.layer_type)
+    if cat and needs.get(cat):
+        score += 30
+        reasons.append(f"{template.layer_type} layer matches")
+
+    # Tag match
+    for tag in template.tags:
+        if tag.lower() in req_lower:
+            score += 15
+            reasons.append(f"tag '{tag}'")
+
+    # Framework match
+    for fw in template.frameworks:
+        if fw.lower() in req_lower:
+            score += 10
+            reasons.append(f"framework '{fw}'")
+
+    # Description word overlap
+    stop = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'with'}
+    desc_words = set(re.findall(r'\b\w+\b', template.description.lower())) - stop
+    req_words = set(re.findall(r'\b\w+\b', req_lower)) - stop
+    overlap = desc_words & req_words
+    if overlap:
+        score += min(len(overlap) * 5, 20)
+        reasons.append(f"{len(overlap)} keyword overlaps")
+
+    # Specific boosts
+    if template.id == 'tpl-backend-fastapi-crud' and any(w in req_lower for w in ['crud', 'api', 'store', 'manage']):
+        score += 20
+    if template.id == 'tpl-backend-fastapi-auth' and needs.get('auth'):
+        score += 25
+    if template.id == 'tpl-infra-railway-service' and needs.get('deployment'):
+        score += 20
+    if 'analytics' in template.id and needs.get('analytics'):
+        score += 50
+
+    return min(score, 100.0), reasons
+
+
+class MVPBuilderService:
+    """Orchestrates MVP code generation, S3 upload, and error tracking."""
+
+    def __init__(self, s3_service=None):
+        self.s3 = s3_service
+        self.anthropic_key = os.getenv('ANTHROPIC_API_KEY')
+        self.templates_dir = Path(__file__).resolve().parent.parent / 'templates' / 'mvp'
+        self.templates: List[TemplateMetadata] = []
+        self._load_templates()
+
+        if self.anthropic_key:
+            logger.info("✅ MVPBuilderService initialised with AI key")
+        else:
+            logger.warning("⚠️  ANTHROPIC_API_KEY not set – AI generation disabled")
+
+    # ------------------------------------------------------------------
+    # Template loading
+    # ------------------------------------------------------------------
+
+    def _load_templates(self):
+        index_file = self.templates_dir / 'index.yaml'
+        if not index_file.exists():
+            logger.warning(f"Template index not found: {index_file}")
+            return
+        with open(index_file, 'r') as f:
+            data = yaml.safe_load(f)
+        for t in data.get('templates', []):
+            self.templates.append(TemplateMetadata(
+                id=t['id'], name=t['name'], path=t['path'],
+                layer_type=t['layer_type'], frameworks=t.get('frameworks', []),
+                tags=t.get('tags', []), version=t['version'], status=t['status'],
+                description=t.get('description', ''),
+                cost_estimate_tokens=t.get('cost_estimate_tokens', 0),
+            ))
+        logger.info(f"Loaded {len(self.templates)} MVP templates")
+
+    # ------------------------------------------------------------------
+    # Template matching
+    # ------------------------------------------------------------------
+
+    def match_templates(self, requirement: str, complexity: str) -> List[TemplateMatch]:
+        """Select templates that match *requirement*, capped by *complexity*."""
+        needs = _analyse_requirement(requirement)
+        scored = []
+        for tpl in self.templates:
+            if tpl.status != 'approved':
+                continue
+            score, reasons = _score_template(tpl, requirement, needs)
+            if score >= 15:
+                scored.append(TemplateMatch(template=tpl, confidence=score,
+                                            matched_keywords=[], reasons=reasons))
+        scored.sort(key=lambda m: m.confidence, reverse=True)
+        limit = COMPLEXITY_LIMITS.get(complexity, 5)
+        return scored[:limit]
+
+    # ------------------------------------------------------------------
+    # Jinja2 rendering
+    # ------------------------------------------------------------------
+
+    def _render_template_dir(self, template: TemplateMetadata, params: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Render all .jinja files inside a template directory. Returns list of {path, content, size}."""
+        tpl_path = self.templates_dir / template.path
+        if not tpl_path.is_dir():
+            logger.warning(f"Template path missing: {tpl_path}")
+            return []
+
+        env = jinja2.Environment(
+            loader=jinja2.FileSystemLoader(str(tpl_path)),
+            undefined=jinja2.Undefined,
+            keep_trailing_newline=True,
+        )
+
+        files: List[Dict[str, Any]] = []
+        for jinja_file in sorted(tpl_path.rglob('*.jinja')):
+            rel = jinja_file.relative_to(tpl_path)
+            out_name = str(rel).replace('.jinja', '')
+            try:
+                tmpl = env.get_template(str(rel))
+                content = tmpl.render(**params)
+                files.append({'path': out_name, 'content': content, 'size': len(content.encode()),
+                              'template_id': template.id})
+            except Exception as exc:
+                logger.error(f"Render error {rel}: {exc}")
+                files.append({'path': out_name, 'content': f'# RENDER ERROR: {exc}', 'size': 0,
+                              'template_id': template.id, 'error': str(exc)})
+        return files
+
+    # ------------------------------------------------------------------
+    # AI code generation
+    # ------------------------------------------------------------------
+
+    def _ai_generate(self, requirement: str, matched_templates: List[TemplateMatch],
+                     rendered_files: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Use Claude to fill gaps — returns additional generated files."""
+        if not self.anthropic_key:
+            return []
+
+        try:
+            import anthropic
+        except ImportError:
+            logger.warning("anthropic package not installed")
+            return []
+
+        file_summary = '\n'.join(f"- {f['path']}" for f in rendered_files)
+        template_summary = ', '.join(m.template.name for m in matched_templates)
+
+        prompt = (
+            f"You are an expert software engineer. An MVP is being generated for the "
+            f"following requirement:\n\n\"{requirement}\"\n\n"
+            f"Templates already used: {template_summary}\n"
+            f"Files already generated:\n{file_summary}\n\n"
+            f"Generate any MISSING files needed to make this MVP functional. "
+            f"For each file, respond with a JSON array of objects with keys "
+            f"\"path\" (relative file path) and \"content\" (full file content). "
+            f"Only output the JSON array, no other text."
+        )
+
+        try:
+            client = anthropic.Anthropic(api_key=self.anthropic_key)
+            resp = client.messages.create(
+                model='claude-sonnet-4-20250514',
+                max_tokens=4096,
+                messages=[{'role': 'user', 'content': prompt}],
+            )
+            text = resp.content[0].text.strip()
+            # Extract JSON array from response
+            match = re.search(r'\[.*\]', text, re.DOTALL)
+            if match:
+                ai_files = json.loads(match.group())
+                result = []
+                for f in ai_files:
+                    content = f.get('content', '')
+                    result.append({
+                        'path': f['path'],
+                        'content': content,
+                        'size': len(content.encode()),
+                        'template_id': 'ai-generated',
+                    })
+                cost = (resp.usage.input_tokens * 0.003 + resp.usage.output_tokens * 0.015) / 1000
+                logger.info(f"AI generated {len(result)} files (${cost:.4f})")
+                return result
+        except Exception as exc:
+            logger.error(f"AI generation failed: {exc}")
+
+        return []
+
+    # ------------------------------------------------------------------
+    # S3 upload
+    # ------------------------------------------------------------------
+
+    def _upload_files(self, files: List[Dict[str, Any]], s3_prefix: str) -> List[Dict[str, Any]]:
+        """Upload generated files to S3. Returns enriched file dicts with s3_key."""
+        if not self.s3 or not self.s3.enabled:
+            logger.warning("S3 not available – skipping upload")
+            for f in files:
+                f['s3_key'] = f"{s3_prefix}{f['path']}"
+            return files
+
+        for f in files:
+            key = f"{s3_prefix}{f['path']}"
+            buf = io.BytesIO(f['content'].encode('utf-8'))
+            self.s3.upload_file(buf, key, content_type='text/plain')
+            f['s3_key'] = key
+        return files
+
+    # ------------------------------------------------------------------
+    # Error classification
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _classify_errors(files: List[Dict[str, Any]]) -> Dict[str, int]:
+        breakdown = {cat: 0 for cat in ERROR_CATEGORIES}
+        for f in files:
+            if f.get('error'):
+                if 'import' in f['error'].lower():
+                    breakdown['import'] += 1
+                elif 'syntax' in f['error'].lower():
+                    breakdown['syntax'] += 1
+                else:
+                    breakdown['config'] += 1
+        return breakdown
+
+    # ------------------------------------------------------------------
+    # Main entry point
+    # ------------------------------------------------------------------
+
+    def build_mvp(self, requirement: str, complexity: str, build_id: int,
+                  db_session=None) -> Dict[str, Any]:
+        """
+        Synchronous build pipeline:
+        1. Match templates  2. Render Jinja  3. AI gap-fill
+        4. Upload to S3     5. Update DB record
+
+        Returns summary dict.
+        """
+        from models import MVPBuild, MVPBuildFile
+        start = time.time()
+        s3_prefix = f"mvps/{build_id}/"
+        all_files: List[Dict[str, Any]] = []
+
+        try:
+            # --- 1. Match templates ---
+            matches = self.match_templates(requirement, complexity)
+            logger.info(f"Build {build_id}: matched {len(matches)} templates for '{complexity}'")
+
+            if db_session:
+                build = db_session.query(MVPBuild).get(build_id)
+                if build:
+                    build.status = 'GENERATING'
+                    build.build_config = {
+                        'templates': [{'id': m.template.id, 'name': m.template.name,
+                                       'confidence': m.confidence} for m in matches],
+                        'complexity': complexity,
+                    }
+                    db_session.commit()
+
+            # --- 2. Render templates ---
+            params = _default_params(requirement)
+            for m in matches:
+                rendered = self._render_template_dir(m.template, params)
+                all_files.extend(rendered)
+
+            # --- 3. AI gap-fill ---
+            ai_files = self._ai_generate(requirement, matches, all_files)
+            all_files.extend(ai_files)
+
+            # --- 4. Upload ---
+            if db_session:
+                build = db_session.query(MVPBuild).get(build_id)
+                if build:
+                    build.status = 'UPLOADING'
+                    db_session.commit()
+
+            all_files = self._upload_files(all_files, s3_prefix)
+
+            # --- 5. Persist file records ---
+            errors = self._classify_errors(all_files)
+            total_errors = sum(errors.values())
+            duration = time.time() - start
+
+            if db_session:
+                build = db_session.query(MVPBuild).get(build_id)
+                if build:
+                    build.s3_prefix = s3_prefix
+                    build.total_errors = total_errors
+                    build.error_breakdown = errors
+                    build.duration_seconds = round(duration, 2)
+                    build.status = 'DEPLOYING' if total_errors == 0 else 'FAILED'
+                    if total_errors > 0:
+                        build.error_message = f"{total_errors} file(s) had errors"
+                    for f in all_files:
+                        db_session.add(MVPBuildFile(
+                            build_id=build_id, file_path=f['path'],
+                            s3_key=f.get('s3_key', ''), file_size_bytes=f.get('size', 0),
+                            template_id=f.get('template_id'),
+                        ))
+                    db_session.commit()
+
+            return {
+                'build_id': build_id,
+                'files': len(all_files),
+                'errors': total_errors,
+                'duration': round(duration, 2),
+                'status': 'DEPLOYING' if total_errors == 0 else 'FAILED',
+            }
+
+        except Exception as exc:
+            logger.exception(f"Build {build_id} failed: {exc}")
+            if db_session:
+                build = db_session.query(MVPBuild).get(build_id)
+                if build:
+                    build.status = 'FAILED'
+                    build.error_message = str(exc)[:500]
+                    build.duration_seconds = round(time.time() - start, 2)
+                    db_session.commit()
+            return {'build_id': build_id, 'files': 0, 'errors': 1,
+                    'duration': round(time.time() - start, 2), 'status': 'FAILED'}
+
+
+def _default_params(requirement: str) -> Dict[str, Any]:
+    """Generate sensible default template parameters from the requirement."""
+    words = requirement.split()
+    app_name = '_'.join(words[:3]).lower().replace('-', '_') if words else 'mvp_app'
+    return {
+        'app_name': app_name,
+        'app_title': requirement[:60],
+        'requirement': requirement,
+        'project_name': app_name,
+        'model_name': 'Item',
+        'table_name': 'items',
+        'include_email_capture': 'email' in requirement.lower(),
+        'tagline': requirement[:80],
+    }

@@ -1,0 +1,17 @@
+# Example parameters for GA4 Analytics Template
+# Copy this file and customize for your application
+
+measurement_id: "G-ABC123DEF4"  # Your GA4 Measurement ID
+app_name: "My SaaS App"
+environment: "production"
+enable_debug: false
+
+# Optional: Custom events specific to your app
+custom_events:
+  - waitlist_signup
+  - feature_request
+  - demo_request
+  - upgrade_clicked
+
+# Output directory (relative to project root)
+output_dir: "src/analytics"

@@ -1,0 +1,107 @@
+id: tpl-analytics-amplitude
+name: Amplitude Analytics Integration
+version: 1.0.0
+status: approved
+layer_type: analytics
+cacheable: true
+
+description: |
+  Amplitude product analytics integration for behavioral tracking and insights.
+  Includes event tracking, user properties, revenue tracking, and experiment integration.
+  Supports both React and vanilla JavaScript implementations.
+
+frameworks:
+  - amplitude
+  - amplitude-js
+
+tags:
+  - analytics
+  - tracking
+  - amplitude
+  - product-analytics
+  - behavioral-analytics
+
+variables:
+  - name: api_key
+    type: string
+    required: true
+    description: "Amplitude API Key"
+    example: "abc123def456ghi789jkl"
+  
+  - name: app_name
+    type: string
+    required: true
+    description: "Application name for tracking"
+    example: "My SaaS App"
+  
+  - name: environment
+    type: string
+    required: false
+    default: "production"
+    description: "Environment (production/staging/development)"
+  
+  - name: enable_debug
+    type: boolean
+    required: false
+    default: false
+    description: "Enable Amplitude debug mode"
+  
+  - name: track_sessions
+    type: boolean
+    required: false
+    default: true
+    description: "Automatically track user sessions"
+  
+  - name: save_events
+    type: boolean
+    required: false
+    default: true
+    description: "Save events to localStorage on failure"
+
+outputs:
+  - path: "analytics/amplitude-config.js"
+    description: "Amplitude configuration and initialization"
+  
+  - path: "analytics/amplitude-events.js"
+    description: "Event tracking helpers and pre-defined events"
+  
+  - path: "analytics/amplitude-react.tsx"
+    description: "React component wrapper for Amplitude"
+
+cost_estimate_tokens: 450
+estimated_generation_time: "~2 seconds"
+
+dependencies:
+  npm:
+    - "@amplitude/analytics-browser: ^2.3.0"
+
+environment_variables:
+  - name: VITE_AMPLITUDE_API_KEY
+    description: "Amplitude API Key"
+    required: true
+    example: "abc123def456ghi789jkl"
+  
+  - name: VITE_AMPLITUDE_DEBUG
+    description: "Enable debug mode"
+    required: false
+    example: "false"
+
+usage_example: |
+  # Generate Amplitude tracking setup
+  python mvp_generator.py --template tpl-analytics-amplitude \
+    --var api_key=abc123def456 \
+    --var app_name="My App"
+  
+  # Track custom event
+  trackEvent('button_clicked', { button_name: 'signup' });
+  
+  # Identify user
+  identifyUser('user123', { email: 'user@example.com', plan: 'pro' });
+
+integration_notes: |
+  - Add VITE_AMPLITUDE_API_KEY to .env
+  - Import and initialize in main app entry point
+  - Use React component wrapper for SPA tracking
+  - Events and user properties are automatically batched
+  - Supports A/B testing and experimentation
+  - Revenue tracking for subscription/purchase events

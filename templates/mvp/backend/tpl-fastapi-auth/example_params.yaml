@@ -1,0 +1,18 @@
+# Example parameters for FastAPI Auth template
+# This demonstrates a full-featured authentication system
+
+secret_key: "your-super-secret-key-change-this-in-production-minimum-32-characters-long"
+algorithm: "HS256"
+access_token_expire_minutes: 30
+refresh_token_expire_days: 7
+
+include_user_model: true
+include_email_verification: false
+include_password_reset: true
+include_rbac: true
+
+user_table_name: "users"
+min_password_length: 8
+require_email_unique: true
+
+output_dir: "src"

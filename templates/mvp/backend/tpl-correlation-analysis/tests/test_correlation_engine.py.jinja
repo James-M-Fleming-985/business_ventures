@@ -1,0 +1,275 @@
+"""
+Test suite for {{ calculator_class }}
+Generated from template: tpl-correlation-analysis v{{ version | default('2.0.0') }}
+"""
+
+import pytest
+import time
+import numpy as np
+import pandas as pd
+from unittest.mock import Mock, patch
+from typing import Dict, Any
+
+from ..correlation_engine import {{ calculator_class }}, {{ config_class }}
+
+
+class Test{{ calculator_class }}:
+    """Test cases for {{ calculator_class }}."""
+    
+    def setup_method(self):
+        """Set up test fixtures."""
+        self.config = {{ config_class }}(
+            method='{{ default_method }}',
+            concurrent={{ concurrent_processing | lower }},
+            normalize={{ normalize_results | lower }}
+        )
+        self.calculator = {{ calculator_class }}(self.config)
+        
+        # Sample test data
+        np.random.seed(42)
+        self.test_data_1d = np.random.randn(100)
+        self.test_data_2d = np.random.randn(100, 5)
+        self.test_df = pd.DataFrame(self.test_data_2d, 
+                                   columns=[f'var_{i}' for i in range(5)])
+        
+    def test_initialization_default_config(self):
+        """Test calculator initialization with default config."""
+        calc = {{ calculator_class }}()
+        assert calc.config.method == '{{ default_method }}'
+        assert calc.config.concurrent == {{ concurrent_processing | lower }}
+        assert calc._feature_orchestrator is None
+        
+    def test_initialization_custom_config(self):
+        """Test calculator initialization with custom config."""
+        custom_config = {{ config_class }}(method='spearman', normalize=False)
+        calc = {{ calculator_class }}(custom_config)
+        assert calc.config.method == 'spearman'
+        assert calc.config.normalize == False
+        
+    def test_set_feature_orchestrator(self):
+        """Test feature orchestrator integration."""
+        mock_orchestrator = Mock()
+        self.calculator.set_feature_orchestrator(mock_orchestrator)
+        assert self.calculator._feature_orchestrator == mock_orchestrator
+        
+    def test_convert_to_array_numpy(self):
+        """Test array conversion from numpy array."""
+        result = self.calculator._convert_to_array(self.test_data_1d)
+        assert isinstance(result, np.ndarray)
+        np.testing.assert_array_equal(result, self.test_data_1d)
+        
+    def test_convert_to_array_dataframe(self):
+        """Test array conversion from pandas DataFrame."""
+        result = self.calculator._convert_to_array(self.test_df)
+        assert isinstance(result, np.ndarray)
+        assert result.shape == self.test_df.shape
+        
+    def test_convert_to_array_list(self):
+        """Test array conversion from list."""
+        test_list = [[1, 2, 3], [4, 5, 6]]
+        result = self.calculator._convert_to_array(test_list)
+        assert isinstance(result, np.ndarray)
+        assert result.shape == (2, 3)
+        
+    def test_convert_to_array_dict(self):
+        """Test array conversion from dictionary."""
+        test_dict = {'a': [1, 2, 3], 'b': [4, 5, 6]}
+        result = self.calculator._convert_to_array(test_dict)
+        assert isinstance(result, np.ndarray)
+        assert result.shape == (2, 3)
+        
+    def test_convert_to_array_invalid_type(self):
+        """Test array conversion with invalid input type."""
+        with pytest.raises(TypeError):
+            self.calculator._convert_to_array("invalid")
+            
+    def test_handle_missing_data_interpolate(self):
+        """Test missing data handling with interpolation."""
+        data_with_nan = np.array([1.0, 2.0, np.nan, 4.0, 5.0])
+        self.calculator.config.missing_data_strategy = 'interpolate'
+        result = self.calculator._handle_missing_data(data_with_nan)
+        assert not np.isnan(result).any()
+        assert result[2] == 3.0  # Interpolated value
+        
+    def test_handle_missing_data_fill(self):
+        """Test missing data handling with fill value."""
+        data_with_nan = np.array([1.0, np.nan, 3.0])
+        self.calculator.config.missing_data_strategy = 'fill'
+        self.calculator.config.fill_value = -999.0
+        result = self.calculator._handle_missing_data(data_with_nan)
+        assert not np.isnan(result).any()
+        assert result[1] == -999.0
+        
+    def test_handle_missing_data_drop(self):
+        """Test missing data handling by dropping rows."""
+        data_with_nan = np.array([[1.0, 2.0], [np.nan, 4.0], [5.0, 6.0]])
+        self.calculator.config.missing_data_strategy = 'drop'
+        result = self.calculator._handle_missing_data(data_with_nan)
+        assert result.shape[0] == 2  # One row dropped
+        assert not np.isnan(result).any()
+        
+    def test_normalize_data(self):
+        """Test data normalization."""
+        data = np.array([10, 20, 30, 40, 50])
+        result = self.calculator._normalize_data(data)
+        assert np.min(result) == 0.0
+        assert np.max(result) == 1.0
+        assert np.allclose(result, [0.0, 0.25, 0.5, 0.75, 1.0])
+        
+    def test_normalize_data_constant(self):
+        """Test normalization with constant data."""
+        data = np.array([5, 5, 5, 5, 5])
+        result = self.calculator._normalize_data(data)
+        assert np.all(result == 0.0)
+        
+    def test_calculate_statistics(self):
+        """Test statistics calculation."""
+        stats = self.calculator._calculate_statistics(self.test_data_1d)
+        assert 'mean' in stats
+        assert 'std' in stats
+        assert 'min' in stats
+        assert 'max' in stats
+        assert 'shape' in stats
+        assert stats['shape'] == self.test_data_1d.shape
+        
+    {% for method in correlation_methods %}
+    def test_calculate_{{ method.name }}_method(self):
+        """Test {{ method.name }} correlation calculation."""
+        config = {{ config_class }}(method='{{ method.name }}', concurrent=False)
+        calc = {{ calculator_class }}(config)
+        result = calc.calculate(self.test_data_2d)
+        
+        assert isinstance(result, dict)
+        assert 'data' in result
+        assert 'statistics' in result
+        assert 'config' in result
+        assert 'metadata' in result
+        assert result['config']['method'] == '{{ method.name }}'
+        
+    {% endfor %}
+    
+    def test_calculate_with_concurrent_processing(self):
+        """Test calculation with concurrent processing enabled."""
+        # Use larger data to trigger concurrent processing
+        large_data = np.random.randn(5000, 10)
+        config = {{ config_class }}(concurrent=True, chunk_size=1000)
+        calc = {{ calculator_class }}(config)
+        
+        result = calc.calculate(large_data)
+        assert isinstance(result, dict)
+        assert 'metadata' in result
+        assert result['metadata']['processing_time'] > 0
+        
+    def test_calculate_with_feature_orchestrator(self):
+        """Test calculation with feature orchestrator integration."""
+        mock_orchestrator = Mock()
+        self.calculator.set_feature_orchestrator(mock_orchestrator)
+        
+        result = self.calculator.calculate(self.test_data_1d)
+        
+        # Verify orchestrator was called
+        {% if integrate_orchestrator %}
+        mock_orchestrator.register_{{ method_name }}.assert_called_once_with(result)
+        {% endif %}
+        
+    def test_calculate_error_handling(self):
+        """Test error handling in calculate method."""
+        with patch.object(self.calculator, '_convert_to_array', 
+                         side_effect=Exception("Test error")):
+            with pytest.raises(Exception, match="Test error"):
+                self.calculator.calculate(self.test_data_1d)
+                
+    @pytest.mark.parametrize("missing_strategy", ["interpolate", "drop", "fill"])
+    def test_all_missing_data_strategies(self, missing_strategy):
+        """Test all missing data strategies."""
+        data_with_nan = np.array([[1.0, 2.0], [np.nan, 4.0], [5.0, np.nan]])
+        config = {{ config_class }}(missing_data_strategy=missing_strategy)
+        calc = {{ calculator_class }}(config)
+        
+        result = calc.calculate(data_with_nan)
+        assert isinstance(result, dict)
+        assert 'data' in result
+        
+    def test_performance_benchmark(self):
+        """Basic performance benchmark test."""
+        large_data = np.random.randn(1000, 20)
+        start_time = time.time()
+        
+        result = self.calculator.calculate(large_data)
+        
+        processing_time = time.time() - start_time
+        assert processing_time < {{ timeout_seconds }}  # Should complete within timeout
+        assert result['metadata']['processing_time'] < {{ timeout_seconds }}
+
+
+class Test{{ config_class }}:
+    """Test cases for {{ config_class }}."""
+    
+    def test_default_initialization(self):
+        """Test default configuration initialization."""
+        config = {{ config_class }}()
+        assert config.method == '{{ default_method }}'
+        assert config.missing_data_strategy == '{{ missing_data_strategy }}'
+        assert config.fill_value == {{ fill_value }}
+        assert config.normalize == {{ normalize_results | lower }}
+        assert config.concurrent == {{ concurrent_processing | lower }}
+        assert config.chunk_size == {{ chunk_size }}
+        assert config.timeout == {{ timeout_seconds }}
+        
+    def test_custom_initialization(self):
+        """Test custom configuration initialization."""
+        config = {{ config_class }}(
+            method='spearman',
+            missing_data_strategy='drop',
+            normalize=False,
+            concurrent=False
+        )
+        assert config.method == 'spearman'
+        assert config.missing_data_strategy == 'drop'
+        assert config.normalize == False
+        assert config.concurrent == False
+
+
+# Integration Tests
+class TestIntegration:
+    """Integration test cases."""
+    
+    def test_end_to_end_workflow(self):
+        """Test complete end-to-end workflow."""
+        # Create test data with some missing values
+        np.random.seed(42)
+        data = np.random.randn(200, 8)
+        data[10:15, 2] = np.nan  # Add some missing values
+        
+        # Initialize calculator
+        config = {{ config_class }}(
+            method='{{ default_method }}',
+            missing_data_strategy='interpolate',
+            normalize=True,
+            concurrent=True
+        )
+        calculator = {{ calculator_class }}(config)
+        
+        # Run calculation
+        result = calculator.calculate(data)
+        
+        # Verify results
+        assert isinstance(result, dict)
+        assert len(result['data']) > 0
+        assert result['statistics']['mean'] is not None
+        assert result['metadata']['processing_time'] > 0
+        assert result['config']['method'] == '{{ default_method }}'
+        
+    {% if integrate_orchestrator %}
+    def test_orchestrator_integration(self):
+        """Test feature orchestrator integration."""
+        mock_orchestrator = Mock()
+        
+        calculator = {{ calculator_class }}()
+        calculator.register_with_orchestrator(mock_orchestrator)
+        
+        # Verify registration
+        mock_orchestrator.register_calculator.assert_called_once_with(
+            '{{ method_name }}', calculator
+        )
+    {% endif %}

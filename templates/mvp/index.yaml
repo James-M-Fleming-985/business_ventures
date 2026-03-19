@@ -1,0 +1,137 @@
+templates:
+  # Backend Templates
+  - id: tpl-backend-fastapi-crud
+    name: FastAPI CRUD Backend
+    path: backend/tpl-fastapi-crud
+    layer_type: api
+    frameworks: [fastapi, sqlalchemy, pydantic]
+    tags: [crud, rest-api, database, repository-pattern]
+    version: 1.0.0
+    status: approved
+    description: Complete CRUD backend with repository pattern, FastAPI router, and SQLAlchemy model
+    cost_estimate_tokens: 800
+  
+  - id: tpl-backend-fastapi-auth
+    name: FastAPI JWT Authentication
+    path: backend/tpl-fastapi-auth
+    layer_type: api
+    frameworks: [fastapi, sqlalchemy, python-jose, passlib]
+    tags: [authentication, jwt, security, user-management]
+    version: 1.0.0
+    status: approved
+    description: Complete JWT authentication with register, login, refresh, password reset
+    cost_estimate_tokens: 1200
+  
+  # Frontend Templates
+  - id: tpl-frontend-react-landing
+    name: React Landing Page
+    path: frontend/tpl-react-landing
+    layer_type: ui
+    frameworks: [react, typescript, tailwindcss]
+    tags: [landing-page, marketing, lead-capture, seo]
+    version: 1.0.0
+    status: approved
+    description: Modern landing page with hero, features, email capture
+    cost_estimate_tokens: 600
+  
+  # Infrastructure Templates
+  - id: tpl-infra-railway-service
+    name: Railway Service Deployment
+    path: infra/tpl-railway-service
+    layer_type: infra
+    frameworks: [railway, docker]
+    tags: [deployment, hosting, ci-cd, production]
+    version: 1.0.0
+    status: approved
+    description: Railway deployment config with health checks and environment setup
+    cost_estimate_tokens: 200
+  
+  # Analytics Templates
+  - id: tpl-analytics-ga4
+    name: Google Analytics 4 Integration
+    path: analytics/tpl-analytics-ga4
+    layer_type: analytics
+    frameworks: [google-analytics, gtag.js]
+    tags: [analytics, tracking, ga4, metrics, conversion]
+    version: 1.0.0
+    status: approved
+    description: Google Analytics 4 tracking with pageviews, events, and conversions
+    cost_estimate_tokens: 400
+  
+  - id: tpl-analytics-mixpanel
+    name: Mixpanel Analytics Integration
+    path: analytics/tpl-analytics-mixpanel
+    layer_type: analytics
+    frameworks: [mixpanel, mixpanel-browser]
+    tags: [analytics, tracking, mixpanel, product-analytics, user-behavior]
+    version: 1.0.0
+    status: approved
+    description: Mixpanel product analytics with event tracking, user profiles, and funnels
+    cost_estimate_tokens: 450
+  
+  - id: tpl-analytics-amplitude
+    name: Amplitude Analytics Integration
+    path: analytics/tpl-analytics-amplitude
+    layer_type: analytics
+    frameworks: [amplitude, amplitude-js]
+    tags: [analytics, tracking, amplitude, behavioral-analytics, experiments]
+    version: 1.0.0
+    status: approved
+    description: Amplitude behavioral analytics with events, user properties, and revenue tracking
+    cost_estimate_tokens: 450
+
+  # Causal Affect Templates (Added 2025-10-31)
+  - id: tpl-correlation-analysis
+    name: Statistical Correlation Analysis Engine
+    path: backend/tpl-correlation-analysis
+    layer_type: api
+    frameworks: [fastapi, numpy, scipy, pandas, statsmodels]
+    tags: [correlation, statistics, data-analysis, timeseries, scientific-computing]
+    version: 1.0.0
+    status: approved
+    description: Complete correlation analysis engine with Pearson, Spearman, Kendall, partial and lagged correlations
+    cost_estimate_tokens: 1200
+
+  - id: tpl-drift-analysis
+    name: Temporal Drift Analysis System
+    path: backend/tpl-drift-analysis
+    layer_type: api
+    frameworks: [fastapi, numpy, scipy, scikit-learn, pandas]
+    tags: [drift-detection, temporal-analysis, stability, changepoint, forecasting]
+    version: 1.0.0
+    status: approved
+    description: Multi-timeframe drift detection with stability scoring and exploitation window calculations
+    cost_estimate_tokens: 1000
+
+  - id: tpl-correlation-heatmap
+    name: Interactive Correlation Heatmap
+    path: frontend/tpl-correlation-heatmap
+    layer_type: ui
+    frameworks: [react, typescript, d3, tailwindcss]
+    tags: [visualization, heatmap, correlation, interactive, data-viz]
+    version: 1.0.0
+    status: approved
+    description: Interactive correlation matrix heatmap with real-time updates, zoom, and drill-down
+    cost_estimate_tokens: 800
+
+  - id: tpl-analysis-popup
+    name: Intelligent Analysis Pop-out
+    path: frontend/tpl-analysis-popup
+    layer_type: ui
+    frameworks: [react, typescript, recharts, tailwindcss]
+    tags: [modal, analysis, causality, explanation, ai-insights]
+    version: 1.0.0
+    status: approved
+    description: Interactive modal with causality analysis, drift timeline, and AI-generated explanations
+    cost_estimate_tokens: 900
+
+  - id: tpl-mvp-opportunity-scorer
+    name: MVP Opportunity Assessment
+    path: backend/tpl-mvp-opportunity-scorer
+    layer_type: api
+    frameworks: [fastapi, numpy, pandas, scikit-learn]
+    tags: [scoring, opportunity-assessment, business-logic, ranking, recommendations]
+    version: 1.0.0
+    status: approved
+    description: Business opportunity scoring with risk assessment and recommendation generation
+    cost_estimate_tokens: 700

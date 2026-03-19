@@ -1,0 +1,6 @@
+app_name: "Feedback360"
+price_id_pro: "price_1234567890abcdef"  # Replace with actual Stripe Price ID
+pro_amount: 9.99
+success_url: "http://localhost:3000/success"
+cancel_url: "http://localhost:3000/pricing"
+webhook_secret: "whsec_..."  # Get from Stripe Dashboard

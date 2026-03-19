@@ -1,0 +1,75 @@
+name: "tpl-stripe-subscription"
+version: "1.0.0"
+description: "Stripe subscription payment integration for SaaS products"
+category: "backend"
+tags:
+  - "payment"
+  - "stripe"
+  - "subscription"
+  - "saas"
+  - "billing"
+  - "checkout"
+
+variables:
+  app_name:
+    type: "string"
+    required: true
+    description: "Application name"
+    example: "Feedback360"
+  
+  price_id_pro:
+    type: "string"
+    required: true
+    description: "Stripe Price ID for Pro tier"
+    example: "price_1234567890abcdef"
+  
+  pro_amount:
+    type: "number"
+    required: true
+    description: "Pro tier amount in pounds"
+    example: 9.99
+  
+  success_url:
+    type: "string"
+    required: false
+    default: "http://localhost:3000/success"
+    description: "URL to redirect after successful payment"
+  
+  cancel_url:
+    type: "string"
+    required: false
+    default: "http://localhost:3000/pricing"
+    description: "URL to redirect if payment cancelled"
+
+  webhook_secret:
+    type: "string"
+    required: false
+    description: "Stripe webhook secret for validating events"
+
+files:
+  - stripe_routes.py
+  - stripe_service.py
+  - requirements.txt
+
+dependencies:
+  - "stripe>=5.0.0"
+  - "fastapi>=0.104.0"
+  - "python-dotenv>=1.0.0"
+
+usage: |
+  # 1. Install dependencies
+  pip install -r requirements.txt
+  
+  # 2. Set environment variables
+  STRIPE_SECRET_KEY=sk_test_...
+  STRIPE_WEBHOOK_SECRET=whsec_...
+  
+  # 3. Add to FastAPI app
+  from stripe_routes import router as stripe_router
+  app.include_router(stripe_router, prefix="/api/stripe")
+  
+  # 4. Set up Stripe webhook endpoint
+  POST /api/stripe/webhook
+  
+  # 5. Create checkout session
+  POST /api/stripe/create-checkout-session

@@ -3,7 +3,7 @@ Dashboard Router for Correlation Discovery Engine
 ALL ENDPOINTS USE REAL API DATA - NO MOCK/SYNTHETIC DATA
 """
 
-from fastapi import APIRouter, Request, Query, Depends, HTTPException
+from fastapi import APIRouter, Request, Query, Depends, HTTPException, BackgroundTasks
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
@@ -11,7 +11,8 @@ from database import get_db
 from models import (
     VariableMetadata, TimeSeriesData, CorrelationResult,
     RollingCorrelation, APIStatus, AnalysisJob, PredictionTracking,
-    ExploitationRecommendation, ExploitationValidation
+    ExploitationRecommendation, ExploitationValidation,
+    MVPBuild, MVPBuildFile
 )
 from correlation_analysis_service import CorrelationAnalysisService
 from services.granger_causality_service import GrangerCausalityService
@@ -3342,3 +3343,124 @@ async def get_programme_baselines(db: Session = Depends(get_db)):
     except Exception as e:
         logger.error(f"Baselines endpoint failed: {e}\n{traceback.format_exc()}")
         return _empty
+
+
+# ==============================================================================
+# MVP Build Endpoints
+# ==============================================================================
+
+def _run_build(build_id: int, recommendation_id: int, complexity: str):
+    """Background task that executes the full MVP build pipeline."""
+    import traceback
+    from database import SessionLocal
+    from services.s3_service import S3Service
+    from services.mvp_builder_service import MVPBuilderService
+
+    db = SessionLocal()
+    try:
+        build = db.query(MVPBuild).filter(MVPBuild.id == build_id).first()
+        if not build:
+            logger.error(f"Build {build_id} not found")
+            return
+
+        rec = db.query(ExploitationRecommendation).filter(
+            ExploitationRecommendation.id == recommendation_id
+        ).first()
+        if not rec:
+            build.status = "FAILED"
+            build.error_message = "Recommendation not found"
+            db.commit()
+            return
+
+        requirement = f"{rec.signal_display_name} → {rec.target_display_name}: {rec.rationale or ''}"
+
+        s3 = S3Service()
+        builder = MVPBuilderService(s3)
+        builder.build_mvp(
+            requirement=requirement,
+            complexity=complexity,
+            build_id=build_id,
+            db_session=db,
+        )
+    except Exception as e:
+        logger.error(f"Build {build_id} failed: {e}\n{traceback.format_exc()}")
+        try:
+            build = db.query(MVPBuild).filter(MVPBuild.id == build_id).first()
+            if build and build.status != "FAILED":
+                build.status = "FAILED"
+                build.error_message = str(e)[:500]
+                db.commit()
+        except Exception:
+            pass
+    finally:
+        db.close()
+
+
+@router.post("/exploitation/build")
+async def start_mvp_build(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    """Kick off an MVP build for a BUILD recommendation."""
+    body = await request.json()
+
+    recommendation_id = body.get("recommendation_id")
+    complexity = body.get("complexity", "LOW").upper()
+    if complexity not in ("LOW", "MEDIUM", "HIGH"):
+        raise HTTPException(status_code=400, detail="complexity must be LOW, MEDIUM, or HIGH")
+    if not recommendation_id:
+        raise HTTPException(status_code=400, detail="recommendation_id is required")
+
+    rec = db.query(ExploitationRecommendation).filter(
+        ExploitationRecommendation.id == recommendation_id
+    ).first()
+    if not rec:
+        raise HTTPException(status_code=404, detail="Recommendation not found")
+
+    build = MVPBuild(
+        recommendation_id=recommendation_id,
+        complexity=complexity,
+        status="QUEUED",
+        s3_prefix=f"mvp-builds/{recommendation_id}/{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
+    )
+    db.add(build)
+    db.commit()
+    db.refresh(build)
+
+    background_tasks.add_task(_run_build, build.id, recommendation_id, complexity)
+
+    return {"build_id": build.id, "status": build.status, "complexity": complexity}
+
+
+@router.get("/exploitation/builds")
+async def list_mvp_builds(
+    recommendation_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+):
+    """List MVP builds, optionally filtered by recommendation."""
+    query = db.query(MVPBuild).order_by(MVPBuild.created_at.desc())
+    if recommendation_id:
+        query = query.filter(MVPBuild.recommendation_id == recommendation_id)
+    builds = query.limit(50).all()
+    return {"builds": [b.to_dict() for b in builds]}
+
+
+@router.get("/exploitation/builds/{build_id}")
+async def get_mvp_build(build_id: int, db: Session = Depends(get_db)):
+    """Get a single MVP build with its files."""
+    build = db.query(MVPBuild).filter(MVPBuild.id == build_id).first()
+    if not build:
+        raise HTTPException(status_code=404, detail="Build not found")
+    data = build.to_dict()
+    data["files"] = [f.to_dict() for f in build.files]
+    return data
+
+
+@router.get("/exploitation/builds/{build_id}/files")
+async def get_mvp_build_files(build_id: int, db: Session = Depends(get_db)):
+    """List generated files for a build."""
+    build = db.query(MVPBuild).filter(MVPBuild.id == build_id).first()
+    if not build:
+        raise HTTPException(status_code=404, detail="Build not found")
+    return {"files": [f.to_dict() for f in build.files]}

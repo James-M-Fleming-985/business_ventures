@@ -1,0 +1,51 @@
+"""
+CRUD repository template for SQLAlchemy (Jinja2)
+Variables:
+  - model_name (e.g., User)
+  - table_name (e.g., users)
+"""
+from sqlalchemy import Column, Integer, String
+from sqlalchemy.orm import Session
+from sqlalchemy.ext.declarative import declarative_base
+
+Base = declarative_base()
+
+
+class {{ model_name }}(Base):
+    __tablename__ = "{{ table_name }}"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True)
+
+
+class {{ model_name }}Repository:
+    def __init__(self, session: Session):
+        self.session = session
+
+    def get(self, id: int) -> {{ model_name }} | None:
+        return self.session.query({{ model_name }}).filter({{ model_name }}.id == id).one_or_none()
+
+    def list(self, limit: int = 100):
+        return self.session.query({{ model_name }}).limit(limit).all()
+
+    def create(self, obj: {{ model_name }}):
+        self.session.add(obj)
+        self.session.commit()
+        self.session.refresh(obj)
+        return obj
+
+    def update(self, id: int, **fields):
+        obj = self.get(id)
+        if obj is None:
+            return None
+        for k, v in fields.items():
+            setattr(obj, k, v)
+        self.session.commit()
+        return obj
+
+    def delete(self, id: int):
+        obj = self.get(id)
+        if obj:
+            self.session.delete(obj)
+            self.session.commit()
+            return True
+        return False
