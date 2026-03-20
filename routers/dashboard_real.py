@@ -3481,3 +3481,15 @@ async def get_mvp_build_files(build_id: int, db: Session = Depends(get_db)):
     if not build:
         raise HTTPException(status_code=404, detail="Build not found")
     return {"files": [f.to_dict() for f in build.files]}
+
+
+@router.get("/exploitation/builds/{build_id}/files/{file_id}")
+async def get_mvp_build_file_content(build_id: int, file_id: int, db: Session = Depends(get_db)):
+    """Get a single generated file with its content."""
+    from models import MVPBuildFile
+    bf = db.query(MVPBuildFile).filter(
+        MVPBuildFile.id == file_id, MVPBuildFile.build_id == build_id
+    ).first()
+    if not bf:
+        raise HTTPException(status_code=404, detail="File not found")
+    return bf.to_dict(include_content=True)

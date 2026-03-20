@@ -13,6 +13,7 @@ import os
 import re
 import time
 from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -265,11 +266,11 @@ class MVPBuilderService:
                     })
                 cost = (resp.usage.input_tokens * 0.003 + resp.usage.output_tokens * 0.015) / 1000
                 logger.info(f"AI generated {len(result)} files (${cost:.4f})")
-                return result
+                return result, cost
         except Exception as exc:
             logger.error(f"AI generation failed: {exc}")
 
-        return []
+        return [], 0.0
 
     # ------------------------------------------------------------------
     # S3 upload
@@ -324,11 +325,21 @@ class MVPBuilderService:
         start = time.time()
         s3_prefix = f"mvps/{build_id}/"
         all_files: List[Dict[str, Any]] = []
+        steps: List[Dict[str, Any]] = []
+
+        def _step(name: str, detail: str):
+            steps.append({'step': name, 'at': datetime.utcnow().isoformat(), 'detail': detail})
+            if db_session:
+                build = db_session.query(MVPBuild).get(build_id)
+                if build:
+                    build.build_steps = list(steps)
+                    db_session.commit()
 
         try:
             # --- 1. Match templates ---
             matches = self.match_templates(requirement, complexity)
             logger.info(f"Build {build_id}: matched {len(matches)} templates for '{complexity}'")
+            _step('TEMPLATES_MATCHED', f"{len(matches)} templates matched")
 
             if db_session:
                 build = db_session.query(MVPBuild).get(build_id)
@@ -346,10 +357,15 @@ class MVPBuilderService:
             for m in matches:
                 rendered = self._render_template_dir(m.template, params)
                 all_files.extend(rendered)
+            _step('FILES_RENDERED', f"{len(all_files)} files from templates")
 
             # --- 3. AI gap-fill ---
-            ai_files = self._ai_generate(requirement, matches, all_files)
+            ai_files, ai_cost = self._ai_generate(requirement, matches, all_files)
             all_files.extend(ai_files)
+            ai_detail = f"{len(ai_files)} AI files"
+            if ai_cost > 0:
+                ai_detail += f", ${ai_cost:.4f}"
+            _step('AI_GENERATED', ai_detail)
 
             # --- 4. Upload ---
             if db_session:
@@ -359,11 +375,18 @@ class MVPBuilderService:
                     db_session.commit()
 
             all_files = self._upload_files(all_files, s3_prefix)
+            total_size = sum(f.get('size', 0) for f in all_files)
+            _step('UPLOADED', f"{len(all_files)} files, {total_size:,} bytes")
 
             # --- 5. Persist file records ---
             errors = self._classify_errors(all_files)
             total_errors = sum(errors.values())
             duration = time.time() - start
+
+            # No RAILWAY_TOKEN → go straight to LIVE; otherwise DEPLOYING
+            final_status = 'FAILED' if total_errors > 0 else (
+                'DEPLOYING' if os.getenv('RAILWAY_TOKEN') else 'LIVE'
+            )
 
             if db_session:
                 build = db_session.query(MVPBuild).get(build_id)
@@ -372,7 +395,8 @@ class MVPBuilderService:
                     build.total_errors = total_errors
                     build.error_breakdown = errors
                     build.duration_seconds = round(duration, 2)
-                    build.status = 'DEPLOYING' if total_errors == 0 else 'FAILED'
+                    build.ai_cost_usd = ai_cost if ai_cost > 0 else None
+                    build.status = final_status
                     if total_errors > 0:
                         build.error_message = f"{total_errors} file(s) had errors"
                     for f in all_files:
@@ -380,15 +404,18 @@ class MVPBuilderService:
                             build_id=build_id, file_path=f['path'],
                             s3_key=f.get('s3_key', ''), file_size_bytes=f.get('size', 0),
                             template_id=f.get('template_id'),
+                            content=f.get('content', ''),
                         ))
                     db_session.commit()
+
+            _step('COMPLETE', f"{len(all_files)} files, {total_errors} errors, {round(duration, 1)}s")
 
             return {
                 'build_id': build_id,
                 'files': len(all_files),
                 'errors': total_errors,
                 'duration': round(duration, 2),
-                'status': 'DEPLOYING' if total_errors == 0 else 'FAILED',
+                'status': final_status,
             }
 
         except Exception as exc:

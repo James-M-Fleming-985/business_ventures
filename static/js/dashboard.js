@@ -124,6 +124,10 @@ function dashboardData() {
         builds: {},
         buildComplexity: {},
         buildInProgress: {},
+        buildDetailOpen: null,
+        codeViewerOpen: false,
+        codeViewerPath: '',
+        codeViewerContent: '',
         
         async init() {
             console.log('Initializing dashboard...');
@@ -2155,16 +2159,17 @@ function dashboardData() {
                     const data = await res.json();
                     this.builds = {...this.builds, [recId]: data};
                     if (['QUEUED', 'GENERATING', 'UPLOADING', 'DEPLOYING'].includes(data.status)) {
-                        setTimeout(poll, 5000);
+                        setTimeout(poll, 3000);
                     } else {
                         this.buildInProgress = {...this.buildInProgress, [recId]: false};
                     }
+                    this.$nextTick(() => { try { lucide.createIcons(); } catch(e) {} });
                 } catch (e) {
                     console.error('Poll error:', e);
                     this.buildInProgress = {...this.buildInProgress, [recId]: false};
                 }
             };
-            setTimeout(poll, 3000);
+            setTimeout(poll, 2000);
         },
 
         async loadBuilds() {
@@ -2179,6 +2184,23 @@ function dashboardData() {
                 this.builds = updated;
             } catch (e) {
                 console.error('Load builds error:', e);
+            }
+        },
+
+        async viewBuildFile(buildId, fileId, filePath) {
+            this.codeViewerPath = filePath;
+            this.codeViewerContent = 'Loading...';
+            this.codeViewerOpen = true;
+            try {
+                const res = await fetch(`/api/dashboard/exploitation/builds/${buildId}/files/${fileId}`);
+                if (!res.ok) {
+                    this.codeViewerContent = 'Failed to load file content';
+                    return;
+                }
+                const data = await res.json();
+                this.codeViewerContent = data.content || '(empty file)';
+            } catch (e) {
+                this.codeViewerContent = 'Error: ' + e.message;
             }
         }
     };

@@ -175,6 +175,21 @@ async def startup_event():
         from models import Base
         Base.metadata.create_all(bind=engine)
         logger.info("✅ Database tables initialized")
+
+        # Add columns that may not exist on older deployments
+        from sqlalchemy import text, inspect
+        with engine.connect() as conn:
+            inspector = inspect(engine)
+            build_file_cols = {c['name'] for c in inspector.get_columns('mvp_build_files')} if 'mvp_build_files' in inspector.get_table_names() else set()
+            build_cols = {c['name'] for c in inspector.get_columns('mvp_builds')} if 'mvp_builds' in inspector.get_table_names() else set()
+            if 'content' not in build_file_cols and build_file_cols:
+                conn.execute(text("ALTER TABLE mvp_build_files ADD COLUMN content TEXT"))
+                conn.commit()
+                logger.info("✅ Added content column to mvp_build_files")
+            if 'build_steps' not in build_cols and build_cols:
+                conn.execute(text("ALTER TABLE mvp_builds ADD COLUMN build_steps JSON"))
+                conn.commit()
+                logger.info("✅ Added build_steps column to mvp_builds")
         
         # Start APScheduler for M0 automated validation
         try:

@@ -501,6 +501,9 @@ class MVPBuild(Base):
     duration_seconds = Column(Float)
     ai_cost_usd = Column(Float)
 
+    # Progress tracking
+    build_steps = Column(JSON)  # [{step, at, detail}, ...]
+
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -529,6 +532,7 @@ class MVPBuild(Base):
             "error_breakdown": self.error_breakdown,
             "duration_seconds": self.duration_seconds,
             "ai_cost_usd": self.ai_cost_usd,
+            "build_steps": self.build_steps,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
             "file_count": len(self.files) if self.files else 0,
@@ -545,12 +549,13 @@ class MVPBuildFile(Base):
     s3_key = Column(String(500), nullable=False)  # Full S3 key
     file_size_bytes = Column(Integer, default=0)
     template_id = Column(String(100))  # Which template generated this file
+    content = Column(Text)  # Generated file content (persisted in DB)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     build = relationship('MVPBuild', back_populates='files')
 
-    def to_dict(self):
-        return {
+    def to_dict(self, include_content=False):
+        d = {
             "id": self.id,
             "build_id": self.build_id,
             "file_path": self.file_path,
@@ -559,3 +564,6 @@ class MVPBuildFile(Base):
             "template_id": self.template_id,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
+        if include_content:
+            d["content"] = self.content
+        return d
