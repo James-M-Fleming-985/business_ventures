@@ -3389,7 +3389,7 @@ def _run_build(build_id: int, recommendation_id: int, complexity: str):
             db.commit()
             return
 
-        requirement = f"{rec.signal_display_name} → {rec.target_display_name}: {rec.rationale or ''}"
+        requirement = f"{rec.signal_display_name} → {rec.target_display_name}: {rec.reasoning or ''}"
 
         s3 = S3Service()
         builder = MVPBuilderService(s3)
