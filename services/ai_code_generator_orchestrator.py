@@ -50,11 +50,12 @@ class AICodeGeneratorOrchestrator:
 
         provider_type = config.get('provider', 'anthropic')
         self.ai_provider = AIProviderFactory.create_provider(provider_type)
+        self.ai_available = self.ai_provider.validate_configuration()
 
-        if not self.ai_provider.validate_configuration():
-            raise ValueError(
-                f"AI provider '{provider_type}' is not properly configured. "
-                f"Please set {provider_type.upper()}_API_KEY environment variable."
+        if not self.ai_available:
+            logger.warning(
+                f"AI provider '{provider_type}' not configured — "
+                f"orchestrator created but AI phases will be skipped"
             )
 
     def load_yaml_requirements(self, yaml_path: Path) -> Dict[str, Any]:

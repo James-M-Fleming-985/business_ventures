@@ -17,9 +17,12 @@ import ast
 import json
 import logging
 import os
+import py_compile
 import re
+import subprocess
 import tempfile
 import time
+import traceback
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -78,6 +81,31 @@ COMPLEXITY_LIMITS = {
 }
 
 ERROR_CATEGORIES = ['syntax', 'test', 'frontend', 'import', 'wiring', 'config', 'runtime']
+
+# Known-good import → package mapping for automated import resolution
+IMPORT_PACKAGE_MAP = {
+    'fastapi': 'fastapi',
+    'uvicorn': 'uvicorn',
+    'sqlalchemy': 'sqlalchemy',
+    'pydantic': 'pydantic',
+    'requests': 'requests',
+    'httpx': 'httpx',
+    'jinja2': 'Jinja2',
+    'pytest': 'pytest',
+    'numpy': 'numpy',
+    'pandas': 'pandas',
+    'stripe': 'stripe',
+    'boto3': 'boto3',
+    'anthropic': 'anthropic',
+    'yaml': 'PyYAML',
+    'dotenv': 'python-dotenv',
+    'alembic': 'alembic',
+    'celery': 'celery',
+    'redis': 'redis',
+    'jwt': 'PyJWT',
+    'passlib': 'passlib',
+    'cors': 'fastapi',
+}
 
 
 def _analyse_requirement(text: str) -> Dict[str, bool]:
@@ -299,7 +327,248 @@ class MVPBuilderService:
         return files
 
     # ------------------------------------------------------------------
-    # Error classification
+    # Pre-build validation (Phase 2.1)
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _validate_template_file(file_path: str, content: str) -> List[Dict[str, Any]]:
+        """Validate a single Python file with AST parse + py_compile + syntax checks.
+
+        Returns list of structured error dicts (empty = file is clean).
+        Each error dict is ML-consumable: {type, message, file, line, category, traceback_snippet}.
+        """
+        errors: List[Dict[str, Any]] = []
+        if not file_path.endswith('.py'):
+            return errors
+
+        # 1. AST parse — catches syntax errors
+        try:
+            ast.parse(content, filename=file_path)
+        except SyntaxError as e:
+            errors.append({
+                'type': 'SyntaxError',
+                'message': str(e.msg) if e.msg else str(e),
+                'file': file_path,
+                'line': e.lineno or 0,
+                'category': 'syntax',
+                'traceback_snippet': f"line {e.lineno}: {e.text.strip() if e.text else ''}",
+            })
+
+        # 2. py_compile — catches encoding issues and edge syntax ast misses
+        try:
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as tmp:
+                tmp.write(content)
+                tmp_path = tmp.name
+            py_compile.compile(tmp_path, doraise=True)
+        except py_compile.PyCompileError as e:
+            # Only add if not a duplicate of the AST error
+            if not any(err['type'] == 'SyntaxError' and err['file'] == file_path for err in errors):
+                errors.append({
+                    'type': 'PyCompileError',
+                    'message': str(e),
+                    'file': file_path,
+                    'line': getattr(e, 'lineno', 0) or 0,
+                    'category': 'syntax',
+                    'traceback_snippet': str(e)[:200],
+                })
+        finally:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+
+        # 3. Basic lint checks — common Python mistakes
+        lines = content.split('\n')
+        for i, line in enumerate(lines, 1):
+            stripped = line.rstrip()
+            # Mixed tabs and spaces
+            if '\t' in line and '    ' in line:
+                errors.append({
+                    'type': 'IndentationWarning',
+                    'message': 'Mixed tabs and spaces',
+                    'file': file_path,
+                    'line': i,
+                    'category': 'syntax',
+                    'traceback_snippet': stripped[:120],
+                })
+            # Bare except (bad practice that hides bugs)
+            if re.match(r'^\s*except\s*:\s*$', stripped):
+                errors.append({
+                    'type': 'LintWarning',
+                    'message': 'Bare except clause — should specify exception type',
+                    'file': file_path,
+                    'line': i,
+                    'category': 'syntax',
+                    'traceback_snippet': stripped[:120],
+                })
+
+        return errors
+
+    def _validate_templates_pre_build(self, files: List[Dict[str, Any]]) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+        """Run pre-build validation on all template files.
+
+        Returns (clean_files, all_errors) — files with errors are excluded.
+        """
+        clean: List[Dict[str, Any]] = []
+        all_errors: List[Dict[str, Any]] = []
+
+        for f in files:
+            errs = self._validate_template_file(f.get('path', ''), f.get('content', ''))
+            if errs:
+                logger.warning(f"Pre-build validation: skipping {f['path']} ({len(errs)} errors)")
+                all_errors.extend(errs)
+            else:
+                clean.append(f)
+
+        if all_errors:
+            logger.info(f"Pre-build validation: {len(all_errors)} errors in {len(files) - len(clean)}/{len(files)} files")
+        else:
+            logger.info(f"Pre-build validation: all {len(files)} files clean")
+
+        return clean, all_errors
+
+    # ------------------------------------------------------------------
+    # Import resolution retry (Phase 2.2)
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _extract_missing_import(error_output: str) -> Optional[str]:
+        """Parse pytest/Python output to find missing module names."""
+        # ModuleNotFoundError: No module named 'xyz'
+        match = re.search(r"No module named ['\"]([\w.]+)['\"]", error_output)
+        if match:
+            return match.group(1).split('.')[0]
+        # ImportError: cannot import name 'X' from 'Y'
+        match = re.search(r"cannot import name ['\"]\w+['\"] from ['\"]([\w.]+)['\"]", error_output)
+        if match:
+            return match.group(1).split('.')[0]
+        return None
+
+    @staticmethod
+    def _fix_missing_import(content: str, module_name: str) -> str:
+        """Inject a missing import at the top of a Python file."""
+        import_line = f"import {module_name}"
+        if import_line in content:
+            return content
+        # Insert after any existing imports or after the docstring
+        lines = content.split('\n')
+        insert_at = 0
+        for i, line in enumerate(lines):
+            if line.startswith('import ') or line.startswith('from '):
+                insert_at = i + 1
+        lines.insert(insert_at, import_line)
+        return '\n'.join(lines)
+
+    def _attempt_import_resolution(self, files: List[Dict[str, Any]], error_output: str,
+                                    max_retries: int = 3) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], int]:
+        """Attempt to fix import errors in generated files.
+
+        Returns (fixed_files, error_records, retries_used).
+        """
+        fix_errors: List[Dict[str, Any]] = []
+        retries = 0
+
+        remaining_error = error_output
+        for attempt in range(max_retries):
+            module = self._extract_missing_import(remaining_error)
+            if not module:
+                break
+
+            retries += 1
+            known = module in IMPORT_PACKAGE_MAP
+            logger.info(f"Import resolution attempt {attempt + 1}: {module} (known={known})")
+
+            fixed_any = False
+            for f in files:
+                if not f['path'].endswith('.py'):
+                    continue
+                content = f['content']
+                if f"import {module}" in content or f"from {module}" in content:
+                    continue
+                # Check if this file likely needs the import
+                if module in content or (module.replace('_', '') in content.lower()):
+                    f['content'] = self._fix_missing_import(content, module)
+                    f['size'] = len(f['content'].encode())
+                    fixed_any = True
+                    fix_errors.append({
+                        'type': 'ImportError',
+                        'message': f'Auto-resolved: added "import {module}"',
+                        'file': f['path'],
+                        'line': 0,
+                        'category': 'import',
+                        'traceback_snippet': f'Missing module: {module} (attempt {attempt + 1})',
+                        'auto_fixed': True,
+                    })
+
+            if not fixed_any:
+                fix_errors.append({
+                    'type': 'ImportError',
+                    'message': f'Could not auto-resolve: {module}',
+                    'file': 'unknown',
+                    'line': 0,
+                    'category': 'import',
+                    'traceback_snippet': remaining_error[:200],
+                    'auto_fixed': False,
+                })
+                break
+
+            # Re-validate to see if more imports are needed
+            remaining_errors = []
+            for f in files:
+                remaining_errors.extend(self._validate_template_file(f['path'], f['content']))
+            remaining_error = '\n'.join(e.get('message', '') for e in remaining_errors)
+
+        return files, fix_errors, retries
+
+    # ------------------------------------------------------------------
+    # ML-consumable error reporting (Phase 2.3)
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _build_error_report(all_errors: List[Dict[str, Any]], build_id: int,
+                            duration: float) -> Dict[str, Any]:
+        """Build a structured, ML-consumable error report.
+
+        Schema designed for future intelligence layer consumption:
+        - Per-error records with normalised type/message/file/line
+        - Category counts for quick aggregation
+        - Auto-fix tracking for learning which errors are mechanically fixable
+        """
+        breakdown = {cat: 0 for cat in ERROR_CATEGORIES}
+        for err in all_errors:
+            cat = err.get('category', 'runtime')
+            if cat in breakdown:
+                breakdown[cat] += 1
+            else:
+                breakdown['runtime'] += 1
+
+        auto_fixed = [e for e in all_errors if e.get('auto_fixed')]
+        unfixed = [e for e in all_errors if not e.get('auto_fixed')]
+
+        return {
+            'build_id': build_id,
+            'timestamp': datetime.utcnow().isoformat(),
+            'total_errors': len(all_errors),
+            'total_auto_fixed': len(auto_fixed),
+            'total_unfixed': len(unfixed),
+            'breakdown': breakdown,
+            'errors': [
+                {
+                    'type': e.get('type', 'Unknown'),
+                    'message': e.get('message', '')[:500],
+                    'file': e.get('file', 'unknown'),
+                    'line': e.get('line', 0),
+                    'category': e.get('category', 'runtime'),
+                    'traceback_snippet': e.get('traceback_snippet', '')[:300],
+                    'auto_fixed': e.get('auto_fixed', False),
+                }
+                for e in all_errors
+            ],
+            'duration_seconds': round(duration, 2),
+        }
+
+    # ------------------------------------------------------------------
+    # Legacy error classification (kept for backward compat)
     # ------------------------------------------------------------------
 
     @staticmethod
@@ -337,6 +606,7 @@ class MVPBuilderService:
         start = time.time()
         all_files: List[Dict[str, Any]] = []
         steps: List[Dict[str, Any]] = []
+        collected_errors: List[Dict[str, Any]] = []
         total_ai_cost = 0.0
         syntax_errors = 0
         test_errors = 0
@@ -350,107 +620,140 @@ class MVPBuilderService:
                     db_session.commit()
 
         try:
-            # --- 1. Generate YAML spec from requirement ---
+            # --- 1. Determine pipeline and generate spec ---
+            ai_available = bool(self.anthropic_key)
+            pipeline = 'yaml-tdd' if ai_available else 'jinja-template'
+
             if db_session:
                 build = db_session.query(MVPBuild).get(build_id)
                 if build:
                     build.status = 'GENERATING'
-                    build.build_config = {'complexity': complexity, 'pipeline': 'yaml-tdd'}
+                    build.build_config = {'complexity': complexity, 'pipeline': pipeline}
                     db_session.commit()
 
-            if not self.anthropic_key:
-                raise RuntimeError("ANTHROPIC_API_KEY not set — cannot generate spec")
-
-            spec, spec_cost = generate_layer_spec_with_ai(
-                requirement, complexity, build_id, self.anthropic_key
-            )
-            total_ai_cost += spec_cost
-
-            ac_count = len(spec.get('acceptance_criteria', []))
-            _step('SPEC_GENERATED', f"{ac_count} acceptance criteria, ${spec_cost:.4f}")
-            logger.info(f"Build {build_id}: spec generated with {ac_count} AC")
-
-            # --- 2-4. TDD cycle via orchestrator ---
             import tempfile
             work_dir = tempfile.mkdtemp(prefix=f'mvp_build_{build_id}_')
             work_path = Path(work_dir)
+            green_status = 'SKIP'
+            tests_passed = 0
+            coverage = 0.0
+            red_result = {}
 
-            # Write spec to disk so orchestrator can reference it
-            spec_file = work_path / 'LAYER_REQUIREMENTS.yaml'
-            spec_file.write_text(yaml.dump(spec, default_flow_style=False))
-            all_files.append({
-                'path': 'LAYER_REQUIREMENTS.yaml',
-                'content': spec_file.read_text(),
-                'size': spec_file.stat().st_size,
-                'phase': 'SPEC',
-            })
+            if ai_available:
+                # --- AI pipeline: spec → RED → GREEN → REFACTOR ---
+                spec, spec_cost = generate_layer_spec_with_ai(
+                    requirement, complexity, build_id, self.anthropic_key
+                )
+                total_ai_cost += spec_cost
 
-            orchestrator = AICodeGeneratorOrchestrator({
-                'provider': 'anthropic',
-                'output_base_path': str(work_path),
-            })
+                ac_count = len(spec.get('acceptance_criteria', []))
+                _step('SPEC_GENERATED', f"{ac_count} acceptance criteria, ${spec_cost:.4f}")
+                logger.info(f"Build {build_id}: spec generated with {ac_count} AC")
 
-            # RED phase
-            _step('RED_PHASE', 'Generating failing tests…')
-            red_result = orchestrator.execute_red_phase(spec)
-            red_status = red_result.get('status', 'UNKNOWN')
-            _step('RED_PHASE_DONE', f"status={red_status}, tests_failed={red_result.get('tests_failed', 0)}")
+                # Write spec to disk so orchestrator can reference it
+                spec_file = work_path / 'LAYER_REQUIREMENTS.yaml'
+                spec_file.write_text(yaml.dump(spec, default_flow_style=False))
+                all_files.append({
+                    'path': 'LAYER_REQUIREMENTS.yaml',
+                    'content': spec_file.read_text(),
+                    'size': spec_file.stat().st_size,
+                    'phase': 'SPEC',
+                })
 
-            # GREEN phase
-            _step('GREEN_PHASE', 'Generating implementation…')
-            green_result = orchestrator.execute_green_phase(spec, red_result)
-            green_status = green_result.get('status', 'UNKNOWN')
-            tests_passed = green_result.get('tests_passed', 0)
-            coverage = green_result.get('coverage', 0.0)
-            _step('GREEN_PHASE_DONE', f"status={green_status}, tests_passed={tests_passed}, coverage={coverage:.0%}")
+                orchestrator = AICodeGeneratorOrchestrator({
+                    'provider': 'anthropic',
+                    'output_base_path': str(work_path),
+                })
 
-            # REFACTOR phase
-            _step('REFACTOR_PHASE', 'Improving code quality…')
-            refactor_result = orchestrator.execute_refactor_phase(green_result)
-            _step('REFACTOR_DONE', f"status={refactor_result.get('status', 'UNKNOWN')}")
+                # RED phase
+                _step('RED_PHASE', 'Generating failing tests…')
+                red_result = orchestrator.execute_red_phase(spec)
+                red_status = red_result.get('status', 'UNKNOWN')
+                _step('RED_PHASE_DONE', f"status={red_status}, tests_failed={red_result.get('tests_failed', 0)}")
 
-            # --- 5. Collect + validate generated files ---
-            generated = orchestrator.collect_generated_files()
-            all_files.extend(generated)
+                # GREEN phase
+                _step('GREEN_PHASE', 'Generating implementation…')
+                green_result = orchestrator.execute_green_phase(spec, red_result)
+                green_status = green_result.get('status', 'UNKNOWN')
+                tests_passed = green_result.get('tests_passed', 0)
+                coverage = green_result.get('coverage', 0.0)
+                _step('GREEN_PHASE_DONE', f"status={green_status}, tests_passed={tests_passed}, coverage={coverage:.0%}")
 
-            # Validate Python syntax
-            for f in all_files:
-                if f['path'].endswith('.py'):
-                    try:
-                        ast.parse(f['content'])
-                    except SyntaxError as e:
-                        syntax_errors += 1
-                        f['error'] = f"SyntaxError: {e}"
+                # REFACTOR phase
+                _step('REFACTOR_PHASE', 'Improving code quality…')
+                refactor_result = orchestrator.execute_refactor_phase(green_result)
+                _step('REFACTOR_DONE', f"status={refactor_result.get('status', 'UNKNOWN')}")
 
-            # Count test errors from GREEN phase
-            if green_status != 'PASS':
+                # Collect generated files
+                generated = orchestrator.collect_generated_files()
+                all_files.extend(generated)
+            else:
+                # --- Template fallback: match + render Jinja templates ---
+                logger.warning(f"Build {build_id}: ANTHROPIC_API_KEY not set — using template fallback")
+                _step('TEMPLATE_FALLBACK', 'AI unavailable — using Jinja template pipeline')
+
+                matches = self.match_templates(requirement, complexity)
+                if not matches:
+                    _step('TEMPLATE_MATCH', 'No matching templates found')
+                else:
+                    params = _default_params(requirement)
+                    tpl_names = [m.template.name for m in matches]
+                    _step('TEMPLATE_MATCH', f"Matched {len(matches)} templates: {', '.join(tpl_names)}")
+                    for match in matches:
+                        rendered = self._render_template_dir(match.template, params)
+                        all_files.extend(rendered)
+                    _step('TEMPLATE_RENDER', f"Rendered {len(all_files)} files from templates")
+
+            # Phase 2.1: Pre-build validation gate
+            _step('PRE_BUILD_VALIDATION', f"Validating {len(all_files)} files (AST + py_compile + lint)…")
+            clean_files, pre_build_errors = self._validate_templates_pre_build(all_files)
+            collected_errors.extend(pre_build_errors)
+
+            syntax_errors = sum(1 for e in pre_build_errors if e['category'] == 'syntax')
+            skipped_count = len(all_files) - len(clean_files)
+            _step('PRE_BUILD_DONE', f"{skipped_count} files skipped, {syntax_errors} syntax errors found")
+
+            # Phase 2.2: Import resolution retry loop
+            error_output = '\n'.join(e.get('message', '') for e in pre_build_errors)
+            if any(e.get('category') == 'import' or 'import' in e.get('message', '').lower() for e in pre_build_errors):
+                _step('IMPORT_RESOLUTION', 'Attempting automated import fixes…')
+                all_files, import_errors, retries_used = self._attempt_import_resolution(
+                    all_files, error_output, max_retries=3
+                )
+                collected_errors.extend(import_errors)
+                auto_fixed = sum(1 for e in import_errors if e.get('auto_fixed'))
+                _step('IMPORT_RESOLUTION_DONE', f"{retries_used} retries, {auto_fixed} auto-fixed")
+
+            # Count test errors from GREEN phase (AI pipeline only)
+            if ai_available and green_status != 'PASS':
                 test_errors = max(1, red_result.get('tests_failed', 1))
+                collected_errors.append({
+                    'type': 'TestFailure',
+                    'message': f'{test_errors} test(s) failed in GREEN phase',
+                    'file': 'pytest',
+                    'line': 0,
+                    'category': 'test',
+                    'traceback_snippet': green_result.get('error_output', '')[:300],
+                })
 
             total_errors = syntax_errors + test_errors
-            _step('VALIDATION', f"{len(all_files)} files, {syntax_errors} syntax errors, {test_errors} test errors")
+            _step('VALIDATION', f"{len(all_files)} files, {syntax_errors} syntax, {test_errors} test errors")
 
-            # --- 6. Persist to DB ---
+            # --- 6. Build ML-consumable error report + persist to DB ---
             duration = time.time() - start
             final_status = 'FAILED' if total_errors > 0 else (
                 'DEPLOYING' if os.getenv('RAILWAY_TOKEN') else 'LIVE'
             )
 
-            error_breakdown = {
-                'syntax': syntax_errors,
-                'test': test_errors,
-                'import': 0,
-                'frontend': 0,
-                'wiring': 0,
-                'config': 0,
-                'runtime': 0,
-            }
+            # Phase 2.3: ML-consumable structured error report
+            error_report = self._build_error_report(collected_errors, build_id, duration)
 
             if db_session:
                 build = db_session.query(MVPBuild).get(build_id)
                 if build:
                     build.s3_prefix = f"mvps/{build_id}/"
                     build.total_errors = total_errors
-                    build.error_breakdown = error_breakdown
+                    build.error_breakdown = error_report
                     build.duration_seconds = round(duration, 2)
                     build.ai_cost_usd = round(total_ai_cost, 6) if total_ai_cost > 0 else None
                     build.status = final_status

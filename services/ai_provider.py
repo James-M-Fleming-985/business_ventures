@@ -68,11 +68,15 @@ class AnthropicProvider(AIProviderInterface):
         self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
         self.model = model
         if not self.api_key:
-            raise ValueError("Anthropic API key not provided and ANTHROPIC_API_KEY env var not set")
+            logging.getLogger(__name__).warning(
+                "ANTHROPIC_API_KEY not set — AnthropicProvider will report unavailable"
+            )
 
     def generate_code(self, prompt: str, max_tokens: int = 20480) -> str:
         if not prompt or not prompt.strip():
             raise ValueError("Prompt cannot be empty")
+        if not self.api_key:
+            raise RuntimeError("ANTHROPIC_API_KEY not configured — AI generation unavailable")
         try:
             import anthropic
             client = anthropic.Anthropic(api_key=self.api_key)
