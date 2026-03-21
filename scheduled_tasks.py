@@ -1,14 +1,48 @@
 """
-Scheduled Tasks — M0 Automated Validation
+Scheduled Tasks — M0 Automated Validation + M1 Daily Ingestion
 
-Daily: Update actual values for matured predictions.
-Weekly: Snapshot accuracy baselines for trend tracking.
+Daily 01:00 UTC: Ingest fresh Wikipedia pageviews (55 variables × daily+monthly).
+Daily 01:30 UTC: Ingest fresh Reddit activity (20+ subreddits × 30-day window).
+Daily 02:00 UTC: Update actual values for matured predictions.
+Weekly Sun 03:00 UTC: Snapshot accuracy baselines for trend tracking.
 """
 
 import logging
 from datetime import datetime, date
 
 logger = logging.getLogger(__name__)
+
+
+def ingest_wikipedia_daily(db_session_factory):
+    """Daily job: fetch fresh Wikipedia pageviews for all active wiki variables.
+
+    Calls the existing DataIngestionService._fetch_wikipedia_pageviews_data()
+    which fetches both daily (90-day window) and monthly (5-year window) data
+    and upserts into TimeSeriesData.
+    """
+    try:
+        from data_ingestion_service import DataIngestionService
+        service = DataIngestionService()
+        result = service._fetch_wikipedia_pageviews_data()
+        logger.info(f"Scheduled Wikipedia ingestion complete: {result}")
+    except Exception as e:
+        logger.error(f"Scheduled Wikipedia ingestion failed: {e}", exc_info=True)
+
+
+def ingest_reddit_daily(db_session_factory):
+    """Daily job: fetch fresh Reddit activity for all active subreddit variables.
+
+    Calls the existing DataIngestionService._fetch_reddit_activity_data()
+    which fetches 30-day post counts and upserts into TimeSeriesData.
+    Rate-limited internally (2s between subreddits).
+    """
+    try:
+        from data_ingestion_service import DataIngestionService
+        service = DataIngestionService()
+        result = service._fetch_reddit_activity_data()
+        logger.info(f"Scheduled Reddit ingestion complete: {result}")
+    except Exception as e:
+        logger.error(f"Scheduled Reddit ingestion failed: {e}", exc_info=True)
 
 
 def update_prediction_actuals(db_session_factory):
@@ -120,6 +154,26 @@ def init_scheduler(db_session_factory):
     
     scheduler = BackgroundScheduler()
     
+    # Daily at 01:00 UTC — ingest Wikipedia pageviews (M1 Track A)
+    scheduler.add_job(
+        ingest_wikipedia_daily,
+        CronTrigger(hour=1, minute=0),
+        args=[db_session_factory],
+        id='daily_wikipedia_ingestion',
+        name='Daily Wikipedia pageview ingestion',
+        replace_existing=True,
+    )
+    
+    # Daily at 01:30 UTC — ingest Reddit activity (M1 Track A)
+    scheduler.add_job(
+        ingest_reddit_daily,
+        CronTrigger(hour=1, minute=30),
+        args=[db_session_factory],
+        id='daily_reddit_ingestion',
+        name='Daily Reddit activity ingestion',
+        replace_existing=True,
+    )
+    
     # Daily at 02:00 UTC — validate matured predictions
     scheduler.add_job(
         update_prediction_actuals,
@@ -141,5 +195,9 @@ def init_scheduler(db_session_factory):
     )
     
     scheduler.start()
-    logger.info("✅ APScheduler started — daily validation (02:00 UTC), weekly snapshot (Sun 03:00 UTC)")
+    logger.info(
+        "✅ APScheduler started — "
+        "Wikipedia ingestion (01:00 UTC), Reddit ingestion (01:30 UTC), "
+        "daily validation (02:00 UTC), weekly snapshot (Sun 03:00 UTC)"
+    )
     return scheduler
