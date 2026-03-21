@@ -1,0 +1,40 @@
+{
+  "snapshot_date": "2026-03-21",
+  "snapshot_version": "2.0.65",
+  "purpose": "M0V baseline figures captured BEFORE M1 improvements. Used to measure impact of Tracks A-G.",
+  "model_accuracy": {
+    "direction_accuracy_pct": 49.2,
+    "total_predictions": 3634,
+    "avg_error_pct": 41.48,
+    "target": 90
+  },
+  "mape": {
+    "mape_pct": 41.48,
+    "total_validated": 3634,
+    "target": 5
+  },
+  "lag_error": {
+    "avg_lag_error_days": 32.2,
+    "total_with_lag_data": 3401,
+    "target": 7
+  },
+  "build_errors": {
+    "error_rate_pct": 75.0,
+    "total_builds": 4,
+    "successful_builds": 0,
+    "failed_builds": 3,
+    "target": 5
+  },
+  "exploitation": {
+    "viability_accuracy_pct": 0.0,
+    "validated_count": 0,
+    "total_build_recommendations": 103,
+    "target": 90
+  },
+  "revenue": {
+    "total_mrr": 0.0,
+    "total_subscribers": 0,
+    "app_count": 2,
+    "target_mrr": 20000
+  }
+}

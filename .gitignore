@@ -6,6 +6,7 @@ secrets/
 !package-lock.json
 !tsconfig*.json
 !revenue_baseline.json
+!baseline_snapshot_m0v.json
 .env
 .env.*
 CREDENTIALS_COLLECTED.md
