@@ -1001,12 +1001,12 @@
                                             </div>
 
                                             <!-- Progress steps (during build) -->
-                                            <template x-if="builds[rec.id].build_steps && builds[rec.id].build_steps.length > 0 && ['QUEUED','GENERATING','UPLOADING'].includes(builds[rec.id].status)">
+                                            <template x-if="builds[rec.id].build_steps && builds[rec.id].build_steps.length > 0 && !['LIVE','FAILED','DEPLOYING'].includes(builds[rec.id].status)">
                                                 <div class="text-[9px] text-slate-500 space-y-0.5 px-1">
                                                     <template x-for="s in builds[rec.id].build_steps" :key="s.step">
                                                         <div class="flex items-center gap-1">
                                                             <i data-lucide="check-circle" class="w-2.5 h-2.5 text-green-500"></i>
-                                                            <span x-text="s.step.replace(/_/g, ' ')"></span>
+                                                            <span x-text="({'SPEC_GENERATED':'Spec','RED_PHASE':'RED','RED_PHASE_DONE':'RED ✓','GREEN_PHASE':'GREEN','GREEN_PHASE_DONE':'GREEN ✓','REFACTOR_PHASE':'REFACTOR','REFACTOR_DONE':'REFACTOR ✓','VALIDATION':'Validate','COMPLETE':'Done'}[s.step] || s.step.replace(/_/g, ' '))"></span>
                                                             <span class="text-slate-600" x-text="'— ' + s.detail"></span>
                                                         </div>
                                                     </template>
@@ -1016,13 +1016,12 @@
                                             <!-- Expandable detail panel -->
                                             <template x-if="buildDetailOpen === rec.id && ['LIVE','FAILED'].includes(builds[rec.id].status)">
                                                 <div class="bg-slate-800/80 border border-slate-700 rounded-lg p-3 space-y-2 text-[10px]">
-                                                    <!-- Build config: templates used -->
-                                                    <template x-if="builds[rec.id].build_config?.templates">
+                                                    <!-- Build config -->
+                                                    <template x-if="builds[rec.id].build_config">
                                                         <div>
-                                                            <span class="text-slate-400 uppercase tracking-wider">Templates:</span>
-                                                            <template x-for="t in builds[rec.id].build_config.templates" :key="t.id">
-                                                                <span class="ml-1 px-1.5 py-0.5 bg-violet-900/40 text-violet-300 rounded" x-text="t.name"></span>
-                                                            </template>
+                                                            <span class="text-slate-400 uppercase tracking-wider">Pipeline:</span>
+                                                            <span class="ml-1 px-1.5 py-0.5 bg-violet-900/40 text-violet-300 rounded" x-text="builds[rec.id].build_config.pipeline || 'jinja'"></span>
+                                                            <span class="ml-1 text-slate-500" x-text="builds[rec.id].build_config.complexity"></span>
                                                         </div>
                                                     </template>
                                                     <!-- Build steps summary -->
@@ -1047,7 +1046,7 @@
                                                                      @click="viewBuildFile(builds[rec.id].id, f.id, f.file_path)">
                                                                     <i data-lucide="file-code" class="w-2.5 h-2.5 text-slate-500"></i>
                                                                     <span x-text="f.file_path"></span>
-                                                                    <span class="text-slate-600" x-text="f.template_id === 'ai-generated' ? '(AI)' : ''"></span>
+                                                                    <span class="text-slate-600" x-text="['RED','GREEN','SPEC'].includes(f.template_id) ? '(' + f.template_id + ')' : (f.template_id === 'ai-generated' ? '(AI)' : '')"></span>
                                                                     <span class="text-slate-600 ml-auto" x-text="(f.file_size_bytes / 1024).toFixed(1) + 'KB'"></span>
                                                                 </div>
                                                             </template>

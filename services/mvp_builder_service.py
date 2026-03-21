@@ -1,23 +1,30 @@
 """
 MVP Builder Service for Causal Affect Platform
 
-Self-contained build engine that generates MVP code from exploitation
-recommendations using templates + AI, uploads to S3, and tracks build state.
-Migrated from control_tower for Level 5 autonomy.
+YAML-driven build engine that generates MVP code from exploitation
+recommendations using an AI TDD cycle (RED → GREEN → REFACTOR).
+
+Pipeline:
+  1. AI generates a LAYER_REQUIREMENTS YAML spec from the requirement
+  2. Orchestrator runs RED phase  (generate failing tests)
+  3. Orchestrator runs GREEN phase (generate implementation to pass tests)
+  4. Orchestrator runs REFACTOR phase (improve quality)
+  5. Validate generated code (ast.parse)
+  6. Persist files to DB
 """
 
-import io
+import ast
 import json
 import logging
 import os
 import re
+import tempfile
 import time
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-import jinja2
 import yaml
 
 logger = logging.getLogger(__name__)
@@ -127,7 +134,7 @@ def _score_template(template: TemplateMetadata, requirement: str, needs: Dict[st
 
 
 class MVPBuilderService:
-    """Orchestrates MVP code generation, S3 upload, and error tracking."""
+    """Orchestrates MVP code generation via YAML-driven TDD pipeline."""
 
     def __init__(self, s3_service=None):
         self.s3 = s3_service
@@ -309,23 +316,30 @@ class MVPBuilderService:
         return breakdown
 
     # ------------------------------------------------------------------
-    # Main entry point
+    # Main entry point — YAML-driven TDD pipeline
     # ------------------------------------------------------------------
 
     def build_mvp(self, requirement: str, complexity: str, build_id: int,
                   db_session=None) -> Dict[str, Any]:
         """
-        Synchronous build pipeline:
-        1. Match templates  2. Render Jinja  3. AI gap-fill
-        4. Upload to S3     5. Update DB record
-
-        Returns summary dict.
+        YAML-driven TDD build pipeline:
+        1. Generate LAYER_REQUIREMENTS spec via AI
+        2. RED phase   — generate failing tests
+        3. GREEN phase — generate implementation
+        4. REFACTOR    — improve quality
+        5. Validate    — ast.parse all Python files
+        6. Persist     — save files + metrics to DB
         """
         from models import MVPBuild, MVPBuildFile
+        from services.spec_generator import generate_layer_spec_with_ai
+        from services.ai_code_generator_orchestrator import AICodeGeneratorOrchestrator
+
         start = time.time()
-        s3_prefix = f"mvps/{build_id}/"
         all_files: List[Dict[str, Any]] = []
         steps: List[Dict[str, Any]] = []
+        total_ai_cost = 0.0
+        syntax_errors = 0
+        test_errors = 0
 
         def _step(name: str, detail: str):
             steps.append({'step': name, 'at': datetime.utcnow().isoformat(), 'detail': detail})
@@ -336,79 +350,131 @@ class MVPBuilderService:
                     db_session.commit()
 
         try:
-            # --- 1. Match templates ---
-            matches = self.match_templates(requirement, complexity)
-            logger.info(f"Build {build_id}: matched {len(matches)} templates for '{complexity}'")
-            _step('TEMPLATES_MATCHED', f"{len(matches)} templates matched")
-
+            # --- 1. Generate YAML spec from requirement ---
             if db_session:
                 build = db_session.query(MVPBuild).get(build_id)
                 if build:
                     build.status = 'GENERATING'
-                    build.build_config = {
-                        'templates': [{'id': m.template.id, 'name': m.template.name,
-                                       'confidence': m.confidence} for m in matches],
-                        'complexity': complexity,
-                    }
+                    build.build_config = {'complexity': complexity, 'pipeline': 'yaml-tdd'}
                     db_session.commit()
 
-            # --- 2. Render templates ---
-            params = _default_params(requirement)
-            for m in matches:
-                rendered = self._render_template_dir(m.template, params)
-                all_files.extend(rendered)
-            _step('FILES_RENDERED', f"{len(all_files)} files from templates")
+            if not self.anthropic_key:
+                raise RuntimeError("ANTHROPIC_API_KEY not set — cannot generate spec")
 
-            # --- 3. AI gap-fill ---
-            ai_files, ai_cost = self._ai_generate(requirement, matches, all_files)
-            all_files.extend(ai_files)
-            ai_detail = f"{len(ai_files)} AI files"
-            if ai_cost > 0:
-                ai_detail += f", ${ai_cost:.4f}"
-            _step('AI_GENERATED', ai_detail)
+            spec, spec_cost = generate_layer_spec_with_ai(
+                requirement, complexity, build_id, self.anthropic_key
+            )
+            total_ai_cost += spec_cost
 
-            # --- 4. Upload ---
-            if db_session:
-                build = db_session.query(MVPBuild).get(build_id)
-                if build:
-                    build.status = 'UPLOADING'
-                    db_session.commit()
+            ac_count = len(spec.get('acceptance_criteria', []))
+            _step('SPEC_GENERATED', f"{ac_count} acceptance criteria, ${spec_cost:.4f}")
+            logger.info(f"Build {build_id}: spec generated with {ac_count} AC")
 
-            all_files = self._upload_files(all_files, s3_prefix)
-            total_size = sum(f.get('size', 0) for f in all_files)
-            _step('UPLOADED', f"{len(all_files)} files, {total_size:,} bytes")
+            # --- 2-4. TDD cycle via orchestrator ---
+            import tempfile
+            work_dir = tempfile.mkdtemp(prefix=f'mvp_build_{build_id}_')
+            work_path = Path(work_dir)
 
-            # --- 5. Persist file records ---
-            errors = self._classify_errors(all_files)
-            total_errors = sum(errors.values())
+            # Write spec to disk so orchestrator can reference it
+            spec_file = work_path / 'LAYER_REQUIREMENTS.yaml'
+            spec_file.write_text(yaml.dump(spec, default_flow_style=False))
+            all_files.append({
+                'path': 'LAYER_REQUIREMENTS.yaml',
+                'content': spec_file.read_text(),
+                'size': spec_file.stat().st_size,
+                'phase': 'SPEC',
+            })
+
+            orchestrator = AICodeGeneratorOrchestrator({
+                'provider': 'anthropic',
+                'output_base_path': str(work_path),
+            })
+
+            # RED phase
+            _step('RED_PHASE', 'Generating failing tests…')
+            red_result = orchestrator.execute_red_phase(spec)
+            red_status = red_result.get('status', 'UNKNOWN')
+            _step('RED_PHASE_DONE', f"status={red_status}, tests_failed={red_result.get('tests_failed', 0)}")
+
+            # GREEN phase
+            _step('GREEN_PHASE', 'Generating implementation…')
+            green_result = orchestrator.execute_green_phase(spec, red_result)
+            green_status = green_result.get('status', 'UNKNOWN')
+            tests_passed = green_result.get('tests_passed', 0)
+            coverage = green_result.get('coverage', 0.0)
+            _step('GREEN_PHASE_DONE', f"status={green_status}, tests_passed={tests_passed}, coverage={coverage:.0%}")
+
+            # REFACTOR phase
+            _step('REFACTOR_PHASE', 'Improving code quality…')
+            refactor_result = orchestrator.execute_refactor_phase(green_result)
+            _step('REFACTOR_DONE', f"status={refactor_result.get('status', 'UNKNOWN')}")
+
+            # --- 5. Collect + validate generated files ---
+            generated = orchestrator.collect_generated_files()
+            all_files.extend(generated)
+
+            # Validate Python syntax
+            for f in all_files:
+                if f['path'].endswith('.py'):
+                    try:
+                        ast.parse(f['content'])
+                    except SyntaxError as e:
+                        syntax_errors += 1
+                        f['error'] = f"SyntaxError: {e}"
+
+            # Count test errors from GREEN phase
+            if green_status != 'PASS':
+                test_errors = max(1, red_result.get('tests_failed', 1))
+
+            total_errors = syntax_errors + test_errors
+            _step('VALIDATION', f"{len(all_files)} files, {syntax_errors} syntax errors, {test_errors} test errors")
+
+            # --- 6. Persist to DB ---
             duration = time.time() - start
-
-            # No RAILWAY_TOKEN → go straight to LIVE; otherwise DEPLOYING
             final_status = 'FAILED' if total_errors > 0 else (
                 'DEPLOYING' if os.getenv('RAILWAY_TOKEN') else 'LIVE'
             )
 
+            error_breakdown = {
+                'syntax': syntax_errors,
+                'test': test_errors,
+                'import': 0,
+                'frontend': 0,
+                'wiring': 0,
+                'config': 0,
+                'runtime': 0,
+            }
+
             if db_session:
                 build = db_session.query(MVPBuild).get(build_id)
                 if build:
-                    build.s3_prefix = s3_prefix
+                    build.s3_prefix = f"mvps/{build_id}/"
                     build.total_errors = total_errors
-                    build.error_breakdown = errors
+                    build.error_breakdown = error_breakdown
                     build.duration_seconds = round(duration, 2)
-                    build.ai_cost_usd = ai_cost if ai_cost > 0 else None
+                    build.ai_cost_usd = round(total_ai_cost, 6) if total_ai_cost > 0 else None
                     build.status = final_status
                     if total_errors > 0:
-                        build.error_message = f"{total_errors} file(s) had errors"
+                        build.error_message = f"{syntax_errors} syntax + {test_errors} test errors"
                     for f in all_files:
                         db_session.add(MVPBuildFile(
-                            build_id=build_id, file_path=f['path'],
-                            s3_key=f.get('s3_key', ''), file_size_bytes=f.get('size', 0),
-                            template_id=f.get('template_id'),
+                            build_id=build_id,
+                            file_path=f['path'],
+                            s3_key=f.get('s3_key', ''),
+                            file_size_bytes=f.get('size', 0),
+                            template_id=f.get('phase', 'tdd'),
                             content=f.get('content', ''),
                         ))
                     db_session.commit()
 
             _step('COMPLETE', f"{len(all_files)} files, {total_errors} errors, {round(duration, 1)}s")
+
+            # Cleanup temp dir (best-effort)
+            try:
+                import shutil
+                shutil.rmtree(work_dir, ignore_errors=True)
+            except Exception:
+                pass
 
             return {
                 'build_id': build_id,
@@ -416,6 +482,8 @@ class MVPBuilderService:
                 'errors': total_errors,
                 'duration': round(duration, 2),
                 'status': final_status,
+                'tests_passed': tests_passed,
+                'coverage': coverage,
             }
 
         except Exception as exc:
