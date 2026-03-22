@@ -623,3 +623,118 @@ class RevenueEvent(Base):
             "event_at": self.event_at.isoformat() if self.event_at else None,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
+
+
+class ProductDeployment(Base):
+    """Tracks every product/MVP deployed commercially (M1 Track G).
+
+    Links to ExploitationRecommendation (origin signal) and MVPBuild (code).
+    Records tech stack, target market, pricing tier, and eventual outcome.
+    """
+    __tablename__ = 'product_deployments'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    recommendation_id = Column(Integer, ForeignKey('exploitation_recommendations.id'), nullable=True)
+    build_id = Column(Integer, ForeignKey('mvp_builds.id'), nullable=True)
+
+    # Product identity
+    product_name = Column(String(255), nullable=False)
+    app_id = Column(String(100), nullable=False)          # Key for joining with RevenueEvent
+    description = Column(Text)
+
+    # Configuration snapshot
+    tech_stack = Column(JSON)                              # e.g. {"framework": "fastapi", "db": "postgres", "hosting": "railway"}
+    template_ids = Column(JSON)                            # Which templates were used
+    pricing_model = Column(String(50))                     # free, freemium, subscription, one_time
+
+    # Target market
+    market_category = Column(String(100))                  # e.g. 'health_tech', 'ai_tools'
+    target_demographic = Column(String(255))               # e.g. 'developers', 'small_business'
+    geographic_focus = Column(String(100))                  # e.g. 'US', 'EU', 'global'
+
+    # Deployment details
+    railway_url = Column(String(500))
+    domain = Column(String(255))
+    deployed_at = Column(DateTime)
+    status = Column(String(20), nullable=False, default='active')  # active, paused, retired
+
+    # Outcome (updated over time)
+    outcome = Column(String(20))                           # success, moderate, failed, too_early
+    outcome_notes = Column(Text)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    recommendation = relationship('ExploitationRecommendation', backref='deployments')
+    build = relationship('MVPBuild', backref='deployment')
+    metrics = relationship('ProductMetrics', back_populates='deployment', cascade='all, delete-orphan')
+
+    __table_args__ = (
+        Index('ix_pd_app_id', 'app_id'),
+        Index('ix_pd_status', 'status'),
+        Index('ix_pd_market', 'market_category'),
+    )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "recommendation_id": self.recommendation_id,
+            "build_id": self.build_id,
+            "product_name": self.product_name,
+            "app_id": self.app_id,
+            "description": self.description,
+            "tech_stack": self.tech_stack,
+            "pricing_model": self.pricing_model,
+            "market_category": self.market_category,
+            "target_demographic": self.target_demographic,
+            "geographic_focus": self.geographic_focus,
+            "railway_url": self.railway_url,
+            "domain": self.domain,
+            "deployed_at": self.deployed_at.isoformat() if self.deployed_at else None,
+            "status": self.status,
+            "outcome": self.outcome,
+            "outcome_notes": self.outcome_notes,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+class ProductMetrics(Base):
+    """Time-series commercial metrics per ProductDeployment (M1 Track G).
+
+    Populated by Stripe webhooks (revenue, subscribers) and GA4 pulls
+    (traffic, conversion, churn). One row per deployment per period.
+    """
+    __tablename__ = 'product_metrics'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    deployment_id = Column(Integer, ForeignKey('product_deployments.id'), nullable=False)
+
+    period_start = Column(DateTime, nullable=False)       # Start of measurement period
+    period_end = Column(DateTime, nullable=False)          # End of measurement period
+
+    # Revenue (from Stripe / RevenueEvent aggregation)
+    mrr_cents = Column(Integer, default=0)                 # Monthly recurring revenue in cents
+    subscriber_count = Column(Integer, default=0)
+
+    # Traffic (from GA4 or similar)
+    page_views = Column(Integer, default=0)
+    unique_visitors = Column(Integer, default=0)
+    avg_session_seconds = Column(Float)
+
+    # Conversion
+    conversion_rate = Column(Float)                        # visitors → subscribers %
+    churn_rate = Column(Float)                             # monthly churn %
+
+    # Source tracking
+    source = Column(String(50), default='manual')          # stripe, ga4, manual
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    deployment = relationship('ProductDeployment', back_populates='metrics')
+
+    __table_args__ = (
+        Index('ix_pm_deployment', 'deployment_id'),
+        Index('ix_pm_period', 'period_start', 'period_end'),
+        Index('ix_pm_deploy_period', 'deployment_id', 'period_start', unique=True),
+    )
