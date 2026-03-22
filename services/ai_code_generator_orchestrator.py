@@ -199,6 +199,7 @@ class AICodeGeneratorOrchestrator:
 
         best_result = None
         best_passed = -1
+        analysis = {'methods': [], 'classes': []}
 
         for attempt in range(1, self.MAX_GREEN_RETRIES + 1):
             # Build prompt: first attempt uses standard prompt, retries use failure feedback
@@ -258,6 +259,10 @@ class AICodeGeneratorOrchestrator:
 
             if status == 'PASS':
                 break
+
+        # Record total attempts made
+        if best_result:
+            best_result['attempts'] = attempt
 
         # If best attempt wasn't the last one, restore its code
         if best_result and best_result['status'] != status and best_result['tests_passed'] > tests_passed:
