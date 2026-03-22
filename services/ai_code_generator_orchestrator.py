@@ -9,6 +9,7 @@ Key change: import path uses local ai_provider instead of control_tower paths.
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone
+import os
 import yaml
 import subprocess
 import re
@@ -111,15 +112,30 @@ class AICodeGeneratorOrchestrator:
 
         output_base = Path(self.config['output_base_path'])
         test_dir = output_base / 'tests'
+        src_dir = output_base / 'src'
         test_dir.mkdir(parents=True, exist_ok=True)
+        src_dir.mkdir(parents=True, exist_ok=True)
+
+        # Create conftest.py so tests can import from src/
+        conftest = output_base / 'conftest.py'
+        if not conftest.exists():
+            conftest.write_text(
+                'import sys, os\n'
+                'sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))\n'
+            )
+        # Ensure __init__.py exists in both dirs
+        (src_dir / '__init__.py').touch(exist_ok=True)
+        (test_dir / '__init__.py').touch(exist_ok=True)
 
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         test_file = test_dir / f'test_generated_{timestamp}.py'
         test_file.write_text(test_code)
 
+        env = {**os.environ, 'PYTHONPATH': str(src_dir)}
         pytest_result = subprocess.run(
             ['python3', '-m', 'pytest', str(test_file), '-v'],
-            capture_output=True, text=True, cwd=str(output_base), timeout=120
+            capture_output=True, text=True, cwd=str(output_base),
+            timeout=120, env=env,
         )
 
         stdout = pytest_result.stdout or ''
@@ -177,9 +193,11 @@ class AICodeGeneratorOrchestrator:
         status = 'FAIL'
 
         if test_files:
+            env = {**os.environ, 'PYTHONPATH': str(src_dir)}
             pytest_result = subprocess.run(
                 ['python3', '-m', 'pytest'] + test_files + ['-v'],
-                capture_output=True, text=True, cwd=str(output_base), timeout=120
+                capture_output=True, text=True, cwd=str(output_base),
+                timeout=120, env=env,
             )
             stdout = pytest_result.stdout or ''
             stderr = pytest_result.stderr or ''
@@ -323,7 +341,15 @@ ACCEPTANCE CRITERIA (UNIT TESTS):
                 for test in sc.get('tests', []):
                     prompt += f"\n      - {test}"
 
-        prompt += """
+        layer_id = requirements.get('layer_id', 'implementation')
+        module_name = layer_id.lower().replace('-', '_')
+
+        prompt += f"""
+
+IMPORTANT — MODULE NAME:
+The implementation will live in a module named `{module_name}`.
+All imports MUST use: `from {module_name} import <ClassOrFunction>`
+Do NOT invent other module names.
 
 Generate a complete Python test file with:
 - Import statements (pytest, unittest.mock, sys, os, etc.)
@@ -342,17 +368,32 @@ Output only valid Python code, no explanations or markdown formatting.
     def _build_implementation_prompt(
         self, requirements: Dict[str, Any], red_results: Dict[str, Any]
     ) -> str:
+        layer_id = requirements.get('layer_id', 'implementation')
+        module_name = layer_id.lower().replace('-', '_')
+
+        # Read actual test code so AI can match imports & expectations
+        test_code_section = ''
+        for tf in red_results.get('tests_generated', []):
+            tp = Path(tf)
+            if tp.exists():
+                test_code_section += f"\n# --- {tp.name} ---\n{tp.read_text()}\n"
+
         prompt = f"""Generate Python implementation code to make the following tests pass:
 
-Layer: {requirements.get('layer_id', 'UNKNOWN')}
-Tests Failed: {red_results.get('tests_failed', 0)}
-Test Files: {', '.join(red_results.get('tests_generated', []))}
+Layer: {layer_id}
+Module filename: {module_name}.py
+
+The tests import from `{module_name}`.  Your output will be saved as `src/{module_name}.py`.
+You MUST define every class and function that the tests import.
 
 Requirements:
 """
         for ac in requirements.get('acceptance_criteria', []):
             criterion = ac.get('criterion', ac.get('description', ''))
             prompt += f"\n- {criterion}"
+
+        if test_code_section:
+            prompt += f"\n\nACTUAL TEST CODE (must pass when your implementation is imported):\n{test_code_section}"
 
         prompt += """
 
