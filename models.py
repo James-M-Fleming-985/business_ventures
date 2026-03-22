@@ -3,7 +3,7 @@ Database Models for Correlation Discovery Engine
 SQLAlchemy models for time series data, correlations, and metadata
 """
 
-from sqlalchemy import Column, Integer, String, Float, DateTime, Text, Boolean, ForeignKey, Index, JSON
+from sqlalchemy import Column, Integer, String, Float, DateTime, Text, Boolean, ForeignKey, Index, JSON, Numeric
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -573,3 +573,53 @@ class MVPBuildFile(Base):
         if include_content:
             d["content"] = self.content
         return d
+
+
+class RevenueEvent(Base):
+    """Central revenue event log populated by Stripe webhooks (M1 Track E).
+
+    Every subscription creation, renewal, upgrade, downgrade, cancellation,
+    and payment is logged here for aggregation into MRR, subscriber counts,
+    and per-app breakdowns.
+    """
+    __tablename__ = 'revenue_events'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    app_id = Column(String(100), nullable=False)       # e.g. 'causal_affect', 'mvp_builder'
+    event_type = Column(String(50), nullable=False)     # subscription_created, subscription_renewed,
+                                                        # subscription_upgraded, subscription_downgraded,
+                                                        # subscription_cancelled, payment_failed
+    amount_cents = Column(Integer, nullable=False, default=0)  # In cents to avoid float rounding
+    currency = Column(String(3), nullable=False, default='usd')
+    stripe_event_id = Column(String(255), unique=True)  # Idempotency key from Stripe
+    stripe_customer_id = Column(String(255))
+    stripe_subscription_id = Column(String(255))
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=True)
+    tier = Column(String(50))                           # free, pro, enterprise
+    interval = Column(String(20))                       # monthly, yearly
+    metadata_json = Column(JSON)                        # Extra Stripe event data
+    event_at = Column(DateTime, nullable=False)         # When the Stripe event occurred
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        Index('ix_rev_app', 'app_id'),
+        Index('ix_rev_type', 'event_type'),
+        Index('ix_rev_event_at', 'event_at'),
+        Index('ix_rev_stripe_event', 'stripe_event_id', unique=True),
+    )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "app_id": self.app_id,
+            "event_type": self.event_type,
+            "amount_cents": self.amount_cents,
+            "amount": round(self.amount_cents / 100, 2),
+            "currency": self.currency,
+            "stripe_event_id": self.stripe_event_id,
+            "user_id": self.user_id,
+            "tier": self.tier,
+            "interval": self.interval,
+            "event_at": self.event_at.isoformat() if self.event_at else None,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }

@@ -10,7 +10,7 @@ from typing import Optional, Dict, Any
 from sqlalchemy.orm import Session
 import logging
 
-from models import User
+from models import User, RevenueEvent
 
 logger = logging.getLogger(__name__)
 
@@ -198,6 +198,82 @@ def handle_subscription_deleted(
     return True
 
 
+def _log_revenue_event(db: Session, event: dict, event_type: str, data: dict) -> None:
+    """Log a Stripe event to the revenue_events table for MRR tracking."""
+    stripe_event_id = event.get("id")
+    if not stripe_event_id:
+        return
+
+    # Avoid duplicate inserts (idempotency via stripe_event_id unique constraint)
+    existing = db.query(RevenueEvent).filter(
+        RevenueEvent.stripe_event_id == stripe_event_id
+    ).first()
+    if existing:
+        return
+
+    # Extract financial details
+    amount_cents = 0
+    currency = "usd"
+    tier = None
+    interval = None
+    stripe_customer_id = None
+    stripe_subscription_id = None
+    user_id = None
+
+    if "customer" in data:
+        stripe_customer_id = data["customer"] if isinstance(data["customer"], str) else data.get("customer")
+    if "subscription" in data:
+        stripe_subscription_id = data["subscription"] if isinstance(data["subscription"], str) else None
+
+    # Map Stripe event types to our event_type taxonomy
+    revenue_event_type = {
+        "checkout.session.completed": "subscription_created",
+        "customer.subscription.updated": "subscription_updated",
+        "customer.subscription.deleted": "subscription_cancelled",
+        "invoice.payment_failed": "payment_failed",
+        "invoice.payment_succeeded": "payment_succeeded",
+    }.get(event_type, event_type)
+
+    # Extract amount from invoice events
+    if "amount_total" in data:
+        amount_cents = data["amount_total"] or 0
+    elif "amount_paid" in data:
+        amount_cents = data["amount_paid"] or 0
+    if "currency" in data:
+        currency = data["currency"] or "usd"
+
+    # Try to resolve user
+    if stripe_customer_id:
+        user = db.query(User).filter(User.stripe_customer_id == stripe_customer_id).first()
+        if user:
+            user_id = user.id
+
+    # Get subscription tier/interval if available
+    if hasattr(data, "get") and data.get("items", {}).get("data"):
+        item = data["items"]["data"][0]
+        price_id = item.get("price", {}).get("id")
+        tier = TIER_FROM_PRICE.get(price_id)
+        interval = item.get("price", {}).get("recurring", {}).get("interval")
+
+    event_at = datetime.utcfromtimestamp(event.get("created", 0)) if event.get("created") else datetime.utcnow()
+
+    rev = RevenueEvent(
+        app_id="causal_affect",
+        event_type=revenue_event_type,
+        amount_cents=amount_cents,
+        currency=currency,
+        stripe_event_id=stripe_event_id,
+        stripe_customer_id=stripe_customer_id,
+        stripe_subscription_id=stripe_subscription_id,
+        user_id=user_id,
+        tier=tier,
+        interval=interval,
+        event_at=event_at,
+    )
+    db.add(rev)
+    db.commit()
+
+
 def handle_webhook_event(db: Session, payload: bytes, sig_header: str) -> bool:
     """Process Stripe webhook events"""
     try:
@@ -216,6 +292,12 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str) -> bool:
     
     logger.info(f"Processing Stripe webhook: {event_type}")
     
+    # Log revenue event for all webhook types
+    try:
+        _log_revenue_event(db, event, event_type, data)
+    except Exception as e:
+        logger.warning(f"Failed to log revenue event: {e}")
+    
     if event_type == "checkout.session.completed":
         return handle_checkout_completed(db, data)
     elif event_type == "customer.subscription.updated":
@@ -223,7 +305,6 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str) -> bool:
     elif event_type == "customer.subscription.deleted":
         return handle_subscription_deleted(db, data)
     elif event_type == "invoice.payment_failed":
-        # Could send notification to user
         logger.warning(f"Payment failed for invoice {data['id']}")
         return True
     else:

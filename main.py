@@ -44,6 +44,7 @@ from routers import dashboard_real as dashboard  # NO MOCK DATA
 from routers import admin  # Database initialization endpoints
 from routers import auth  # Authentication endpoints
 from routers import subscription  # Stripe subscription endpoints
+from routers import revenue  # Revenue dashboard (Track E)
 
 # Import Signal Radar router from Causal_affect
 try:
@@ -96,6 +97,7 @@ app.include_router(dashboard.router)
 app.include_router(admin.router)  # Admin endpoints for database management
 app.include_router(auth.router)  # Authentication endpoints
 app.include_router(subscription.router)  # Stripe subscription endpoints
+app.include_router(revenue.router)  # Revenue dashboard (Track E)
 
 # Include Signal Radar if available
 if signal_radar_router is not None:
