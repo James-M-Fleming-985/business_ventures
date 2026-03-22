@@ -677,7 +677,8 @@ class MVPBuilderService:
                 green_status = green_result.get('status', 'UNKNOWN')
                 tests_passed = green_result.get('tests_passed', 0)
                 coverage = green_result.get('coverage', 0.0)
-                _step('GREEN_PHASE_DONE', f"status={green_status}, tests_passed={tests_passed}, coverage={coverage:.0%}")
+                green_attempts = green_result.get('attempts', 1)
+                _step('GREEN_PHASE_DONE', f"status={green_status}, tests_passed={tests_passed}, coverage={coverage:.0%}, attempts={green_attempts}")
 
                 # REFACTOR phase
                 _step('REFACTOR_PHASE', 'Improving code quality…')
@@ -733,7 +734,7 @@ class MVPBuilderService:
                     'file': 'pytest',
                     'line': 0,
                     'category': 'test',
-                    'traceback_snippet': green_result.get('error_output', '')[:300],
+                    'traceback_snippet': green_result.get('pytest_output', '')[:300],
                 })
 
             total_errors = syntax_errors + test_errors

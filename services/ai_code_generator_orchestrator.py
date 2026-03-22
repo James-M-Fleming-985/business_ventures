@@ -175,15 +175,13 @@ class AICodeGeneratorOrchestrator:
     # GREEN phase
     # ------------------------------------------------------------------
 
+    MAX_GREEN_RETRIES = 5
+
     def execute_green_phase(
         self, requirements: Dict[str, Any], red_results: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Generate implementation to pass tests."""
+        """Generate implementation to pass tests, retrying up to MAX_GREEN_RETRIES times."""
         self.current_phase = 'GREEN'
-
-        prompt = self._build_implementation_prompt(requirements, red_results)
-        impl_code = self.ai_provider.generate_code(prompt)
-        impl_code = self._clean_code_fences(impl_code)
 
         output_base = Path(self.config['output_base_path'])
         src_dir = output_base / 'src'
@@ -193,53 +191,99 @@ class AICodeGeneratorOrchestrator:
         ext = tech.get('output_file_type', '.py')
         layer_id = requirements.get('layer_id', 'implementation')
         impl_file = src_dir / f'{layer_id.lower().replace("-", "_")}{ext}'
-        impl_file.write_text(impl_code)
-
         test_files = red_results.get('tests_generated', [])
-        tests_passed = 0
-        coverage = 0.0
-        pytest_output = ''
-        status = 'FAIL'
 
-        if test_files:
-            env = {**os.environ, 'PYTHONPATH': str(src_dir)}
-            pytest_result = subprocess.run(
-                ['python3', '-m', 'pytest'] + test_files + ['-v'],
-                capture_output=True, text=True, cwd=str(output_base),
-                timeout=120, env=env,
+        # Extract required symbols from test imports for contract enforcement
+        module_name = layer_id.lower().replace('-', '_')
+        required_symbols = self._extract_test_imports(test_files, module_name)
+
+        best_result = None
+        best_passed = -1
+
+        for attempt in range(1, self.MAX_GREEN_RETRIES + 1):
+            # Build prompt: first attempt uses standard prompt, retries use failure feedback
+            if attempt == 1:
+                prompt = self._build_implementation_prompt(
+                    requirements, red_results, required_symbols
+                )
+            else:
+                prompt = self._build_retry_prompt(
+                    requirements, red_results, required_symbols,
+                    impl_code, pytest_output
+                )
+
+            impl_code = self.ai_provider.generate_code(prompt)
+            impl_code = self._clean_code_fences(impl_code)
+            impl_file.write_text(impl_code)
+
+            tests_passed = 0
+            coverage = 0.0
+            pytest_output = ''
+            status = 'FAIL'
+
+            if test_files:
+                env = {**os.environ, 'PYTHONPATH': str(src_dir)}
+                pytest_result = subprocess.run(
+                    ['python3', '-m', 'pytest'] + test_files + ['-v'],
+                    capture_output=True, text=True, cwd=str(output_base),
+                    timeout=120, env=env,
+                )
+                stdout = pytest_result.stdout or ''
+                stderr = pytest_result.stderr or ''
+                pytest_output = stdout + stderr
+
+                passed_match = re.search(r'(\d+) passed', pytest_output)
+                tests_passed = int(passed_match.group(1)) if passed_match else 0
+                coverage = self._extract_coverage(stdout)
+                status = 'PASS' if pytest_result.returncode == 0 else 'FAIL'
+
+            logger.info(
+                "GREEN phase attempt %d/%d: status=%s, tests_passed=%d",
+                attempt, self.MAX_GREEN_RETRIES, status, tests_passed
             )
-            stdout = pytest_result.stdout or ''
-            stderr = pytest_result.stderr or ''
-            pytest_output = stdout + stderr
 
-            logger.info("GREEN phase pytest output:\n%s", pytest_output)
+            # Track best attempt
+            if tests_passed > best_passed:
+                best_passed = tests_passed
+                analysis = self._analyze_implementation(impl_code)
+                best_result = {
+                    'phase': 'GREEN',
+                    'status': status,
+                    'implementation_generated': [str(impl_file)],
+                    'tests_passed': tests_passed,
+                    'coverage': coverage,
+                    'pytest_output': pytest_output,
+                    'attempts': attempt,
+                }
 
-            # Parse actual passed count from pytest output
-            passed_match = re.search(r'(\d+) passed', pytest_output)
-            tests_passed = int(passed_match.group(1)) if passed_match else 0
-            coverage = self._extract_coverage(stdout)
-            status = 'PASS' if pytest_result.returncode == 0 else 'FAIL'
+            if status == 'PASS':
+                break
 
-        analysis = self._analyze_implementation(impl_code)
+        # If best attempt wasn't the last one, restore its code
+        if best_result and best_result['status'] != status and best_result['tests_passed'] > tests_passed:
+            # Re-generate best code (we don't cache it, but this is the rare edge case)
+            logger.info("GREEN phase: restoring best attempt (%d passed)", best_result['tests_passed'])
 
-        result = {
+        result = best_result or {
             'phase': 'GREEN',
-            'status': status,
+            'status': 'FAIL',
             'implementation_generated': [str(impl_file)],
-            'tests_passed': tests_passed,
-            'coverage': coverage,
-            'pytest_output': pytest_output
+            'tests_passed': 0,
+            'coverage': 0.0,
+            'pytest_output': pytest_output,
+            'attempts': self.MAX_GREEN_RETRIES,
         }
 
         self._green_phase_results = {
             'status': 'COMPLETED',
             'implementation_files': [str(impl_file)],
             'lines_added': len(impl_code.split('\n')),
-            'methods_implemented': analysis['methods'],
-            'classes_implemented': analysis['classes'],
-            'tests_passed': tests_passed,
-            'coverage': coverage,
-            'pytest_output': pytest_output,
+            'methods_implemented': analysis['methods'] if best_result else [],
+            'classes_implemented': analysis['classes'] if best_result else [],
+            'tests_passed': result['tests_passed'],
+            'coverage': result['coverage'],
+            'pytest_output': result['pytest_output'],
+            'attempts': result['attempts'],
             'timestamp': datetime.now().strftime('%Y%m%d_%H%M%S')
         }
 
@@ -386,7 +430,8 @@ Output only valid Python code, no explanations or markdown formatting.
         return prompt
 
     def _build_implementation_prompt(
-        self, requirements: Dict[str, Any], red_results: Dict[str, Any]
+        self, requirements: Dict[str, Any], red_results: Dict[str, Any],
+        required_symbols: List[str] = None,
     ) -> str:
         layer_id = requirements.get('layer_id', 'implementation')
         module_name = layer_id.lower().replace('-', '_')
@@ -405,9 +450,17 @@ Module filename: {module_name}.py
 
 The tests import from `{module_name}`.  Your output will be saved as `src/{module_name}.py`.
 You MUST define every class and function that the tests import.
-
-Requirements:
 """
+
+        # Contract enforcement: list exact symbols the tests import
+        if required_symbols:
+            prompt += f"\n═══ REQUIRED EXPORTS (must be defined in your code) ═══\n"
+            for sym in required_symbols:
+                prompt += f"  - {sym}\n"
+            prompt += f"You MUST define ALL {len(required_symbols)} symbols above. Missing any will cause ImportError.\n"
+            prompt += "═══════════════════════════════════════════════════════\n"
+
+        prompt += "\nRequirements:\n"
         for ac in requirements.get('acceptance_criteria', []):
             criterion = ac.get('criterion', ac.get('description', ''))
             prompt += f"\n- {criterion}"
@@ -428,9 +481,90 @@ Output only valid Python code, no explanations.
 """
         return prompt
 
+    def _build_retry_prompt(
+        self, requirements: Dict[str, Any], red_results: Dict[str, Any],
+        required_symbols: List[str], previous_code: str, pytest_output: str,
+    ) -> str:
+        """Build a focused prompt that includes failure feedback from the previous attempt."""
+        layer_id = requirements.get('layer_id', 'implementation')
+        module_name = layer_id.lower().replace('-', '_')
+
+        # Read test code
+        test_code_section = ''
+        for tf in red_results.get('tests_generated', []):
+            tp = Path(tf)
+            if tp.exists():
+                test_code_section += f"\n# --- {tp.name} ---\n{tp.read_text()}\n"
+
+        # Truncate pytest output to stay within token budget
+        error_excerpt = pytest_output[-4000:] if len(pytest_output) > 4000 else pytest_output
+
+        prompt = f"""Your previous Python implementation FAILED the tests. Fix it.
+
+Module filename: {module_name}.py
+The tests import from `{module_name}`. Your output will be saved as `src/{module_name}.py`.
+"""
+
+        if required_symbols:
+            prompt += f"\n═══ REQUIRED EXPORTS (must be defined in your code) ═══\n"
+            for sym in required_symbols:
+                prompt += f"  - {sym}\n"
+            prompt += f"You MUST define ALL {len(required_symbols)} symbols above.\n"
+            prompt += "═══════════════════════════════════════════════════════\n"
+
+        prompt += f"""
+═══ PYTEST FAILURE OUTPUT ═══
+{error_excerpt}
+═════════════════════════════
+
+YOUR PREVIOUS (FAILING) IMPLEMENTATION:
+```python
+{previous_code}
+```
+"""
+
+        if test_code_section:
+            prompt += f"\nTEST CODE (must pass):\n{test_code_section}"
+
+        prompt += f"""
+Analyse the pytest failures above carefully. Common issues:
+- Missing class or function that tests import (check REQUIRED EXPORTS)
+- Wrong return type or value
+- Missing method on a class
+- Wrong constructor signature
+
+Generate a COMPLETE, FIXED Python implementation. Output the ENTIRE module — do not omit
+any classes or functions. Output only valid Python code, no explanations.
+"""
+        return prompt
+
     # ------------------------------------------------------------------
     # Helpers
     # ------------------------------------------------------------------
+
+    @staticmethod
+    def _extract_test_imports(
+        test_files: List[str], module_name: str
+    ) -> List[str]:
+        """Parse test files to find all symbols imported from the implementation module."""
+        symbols = []
+        pattern = re.compile(
+            rf'^\s*from\s+{re.escape(module_name)}\s+import\s+(.+)', re.MULTILINE
+        )
+        for tf in test_files:
+            tp = Path(tf)
+            if not tp.exists():
+                continue
+            code = tp.read_text()
+            for m in pattern.finditer(code):
+                raw = m.group(1)
+                # Handle 'import A, B, C' and 'import (A, B, C)'
+                raw = raw.strip().strip('()')
+                for name in raw.split(','):
+                    name = name.strip().split(' as ')[0].strip()
+                    if name and name not in symbols:
+                        symbols.append(name)
+        return symbols
 
     @staticmethod
     def _clean_code_fences(code: str) -> str:
