@@ -5,7 +5,7 @@ Integrates Granger causality testing with correlation analysis
 
 import numpy as np
 import pandas as pd
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 from datetime import datetime
 import logging
 
@@ -165,6 +165,14 @@ class GrangerCausalityService:
             xy_result = results['x_causes_y']  # var1 → var2
             yx_result = results['y_causes_x']  # var2 → var1
             
+            # Multi-lag ensemble: test each lag individually, weight by inverse p-value
+            ensemble_xy = self._compute_multi_lag_ensemble(
+                var1_values, var2_values, adaptive_max_lag
+            )
+            ensemble_yx = self._compute_multi_lag_ensemble(
+                var2_values, var1_values, adaptive_max_lag
+            )
+            
             # Determine overall causal direction
             direction = self._determine_direction(xy_result, yx_result)
             
@@ -183,14 +191,16 @@ class GrangerCausalityService:
                     'test_statistic': float(xy_result.test_statistic),
                     'lags': int(xy_result.lags) if isinstance(xy_result.lags, (int, np.integer)) else xy_result.lags,
                     'significant': bool(xy_result.reject_null),
-                    'interpretation': self._interpret_result(var1.display_name, var2.display_name, xy_result)
+                    'interpretation': self._interpret_result(var1.display_name, var2.display_name, xy_result),
+                    'ensemble': ensemble_xy
                 },
                 'var2_to_var1': {
                     'p_value': float(yx_result.p_value),
                     'test_statistic': float(yx_result.test_statistic),
                     'lags': int(yx_result.lags) if isinstance(yx_result.lags, (int, np.integer)) else yx_result.lags,
                     'significant': bool(yx_result.reject_null),
-                    'interpretation': self._interpret_result(var2.display_name, var1.display_name, yx_result)
+                    'interpretation': self._interpret_result(var2.display_name, var1.display_name, yx_result),
+                    'ensemble': ensemble_yx
                 },
                 'frequency': str(resample_rule),
                 'frequency_note': f'Downsampled to {resample_rule} using real observations (not interpolated)',
@@ -203,6 +213,59 @@ class GrangerCausalityService:
                 'explanation': self._generate_explanation(var1.display_name, var2.display_name, 
                                                          xy_result, yx_result, direction)
             }
+    
+    def _compute_multi_lag_ensemble(self, x_values: np.ndarray, y_values: np.ndarray,
+                                     max_lag: int) -> Dict:
+        """
+        Test each lag individually and build an inverse-p-value weighted ensemble.
+        
+        For each lag k in [1, max_lag], runs a Granger test of x→y.
+        Collects all significant lags (p < confidence_level) and computes:
+          w_i = (1/p_i) / Σ_j(1/p_j)
+        
+        Returns dict with significant_lags list, weighted_lag, and combined_confidence.
+        """
+        significant_lags: List[Dict] = []
+        
+        for lag in range(1, max_lag + 1):
+            try:
+                result = self.granger_tester.test(x_values, y_values, lag=lag)
+                if result.reject_null:
+                    significant_lags.append({
+                        'lag': int(lag),
+                        'p_value': float(result.p_value),
+                        'test_statistic': float(result.test_statistic),
+                    })
+            except (ValueError, RuntimeError):
+                # Lag too large for data or test failed — skip
+                continue
+        
+        if not significant_lags:
+            return {
+                'significant_lags': [],
+                'weighted_lag': None,
+                'combined_confidence': None,
+                'n_significant': 0,
+            }
+        
+        # Inverse-p-value weighting: w_i = (1/p_i) / Σ(1/p_j)
+        inv_p = [1.0 / sl['p_value'] for sl in significant_lags]
+        total_inv_p = sum(inv_p)
+        weights = [ip / total_inv_p for ip in inv_p]
+        
+        for sl, w in zip(significant_lags, weights):
+            sl['weight'] = round(w, 4)
+        
+        weighted_lag = sum(sl['lag'] * sl['weight'] for sl in significant_lags)
+        # Combined confidence: 1 - weighted average p-value
+        weighted_p = sum(sl['p_value'] * sl['weight'] for sl in significant_lags)
+        
+        return {
+            'significant_lags': significant_lags,
+            'weighted_lag': round(weighted_lag, 2),
+            'combined_confidence': round(1.0 - weighted_p, 4),
+            'n_significant': len(significant_lags),
+        }
     
     def _determine_direction(self, xy_result: GrangerTestResult, 
                             yx_result: GrangerTestResult) -> str:

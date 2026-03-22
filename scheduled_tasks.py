@@ -1,10 +1,11 @@
 """
-Scheduled Tasks — M0 Automated Validation + M1 Daily Ingestion
+Scheduled Tasks — M0 Automated Validation + M1 Daily Ingestion + Walk-forward
 
 Daily 01:00 UTC: Ingest fresh Wikipedia pageviews (55 variables × daily+monthly).
 Daily 01:30 UTC: Ingest fresh Reddit activity (20+ subreddits × 30-day window).
 Daily 02:00 UTC: Update actual values for matured predictions.
 Weekly Sun 03:00 UTC: Snapshot accuracy baselines for trend tracking.
+Weekly Mon 04:00 UTC: Walk-forward backtest for all significant Granger pairs.
 """
 
 import logging
@@ -110,6 +111,22 @@ def update_prediction_actuals(db_session_factory):
         logger.error(f"Scheduled prediction validation failed: {e}", exc_info=True)
 
 
+def run_walk_forward_backtest(db_session_factory):
+    """Weekly job: expanding-window walk-forward backtest for significant Granger pairs.
+
+    Writes validated predictions (model_version='backtest_walkforward') to
+    PredictionTracking so that accuracy metrics reflect out-of-sample performance.
+    """
+    try:
+        from services.walk_forward_validator import run_walk_forward_backtest as _run
+        db = db_session_factory()
+        summary = _run(db)
+        db.close()
+        logger.info(f"Scheduled walk-forward backtest complete: {summary}")
+    except Exception as e:
+        logger.error(f"Scheduled walk-forward backtest failed: {e}", exc_info=True)
+
+
 def snapshot_baselines(db_session_factory):
     """Weekly job: compute and log current accuracy baselines."""
     from models import PredictionTracking, ExploitationRecommendation, ExploitationValidation
@@ -194,10 +211,21 @@ def init_scheduler(db_session_factory):
         replace_existing=True,
     )
     
+    # Weekly Monday at 04:00 UTC — walk-forward backtest
+    scheduler.add_job(
+        run_walk_forward_backtest,
+        CronTrigger(day_of_week='mon', hour=4, minute=0),
+        args=[db_session_factory],
+        id='weekly_walk_forward_backtest',
+        name='Weekly walk-forward backtest',
+        replace_existing=True,
+    )
+    
     scheduler.start()
     logger.info(
         "✅ APScheduler started — "
         "Wikipedia ingestion (01:00 UTC), Reddit ingestion (01:30 UTC), "
-        "daily validation (02:00 UTC), weekly snapshot (Sun 03:00 UTC)"
+        "daily validation (02:00 UTC), weekly snapshot (Sun 03:00 UTC), "
+        "walk-forward backtest (Mon 04:00 UTC)"
     )
     return scheduler
