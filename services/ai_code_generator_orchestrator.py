@@ -142,11 +142,20 @@ class AICodeGeneratorOrchestrator:
         stderr = pytest_result.stderr or ''
         failing_tests = self._parse_failing_tests(stdout, stderr, str(test_file))
 
+        logger.info("RED phase pytest output:\n%s%s", stdout, stderr)
+
+        # Count actual failing tests (not just the process exit code)
+        failed_count = len(failing_tests)
+        if failed_count == 0 and pytest_result.returncode != 0:
+            # Fallback: parse "X failed" from summary line
+            m = re.search(r'(\d+) failed', stdout)
+            failed_count = int(m.group(1)) if m else 1
+
         result = {
             'phase': 'RED',
             'status': 'PASS',
             'tests_generated': [str(test_file)],
-            'tests_failed': pytest_result.returncode,
+            'tests_failed': failed_count,
             'pytest_output': stdout + stderr
         }
 
@@ -202,7 +211,12 @@ class AICodeGeneratorOrchestrator:
             stdout = pytest_result.stdout or ''
             stderr = pytest_result.stderr or ''
             pytest_output = stdout + stderr
-            tests_passed = red_results.get('tests_failed', 0) if pytest_result.returncode == 0 else 0
+
+            logger.info("GREEN phase pytest output:\n%s", pytest_output)
+
+            # Parse actual passed count from pytest output
+            passed_match = re.search(r'(\d+) passed', pytest_output)
+            tests_passed = int(passed_match.group(1)) if passed_match else 0
             coverage = self._extract_coverage(stdout)
             status = 'PASS' if pytest_result.returncode == 0 else 'FAIL'
 
@@ -351,14 +365,20 @@ The implementation will live in a module named `{module_name}`.
 All imports MUST use: `from {module_name} import <ClassOrFunction>`
 Do NOT invent other module names.
 
+IMPORTANT — TEST STYLE:
+Write real behavioral assertions (e.g. `assert obj.method() == expected`).
+Tests will naturally fail in the RED phase because `{module_name}` does not exist yet
+(ImportError), and will pass once the implementation is generated.
+Do NOT use `assert False`, `pytest.fail()`, or `raise NotImplementedError` as placeholders.
+Do NOT wrap imports in try/except — let the ImportError happen naturally.
+
 Generate a complete Python test file with:
-- Import statements (pytest, unittest.mock, sys, os, etc.)
+- Import statements (pytest, unittest.mock, and `from {module_name} import ...`)
 - Test class for EACH acceptance criterion (UNIT tests)
 - Test class for EACH integration test scenario
 - Test class for EACH E2E test scenario
 - Each test class MUST have the EXACT name specified above
-- Tests should initially FAIL (RED phase requirement)
-- Use pytest.raises() or assert False for expected failures
+- Each test method MUST contain real assertions against expected behavior
 - Include docstrings for all classes and methods
 
 Output only valid Python code, no explanations or markdown formatting.
@@ -464,6 +484,17 @@ Output only valid Python code, no explanations.
         Returns list of {path, content, size, phase} dicts."""
         output_base = Path(self.config['output_base_path'])
         files = []
+
+        # Include conftest.py at root level
+        conftest = output_base / 'conftest.py'
+        if conftest.exists():
+            content = conftest.read_text(errors='replace')
+            files.append({
+                'path': 'conftest.py',
+                'content': content,
+                'size': len(content.encode()),
+                'phase': 'RED',
+            })
 
         for subdir in ['tests', 'src']:
             d = output_base / subdir

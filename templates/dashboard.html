@@ -1056,7 +1056,7 @@
                                                     <template x-if="builds[rec.id].total_errors > 0 && builds[rec.id].error_breakdown">
                                                         <div>
                                                             <span class="text-red-400 uppercase tracking-wider">Errors:</span>
-                                                            <template x-for="(count, cat) in Object.entries(builds[rec.id].error_breakdown).filter(([,v]) => v > 0)" :key="cat">
+                                                            <template x-for="(count, cat) in Object.entries((builds[rec.id].error_breakdown || {}).breakdown || {}).filter(([,v]) => v > 0)" :key="cat">
                                                                 <span class="ml-1 px-1.5 py-0.5 bg-red-900/30 text-red-400 rounded" x-text="cat + ': ' + count"></span>
                                                             </template>
                                                         </div>
