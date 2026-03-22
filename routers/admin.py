@@ -57,6 +57,27 @@ async def initialize_database():
         except Exception as e:
             logger.warning(f"Prediction accuracy migration may have already run: {e}")
 
+        try:
+            from migrations.add_target_growth_actual import upgrade as run_target_growth_migration
+            run_target_growth_migration()
+            logger.info("✅ Target growth actual migration complete")
+        except Exception as e:
+            logger.warning(f"Target growth migration may have already run: {e}")
+
+        try:
+            from migrations.add_revenue_events_table import upgrade as run_revenue_events_migration
+            run_revenue_events_migration()
+            logger.info("✅ Revenue events table migration complete")
+        except Exception as e:
+            logger.warning(f"Revenue events migration may have already run: {e}")
+
+        try:
+            from migrations.add_commercial_intelligence_tables import upgrade as run_commercial_migration
+            run_commercial_migration()
+            logger.info("✅ Commercial intelligence tables migration complete")
+        except Exception as e:
+            logger.warning(f"Commercial intelligence migration may have already run: {e}")
+
         # Phase 1: Initialize database schema and seed variables
         logger.info("Phase 1: Creating tables and seeding variables...")
         init_result = init_db_main()

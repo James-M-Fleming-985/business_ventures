@@ -182,8 +182,12 @@ async def startup_event():
         from sqlalchemy import text, inspect
         with engine.connect() as conn:
             inspector = inspect(engine)
-            build_file_cols = {c['name'] for c in inspector.get_columns('mvp_build_files')} if 'mvp_build_files' in inspector.get_table_names() else set()
-            build_cols = {c['name'] for c in inspector.get_columns('mvp_builds')} if 'mvp_builds' in inspector.get_table_names() else set()
+            table_names = inspector.get_table_names()
+
+            build_file_cols = {c['name'] for c in inspector.get_columns('mvp_build_files')} if 'mvp_build_files' in table_names else set()
+            build_cols = {c['name'] for c in inspector.get_columns('mvp_builds')} if 'mvp_builds' in table_names else set()
+            exploit_cols = {c['name'] for c in inspector.get_columns('exploitation_recommendations')} if 'exploitation_recommendations' in table_names else set()
+
             if 'content' not in build_file_cols and build_file_cols:
                 conn.execute(text("ALTER TABLE mvp_build_files ADD COLUMN content TEXT"))
                 conn.commit()
@@ -192,6 +196,13 @@ async def startup_event():
                 conn.execute(text("ALTER TABLE mvp_builds ADD COLUMN build_steps JSON"))
                 conn.commit()
                 logger.info("✅ Added build_steps column to mvp_builds")
+
+            # M1 Track C: outcome tracking columns
+            if 'target_growth_actual' not in exploit_cols and exploit_cols:
+                conn.execute(text("ALTER TABLE exploitation_recommendations ADD COLUMN target_growth_actual FLOAT"))
+                conn.execute(text("ALTER TABLE exploitation_recommendations ADD COLUMN target_growth_measured_at TIMESTAMP"))
+                conn.commit()
+                logger.info("✅ Added target_growth_actual columns to exploitation_recommendations")
         
         # Start APScheduler for M0 automated validation
         try:
