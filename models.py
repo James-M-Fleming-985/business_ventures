@@ -372,6 +372,10 @@ class ExploitationRecommendation(Base):
     status = Column(String(20), nullable=False, default='NEW') # NEW, REVIEWING, PURSUING, COMPLETED, DISMISSED
     notes = Column(Text)                                       # User free-text notes
 
+    # Outcome tracking (M1 Track C)
+    target_growth_actual = Column(Float, nullable=True)        # Actual target % change over opportunity window
+    target_growth_measured_at = Column(DateTime, nullable=True) # When actual growth was recorded
+
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -413,6 +417,8 @@ class ExploitationRecommendation(Base):
             "market_category": self.market_category,
             "status": self.status,
             "notes": self.notes,
+            "target_growth_actual": self.target_growth_actual,
+            "target_growth_measured_at": self.target_growth_measured_at.isoformat() if self.target_growth_measured_at else None,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
