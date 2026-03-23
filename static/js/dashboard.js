@@ -2088,13 +2088,13 @@ function dashboardData() {
                 y: history.map(h => h.mrr),
                 type: 'bar',
                 marker: { color: '#22c55e', opacity: 0.8 },
-                hovertemplate: '%{x}<br>$%{y:.2f}<extra></extra>',
+                hovertemplate: '%{x}<br>£%{y:.2f}<extra></extra>',
             }], {
                 margin: { t: 10, r: 20, b: 40, l: 60 },
                 paper_bgcolor: 'transparent',
                 plot_bgcolor: 'transparent',
                 xaxis: { color: '#94a3b8', gridcolor: '#334155' },
-                yaxis: { color: '#94a3b8', gridcolor: '#334155', tickprefix: '$' },
+                yaxis: { color: '#94a3b8', gridcolor: '#334155', tickprefix: '£' },
                 font: { color: '#94a3b8' },
             }, { responsive: true, displayModeBar: false });
         },

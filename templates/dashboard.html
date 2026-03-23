@@ -326,7 +326,7 @@
         <button @click="activeView = 'revenue'; loadRevenue()" 
                 :class="activeView === 'revenue' ? 'bg-green-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'"
                 class="px-4 py-2 rounded-lg text-sm font-medium transition">
-            <i data-lucide="dollar-sign" class="w-4 h-4 inline mr-1"></i>
+            <i data-lucide="pound-sterling" class="w-4 h-4 inline mr-1"></i>
             Revenue
         </button>
     </div>
@@ -1130,7 +1130,7 @@
 
                     <!-- Actual Revenue -->
                     <div>
-                        <label class="block text-xs text-slate-400 uppercase tracking-wider mb-1">Actual Monthly Revenue ($)</label>
+                        <label class="block text-xs text-slate-400 uppercase tracking-wider mb-1">Actual Monthly Revenue (£)</label>
                         <input type="number" x-model.number="validationForm.actual_revenue" placeholder="0"
                             class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white placeholder:text-slate-500">
                     </div>
@@ -1385,7 +1385,7 @@
                 <div class="flex items-center justify-between mb-4">
                     <div class="flex items-center gap-2">
                         <div class="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center">
-                            <i data-lucide="dollar-sign" class="w-5 h-5 text-green-400"></i>
+                            <i data-lucide="pound-sterling" class="w-5 h-5 text-green-400"></i>
                         </div>
                         <h3 class="text-lg font-semibold text-white">Revenue</h3>
                         <div class="relative group">
@@ -1400,9 +1400,9 @@
                     </div>
                 </div>
                 <div class="flex items-end gap-4 mb-4">
-                    <p class="text-4xl font-bold text-green-400" x-text="'$' + (baselines?.revenue?.total_mrr || 0).toLocaleString()"></p>
+                    <p class="text-4xl font-bold text-green-400" x-text="'£' + (baselines?.revenue?.total_mrr || 0).toLocaleString()"></p>
                     <div class="flex flex-col text-xs text-slate-400 mb-1">
-                        <span>Target: <span class="text-green-400">$20,000 MRR</span></span>
+                        <span>Target: <span class="text-green-400">£20,000 MRR</span></span>
                         <span x-text="(baselines?.revenue?.total_subscribers || 0) + ' subscribers across ' + (baselines?.revenue?.app_count || 0) + ' apps'"></span>
                     </div>
                 </div>
@@ -1416,7 +1416,7 @@
                     <template x-for="app in (baselines?.revenue?.apps || [])" :key="app.name">
                         <div class="flex items-center justify-between text-sm">
                             <span class="text-slate-300" x-text="app.name"></span>
-                            <span class="text-slate-400" x-text="'$' + (app.mrr || 0).toLocaleString() + ' MRR · ' + (app.subscribers || 0) + ' subs'"></span>
+                            <span class="text-slate-400" x-text="'£' + (app.mrr || 0).toLocaleString() + ' MRR · ' + (app.subscribers || 0) + ' subs'"></span>
                         </div>
                     </template>
                 </div>
@@ -1449,7 +1449,7 @@
                 <div class="flex items-center justify-between mb-4">
                     <div class="flex items-center gap-2">
                         <div class="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center">
-                            <i data-lucide="dollar-sign" class="w-5 h-5 text-green-400"></i>
+                            <i data-lucide="pound-sterling" class="w-5 h-5 text-green-400"></i>
                         </div>
                         <h3 class="text-lg font-semibold text-white">Revenue Dashboard</h3>
                         <span class="px-2 py-0.5 bg-green-500/20 text-green-400 rounded text-xs">Live</span>
@@ -1468,12 +1468,12 @@
                 <!-- MRR Card -->
                 <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
                     <p class="text-sm text-slate-400 mb-1">Monthly Recurring Revenue</p>
-                    <p class="text-3xl font-bold text-green-400" x-text="'$' + (revenueData?.current_mrr || 0).toLocaleString(undefined, {minimumFractionDigits: 2})"></p>
+                    <p class="text-3xl font-bold text-green-400" x-text="'£' + (revenueData?.current_mrr || 0).toLocaleString(undefined, {minimumFractionDigits: 2})"></p>
                     <div class="w-full bg-slate-700 rounded-full h-2 mt-3">
                         <div class="bg-green-500 h-2 rounded-full transition-all duration-500" 
                              :style="'width: ' + Math.min((revenueData?.current_mrr || 0) / 20000 * 100, 100) + '%'"></div>
                     </div>
-                    <p class="text-xs text-slate-500 mt-1">Target: $20,000 MRR</p>
+                    <p class="text-xs text-slate-500 mt-1">Target: £20,000 MRR</p>
                 </div>
                 <!-- Subscribers Card -->
                 <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
@@ -1508,7 +1508,7 @@
                                 <span class="text-white font-medium" x-text="app.app_id"></span>
                                 <span class="text-xs text-slate-400 ml-2" x-text="app.event_count + ' events'"></span>
                             </div>
-                            <span class="text-green-400 font-bold" x-text="'$' + (app.total_revenue || 0).toLocaleString(undefined, {minimumFractionDigits: 2})"></span>
+                            <span class="text-green-400 font-bold" x-text="'£' + (app.total_revenue || 0).toLocaleString(undefined, {minimumFractionDigits: 2})"></span>
                         </div>
                     </template>
                 </div>
@@ -1540,7 +1540,7 @@
                                               x-text="evt.event_type"></span>
                                     </td>
                                     <td class="py-2 px-3 text-slate-300" x-text="evt.app_id || '—'"></td>
-                                    <td class="py-2 px-3 text-right text-green-400 font-medium" x-text="'$' + ((evt.amount_cents || 0) / 100).toFixed(2)"></td>
+                                    <td class="py-2 px-3 text-right text-green-400 font-medium" x-text="'£' + ((evt.amount_cents || 0) / 100).toFixed(2)"></td>
                                 </tr>
                             </template>
                         </tbody>
@@ -1551,7 +1551,7 @@
 
         <!-- No Data State -->
         <div x-show="!revenueLoading && !revenueData" class="flex flex-col items-center justify-center py-12 text-slate-500">
-            <i data-lucide="dollar-sign" class="w-12 h-12 mb-3 opacity-30"></i>
+            <i data-lucide="pound-sterling" class="w-12 h-12 mb-3 opacity-30"></i>
             <p class="text-sm">Failed to load revenue data</p>
             <p class="text-xs text-slate-600 mt-1">Check console for errors</p>
         </div>

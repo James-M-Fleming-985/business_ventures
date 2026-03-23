@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import func, case, and_
 from sqlalchemy.orm import Session
 
-from database import get_db_session
+from database import get_db
 from models import RevenueEvent, User
 
 router = APIRouter(prefix="/revenue", tags=["revenue"])
@@ -19,7 +19,7 @@ router = APIRouter(prefix="/revenue", tags=["revenue"])
 @router.get("/dashboard")
 def revenue_dashboard(
     months: int = 12,
-    db: Session = Depends(get_db_session),
+    db: Session = Depends(get_db),
 ):
     """Aggregate revenue metrics across all apps.
 

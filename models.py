@@ -590,7 +590,7 @@ class RevenueEvent(Base):
                                                         # subscription_upgraded, subscription_downgraded,
                                                         # subscription_cancelled, payment_failed
     amount_cents = Column(Integer, nullable=False, default=0)  # In cents to avoid float rounding
-    currency = Column(String(3), nullable=False, default='usd')
+    currency = Column(String(3), nullable=False, default='gbp')
     stripe_event_id = Column(String(255), unique=True)  # Idempotency key from Stripe
     stripe_customer_id = Column(String(255))
     stripe_subscription_id = Column(String(255))

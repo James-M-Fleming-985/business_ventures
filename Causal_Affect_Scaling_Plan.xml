@@ -1,0 +1,1991 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Project xmlns="http://schemas.microsoft.com/project">
+  <Name>Causal Affect Scaling Plan</Name>
+  <Title>CA-SCALE: Baseline to 10TB / 90% Accuracy / Full Automation</Title>
+  <Author>James Fleming</Author>
+  <CreationDate>2026-03-09T00:00:00</CreationDate>
+  <StartDate>2026-03-09T00:00:00</StartDate>
+  <FinishDate>2027-03-08T00:00:00</FinishDate>
+  <CurrencySymbol>$</CurrencySymbol>
+  <Tasks>
+    <Task>
+      <UID>1</UID>
+      <ID>1</ID>
+      <Name>Causal Affect Scaling: Baseline to 10TB / 90% Accuracy (2026-2027)</Name>
+      <Notes>12-month scaling plan: 10TB data ingestion, 90% model accuracy, full build automation, revenue dashboard, region-aware pricing, self-learning engine.</Notes>
+      <OutlineLevel>1</OutlineLevel>
+      <Start>2026-03-09T00:00:00</Start>
+      <Finish>2027-03-08T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Summary>1</Summary>
+    </Task>
+    <Task>
+      <UID>2</UID>
+      <ID>2</ID>
+      <Name>M0: Instrument &amp; Measure (Weeks 1-3)</Name>
+      <Notes>You can't improve what you can't measure. Establish baselines for model accuracy, build errors, exploitation metrics, and revenue.</Notes>
+      <OutlineLevel>2</OutlineLevel>
+      <Start>2026-03-09T00:00:00</Start>
+      <Finish>2026-03-29T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Summary>1</Summary>
+    </Task>
+    <Task>
+      <UID>3</UID>
+      <ID>3</ID>
+      <Name>Run prediction validation on all matured predictions (POST /predictions/validate)</Name>
+      <Notes>Track A: Model Accuracy Baseline: Run prediction validation, record baseline accuracy, set up weekly automation</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-03-09T00:00:00</Start>
+      <Finish>2026-03-29T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT120H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>4</UID>
+      <ID>4</ID>
+      <Name>Record baseline direction_accuracy, avg_error_pct, avg_change_error_pct</Name>
+      <Notes>Track A: Model Accuracy Baseline: Run prediction validation, record baseline accuracy, set up weekly automation</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-03-09T00:00:00</Start>
+      <Finish>2026-03-29T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT120H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>5</UID>
+      <ID>5</ID>
+      <Name>Add automated weekly validation cron (APScheduler or Railway cron)</Name>
+      <Notes>Track A: Model Accuracy Baseline: Run prediction validation, record baseline accuracy, set up weekly automation</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-03-09T00:00:00</Start>
+      <Finish>2026-03-29T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT120H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>6</UID>
+      <ID>6</ID>
+      <Name>Add accuracy trend chart to Prediction Accuracy tab</Name>
+      <Notes>Track A: Model Accuracy Baseline: Run prediction validation, record baseline accuracy, set up weekly automation</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-03-09T00:00:00</Start>
+      <Finish>2026-03-29T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT120H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>7</UID>
+      <ID>7</ID>
+      <Name>Deliverable: Documented baseline accuracy number (expected ~50-55%)</Name>
+      <Notes>Track A: Model Accuracy Baseline: Run prediction validation, record baseline accuracy, set up weekly automation</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-03-09T00:00:00</Start>
+      <Finish>2026-03-29T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT120H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>8</UID>
+      <ID>8</ID>
+      <Name>Add BuildMetrics tracking to build_feature.py (syntax errors, test failures, frontend build failures)</Name>
+      <Notes>Track B: Build Error Baseline: Add build metrics tracking, store results as CI artifacts, create metrics endpoint</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-03-09T00:00:00</Start>
+      <Finish>2026-03-29T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT120H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>9</UID>
+      <ID>9</ID>
+      <Name>Store results in JSON artifact uploaded with GitHub Actions</Name>
+      <Notes>Track B: Build Error Baseline: Add build metrics tracking, store results as CI artifacts, create metrics endpoint</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-03-09T00:00:00</Start>
+      <Finish>2026-03-29T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT120H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>10</UID>
+      <ID>10</ID>
+      <Name>Parse artifact in /builds/metrics endpoint</Name>
+      <Notes>Track B: Build Error Baseline: Add build metrics tracking, store results as CI artifacts, create metrics endpoint</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-03-09T00:00:00</Start>
+      <Finish>2026-03-29T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT120H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>11</UID>
+      <ID>11</ID>
+      <Name>Deliverable: Error rate measurement framework, initial baseline (expected ~20-30%)</Name>
+      <Notes>Track B: Build Error Baseline: Add build metrics tracking, store results as CI artifacts, create metrics endpoint</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-03-09T00:00:00</Start>
+      <Finish>2026-03-29T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT120H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>12</UID>
+      <ID>12</ID>
+      <Name>Tag all 103 existing BUILD recommendations with viability scores (run /exploitation/generate)</Name>
+      <Notes>Track C: Exploitation Metrics Baseline: Score existing BUILD recommendations, manually validate sample, create validation table</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-03-09T00:00:00</Start>
+      <Finish>2026-03-29T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT120H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>13</UID>
+      <ID>13</ID>
+      <Name>Manually validate 10-20 BUILD recommendations against real-world outcomes</Name>
+      <Notes>Track C: Exploitation Metrics Baseline: Score existing BUILD recommendations, manually validate sample, create validation table</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-03-09T00:00:00</Start>
+      <Finish>2026-03-29T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT120H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>14</UID>
+      <ID>14</ID>
+      <Name>Create exploitation_validation table to track recommended vs actual opportunity success</Name>
+      <Notes>Track C: Exploitation Metrics Baseline: Score existing BUILD recommendations, manually validate sample, create validation table</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-03-09T00:00:00</Start>
+      <Finish>2026-03-29T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT120H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>15</UID>
+      <ID>15</ID>
+      <Name>Deliverable: Documented baseline viability prediction accuracy (expected ~45-50%)</Name>
+      <Notes>Track C: Exploitation Metrics Baseline: Score existing BUILD recommendations, manually validate sample, create validation table</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-03-09T00:00:00</Start>
+      <Finish>2026-03-29T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT120H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>16</UID>
+      <ID>16</ID>
+      <Name>Audit Stripe dashboard for current subscriber count and MRR</Name>
+      <Notes>Track D: Revenue Baseline: Audit Stripe dashboard, document current revenue per app</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-03-09T00:00:00</Start>
+      <Finish>2026-03-29T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT120H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>17</UID>
+      <ID>17</ID>
+      <Name>Document current revenue per app (Causal Affect, systems3-project-reporter)</Name>
+      <Notes>Track D: Revenue Baseline: Audit Stripe dashboard, document current revenue per app</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-03-09T00:00:00</Start>
+      <Finish>2026-03-29T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT120H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>18</UID>
+      <ID>18</ID>
+      <Name>Deliverable: Revenue baseline document</Name>
+      <Notes>Track D: Revenue Baseline: Audit Stripe dashboard, document current revenue per app</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-03-09T00:00:00</Start>
+      <Finish>2026-03-29T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT120H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>19</UID>
+      <ID>19</ID>
+      <Name>MILESTONE: M0: Instrument &amp; Measure Complete</Name>
+      <Notes>All tasks for M0: Instrument &amp; Measure verified and complete.</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-03-29T00:00:00</Start>
+      <Finish>2026-03-29T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT0H0M0S</Duration>
+      <Milestone>1</Milestone>
+    </Task>
+    <Task>
+      <UID>20</UID>
+      <ID>20</ID>
+      <Name>M1: Foundation Scaling (Weeks 4-9)</Name>
+      <Notes>Target: +5% accuracy (55-60%), data to ~100GB, build errors measured. More granular data + proper validation methodology.</Notes>
+      <OutlineLevel>2</OutlineLevel>
+      <Start>2026-03-30T00:00:00</Start>
+      <Finish>2026-05-10T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Summary>1</Summary>
+      <PredecessorLink>
+        <PredecessorUID>19</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>21</UID>
+      <ID>21</ID>
+      <Name>Add daily Wikipedia pageview ingestion (55 variables x 365 days = 20K new daily records/year)</Name>
+      <Notes>Track A: Model Accuracy to 60%: Add daily ingestion, walk-forward validation, multi-lag testing</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-03-30T00:00:00</Start>
+      <Finish>2026-05-10T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>22</UID>
+      <ID>22</ID>
+      <Name>Add daily Reddit activity ingestion for top 30 subreddits mapped in SIGNAL_CROSS_VALIDATION</Name>
+      <Notes>Track A: Model Accuracy to 60%: Add daily ingestion, walk-forward validation, multi-lag testing</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-03-30T00:00:00</Start>
+      <Finish>2026-05-10T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>23</UID>
+      <ID>23</ID>
+      <Name>Implement walk-forward validation (train on N months, predict month N+1, slide forward)</Name>
+      <Notes>Track A: Model Accuracy to 60%: Add daily ingestion, walk-forward validation, multi-lag testing</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-03-30T00:00:00</Start>
+      <Finish>2026-05-10T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>24</UID>
+      <ID>24</ID>
+      <Name>Add multi-lag Granger testing (test 1-12 month lags instead of single optimal lag)</Name>
+      <Notes>Track A: Model Accuracy to 60%: Add daily ingestion, walk-forward validation, multi-lag testing</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-03-30T00:00:00</Start>
+      <Finish>2026-05-10T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>25</UID>
+      <ID>25</ID>
+      <Name>Add pre-build template validation (lint templates before generation)</Name>
+      <Notes>Track B: Build Errors to 25%: Pre-build validation, automated import resolution, structured error reporting</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-03-30T00:00:00</Start>
+      <Finish>2026-05-10T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>26</UID>
+      <ID>26</ID>
+      <Name>Add automated import resolution (detect missing imports, auto-add)</Name>
+      <Notes>Track B: Build Errors to 25%: Pre-build validation, automated import resolution, structured error reporting</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-03-30T00:00:00</Start>
+      <Finish>2026-05-10T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>27</UID>
+      <ID>27</ID>
+      <Name>Add structured error reporting to GitHub Actions artifacts</Name>
+      <Notes>Track B: Build Errors to 25%: Pre-build validation, automated import resolution, structured error reporting</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-03-30T00:00:00</Start>
+      <Finish>2026-05-10T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>28</UID>
+      <ID>28</ID>
+      <Name>Backtest viability scores against 6-month historical data</Name>
+      <Notes>Track C: Exploitation Accuracy to 55%: Backtest viability scores, calibrate weights, add outcome tracking</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-03-30T00:00:00</Start>
+      <Finish>2026-05-10T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>29</UID>
+      <ID>29</ID>
+      <Name>Calibrate viability scoring weights based on backtest results</Name>
+      <Notes>Track C: Exploitation Accuracy to 55%: Backtest viability scores, calibrate weights, add outcome tracking</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-03-30T00:00:00</Start>
+      <Finish>2026-05-10T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>30</UID>
+      <ID>30</ID>
+      <Name>Add target_growth_actual field to ExploitationRecommendation for outcome tracking</Name>
+      <Notes>Track C: Exploitation Accuracy to 55%: Backtest viability scores, calibrate weights, add outcome tracking</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-03-30T00:00:00</Start>
+      <Finish>2026-05-10T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>31</UID>
+      <ID>31</ID>
+      <Name>Enable TimescaleDB extension on Railway PostgreSQL</Name>
+      <Notes>Track D: Data Infrastructure: TimescaleDB, hypertables, retention policies, S3 cold storage, connection pooling</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-03-30T00:00:00</Start>
+      <Finish>2026-05-10T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>32</UID>
+      <ID>32</ID>
+      <Name>Convert time_series_data to hypertable with time-based partitioning</Name>
+      <Notes>Track D: Data Infrastructure: TimescaleDB, hypertables, retention policies, S3 cold storage, connection pooling</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-03-30T00:00:00</Start>
+      <Finish>2026-05-10T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>33</UID>
+      <ID>33</ID>
+      <Name>Add automated data retention policy (raw daily: 2 years, aggregated: forever)</Name>
+      <Notes>Track D: Data Infrastructure: TimescaleDB, hypertables, retention policies, S3 cold storage, connection pooling</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-03-30T00:00:00</Start>
+      <Finish>2026-05-10T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>34</UID>
+      <ID>34</ID>
+      <Name>Set up S3 bucket for cold storage archive</Name>
+      <Notes>Track D: Data Infrastructure: TimescaleDB, hypertables, retention policies, S3 cold storage, connection pooling</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-03-30T00:00:00</Start>
+      <Finish>2026-05-10T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>35</UID>
+      <ID>35</ID>
+      <Name>Add connection pool tuning: pool_size=20, max_overflow=10</Name>
+      <Notes>Track D: Data Infrastructure: TimescaleDB, hypertables, retention policies, S3 cold storage, connection pooling</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-03-30T00:00:00</Start>
+      <Finish>2026-05-10T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>36</UID>
+      <ID>36</ID>
+      <Name>Create RevenueEvent model (app_id, event_type, amount, currency, region, timestamp)</Name>
+      <Notes>Track E: Revenue Dashboard v1: Central RevenueEvent model, webhook aggregation, basic MRR chart</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-03-30T00:00:00</Start>
+      <Finish>2026-05-10T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>37</UID>
+      <ID>37</ID>
+      <Name>Create /revenue/dashboard endpoint aggregating across all Stripe accounts</Name>
+      <Notes>Track E: Revenue Dashboard v1: Central RevenueEvent model, webhook aggregation, basic MRR chart</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-03-30T00:00:00</Start>
+      <Finish>2026-05-10T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>38</UID>
+      <ID>38</ID>
+      <Name>Wire Stripe webhook events for all deployed apps to central tracker</Name>
+      <Notes>Track E: Revenue Dashboard v1: Central RevenueEvent model, webhook aggregation, basic MRR chart</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-03-30T00:00:00</Start>
+      <Finish>2026-05-10T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>39</UID>
+      <ID>39</ID>
+      <Name>Build basic Revenue tab in dashboard (MRR chart, subscriber count, per-app breakdown)</Name>
+      <Notes>Track E: Revenue Dashboard v1: Central RevenueEvent model, webhook aggregation, basic MRR chart</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-03-30T00:00:00</Start>
+      <Finish>2026-05-10T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>40</UID>
+      <ID>40</ID>
+      <Name>MILESTONE: M1: Foundation Scaling Complete</Name>
+      <Notes>All tasks for M1: Foundation Scaling verified and complete.</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-05-10T00:00:00</Start>
+      <Finish>2026-05-10T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT0H0M0S</Duration>
+      <Milestone>1</Milestone>
+    </Task>
+    <Task>
+      <UID>41</UID>
+      <ID>41</ID>
+      <Name>M2: Intelligence Layer (Weeks 10-15)</Name>
+      <Notes>Target: 65% accuracy, 60% exploitation, build time 4hrs, errors 20%. Ensemble reduces individual model bias.</Notes>
+      <OutlineLevel>2</OutlineLevel>
+      <Start>2026-05-11T00:00:00</Start>
+      <Finish>2026-06-21T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Summary>1</Summary>
+      <PredecessorLink>
+        <PredecessorUID>40</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>42</UID>
+      <ID>42</ID>
+      <Name>Add ensemble model: combine Granger causality + simple linear regression + ARIMA</Name>
+      <Notes>Track A: Model Accuracy to 65%: Ensemble model, confidence-weighted, feature engineering, cross-validation</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-05-11T00:00:00</Start>
+      <Finish>2026-06-21T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>43</UID>
+      <ID>43</ID>
+      <Name>Implement confidence-weighted ensemble (weight by historical accuracy per model)</Name>
+      <Notes>Track A: Model Accuracy to 65%: Ensemble model, confidence-weighted, feature engineering, cross-validation</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-05-11T00:00:00</Start>
+      <Finish>2026-06-21T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>44</UID>
+      <ID>44</ID>
+      <Name>Add feature engineering: rolling averages (7d, 30d, 90d), rate of change, volatility</Name>
+      <Notes>Track A: Model Accuracy to 65%: Ensemble model, confidence-weighted, feature engineering, cross-validation</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-05-11T00:00:00</Start>
+      <Finish>2026-06-21T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>45</UID>
+      <ID>45</ID>
+      <Name>Add cross-validation signal confidence (Wikipedia + Reddit agreement score as feature)</Name>
+      <Notes>Track A: Model Accuracy to 65%: Ensemble model, confidence-weighted, feature engineering, cross-validation</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-05-11T00:00:00</Start>
+      <Finish>2026-06-21T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>46</UID>
+      <ID>46</ID>
+      <Name>Add AI-powered code review step (LLM validates generated code before commit)</Name>
+      <Notes>Track B: Build Errors to 20%: AI-powered code review, integration test templates, fix top failure patterns</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-05-11T00:00:00</Start>
+      <Finish>2026-06-21T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>47</UID>
+      <ID>47</ID>
+      <Name>Add integration test templates for common patterns (CRUD, auth, Stripe)</Name>
+      <Notes>Track B: Build Errors to 20%: AI-powered code review, integration test templates, fix top failure patterns</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-05-11T00:00:00</Start>
+      <Finish>2026-06-21T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>48</UID>
+      <ID>48</ID>
+      <Name>Fix top 5 most common build failure patterns from M1 data</Name>
+      <Notes>Track B: Build Errors to 20%: AI-powered code review, integration test templates, fix top failure patterns</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-05-11T00:00:00</Start>
+      <Finish>2026-06-21T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>49</UID>
+      <ID>49</ID>
+      <Name>Add Google Trends integration (pytrends with proxy rotation)</Name>
+      <Notes>Track C: Exploitation Accuracy to 60%: Google Trends integration, cross-reference viability, competition scoring</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-05-11T00:00:00</Start>
+      <Finish>2026-06-21T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>50</UID>
+      <ID>50</ID>
+      <Name>Cross-reference viability scores with Google Trends search volume</Name>
+      <Notes>Track C: Exploitation Accuracy to 60%: Google Trends integration, cross-reference viability, competition scoring</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-05-11T00:00:00</Start>
+      <Finish>2026-06-21T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>51</UID>
+      <ID>51</ID>
+      <Name>Add competition scoring from real arxiv citation counts</Name>
+      <Notes>Track C: Exploitation Accuracy to 60%: Google Trends integration, cross-reference viability, competition scoring</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-05-11T00:00:00</Start>
+      <Finish>2026-06-21T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>52</UID>
+      <ID>52</ID>
+      <Name>Automate GitHub repo creation in build trigger endpoint (GitHub API)</Name>
+      <Notes>Track D: Build Automation to 4 Hours: Auto GitHub repo, auto Railway, auto Stripe, auto GA4</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-05-11T00:00:00</Start>
+      <Finish>2026-06-21T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>53</UID>
+      <ID>53</ID>
+      <Name>Auto-generate Railway project via Railway API</Name>
+      <Notes>Track D: Build Automation to 4 Hours: Auto GitHub repo, auto Railway, auto Stripe, auto GA4</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-05-11T00:00:00</Start>
+      <Finish>2026-06-21T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>54</UID>
+      <ID>54</ID>
+      <Name>Auto-wire Stripe subscription (create product + price via Stripe API)</Name>
+      <Notes>Track D: Build Automation to 4 Hours: Auto GitHub repo, auto Railway, auto Stripe, auto GA4</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-05-11T00:00:00</Start>
+      <Finish>2026-06-21T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>55</UID>
+      <ID>55</ID>
+      <Name>Auto-inject GA4 measurement ID from analytics template</Name>
+      <Notes>Track D: Build Automation to 4 Hours: Auto GitHub repo, auto Railway, auto Stripe, auto GA4</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-05-11T00:00:00</Start>
+      <Finish>2026-06-21T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>56</UID>
+      <ID>56</ID>
+      <Name>Deliverable: One-click Build and Deploy from Exploitation Board</Name>
+      <Notes>Track D: Build Automation to 4 Hours: Auto GitHub repo, auto Railway, auto Stripe, auto GA4</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-05-11T00:00:00</Start>
+      <Finish>2026-06-21T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>57</UID>
+      <ID>57</ID>
+      <Name>Add FRED economic indicators (50+ variables: GDP, CPI, unemployment)</Name>
+      <Notes>Track E: Data Scale to 500GB: FRED economic indicators, Alpha Vantage, GDELT news sentiment, ETL pipeline</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-05-11T00:00:00</Start>
+      <Finish>2026-06-21T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>58</UID>
+      <ID>58</ID>
+      <Name>Add Alpha Vantage intraday data for top 10 stocks (5-min intervals)</Name>
+      <Notes>Track E: Data Scale to 500GB: FRED economic indicators, Alpha Vantage, GDELT news sentiment, ETL pipeline</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-05-11T00:00:00</Start>
+      <Finish>2026-06-21T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>59</UID>
+      <ID>59</ID>
+      <Name>Add news sentiment from GDELT API (daily event counts by theme)</Name>
+      <Notes>Track E: Data Scale to 500GB: FRED economic indicators, Alpha Vantage, GDELT news sentiment, ETL pipeline</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-05-11T00:00:00</Start>
+      <Finish>2026-06-21T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>60</UID>
+      <ID>60</ID>
+      <Name>Set up ETL pipeline with batch scheduling (APScheduler)</Name>
+      <Notes>Track E: Data Scale to 500GB: FRED economic indicators, Alpha Vantage, GDELT news sentiment, ETL pipeline</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-05-11T00:00:00</Start>
+      <Finish>2026-06-21T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>61</UID>
+      <ID>61</ID>
+      <Name>MILESTONE: M2: Intelligence Layer Complete</Name>
+      <Notes>All tasks for M2: Intelligence Layer verified and complete.</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-06-21T00:00:00</Start>
+      <Finish>2026-06-21T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT0H0M0S</Duration>
+      <Milestone>1</Milestone>
+    </Task>
+    <Task>
+      <UID>62</UID>
+      <ID>62</ID>
+      <Name>M3: Self-Learning Foundation (Weeks 16-21)</Name>
+      <Notes>Target: 70% accuracy, 65% exploitation, build time 3hrs, errors 15%. System learns from its own prediction outcomes.</Notes>
+      <OutlineLevel>2</OutlineLevel>
+      <Start>2026-06-22T00:00:00</Start>
+      <Finish>2026-08-02T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Summary>1</Summary>
+      <PredecessorLink>
+        <PredecessorUID>61</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>63</UID>
+      <ID>63</ID>
+      <Name>Implement automatic model retraining when accuracy drops below threshold</Name>
+      <Notes>Track A: Model Accuracy to 70%: Auto-retraining, prediction feedback loop, anomaly detection, adaptive lag</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-06-22T00:00:00</Start>
+      <Finish>2026-08-02T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>64</UID>
+      <ID>64</ID>
+      <Name>Add prediction feedback loop: validated predictions retrain features</Name>
+      <Notes>Track A: Model Accuracy to 70%: Auto-retraining, prediction feedback loop, anomaly detection, adaptive lag</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-06-22T00:00:00</Start>
+      <Finish>2026-08-02T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>65</UID>
+      <ID>65</ID>
+      <Name>Add anomaly detection (Z-score) to flag unusual signals before prediction</Name>
+      <Notes>Track A: Model Accuracy to 70%: Auto-retraining, prediction feedback loop, anomaly detection, adaptive lag</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-06-22T00:00:00</Start>
+      <Finish>2026-08-02T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>66</UID>
+      <ID>66</ID>
+      <Name>Implement adaptive lag selection (dynamically adjust lag based on recent accuracy)</Name>
+      <Notes>Track A: Model Accuracy to 70%: Auto-retraining, prediction feedback loop, anomaly detection, adaptive lag</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-06-22T00:00:00</Start>
+      <Finish>2026-08-02T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>67</UID>
+      <ID>67</ID>
+      <Name>Build error pattern classifier (categorize: import, syntax, config, runtime)</Name>
+      <Notes>Track B: Build Errors to 15%: Error pattern classifier, auto-fix common patterns, scaffold regression tests</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-06-22T00:00:00</Start>
+      <Finish>2026-08-02T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>68</UID>
+      <ID>68</ID>
+      <Name>Auto-fix common patterns (missing __init__.py, wrong import paths, missing env vars)</Name>
+      <Notes>Track B: Build Errors to 15%: Error pattern classifier, auto-fix common patterns, scaffold regression tests</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-06-22T00:00:00</Start>
+      <Finish>2026-08-02T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>69</UID>
+      <ID>69</ID>
+      <Name>Add scaffold regression tests (test each template produces working code)</Name>
+      <Notes>Track B: Build Errors to 15%: Error pattern classifier, auto-fix common patterns, scaffold regression tests</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-06-22T00:00:00</Start>
+      <Finish>2026-08-02T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>70</UID>
+      <ID>70</ID>
+      <Name>Track actual outcomes of PURSUING recommendations (did the BUILD succeed?)</Name>
+      <Notes>Track C: Exploitation Accuracy to 65%: Track actual outcomes, time-to-market analysis, calibrate opportunity duration</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-06-22T00:00:00</Start>
+      <Finish>2026-08-02T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>71</UID>
+      <ID>71</ID>
+      <Name>Add time-to-market analysis (how long from recommendation to live product?)</Name>
+      <Notes>Track C: Exploitation Accuracy to 65%: Track actual outcomes, time-to-market analysis, calibrate opportunity duration</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-06-22T00:00:00</Start>
+      <Finish>2026-08-02T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>72</UID>
+      <ID>72</ID>
+      <Name>Calibrate opportunity_duration_months against actual opportunity windows</Name>
+      <Notes>Track C: Exploitation Accuracy to 65%: Track actual outcomes, time-to-market analysis, calibrate opportunity duration</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-06-22T00:00:00</Start>
+      <Finish>2026-08-02T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>73</UID>
+      <ID>73</ID>
+      <Name>Add automated domain configuration (subdomain allocation)</Name>
+      <Notes>Track D: Build Automation to 3 Hours: Auto domain, auto SSL, auto database, post-deploy smoke tests</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-06-22T00:00:00</Start>
+      <Finish>2026-08-02T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>74</UID>
+      <ID>74</ID>
+      <Name>Add automated SSL certificate provisioning</Name>
+      <Notes>Track D: Build Automation to 3 Hours: Auto domain, auto SSL, auto database, post-deploy smoke tests</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-06-22T00:00:00</Start>
+      <Finish>2026-08-02T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>75</UID>
+      <ID>75</ID>
+      <Name>Add automated database setup for deployed apps</Name>
+      <Notes>Track D: Build Automation to 3 Hours: Auto domain, auto SSL, auto database, post-deploy smoke tests</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-06-22T00:00:00</Start>
+      <Finish>2026-08-02T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>76</UID>
+      <ID>76</ID>
+      <Name>Add post-deploy health check + smoke test</Name>
+      <Notes>Track D: Build Automation to 3 Hours: Auto domain, auto SSL, auto database, post-deploy smoke tests</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-06-22T00:00:00</Start>
+      <Finish>2026-08-02T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>77</UID>
+      <ID>77</ID>
+      <Name>Add social media feeds (Twitter/X academic API for trend data)</Name>
+      <Notes>Track E: Data Scale to 1TB: Twitter/X API, IoT starter (OpenWeather), Reddit historical, TimescaleDB compression</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-06-22T00:00:00</Start>
+      <Finish>2026-08-02T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>78</UID>
+      <ID>78</ID>
+      <Name>Add IoT starter: OpenWeather API for 100 cities (hourly)</Name>
+      <Notes>Track E: Data Scale to 1TB: Twitter/X API, IoT starter (OpenWeather), Reddit historical, TimescaleDB compression</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-06-22T00:00:00</Start>
+      <Finish>2026-08-02T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>79</UID>
+      <ID>79</ID>
+      <Name>Add Pushshift/Pullpush for full Reddit historical data</Name>
+      <Notes>Track E: Data Scale to 1TB: Twitter/X API, IoT starter (OpenWeather), Reddit historical, TimescaleDB compression</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-06-22T00:00:00</Start>
+      <Finish>2026-08-02T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>80</UID>
+      <ID>80</ID>
+      <Name>Implement data compression in TimescaleDB (compress chunks older than 7 days)</Name>
+      <Notes>Track E: Data Scale to 1TB: Twitter/X API, IoT starter (OpenWeather), Reddit historical, TimescaleDB compression</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-06-22T00:00:00</Start>
+      <Finish>2026-08-02T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>81</UID>
+      <ID>81</ID>
+      <Name>Add IP geolocation to dashboard (MaxMind GeoLite2 free database)</Name>
+      <Notes>Track F: Pricing Intelligence v1: IP geolocation, PPP tiers, pricing recommendation table, demand estimation</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-06-22T00:00:00</Start>
+      <Finish>2026-08-02T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>82</UID>
+      <ID>82</ID>
+      <Name>Map regions to PPP (Purchasing Power Parity) tiers from World Bank API</Name>
+      <Notes>Track F: Pricing Intelligence v1: IP geolocation, PPP tiers, pricing recommendation table, demand estimation</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-06-22T00:00:00</Start>
+      <Finish>2026-08-02T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>83</UID>
+      <ID>83</ID>
+      <Name>Create pricing_recommendation table (region, suggested_price, confidence)</Name>
+      <Notes>Track F: Pricing Intelligence v1: IP geolocation, PPP tiers, pricing recommendation table, demand estimation</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-06-22T00:00:00</Start>
+      <Finish>2026-08-02T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>84</UID>
+      <ID>84</ID>
+      <Name>Add traffic-based demand estimation per region</Name>
+      <Notes>Track F: Pricing Intelligence v1: IP geolocation, PPP tiers, pricing recommendation table, demand estimation</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-06-22T00:00:00</Start>
+      <Finish>2026-08-02T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>85</UID>
+      <ID>85</ID>
+      <Name>MILESTONE: M3: Self-Learning Foundation Complete</Name>
+      <Notes>All tasks for M3: Self-Learning Foundation verified and complete.</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-08-02T00:00:00</Start>
+      <Finish>2026-08-02T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT0H0M0S</Duration>
+      <Milestone>1</Milestone>
+    </Task>
+    <Task>
+      <UID>86</UID>
+      <ID>86</ID>
+      <Name>M4: Scale &amp; Optimize (Weeks 22-27)</Name>
+      <Notes>Target: 75% accuracy, 70% exploitation, build time 2.5hrs, errors 10%. Deep learning for non-linear patterns.</Notes>
+      <OutlineLevel>2</OutlineLevel>
+      <Start>2026-08-03T00:00:00</Start>
+      <Finish>2026-09-13T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Summary>1</Summary>
+      <PredecessorLink>
+        <PredecessorUID>85</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>87</UID>
+      <ID>87</ID>
+      <Name>Add LSTM/transformer-based time series model (PyTorch) as ensemble member</Name>
+      <Notes>Track A: Model Accuracy to 75%: LSTM/transformer, SHAP feature importance, regime detection, online learning</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-08-03T00:00:00</Start>
+      <Finish>2026-09-13T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>88</UID>
+      <ID>88</ID>
+      <Name>Implement feature importance ranking (SHAP values) for interpretability</Name>
+      <Notes>Track A: Model Accuracy to 75%: LSTM/transformer, SHAP feature importance, regime detection, online learning</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-08-03T00:00:00</Start>
+      <Finish>2026-09-13T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>89</UID>
+      <ID>89</ID>
+      <Name>Add regime detection (bull/bear/sideways affect model choice)</Name>
+      <Notes>Track A: Model Accuracy to 75%: LSTM/transformer, SHAP feature importance, regime detection, online learning</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-08-03T00:00:00</Start>
+      <Finish>2026-09-13T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>90</UID>
+      <ID>90</ID>
+      <Name>Implement online learning (update model incrementally with new data)</Name>
+      <Notes>Track A: Model Accuracy to 75%: LSTM/transformer, SHAP feature importance, regime detection, online learning</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-08-03T00:00:00</Start>
+      <Finish>2026-09-13T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>91</UID>
+      <ID>91</ID>
+      <Name>Implement AI-powered scaffold improvement (analyze failed builds, update templates)</Name>
+      <Notes>Track B: Build Errors to 10%: AI-powered scaffold improvement, end-to-end test suite, canary deployment</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-08-03T00:00:00</Start>
+      <Finish>2026-09-13T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>92</UID>
+      <ID>92</ID>
+      <Name>Add end-to-end integration test suite for full build pipeline</Name>
+      <Notes>Track B: Build Errors to 10%: AI-powered scaffold improvement, end-to-end test suite, canary deployment</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-08-03T00:00:00</Start>
+      <Finish>2026-09-13T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>93</UID>
+      <ID>93</ID>
+      <Name>Add canary deployment (deploy to staging first, promote if healthy)</Name>
+      <Notes>Track B: Build Errors to 10%: AI-powered scaffold improvement, end-to-end test suite, canary deployment</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-08-03T00:00:00</Start>
+      <Finish>2026-09-13T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>94</UID>
+      <ID>94</ID>
+      <Name>Add competitive landscape analysis (how many similar apps exist?)</Name>
+      <Notes>Track C: Exploitation Accuracy to 70%: Competitive landscape, Product Hunt/Indie Hackers validation, engagement prediction</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-08-03T00:00:00</Start>
+      <Finish>2026-09-13T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>95</UID>
+      <ID>95</ID>
+      <Name>Cross-reference with Product Hunt / Indie Hackers for market validation</Name>
+      <Notes>Track C: Exploitation Accuracy to 70%: Competitive landscape, Product Hunt/Indie Hackers validation, engagement prediction</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-08-03T00:00:00</Start>
+      <Finish>2026-09-13T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>96</UID>
+      <ID>96</ID>
+      <Name>Add user engagement prediction model (predict DAU/MAU from topic + competition)</Name>
+      <Notes>Track C: Exploitation Accuracy to 70%: Competitive landscape, Product Hunt/Indie Hackers validation, engagement prediction</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-08-03T00:00:00</Start>
+      <Finish>2026-09-13T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>97</UID>
+      <ID>97</ID>
+      <Name>Add automated testing pipeline for deployed apps</Name>
+      <Notes>Track D: Build Automation to 2.5 Hours: Automated testing, monitoring setup, changelog generation</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-08-03T00:00:00</Start>
+      <Finish>2026-09-13T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>98</UID>
+      <ID>98</ID>
+      <Name>Add automated monitoring setup (uptime, error rate, performance)</Name>
+      <Notes>Track D: Build Automation to 2.5 Hours: Automated testing, monitoring setup, changelog generation</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-08-03T00:00:00</Start>
+      <Finish>2026-09-13T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>99</UID>
+      <ID>99</ID>
+      <Name>Add automated changelog and release notes generation</Name>
+      <Notes>Track D: Build Automation to 2.5 Hours: Automated testing, monitoring setup, changelog generation</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-08-03T00:00:00</Start>
+      <Finish>2026-09-13T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>100</UID>
+      <ID>100</ID>
+      <Name>Add Bloomberg/Reuters alternative data feeds (if budget allows)</Name>
+      <Notes>Track E: Data Scale to 3TB: Alternative data feeds, satellite imagery, data lakehouse pattern</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-08-03T00:00:00</Start>
+      <Finish>2026-09-13T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>101</UID>
+      <ID>101</ID>
+      <Name>Add satellite imagery analysis for economic indicators (nighttime lights)</Name>
+      <Notes>Track E: Data Scale to 3TB: Alternative data feeds, satellite imagery, data lakehouse pattern</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-08-03T00:00:00</Start>
+      <Finish>2026-09-13T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>102</UID>
+      <ID>102</ID>
+      <Name>Implement data lakehouse pattern (S3 + DuckDB for analytics, PostgreSQL for hot data)</Name>
+      <Notes>Track E: Data Scale to 3TB: Alternative data feeds, satellite imagery, data lakehouse pattern</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-08-03T00:00:00</Start>
+      <Finish>2026-09-13T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>103</UID>
+      <ID>103</ID>
+      <Name>Add Google AdSense integration for ad-supported apps</Name>
+      <Notes>Track F: Revenue Dashboard v2: AdSense integration, per-app P&amp;L, cohort analysis, revenue forecasting</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-08-03T00:00:00</Start>
+      <Finish>2026-09-13T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>104</UID>
+      <ID>104</ID>
+      <Name>Add per-app P&amp;L tracking (revenue minus infrastructure cost)</Name>
+      <Notes>Track F: Revenue Dashboard v2: AdSense integration, per-app P&amp;L, cohort analysis, revenue forecasting</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-08-03T00:00:00</Start>
+      <Finish>2026-09-13T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>105</UID>
+      <ID>105</ID>
+      <Name>Add subscriber cohort analysis (retention by signup month)</Name>
+      <Notes>Track F: Revenue Dashboard v2: AdSense integration, per-app P&amp;L, cohort analysis, revenue forecasting</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-08-03T00:00:00</Start>
+      <Finish>2026-09-13T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>106</UID>
+      <ID>106</ID>
+      <Name>Add revenue forecasting from growth trends</Name>
+      <Notes>Track F: Revenue Dashboard v2: AdSense integration, per-app P&amp;L, cohort analysis, revenue forecasting</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-08-03T00:00:00</Start>
+      <Finish>2026-09-13T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>107</UID>
+      <ID>107</ID>
+      <Name>MILESTONE: M4: Scale &amp; Optimize Complete</Name>
+      <Notes>All tasks for M4: Scale &amp; Optimize verified and complete.</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-09-13T00:00:00</Start>
+      <Finish>2026-09-13T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT0H0M0S</Duration>
+      <Milestone>1</Milestone>
+    </Task>
+    <Task>
+      <UID>108</UID>
+      <ID>108</ID>
+      <Name>M5: Autonomous Operations (Weeks 28-33)</Name>
+      <Notes>Target: 80% accuracy, 75% exploitation, build time 2hrs, errors 5%. Multi-horizon + automatic model selection + uncertainty.</Notes>
+      <OutlineLevel>2</OutlineLevel>
+      <Start>2026-09-14T00:00:00</Start>
+      <Finish>2026-10-25T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Summary>1</Summary>
+      <PredecessorLink>
+        <PredecessorUID>107</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>109</UID>
+      <ID>109</ID>
+      <Name>Implement multi-horizon forecasting (1 week, 1 month, 3 month predictions)</Name>
+      <Notes>Track A: Model Accuracy to 80%: Multi-horizon forecasting, cross-market contagion, model selection autopilot, uncertainty quantification</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-09-14T00:00:00</Start>
+      <Finish>2026-10-25T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>110</UID>
+      <ID>110</ID>
+      <Name>Add cross-market contagion detection (detect when one market shock propagates)</Name>
+      <Notes>Track A: Model Accuracy to 80%: Multi-horizon forecasting, cross-market contagion, model selection autopilot, uncertainty quantification</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-09-14T00:00:00</Start>
+      <Finish>2026-10-25T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>111</UID>
+      <ID>111</ID>
+      <Name>Implement model selection autopilot (auto pick best model per signal-target pair)</Name>
+      <Notes>Track A: Model Accuracy to 80%: Multi-horizon forecasting, cross-market contagion, model selection autopilot, uncertainty quantification</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-09-14T00:00:00</Start>
+      <Finish>2026-10-25T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>112</UID>
+      <ID>112</ID>
+      <Name>Add uncertainty quantification (prediction intervals, not just point estimates)</Name>
+      <Notes>Track A: Model Accuracy to 80%: Multi-horizon forecasting, cross-market contagion, model selection autopilot, uncertainty quantification</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-09-14T00:00:00</Start>
+      <Finish>2026-10-25T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>113</UID>
+      <ID>113</ID>
+      <Name>Implement self-healing builds (detect error, auto-apply fix, retry)</Name>
+      <Notes>Track B: Build Errors to 5%: Self-healing builds, template A/B testing, build quality gate</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-09-14T00:00:00</Start>
+      <Finish>2026-10-25T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>114</UID>
+      <ID>114</ID>
+      <Name>Add template versioning with A/B testing (test new vs old templates)</Name>
+      <Notes>Track B: Build Errors to 5%: Self-healing builds, template A/B testing, build quality gate</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-09-14T00:00:00</Start>
+      <Finish>2026-10-25T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>115</UID>
+      <ID>115</ID>
+      <Name>Implement build quality gate (block deploy if quality score below threshold)</Name>
+      <Notes>Track B: Build Errors to 5%: Self-healing builds, template A/B testing, build quality gate</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-09-14T00:00:00</Start>
+      <Finish>2026-10-25T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>116</UID>
+      <ID>116</ID>
+      <Name>Add market timing model (when to launch, not just what to build)</Name>
+      <Notes>Track C: Exploitation Accuracy to 75%: Market timing model, user acquisition cost prediction, churn prediction</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-09-14T00:00:00</Start>
+      <Finish>2026-10-25T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>117</UID>
+      <ID>117</ID>
+      <Name>Add user acquisition cost prediction from similar product data</Name>
+      <Notes>Track C: Exploitation Accuracy to 75%: Market timing model, user acquisition cost prediction, churn prediction</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-09-14T00:00:00</Start>
+      <Finish>2026-10-25T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>118</UID>
+      <ID>118</ID>
+      <Name>Add churn prediction for deployed products</Name>
+      <Notes>Track C: Exploitation Accuracy to 75%: Market timing model, user acquisition cost prediction, churn prediction</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-09-14T00:00:00</Start>
+      <Finish>2026-10-25T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>119</UID>
+      <ID>119</ID>
+      <Name>Full zero-touch pipeline: recommendation to build to deploy to monitor to scale</Name>
+      <Notes>Track D: Build Automation to 2 Hours: Zero-touch pipeline, automated A/B testing, automated pricing optimization</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-09-14T00:00:00</Start>
+      <Finish>2026-10-25T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>120</UID>
+      <ID>120</ID>
+      <Name>Add automated A/B testing for deployed apps</Name>
+      <Notes>Track D: Build Automation to 2 Hours: Zero-touch pipeline, automated A/B testing, automated pricing optimization</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-09-14T00:00:00</Start>
+      <Finish>2026-10-25T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>121</UID>
+      <ID>121</ID>
+      <Name>Add automated pricing optimization based on conversion data</Name>
+      <Notes>Track D: Build Automation to 2 Hours: Zero-touch pipeline, automated A/B testing, automated pricing optimization</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-09-14T00:00:00</Start>
+      <Finish>2026-10-25T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>122</UID>
+      <ID>122</ID>
+      <Name>Add real-time streaming (Kafka/Redis Streams for sub-minute data)</Name>
+      <Notes>Track E: Data Scale to 7TB: Real-time streaming (Kafka/Redis), IoT/MQTT ingestion, federated querying</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-09-14T00:00:00</Start>
+      <Finish>2026-10-25T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>123</UID>
+      <ID>123</ID>
+      <Name>Add sensor/IoT data ingestion (via MQTT broker)</Name>
+      <Notes>Track E: Data Scale to 7TB: Real-time streaming (Kafka/Redis), IoT/MQTT ingestion, federated querying</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-09-14T00:00:00</Start>
+      <Finish>2026-10-25T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>124</UID>
+      <ID>124</ID>
+      <Name>Implement federated querying across PostgreSQL + S3 + streaming</Name>
+      <Notes>Track E: Data Scale to 7TB: Real-time streaming (Kafka/Redis), IoT/MQTT ingestion, federated querying</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-09-14T00:00:00</Start>
+      <Finish>2026-10-25T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>125</UID>
+      <ID>125</ID>
+      <Name>Implement dynamic pricing engine (A/B test prices per region)</Name>
+      <Notes>Track F: Pricing Intelligence v2: Dynamic pricing engine, currency conversion + PPP, price elasticity, revenue-optimal pricing</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-09-14T00:00:00</Start>
+      <Finish>2026-10-25T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>126</UID>
+      <ID>126</ID>
+      <Name>Add currency conversion + PPP-adjusted pricing per country</Name>
+      <Notes>Track F: Pricing Intelligence v2: Dynamic pricing engine, currency conversion + PPP, price elasticity, revenue-optimal pricing</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-09-14T00:00:00</Start>
+      <Finish>2026-10-25T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>127</UID>
+      <ID>127</ID>
+      <Name>Add price elasticity estimation from traffic to conversion data</Name>
+      <Notes>Track F: Pricing Intelligence v2: Dynamic pricing engine, currency conversion + PPP, price elasticity, revenue-optimal pricing</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-09-14T00:00:00</Start>
+      <Finish>2026-10-25T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>128</UID>
+      <ID>128</ID>
+      <Name>Revenue-optimal pricing recommendations per app per region</Name>
+      <Notes>Track F: Pricing Intelligence v2: Dynamic pricing engine, currency conversion + PPP, price elasticity, revenue-optimal pricing</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-09-14T00:00:00</Start>
+      <Finish>2026-10-25T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>129</UID>
+      <ID>129</ID>
+      <Name>MILESTONE: M5: Autonomous Operations Complete</Name>
+      <Notes>All tasks for M5: Autonomous Operations verified and complete.</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-10-25T00:00:00</Start>
+      <Finish>2026-10-25T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT0H0M0S</Duration>
+      <Milestone>1</Milestone>
+    </Task>
+    <Task>
+      <UID>130</UID>
+      <ID>130</ID>
+      <Name>M6: Intelligence Engine (Weeks 34-39)</Name>
+      <Notes>Target: 85% accuracy, 80% exploitation, self-optimizing. Advanced ML + causal inference.</Notes>
+      <OutlineLevel>2</OutlineLevel>
+      <Start>2026-10-26T00:00:00</Start>
+      <Finish>2026-12-06T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Summary>1</Summary>
+      <PredecessorLink>
+        <PredecessorUID>129</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>131</UID>
+      <ID>131</ID>
+      <Name>Add reinforcement learning for trading strategy optimization</Name>
+      <Notes>Track A: Model Accuracy to 85%: Reinforcement learning, model distillation, causal discovery</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-10-26T00:00:00</Start>
+      <Finish>2026-12-06T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>132</UID>
+      <ID>132</ID>
+      <Name>Implement model distillation (compress ensemble into fast inference model)</Name>
+      <Notes>Track A: Model Accuracy to 85%: Reinforcement learning, model distillation, causal discovery</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-10-26T00:00:00</Start>
+      <Finish>2026-12-06T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>133</UID>
+      <ID>133</ID>
+      <Name>Add causal discovery (go beyond Granger to structural causal models)</Name>
+      <Notes>Track A: Model Accuracy to 85%: Reinforcement learning, model distillation, causal discovery</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-10-26T00:00:00</Start>
+      <Finish>2026-12-06T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>134</UID>
+      <ID>134</ID>
+      <Name>AI generates feature requirements from opportunity analysis (no YAML needed)</Name>
+      <Notes>Track B: Self-Optimizing Builds: AI generates feature requirements, auto-select scaffold and tech stack, auto-generate tests</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-10-26T00:00:00</Start>
+      <Finish>2026-12-06T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>135</UID>
+      <ID>135</ID>
+      <Name>Auto-select best scaffold and tech stack per opportunity</Name>
+      <Notes>Track B: Self-Optimizing Builds: AI generates feature requirements, auto-select scaffold and tech stack, auto-generate tests</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-10-26T00:00:00</Start>
+      <Finish>2026-12-06T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>136</UID>
+      <ID>136</ID>
+      <Name>Builds generate their own tests and validation suites</Name>
+      <Notes>Track B: Self-Optimizing Builds: AI generates feature requirements, auto-select scaffold and tech stack, auto-generate tests</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-10-26T00:00:00</Start>
+      <Finish>2026-12-06T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>137</UID>
+      <ID>137</ID>
+      <Name>Portfolio optimization across all deployed apps</Name>
+      <Notes>Track C: Exploitation Accuracy to 80%: Portfolio optimization, resource re-allocation, auto-sunset underperformers</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-10-26T00:00:00</Start>
+      <Finish>2026-12-06T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>138</UID>
+      <ID>138</ID>
+      <Name>Resource re-allocation recommendations (scale winners, sunset losers)</Name>
+      <Notes>Track C: Exploitation Accuracy to 80%: Portfolio optimization, resource re-allocation, auto-sunset underperformers</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-10-26T00:00:00</Start>
+      <Finish>2026-12-06T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>139</UID>
+      <ID>139</ID>
+      <Name>Auto-sunset underperforming products</Name>
+      <Notes>Track C: Exploitation Accuracy to 80%: Portfolio optimization, resource re-allocation, auto-sunset underperformers</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-10-26T00:00:00</Start>
+      <Finish>2026-12-06T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>140</UID>
+      <ID>140</ID>
+      <Name>Full multi-source streaming ingestion operational</Name>
+      <Notes>Track D: Data Scale to 10TB: Full multi-source streaming, automated data quality monitoring, data lineage tracking</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-10-26T00:00:00</Start>
+      <Finish>2026-12-06T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>141</UID>
+      <ID>141</ID>
+      <Name>Automated data quality monitoring and anomaly detection</Name>
+      <Notes>Track D: Data Scale to 10TB: Full multi-source streaming, automated data quality monitoring, data lineage tracking</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-10-26T00:00:00</Start>
+      <Finish>2026-12-06T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>142</UID>
+      <ID>142</ID>
+      <Name>Data lineage tracking (know provenance of every prediction)</Name>
+      <Notes>Track D: Data Scale to 10TB: Full multi-source streaming, automated data quality monitoring, data lineage tracking</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-10-26T00:00:00</Start>
+      <Finish>2026-12-06T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>143</UID>
+      <ID>143</ID>
+      <Name>Central dashboard showing portfolio MRR, CAC, LTV, churn by app</Name>
+      <Notes>Track E: Revenue Engine: Central portfolio dashboard (MRR, CAC, LTV, churn), automated P&amp;L, revenue alerts, investment-ready metrics</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-10-26T00:00:00</Start>
+      <Finish>2026-12-06T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>144</UID>
+      <ID>144</ID>
+      <Name>Automated financial reporting (monthly P&amp;L per product)</Name>
+      <Notes>Track E: Revenue Engine: Central portfolio dashboard (MRR, CAC, LTV, churn), automated P&amp;L, revenue alerts, investment-ready metrics</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-10-26T00:00:00</Start>
+      <Finish>2026-12-06T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>145</UID>
+      <ID>145</ID>
+      <Name>Revenue alerts and anomaly detection</Name>
+      <Notes>Track E: Revenue Engine: Central portfolio dashboard (MRR, CAC, LTV, churn), automated P&amp;L, revenue alerts, investment-ready metrics</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-10-26T00:00:00</Start>
+      <Finish>2026-12-06T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>146</UID>
+      <ID>146</ID>
+      <Name>Investment-ready metrics dashboard</Name>
+      <Notes>Track E: Revenue Engine: Central portfolio dashboard (MRR, CAC, LTV, churn), automated P&amp;L, revenue alerts, investment-ready metrics</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-10-26T00:00:00</Start>
+      <Finish>2026-12-06T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT240H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>147</UID>
+      <ID>147</ID>
+      <Name>MILESTONE: M6: Intelligence Engine Complete</Name>
+      <Notes>All tasks for M6: Intelligence Engine verified and complete.</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-12-06T00:00:00</Start>
+      <Finish>2026-12-06T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT0H0M0S</Duration>
+      <Milestone>1</Milestone>
+    </Task>
+    <Task>
+      <UID>148</UID>
+      <ID>148</ID>
+      <Name>M7: Market Leadership (Weeks 40-48)</Name>
+      <Notes>Target: 90% accuracy, 90% exploitation, market-ready. Continuous improvement + market breadth.</Notes>
+      <OutlineLevel>2</OutlineLevel>
+      <Start>2026-12-07T00:00:00</Start>
+      <Finish>2027-02-07T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Summary>1</Summary>
+      <PredecessorLink>
+        <PredecessorUID>147</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>149</UID>
+      <ID>149</ID>
+      <Name>Continuous learning pipeline (models retrain and auto-promote)</Name>
+      <Notes>Track A: Model Accuracy to 90%: Continuous learning pipeline, model marketplace, multi-asset class prediction</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-12-07T00:00:00</Start>
+      <Finish>2027-02-07T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT360H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>150</UID>
+      <ID>150</ID>
+      <Name>Model marketplace (share/sell prediction models to other users)</Name>
+      <Notes>Track A: Model Accuracy to 90%: Continuous learning pipeline, model marketplace, multi-asset class prediction</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-12-07T00:00:00</Start>
+      <Finish>2027-02-07T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT360H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>151</UID>
+      <ID>151</ID>
+      <Name>Multi-asset class prediction (stocks, crypto, commodities, real estate)</Name>
+      <Notes>Track A: Model Accuracy to 90%: Continuous learning pipeline, model marketplace, multi-asset class prediction</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-12-07T00:00:00</Start>
+      <Finish>2027-02-07T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT360H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>152</UID>
+      <ID>152</ID>
+      <Name>End-to-end: signal detected to app built to deployed to monetized to optimized</Name>
+      <Notes>Track B: Full Automation: End-to-end signal-to-monetization, average deployment under 2 hours, build errors sustained below 5%</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-12-07T00:00:00</Start>
+      <Finish>2027-02-07T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT360H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>153</UID>
+      <ID>153</ID>
+      <Name>Average deployment time consistently under 2 hours</Name>
+      <Notes>Track B: Full Automation: End-to-end signal-to-monetization, average deployment under 2 hours, build errors sustained below 5%</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-12-07T00:00:00</Start>
+      <Finish>2027-02-07T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT360H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>154</UID>
+      <ID>154</ID>
+      <Name>Build error rate sustained below 5%</Name>
+      <Notes>Track B: Full Automation: End-to-end signal-to-monetization, average deployment under 2 hours, build errors sustained below 5%</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-12-07T00:00:00</Start>
+      <Finish>2027-02-07T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT360H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>155</UID>
+      <ID>155</ID>
+      <Name>Multi-factor opportunity scoring validated against 12+ months of outcomes</Name>
+      <Notes>Track C: Exploitation Accuracy to 90%: Multi-factor scoring validated against 12+ months, automated opportunity discovery, cross-opportunity synergy</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-12-07T00:00:00</Start>
+      <Finish>2027-02-07T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT360H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>156</UID>
+      <ID>156</ID>
+      <Name>Automated opportunity discovery (system finds BUILD opportunities without prompting)</Name>
+      <Notes>Track C: Exploitation Accuracy to 90%: Multi-factor scoring validated against 12+ months, automated opportunity discovery, cross-opportunity synergy</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-12-07T00:00:00</Start>
+      <Finish>2027-02-07T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT360H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>157</UID>
+      <ID>157</ID>
+      <Name>Cross-opportunity synergy detection (products that complement each other)</Name>
+      <Notes>Track C: Exploitation Accuracy to 90%: Multi-factor scoring validated against 12+ months, automated opportunity discovery, cross-opportunity synergy</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-12-07T00:00:00</Start>
+      <Finish>2027-02-07T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT360H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>158</UID>
+      <ID>158</ID>
+      <Name>4-10 deployed apps generating subscription revenue</Name>
+      <Notes>Track D: Revenue Targets: 4-10 deployed apps generating revenue, region-specific pricing in 10+ markets, real-time MRR tracking, target $20K+ MRR</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-12-07T00:00:00</Start>
+      <Finish>2027-02-07T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT360H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>159</UID>
+      <ID>159</ID>
+      <Name>Region-specific pricing active in 10+ markets</Name>
+      <Notes>Track D: Revenue Targets: 4-10 deployed apps generating revenue, region-specific pricing in 10+ markets, real-time MRR tracking, target $20K+ MRR</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-12-07T00:00:00</Start>
+      <Finish>2027-02-07T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT360H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>160</UID>
+      <ID>160</ID>
+      <Name>Central revenue dashboard with real-time MRR tracking</Name>
+      <Notes>Track D: Revenue Targets: 4-10 deployed apps generating revenue, region-specific pricing in 10+ markets, real-time MRR tracking, target $20K+ MRR</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-12-07T00:00:00</Start>
+      <Finish>2027-02-07T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT360H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>161</UID>
+      <ID>161</ID>
+      <Name>Target: $20K+ MRR across portfolio</Name>
+      <Notes>Track D: Revenue Targets: 4-10 deployed apps generating revenue, region-specific pricing in 10+ markets, real-time MRR tracking, target $20K+ MRR</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2026-12-07T00:00:00</Start>
+      <Finish>2027-02-07T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT360H0M0S</Duration>
+      <Milestone>0</Milestone>
+    </Task>
+    <Task>
+      <UID>162</UID>
+      <ID>162</ID>
+      <Name>MILESTONE: M7: Market Leadership Complete</Name>
+      <Notes>All tasks for M7: Market Leadership verified and complete.</Notes>
+      <OutlineLevel>3</OutlineLevel>
+      <Start>2027-02-07T00:00:00</Start>
+      <Finish>2027-02-07T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT0H0M0S</Duration>
+      <Milestone>1</Milestone>
+    </Task>
+    <Task>
+      <UID>163</UID>
+      <ID>163</ID>
+      <Name>PROGRAM SUCCESS: 10TB / 90% Accuracy / Full Automation Achieved</Name>
+      <Notes>All 8 milestones complete. 10TB data platform, 90% model accuracy, sub-2hr automated deployments, revenue dashboard live.</Notes>
+      <OutlineLevel>2</OutlineLevel>
+      <Start>2027-03-08T00:00:00</Start>
+      <Finish>2027-03-08T00:00:00</Finish>
+      <PercentComplete>0</PercentComplete>
+      <Duration>PT0H0M0S</Duration>
+      <Milestone>1</Milestone>
+      <PredecessorLink>
+        <PredecessorUID>162</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+  </Tasks>
+</Project>
