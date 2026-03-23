@@ -1,11 +1,13 @@
 """
-Scheduled Tasks — M0 Automated Validation + M1 Daily Ingestion + Walk-forward
+Scheduled Tasks — M0 Automated Validation + M1 Daily Ingestion + M2 Intelligence
 
 Daily 01:00 UTC: Ingest fresh Wikipedia pageviews (55 variables × daily+monthly).
 Daily 01:30 UTC: Ingest fresh Reddit activity (20+ subreddits × 30-day window).
-Daily 02:00 UTC: Update actual values for matured predictions.
+Daily 02:00 UTC: Ingest GDELT global event tone (20 themes × 30-day window).
+Daily 02:30 UTC: Update actual values for matured predictions.
 Weekly Sun 03:00 UTC: Snapshot accuracy baselines for trend tracking.
 Weekly Mon 04:00 UTC: Walk-forward backtest for all significant Granger pairs.
+Daily 05:00 UTC: Ensemble model predictions (Granger + OLS + ARIMA).
 """
 
 import logging
@@ -44,6 +46,36 @@ def ingest_reddit_daily(db_session_factory):
         logger.info(f"Scheduled Reddit ingestion complete: {result}")
     except Exception as e:
         logger.error(f"Scheduled Reddit ingestion failed: {e}", exc_info=True)
+
+
+def ingest_gdelt_daily(db_session_factory):
+    """Daily job: fetch GDELT global event tone for all active GDELT themes.
+
+    Calls DataIngestionService._fetch_gdelt_data() which fetches 30-day
+    tone data and upserts into TimeSeriesData.
+    Rate-limited internally (3s between themes).
+    """
+    try:
+        from data_ingestion_service import DataIngestionService
+        service = DataIngestionService()
+        result = service._fetch_gdelt_data()
+        logger.info(f"Scheduled GDELT ingestion complete: {result}")
+    except Exception as e:
+        logger.error(f"Scheduled GDELT ingestion failed: {e}", exc_info=True)
+
+
+def run_ensemble_predictions_job(db_session_factory):
+    """Daily job: run ensemble model predictions for all significant Granger pairs.
+
+    Combines Granger + OLS + ARIMA sub-models, stores predictions in
+    PredictionTracking with model_version='ensemble_v1'.
+    """
+    try:
+        from services.ensemble_model import run_ensemble_predictions
+        result = run_ensemble_predictions(db_session_factory)
+        logger.info(f"Scheduled ensemble predictions complete: {result}")
+    except Exception as e:
+        logger.error(f"Scheduled ensemble predictions failed: {e}", exc_info=True)
 
 
 def update_prediction_actuals(db_session_factory):
@@ -191,10 +223,20 @@ def init_scheduler(db_session_factory):
         replace_existing=True,
     )
     
-    # Daily at 02:00 UTC — validate matured predictions
+    # Daily at 02:00 UTC — ingest GDELT global sentiment (M2 Track B)
+    scheduler.add_job(
+        ingest_gdelt_daily,
+        CronTrigger(hour=2, minute=0),
+        args=[db_session_factory],
+        id='daily_gdelt_ingestion',
+        name='Daily GDELT sentiment ingestion',
+        replace_existing=True,
+    )
+    
+    # Daily at 02:30 UTC — validate matured predictions
     scheduler.add_job(
         update_prediction_actuals,
-        CronTrigger(hour=2, minute=0),
+        CronTrigger(hour=2, minute=30),
         args=[db_session_factory],
         id='daily_prediction_validation',
         name='Daily prediction actual-value update',
@@ -221,11 +263,21 @@ def init_scheduler(db_session_factory):
         replace_existing=True,
     )
     
+    # Daily at 05:00 UTC — ensemble model predictions (M2 Track A)
+    scheduler.add_job(
+        run_ensemble_predictions_job,
+        CronTrigger(hour=5, minute=0),
+        args=[db_session_factory],
+        id='daily_ensemble_predictions',
+        name='Daily ensemble model predictions',
+        replace_existing=True,
+    )
+    
     scheduler.start()
     logger.info(
         "✅ APScheduler started — "
-        "Wikipedia ingestion (01:00 UTC), Reddit ingestion (01:30 UTC), "
-        "daily validation (02:00 UTC), weekly snapshot (Sun 03:00 UTC), "
-        "walk-forward backtest (Mon 04:00 UTC)"
+        "Wikipedia (01:00), Reddit (01:30), GDELT (02:00), "
+        "validation (02:30), snapshot (Sun 03:00), "
+        "walk-forward (Mon 04:00), ensemble (05:00 UTC)"
     )
     return scheduler

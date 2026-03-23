@@ -376,6 +376,11 @@ class ExploitationRecommendation(Base):
     target_growth_actual = Column(Float, nullable=True)        # Actual target % change over opportunity window
     target_growth_measured_at = Column(DateTime, nullable=True) # When actual growth was recorded
 
+    # Ensemble model enrichment (M2 Track A)
+    ensemble_confidence = Column(String(20), nullable=True)    # 'high', 'medium', 'low' from ensemble model
+    ensemble_direction = Column(String(10), nullable=True)     # 'up' or 'down' from ensemble prediction
+    ensemble_predicted_at = Column(DateTime, nullable=True)    # When ensemble prediction was made
+
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

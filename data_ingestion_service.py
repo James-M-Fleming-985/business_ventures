@@ -64,6 +64,8 @@ class DataIngestionService:
         stats.update(self._fetch_fred_data())
         stats.update(self._fetch_usgs_earthquakes_data())
         stats.update(self._fetch_wikipedia_pageviews_data())
+        stats.update(self._fetch_reddit_activity_data())
+        stats.update(self._fetch_gdelt_data())
         
         # Update job status
         with get_db_session() as session:
@@ -498,14 +500,16 @@ class DataIngestionService:
         return {'trials_fetched': success_count, 'trials_data_points': data_points}
     
     def _fetch_google_trends_data(self) -> dict:
-        """Fetch Google Trends data for all trend variables"""
-        # SKIP: Google Trends pytrends is blocked from data centers
-        # The API gets rate-limited and blocks all subsequent fetches
-        logger.info("Skipping Google Trends (blocked from data centers)")
-        return {'google_trends_fetched': 0, 'google_trends_skipped': True}
+        """Fetch Google Trends data for all trend variables.
         
-        # Original code below (disabled)
-        logger.info("Fetching Google Trends data...")
+        Re-enabled with resilient approach: attempts fetches with 10-second delays
+        and bails immediately on HTTP 429 (rate limit) to avoid blocking other sources.
+        """
+        if not self.fetcher.trends_client:
+            logger.info("Google Trends client not initialized - skipping")
+            return {'google_trends_fetched': 0, 'google_trends_skipped': True}
+        
+        logger.info("Fetching Google Trends data (resilient mode)...")
         
         with get_db_session() as session:
             trends_vars = session.query(VariableMetadata).filter(
@@ -513,27 +517,31 @@ class DataIngestionService:
                 VariableMetadata.is_active == True
             ).all()
             
+            if not trends_vars:
+                return {'google_trends_fetched': 0}
+            
             success_count = 0
             data_points = 0
+            rate_limited = False
             
             for idx, var in enumerate(trends_vars):
+                if rate_limited:
+                    break
+                    
                 try:
                     params = json.loads(var.parameters)
                     keyword = params.get('keyword')
                     
-                    # Add 5-second delay between requests to avoid rate limiting
+                    # 10-second delay between requests to reduce rate-limit risk
                     if idx > 0:
                         import time
-                        logger.info(f"Waiting 5 seconds before next Google Trends request...")
-                        time.sleep(5)
+                        time.sleep(10)
                     
-                    # Fetch monthly data (300 months = 25 years)
                     monthly_trends = self.fetcher.fetch_google_trends_monthly(
                         keyword, months=300
                     )
                     
                     if monthly_trends:
-                        # NORMALIZE to standard grid
                         fill_method = get_fill_strategy_for_variable_type(
                             'google_trends', var.name
                         )
@@ -548,7 +556,6 @@ class DataIngestionService:
                             f"-> {len(aligned_data)} aligned points"
                         )
                         
-                        # Store aligned data points
                         for date_str, volume in aligned_data.items():
                             timestamp = datetime.strptime(date_str, "%Y-%m-%d")
                             
@@ -571,8 +578,13 @@ class DataIngestionService:
                         self._update_api_status(session, 'google_trends', 'active')
                         
                 except Exception as e:
-                    logger.error(f"Error fetching Google Trends {var.name}: {e}")
-                    self._update_api_status(session, 'google_trends', 'failed', str(e))
+                    error_str = str(e)
+                    if '429' in error_str or 'Too Many Requests' in error_str:
+                        logger.warning(f"Google Trends rate-limited after {success_count} fetches — stopping")
+                        rate_limited = True
+                    else:
+                        logger.error(f"Error fetching Google Trends {var.name}: {e}")
+                    self._update_api_status(session, 'google_trends', 'failed', error_str)
             
             session.commit()
         
@@ -950,6 +962,86 @@ class DataIngestionService:
         
         logger.info(f"Reddit: {success_count} subreddits, {data_points} new data points")
         return {'reddit_fetched': success_count, 'reddit_data_points': data_points}
+    
+    def _fetch_gdelt_data(self) -> dict:
+        """
+        Fetch GDELT global event tone/sentiment (LAYER 2: GEOPOLITICAL SIGNALS).
+        Uses GDELT DOC 2.0 API (free, no key required).
+        Stores daily average tone per theme in TimeSeriesData.
+        """
+        logger.info("Fetching GDELT sentiment data (Layer 2 - Geopolitical Signals)...")
+        
+        with get_db_session() as session:
+            gdelt_vars = session.query(VariableMetadata).filter(
+                VariableMetadata.source == 'gdelt',
+                VariableMetadata.is_active == True
+            ).all()
+            
+            if not gdelt_vars:
+                logger.info("No GDELT variables found - skipping")
+                return {'gdelt_fetched': 0, 'gdelt_data_points': 0}
+            
+            success_count = 0
+            data_points = 0
+            
+            for idx, var in enumerate(gdelt_vars):
+                try:
+                    params = json.loads(var.parameters) if var.parameters else {}
+                    theme = params.get('theme')
+                    
+                    if not theme:
+                        logger.warning(f"No GDELT theme specified for {var.name}")
+                        continue
+                    
+                    # Rate limit: 3 second delay between GDELT requests
+                    if idx > 0:
+                        import time
+                        time.sleep(3.0)
+                    
+                    # Fetch daily tone data (30-day window from free API)
+                    daily_tone = self.fetcher.fetch_gdelt_tone_daily(theme, days=30)
+                    
+                    if daily_tone:
+                        logger.info(
+                            f"GDELT {theme}: {len(daily_tone)} daily points"
+                        )
+                        
+                        for date_str, metrics in daily_tone.items():
+                            timestamp = datetime.strptime(date_str, "%Y-%m-%d")
+                            tone_value = metrics.get('tone', 0.0)
+                            
+                            existing = session.query(TimeSeriesData).filter(
+                                TimeSeriesData.variable_id == var.id,
+                                TimeSeriesData.timestamp == timestamp
+                            ).first()
+                            
+                            if existing:
+                                if existing.value != float(tone_value):
+                                    existing.value = float(tone_value)
+                                    existing.fetched_at = datetime.utcnow()
+                            else:
+                                data_point = TimeSeriesData(
+                                    variable_id=var.id,
+                                    timestamp=timestamp,
+                                    value=float(tone_value),
+                                    fetched_at=datetime.utcnow()
+                                )
+                                session.add(data_point)
+                                data_points += 1
+                        
+                        success_count += 1
+                        self._update_api_status(session, 'gdelt', 'active')
+                    else:
+                        logger.warning(f"No data returned for GDELT theme {theme}")
+                        
+                except Exception as e:
+                    logger.error(f"Error fetching GDELT {theme}: {e}")
+                    self._update_api_status(session, 'gdelt', 'failed', str(e))
+            
+            session.commit()
+        
+        logger.info(f"GDELT: {success_count} themes, {data_points} new data points")
+        return {'gdelt_fetched': success_count, 'gdelt_data_points': data_points}
     
     def _update_api_status(self, session, source: str, status: str, error: str = None):
         """Update API status in database"""

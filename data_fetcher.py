@@ -1203,4 +1203,65 @@ class DataFetcher:
             
         except Exception as e:
             logger.error(f"Error fetching GitHub stars for '{repo}': {e}")
+
+    # ------------------------------------------------------------------
+    # GDELT Global Event Tone / Sentiment
+    # ------------------------------------------------------------------
+
+    def fetch_gdelt_tone_daily(
+        self, theme: str, days: int = 30
+    ) -> Optional[Dict[str, Dict[str, float]]]:
+        """
+        Fetch GDELT event tone data for a theme (LAYER 2: GEOPOLITICAL SIGNALS).
+
+        Uses the free GDELT GKG (Global Knowledge Graph) API which returns
+        aggregated tone/sentiment for news articles tagged with a given theme.
+
+        Args:
+            theme: GDELT theme string (e.g. 'ECON_BANKRUPTCY', 'ENV_CLIMATECHANGE')
+            days:  Number of days to fetch (max ~30 from the free API)
+
+        Returns:
+            Dict mapping 'YYYY-MM-DD' → {'tone': avg_tone, 'article_count': int}
+        """
+        try:
+            # GDELT DOC 2.0 API (free, no key required)
+            end_date = datetime.utcnow()
+            start_date = end_date - timedelta(days=days)
+
+            url = "https://api.gdeltproject.org/api/v2/doc/doc"
+            params = {
+                "query": theme,
+                "mode": "timelinetone",
+                "timespan": f"{days}d",
+                "format": "json",
+            }
+
+            response = requests.get(url, params=params, timeout=30)
+            response.raise_for_status()
+            data = response.json()
+
+            timeline = data.get("timeline", [])
+            if not timeline or not timeline[0].get("data"):
+                logger.warning(f"GDELT returned no tone data for theme '{theme}'")
+                return None
+
+            daily_data: Dict[str, Dict[str, float]] = {}
+            for point in timeline[0]["data"]:
+                # GDELT returns epoch milliseconds
+                ts = datetime.utcfromtimestamp(point["date"] / 1000.0)
+                date_key = ts.strftime("%Y-%m-%d")
+                daily_data[date_key] = {
+                    "tone": float(point.get("value", 0.0)),
+                    "article_count": 1,  # timeline mode gives aggregated tone
+                }
+
+            logger.info(
+                f"GDELT '{theme}': {len(daily_data)} daily tone data points"
+            )
+            return daily_data if daily_data else None
+
+        except Exception as e:
+            logger.error(f"Error fetching GDELT tone for '{theme}': {e}")
+            return None
             return None

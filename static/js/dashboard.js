@@ -113,6 +113,13 @@ function dashboardData() {
         revenueData: null,
         revenueLoading: false,
         
+        // ============================================================
+        // ENSEMBLE AI PREDICTIONS (M2 Track A)
+        // ============================================================
+        ensemblePredictions: null,
+        ensembleAccuracy: null,
+        ensembleLoading: false,
+        
         // Exploitation Validation Modal
         validationModalOpen: false,
         validationRecId: null,
@@ -2097,6 +2104,50 @@ function dashboardData() {
                 yaxis: { color: '#94a3b8', gridcolor: '#334155', tickprefix: '£' },
                 font: { color: '#94a3b8' },
             }, { responsive: true, displayModeBar: false });
+        },
+
+        // ============================================================
+        // ENSEMBLE AI PREDICTIONS (M2 Track A)
+        // ============================================================
+
+        async loadEnsemblePredictions() {
+            this.ensembleLoading = true;
+            try {
+                const [predRes, accRes] = await Promise.all([
+                    fetch('/api/ensemble/predictions?limit=50'),
+                    fetch('/api/ensemble/model-accuracy'),
+                ]);
+                if (predRes.ok) {
+                    this.ensemblePredictions = await predRes.json();
+                    console.log('🧠 Ensemble predictions loaded:', this.ensemblePredictions);
+                } else {
+                    this.ensemblePredictions = null;
+                }
+                if (accRes.ok) {
+                    this.ensembleAccuracy = await accRes.json();
+                }
+            } catch (e) {
+                console.error('Ensemble fetch error:', e);
+                this.ensemblePredictions = null;
+            }
+            this.ensembleLoading = false;
+        },
+
+        async runAllEnsemble() {
+            this.ensembleLoading = true;
+            try {
+                const response = await fetch('/api/ensemble/predict-all?max_pairs=200', { method: 'POST' });
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('🧠 Ensemble run complete:', result);
+                    await this.loadEnsemblePredictions();
+                } else {
+                    console.error('Ensemble run failed:', response.status);
+                }
+            } catch (e) {
+                console.error('Ensemble run error:', e);
+            }
+            this.ensembleLoading = false;
         },
 
         renderBaselineSparklines() {

@@ -45,6 +45,7 @@ from routers import admin  # Database initialization endpoints
 from routers import auth  # Authentication endpoints
 from routers import subscription  # Stripe subscription endpoints
 from routers import revenue  # Revenue dashboard (Track E)
+from routers import ensemble  # Ensemble predictions (M2 Track A)
 
 # Import Signal Radar router from Causal_affect
 try:
@@ -98,6 +99,7 @@ app.include_router(admin.router)  # Admin endpoints for database management
 app.include_router(auth.router)  # Authentication endpoints
 app.include_router(subscription.router)  # Stripe subscription endpoints
 app.include_router(revenue.router)  # Revenue dashboard (Track E)
+app.include_router(ensemble.router)  # Ensemble predictions (M2 Track A)
 
 # Include Signal Radar if available
 if signal_radar_router is not None:
@@ -203,6 +205,29 @@ async def startup_event():
                 conn.execute(text("ALTER TABLE exploitation_recommendations ADD COLUMN target_growth_measured_at TIMESTAMP"))
                 conn.commit()
                 logger.info("✅ Added target_growth_actual columns to exploitation_recommendations")
+
+            # M2 Track A: ensemble enrichment columns
+            if 'ensemble_confidence' not in exploit_cols and exploit_cols:
+                conn.execute(text("ALTER TABLE exploitation_recommendations ADD COLUMN ensemble_confidence VARCHAR(20)"))
+                conn.execute(text("ALTER TABLE exploitation_recommendations ADD COLUMN ensemble_direction VARCHAR(10)"))
+                conn.execute(text("ALTER TABLE exploitation_recommendations ADD COLUMN ensemble_predicted_at TIMESTAMP"))
+                conn.commit()
+                logger.info("✅ Added ensemble enrichment columns to exploitation_recommendations")
+
+        # M2: Seed FRED + GDELT variables (idempotent — skips existing)
+        try:
+            from seed_fred_variables import seed_fred_variables
+            fred_result = seed_fred_variables()
+            logger.info(f"✅ FRED seed: {fred_result}")
+        except Exception as seed_err:
+            logger.warning(f"FRED seed skipped: {seed_err}")
+
+        try:
+            from seed_gdelt_variables import seed_gdelt_variables
+            gdelt_result = seed_gdelt_variables()
+            logger.info(f"✅ GDELT seed: {gdelt_result}")
+        except Exception as seed_err:
+            logger.warning(f"GDELT seed skipped: {seed_err}")
         
         # Start APScheduler for M0 automated validation
         try:
