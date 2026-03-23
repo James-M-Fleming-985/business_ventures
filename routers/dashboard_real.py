@@ -3399,6 +3399,24 @@ def _run_build(build_id: int, recommendation_id: int, complexity: str):
             build_id=build_id,
             db_session=db,
         )
+
+        # Auto-validate exploitation recommendation when build succeeds
+        build = db.query(MVPBuild).filter(MVPBuild.id == build_id).first()
+        if build and build.status in ('LIVE', 'DEPLOYING'):
+            existing = db.query(ExploitationValidation).filter(
+                ExploitationValidation.recommendation_id == recommendation_id
+            ).first()
+            if not existing:
+                validation = ExploitationValidation(
+                    recommendation_id=recommendation_id,
+                    validator='auto-build',
+                    actual_outcome='SUCCESS',
+                    outcome_notes=f'Auto-validated: build {build_id} deployed successfully',
+                    viability_score_at_validation=rec.build_viability_score if hasattr(rec, 'build_viability_score') else None,
+                )
+                db.add(validation)
+                db.commit()
+                logger.info(f"Build {build_id}: auto-validated recommendation {recommendation_id}")
     except Exception as e:
         logger.error(f"Build {build_id} failed: {e}\n{traceback.format_exc()}")
         try:

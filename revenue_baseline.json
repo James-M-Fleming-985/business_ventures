@@ -1,15 +1,8 @@
 {
-  "snapshot_date": "2026-03-11",
+  "snapshot_date": "2026-03-23",
   "total_mrr": 0.00,
   "total_subscribers": 0,
   "apps": [
-    {
-      "name": "Causal Affect",
-      "mrr": 0.00,
-      "subscribers": 0,
-      "stripe_dashboard_url": "",
-      "notes": "Platform in development — no paying customers yet"
-    },
     {
       "name": "systems3-project-reporter",
       "mrr": 0.00,
@@ -18,5 +11,5 @@
       "notes": "Subscription tiers configured, not yet monetised"
     }
   ],
-  "notes": "M0 baseline — manual snapshot. Update this file monthly or when revenue changes."
+  "notes": "M0V baseline. Revenue tracked from apps deployed by the MVP Builder. Stripe auto-wiring planned for M2."
 }

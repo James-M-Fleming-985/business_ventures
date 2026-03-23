@@ -1333,8 +1333,6 @@
                          :class="(baselines?.build_errors?.error_rate_pct || 0) <= 5 ? 'bg-green-500' : (baselines?.build_errors?.error_rate_pct || 0) <= 20 ? 'bg-amber-500' : 'bg-red-500'"
                          :style="'width: ' + Math.min(100 - (baselines?.build_errors?.error_rate_pct || 0), 100) + '%'"></div>
                 </div>
-                <!-- Sparkline -->
-                <div id="baseline-build-sparkline" class="h-16"></div>
                 <!-- No data state -->
                 <p x-show="(baselines?.build_errors?.total_builds || 0) === 0" class="text-xs text-slate-500 italic mt-2">No builds recorded yet — run build_feature.py to start tracking</p>
             </div>
@@ -1388,9 +1386,9 @@
                             <i data-lucide="info" class="w-4 h-4 text-slate-500 cursor-help"></i>
                             <div class="absolute z-50 hidden group-hover:block bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 p-3 bg-slate-900 border border-slate-600 rounded-lg shadow-xl text-xs text-slate-300">
                                 <p class="font-semibold text-white mb-1">Monthly Recurring Revenue</p>
-                                <p>Total MRR across all deployed apps from Stripe subscriptions. M0 target: establish baseline. M7 target: $20,000/mo.</p>
-                                <p class="mt-1 text-slate-400 font-mono">= sum(app.mrr) across all apps</p>
-                                <p class="mt-1">Currently manual (revenue_baseline.json). Stripe API integration planned for M1.</p>
+                                <p>Total MRR across apps built and deployed by the MVP Builder. Each deployed app can connect to Stripe for subscription revenue.</p>
+                                <p class="mt-1 text-slate-400 font-mono">= sum(app.mrr) across deployed apps</p>
+                                <p class="mt-1">Stripe auto-wiring for deployed apps planned for M2.</p>
                             </div>
                         </div>
                     </div>

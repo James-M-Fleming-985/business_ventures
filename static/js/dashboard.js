@@ -2071,16 +2071,7 @@ function dashboardData() {
                 }], { ...darkLayout, yaxis: { visible: false, range: [0, 100] } }, config);
             }
 
-            // Build quality sparkline
-            const buildTrend = this.baselines?.build_errors?.trend || [];
-            if (buildTrend.length > 0) {
-                Plotly.newPlot('baseline-build-sparkline', [{
-                    x: buildTrend.map((t, i) => i),
-                    y: buildTrend.map(t => t.success ? 1 : 0),
-                    type: 'bar',
-                    marker: { color: buildTrend.map(t => t.success ? '#22c55e' : '#ef4444') },
-                }], darkLayout, config);
-            }
+
         },
 
         // Exploitation Validation Modal
