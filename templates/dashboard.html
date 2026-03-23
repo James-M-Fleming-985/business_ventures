@@ -323,6 +323,12 @@
             <i data-lucide="bar-chart-3" class="w-4 h-4 inline mr-1"></i>
             Programme Baselines
         </button>
+        <button @click="activeView = 'revenue'; loadRevenue()" 
+                :class="activeView === 'revenue' ? 'bg-green-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'"
+                class="px-4 py-2 rounded-lg text-sm font-medium transition">
+            <i data-lucide="dollar-sign" class="w-4 h-4 inline mr-1"></i>
+            Revenue
+        </button>
     </div>
 
     <!-- Main Dashboard Grid (now secondary/tabbed) -->
@@ -1422,6 +1428,131 @@
         <div x-show="!baselinesLoading && !baselines" class="flex flex-col items-center justify-center py-12 text-slate-500">
             <i data-lucide="bar-chart-3" class="w-12 h-12 mb-3 opacity-30"></i>
             <p class="text-sm">Failed to load baselines</p>
+            <p class="text-xs text-slate-600 mt-1">Check console for errors</p>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- REVENUE DASHBOARD (M1 Track E) -->
+    <!-- ============================================================ -->
+    <div x-show="activeView === 'revenue'" x-transition class="space-y-6">
+        <!-- Loading State -->
+        <div x-show="revenueLoading" class="flex items-center justify-center py-12">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-green-400"></div>
+            <span class="ml-3 text-slate-400">Loading revenue data...</span>
+        </div>
+
+        <!-- Revenue Content -->
+        <div x-show="!revenueLoading && revenueData">
+            <!-- Header -->
+            <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center">
+                            <i data-lucide="dollar-sign" class="w-5 h-5 text-green-400"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold text-white">Revenue Dashboard</h3>
+                        <span class="px-2 py-0.5 bg-green-500/20 text-green-400 rounded text-xs">Live</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-slate-500" x-text="revenueData?.generated_at ? 'Updated: ' + new Date(revenueData.generated_at).toLocaleString() : ''"></span>
+                        <button @click="loadRevenue()" class="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm transition">
+                            <i data-lucide="refresh-cw" class="w-4 h-4 inline"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KPI Cards Row -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- MRR Card -->
+                <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                    <p class="text-sm text-slate-400 mb-1">Monthly Recurring Revenue</p>
+                    <p class="text-3xl font-bold text-green-400" x-text="'$' + (revenueData?.current_mrr || 0).toLocaleString(undefined, {minimumFractionDigits: 2})"></p>
+                    <div class="w-full bg-slate-700 rounded-full h-2 mt-3">
+                        <div class="bg-green-500 h-2 rounded-full transition-all duration-500" 
+                             :style="'width: ' + Math.min((revenueData?.current_mrr || 0) / 20000 * 100, 100) + '%'"></div>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-1">Target: $20,000 MRR</p>
+                </div>
+                <!-- Subscribers Card -->
+                <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                    <p class="text-sm text-slate-400 mb-1">Active Subscribers</p>
+                    <p class="text-3xl font-bold text-blue-400" x-text="(revenueData?.total_subscribers || 0).toLocaleString()"></p>
+                    <p class="text-xs text-slate-500 mt-3">Across all deployed MVP apps</p>
+                </div>
+                <!-- Apps Card -->
+                <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                    <p class="text-sm text-slate-400 mb-1">Revenue Apps</p>
+                    <p class="text-3xl font-bold text-purple-400" x-text="(revenueData?.per_app || []).length"></p>
+                    <p class="text-xs text-slate-500 mt-3">Apps generating revenue events</p>
+                </div>
+            </div>
+
+            <!-- MRR History Chart -->
+            <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                <h4 class="text-md font-semibold text-white mb-4">MRR History (12 Months)</h4>
+                <div id="revenue-mrr-chart" class="w-full" style="height: 300px;"></div>
+            </div>
+
+            <!-- Per-App Breakdown -->
+            <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                <h4 class="text-md font-semibold text-white mb-4">Per-App Revenue Breakdown</h4>
+                <div x-show="(revenueData?.per_app || []).length === 0" class="text-sm text-slate-500 italic py-4">
+                    No revenue events recorded yet. Deploy apps via the MVP Builder and connect Stripe.
+                </div>
+                <div class="space-y-3">
+                    <template x-for="app in (revenueData?.per_app || [])" :key="app.app_id">
+                        <div class="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg">
+                            <div>
+                                <span class="text-white font-medium" x-text="app.app_id"></span>
+                                <span class="text-xs text-slate-400 ml-2" x-text="app.event_count + ' events'"></span>
+                            </div>
+                            <span class="text-green-400 font-bold" x-text="'$' + (app.total_revenue || 0).toLocaleString(undefined, {minimumFractionDigits: 2})"></span>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Recent Events -->
+            <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                <h4 class="text-md font-semibold text-white mb-4">Recent Revenue Events</h4>
+                <div x-show="(revenueData?.recent_events || []).length === 0" class="text-sm text-slate-500 italic py-4">
+                    No revenue events yet. Events appear when Stripe webhooks fire for deployed apps.
+                </div>
+                <div class="overflow-x-auto">
+                    <table x-show="(revenueData?.recent_events || []).length > 0" class="w-full text-sm">
+                        <thead>
+                            <tr class="text-slate-400 border-b border-slate-700">
+                                <th class="text-left py-2 px-3">Date</th>
+                                <th class="text-left py-2 px-3">Type</th>
+                                <th class="text-left py-2 px-3">App</th>
+                                <th class="text-right py-2 px-3">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="evt in (revenueData?.recent_events || [])" :key="evt.id">
+                                <tr class="border-b border-slate-700/50 hover:bg-slate-700/30">
+                                    <td class="py-2 px-3 text-slate-300" x-text="new Date(evt.event_at).toLocaleDateString()"></td>
+                                    <td class="py-2 px-3">
+                                        <span class="px-2 py-0.5 rounded text-xs"
+                                              :class="evt.event_type === 'payment_succeeded' ? 'bg-green-500/20 text-green-400' : evt.event_type === 'subscription_cancelled' ? 'bg-red-500/20 text-red-400' : 'bg-blue-500/20 text-blue-400'"
+                                              x-text="evt.event_type"></span>
+                                    </td>
+                                    <td class="py-2 px-3 text-slate-300" x-text="evt.app_id || '—'"></td>
+                                    <td class="py-2 px-3 text-right text-green-400 font-medium" x-text="'$' + ((evt.amount_cents || 0) / 100).toFixed(2)"></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- No Data State -->
+        <div x-show="!revenueLoading && !revenueData" class="flex flex-col items-center justify-center py-12 text-slate-500">
+            <i data-lucide="dollar-sign" class="w-12 h-12 mb-3 opacity-30"></i>
+            <p class="text-sm">Failed to load revenue data</p>
             <p class="text-xs text-slate-600 mt-1">Check console for errors</p>
         </div>
     </div>

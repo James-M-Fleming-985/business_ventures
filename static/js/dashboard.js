@@ -106,6 +106,12 @@ function dashboardData() {
         // ============================================================
         baselines: null,
         baselinesLoading: false,
+
+        // ============================================================
+        // REVENUE DASHBOARD (M1 Track E)
+        // ============================================================
+        revenueData: null,
+        revenueLoading: false,
         
         // Exploitation Validation Modal
         validationModalOpen: false,
@@ -2045,6 +2051,52 @@ function dashboardData() {
                 this.baselines = null;
             }
             this.baselinesLoading = false;
+        },
+
+        // ============================================================
+        // REVENUE DASHBOARD (M1 Track E)
+        // ============================================================
+
+        async loadRevenue() {
+            this.revenueLoading = true;
+            try {
+                const response = await fetch('/revenue/dashboard');
+                if (response.ok) {
+                    this.revenueData = await response.json();
+                    console.log('💰 Revenue loaded:', this.revenueData);
+                    this.$nextTick(() => this.renderRevenueChart());
+                } else {
+                    console.error('Failed to load revenue:', response.status);
+                    this.revenueData = null;
+                }
+            } catch (e) {
+                console.error('Revenue fetch error:', e);
+                this.revenueData = null;
+            }
+            this.revenueLoading = false;
+        },
+
+        renderRevenueChart() {
+            const history = this.revenueData?.mrr_history || [];
+            if (history.length === 0) return;
+
+            const el = document.getElementById('revenue-mrr-chart');
+            if (!el) return;
+
+            Plotly.newPlot(el, [{
+                x: history.map(h => h.month),
+                y: history.map(h => h.mrr),
+                type: 'bar',
+                marker: { color: '#22c55e', opacity: 0.8 },
+                hovertemplate: '%{x}<br>$%{y:.2f}<extra></extra>',
+            }], {
+                margin: { t: 10, r: 20, b: 40, l: 60 },
+                paper_bgcolor: 'transparent',
+                plot_bgcolor: 'transparent',
+                xaxis: { color: '#94a3b8', gridcolor: '#334155' },
+                yaxis: { color: '#94a3b8', gridcolor: '#334155', tickprefix: '$' },
+                font: { color: '#94a3b8' },
+            }, { responsive: true, displayModeBar: false });
         },
 
         renderBaselineSparklines() {
