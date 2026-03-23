@@ -17,6 +17,7 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from database import get_db_session
@@ -117,19 +118,39 @@ class EnsembleModel:
         pairs = (
             self.db.query(CorrelationResult)
             .filter(
-                CorrelationResult.granger_p_value_xy <= GRANGER_P_THRESHOLD,
-                CorrelationResult.causal_direction.in_(["x_to_y", "bidirectional"]),
+                or_(
+                    CorrelationResult.granger_p_value_xy <= GRANGER_P_THRESHOLD,
+                    CorrelationResult.granger_p_value_yx <= GRANGER_P_THRESHOLD,
+                ),
+                CorrelationResult.causal_direction.in_(
+                    ["x_to_y", "y_to_x", "bidirectional"]
+                ),
             )
             .limit(max_pairs)
             .all()
         )
+
+        # Fallback: if no Granger pairs yet, use top correlated significant pairs
+        if not pairs:
+            pairs = (
+                self.db.query(CorrelationResult)
+                .filter(CorrelationResult.is_significant.is_(True))
+                .order_by(CorrelationResult.abs_correlation.desc())
+                .limit(max_pairs)
+                .all()
+            )
 
         results = []
         for pair in pairs:
             var1 = self.db.query(VariableMetadata).get(pair.variable1_id)
             var2 = self.db.query(VariableMetadata).get(pair.variable2_id)
             if var1 and var2:
-                r = self.predict(var1.name, var2.name, store=store)
+                # For y_to_x pairs, var2 is the signal and var1 is the target
+                if pair.causal_direction == "y_to_x":
+                    signal_var, target_var = var2, var1
+                else:
+                    signal_var, target_var = var1, var2
+                r = self.predict(signal_var.name, target_var.name, store=store)
                 results.append(r)
 
         correct = sum(1 for r in results if r.get("direction"))
