@@ -10,3 +10,4 @@ secrets/
 .env
 .env.*
 CREDENTIALS_COLLECTED.md
+__pycache__/
