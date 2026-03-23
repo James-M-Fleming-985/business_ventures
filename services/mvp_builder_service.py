@@ -771,7 +771,11 @@ class MVPBuilderService:
                         ))
                     db_session.commit()
 
-            _step('COMPLETE', f"{len(all_files)} files, {total_errors} errors, {round(duration, 1)}s")
+            # _step after commit is best-effort — don't let it flip LIVE → FAILED
+            try:
+                _step('COMPLETE', f"{len(all_files)} files, {total_errors} errors, {round(duration, 1)}s")
+            except Exception as step_exc:
+                logger.warning("Build %d: COMPLETE step failed (status already committed): %s", build_id, step_exc)
 
             # Cleanup temp dir (best-effort)
             try:

@@ -2152,11 +2152,14 @@ function dashboardData() {
         },
 
         async pollBuildStatus(recId, buildId) {
+            const gen = this._buildPollGen = (this._buildPollGen || 0) + 1;
             const poll = async () => {
+                if (this._buildPollGen !== gen) return; // loadBuilds() ran — stop stale poll
                 try {
                     const res = await fetch(`/api/dashboard/exploitation/builds/${buildId}`);
                     if (!res.ok) return;
                     const data = await res.json();
+                    if (this._buildPollGen !== gen) return;
                     this.builds = {...this.builds, [recId]: data};
                     if (['QUEUED', 'GENERATING', 'UPLOADING', 'DEPLOYING'].includes(data.status)) {
                         setTimeout(poll, 3000);
@@ -2173,12 +2176,17 @@ function dashboardData() {
         },
 
         async loadBuilds() {
+            this._buildPollGen = (this._buildPollGen || 0) + 1; // cancel stale polls
             try {
                 const res = await fetch('/api/dashboard/exploitation/builds');
                 if (!res.ok) return;
                 const data = await res.json();
                 const updated = {...this.builds};
+                const terminal = new Set(['LIVE', 'FAILED']);
                 for (const b of (data.builds || [])) {
+                    const existing = updated[b.recommendation_id];
+                    // Prefer terminal (LIVE/FAILED) over in-progress builds
+                    if (existing && terminal.has(existing.status) && !terminal.has(b.status)) continue;
                     updated[b.recommendation_id] = b;
                 }
                 this.builds = updated;

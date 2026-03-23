@@ -131,6 +131,22 @@ class AICodeGeneratorOrchestrator:
         test_file = test_dir / f'test_generated_{timestamp}.py'
         test_file.write_text(test_code)
 
+        # Create stub module so pytest can collect tests (avoids ModuleNotFoundError)
+        layer_id = requirements.get('layer_id', 'implementation')
+        module_name = layer_id.lower().replace('-', '_')
+        stub_symbols = self._extract_test_imports([str(test_file)], module_name)
+        if stub_symbols:
+            stub_lines = ['"""Stub module — replaced by GREEN phase implementation."""\n']
+            for sym in stub_symbols:
+                # Heuristic: uppercase first letter → class, otherwise function
+                if sym[0].isupper():
+                    stub_lines.append(f'class {sym}:\n    def __init__(self, *a, **kw): raise NotImplementedError("{sym} not yet implemented")\n')
+                else:
+                    stub_lines.append(f'def {sym}(*a, **kw): raise NotImplementedError("{sym} not yet implemented")\n')
+            stub_file = src_dir / f'{module_name}.py'
+            stub_file.write_text('\n'.join(stub_lines))
+            logger.info("RED phase: created stub module %s with %d symbols", stub_file.name, len(stub_symbols))
+
         env = {**os.environ, 'PYTHONPATH': str(src_dir)}
         pytest_result = subprocess.run(
             ['python3', '-m', 'pytest', str(test_file), '-v'],
