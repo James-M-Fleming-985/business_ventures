@@ -149,6 +149,21 @@ def cleanup_same_layer(db: Session = Depends(get_db)):
     return {"deleted_same_layer": len(to_delete), "remaining": len(preds) - len(to_delete)}
 
 
+@router.delete("/purge-pending")
+def purge_pending(db: Session = Depends(get_db)):
+    """Delete ALL pending ensemble predictions.  Use before a fresh predict-all run."""
+    deleted = (
+        db.query(PredictionTracking)
+        .filter(
+            PredictionTracking.model_version.like("ensemble%"),
+            PredictionTracking.status == "pending",
+        )
+        .delete(synchronize_session="fetch")
+    )
+    db.commit()
+    return {"deleted": deleted}
+
+
 @router.get("/model-accuracy")
 def model_accuracy(db: Session = Depends(get_db)):
     """Per-model accuracy breakdown from validated predictions."""
