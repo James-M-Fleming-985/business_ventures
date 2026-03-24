@@ -2,13 +2,15 @@
 Ensemble Predictions Router (M2 Track A)
 
 Endpoints:
-  GET  /api/ensemble/predictions      — list recent ensemble predictions
-  POST /api/ensemble/predict           — run ensemble for a signal→target pair
-  POST /api/ensemble/predict-all       — run ensemble for all significant pairs
-  GET  /api/ensemble/model-accuracy    — per-model accuracy breakdown
+  GET  /api/ensemble/predictions         — list recent ensemble predictions
+  POST /api/ensemble/predict             — run ensemble for a signal→target pair
+  POST /api/ensemble/predict-all         — run ensemble for all significant pairs
+  GET  /api/ensemble/model-accuracy      — per-model accuracy breakdown
+  DELETE /api/ensemble/cleanup-duplicates — remove stale duplicate pending predictions
 """
 
 import logging
+from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
@@ -83,6 +85,34 @@ def predict_all(
     result = model.predict_all_pairs(max_pairs=max_pairs, store=True)
     db.commit()
     return result
+
+
+@router.delete("/cleanup-duplicates")
+def cleanup_duplicates(db: Session = Depends(get_db)):
+    """Remove duplicate pending ensemble predictions, keeping only the latest per pair."""
+    preds = (
+        db.query(PredictionTracking)
+        .filter(
+            PredictionTracking.model_version.like("ensemble%"),
+            PredictionTracking.status == "pending",
+        )
+        .order_by(PredictionTracking.predicted_at.desc())
+        .all()
+    )
+
+    seen = set()
+    to_delete = []
+    for p in preds:
+        key = (p.signal_name, p.target_name)
+        if key in seen:
+            to_delete.append(p)
+        else:
+            seen.add(key)
+
+    for p in to_delete:
+        db.delete(p)
+    db.commit()
+    return {"deleted": len(to_delete), "unique_pairs_remaining": len(seen)}
 
 
 @router.get("/model-accuracy")

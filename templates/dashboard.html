@@ -12,12 +12,15 @@
                 <div>
                     <div class="flex items-center gap-1.5">
                         <p class="text-slate-400 text-sm font-medium">Data Points</p>
-                        <div class="relative inline-block group" @click.stop>
+                        <div class="relative inline-block" x-data="{ show: false, pos: {} }" @click.stop
+                             @mouseenter="pos = $el.firstElementChild.getBoundingClientRect(); show = true"
+                             @mouseleave="show = false">
                             <div class="w-4 h-4 rounded-full bg-blue-500/20 flex items-center justify-center cursor-help hover:bg-blue-500/40 transition">
                                 <span class="text-xs font-bold text-blue-400">i</span>
                             </div>
-                            <div class="fixed z-[100] px-3 py-2 bg-slate-700 text-xs text-slate-200 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none w-64 border border-slate-600"
-                                 :style="`left: ${$el.previousElementSibling.getBoundingClientRect().right + 8}px; top: ${Math.max(8, $el.previousElementSibling.getBoundingClientRect().top - 20)}px;`">
+                            <div x-show="show" x-transition.opacity.duration.150ms
+                                 class="fixed z-[100] px-3 py-2 bg-slate-700 text-xs text-slate-200 rounded-lg shadow-xl pointer-events-none w-64 border border-slate-600"
+                                 :style="`left: ${Math.min(pos.right + 8, window.innerWidth - 272)}px; top: ${Math.max(8, pos.top - 20)}px;`">
                                 <p class="font-semibold text-primary-400 mb-1">Data Points</p>
                                 <p>Total observations ingested across all API sources (FRED, Wikipedia, arXiv, Yahoo Finance, etc.). Each data point is one time-stamped measurement for a tracked variable.</p>
                             </div>
@@ -37,12 +40,15 @@
                 <div>
                     <div class="flex items-center gap-1.5">
                         <p class="text-slate-400 text-sm font-medium">Strong Correlations</p>
-                        <div class="relative inline-block group" @click.stop>
+                        <div class="relative inline-block" x-data="{ show: false, pos: {} }" @click.stop
+                             @mouseenter="pos = $el.firstElementChild.getBoundingClientRect(); show = true"
+                             @mouseleave="show = false">
                             <div class="w-4 h-4 rounded-full bg-blue-500/20 flex items-center justify-center cursor-help hover:bg-blue-500/40 transition">
                                 <span class="text-xs font-bold text-blue-400">i</span>
                             </div>
-                            <div class="fixed z-[100] px-3 py-2 bg-slate-700 text-xs text-slate-200 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none w-64 border border-slate-600"
-                                 :style="`left: ${$el.previousElementSibling.getBoundingClientRect().right + 8}px; top: ${Math.max(8, $el.previousElementSibling.getBoundingClientRect().top - 20)}px;`">
+                            <div x-show="show" x-transition.opacity.duration.150ms
+                                 class="fixed z-[100] px-3 py-2 bg-slate-700 text-xs text-slate-200 rounded-lg shadow-xl pointer-events-none w-64 border border-slate-600"
+                                 :style="`left: ${Math.min(pos.right + 8, window.innerWidth - 272)}px; top: ${Math.max(8, pos.top - 20)}px;`">
                                 <p class="font-semibold text-primary-400 mb-1">Strong Correlations</p>
                                 <p>Variable pairs with |r| &gt; 0.7 and statistical significance p &lt; 0.05. These are the most reliable relationships detected in the data.</p>
                             </div>
@@ -62,12 +68,15 @@
                 <div>
                     <div class="flex items-center gap-1.5">
                         <p class="text-slate-400 text-sm font-medium">Data Sources</p>
-                        <div class="relative inline-block group" @click.stop>
+                        <div class="relative inline-block" x-data="{ show: false, pos: {} }" @click.stop
+                             @mouseenter="pos = $el.firstElementChild.getBoundingClientRect(); show = true"
+                             @mouseleave="show = false">
                             <div class="w-4 h-4 rounded-full bg-blue-500/20 flex items-center justify-center cursor-help hover:bg-blue-500/40 transition">
                                 <span class="text-xs font-bold text-blue-400">i</span>
                             </div>
-                            <div class="fixed z-[100] px-3 py-2 bg-slate-700 text-xs text-slate-200 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none w-64 border border-slate-600"
-                                 :style="`left: ${$el.previousElementSibling.getBoundingClientRect().right + 8}px; top: ${Math.max(8, $el.previousElementSibling.getBoundingClientRect().top - 20)}px;`">
+                            <div x-show="show" x-transition.opacity.duration.150ms
+                                 class="fixed z-[100] px-3 py-2 bg-slate-700 text-xs text-slate-200 rounded-lg shadow-xl pointer-events-none w-64 border border-slate-600"
+                                 :style="`left: ${Math.min(pos.right + 8, window.innerWidth - 272)}px; top: ${Math.max(8, pos.top - 20)}px;`">
                                 <p class="font-semibold text-primary-400 mb-1">Data Sources</p>
                                 <p>Active API feeds providing time-series data: FRED (economic), Yahoo Finance (stocks), Wikipedia (pageviews), arXiv (papers), GDELT (news), and more.</p>
                             </div>
@@ -87,12 +96,15 @@
                 <div>
                     <div class="flex items-center gap-1.5">
                         <p class="text-slate-400 text-sm font-medium">Last Updated</p>
-                        <div class="relative inline-block group" @click.stop>
+                        <div class="relative inline-block" x-data="{ show: false, pos: {} }" @click.stop
+                             @mouseenter="pos = $el.firstElementChild.getBoundingClientRect(); show = true"
+                             @mouseleave="show = false">
                             <div class="w-4 h-4 rounded-full bg-blue-500/20 flex items-center justify-center cursor-help hover:bg-blue-500/40 transition">
                                 <span class="text-xs font-bold text-blue-400">i</span>
                             </div>
-                            <div class="fixed z-[100] px-3 py-2 bg-slate-700 text-xs text-slate-200 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none w-64 border border-slate-600"
-                                 :style="`left: ${$el.previousElementSibling.getBoundingClientRect().right + 8}px; top: ${Math.max(8, $el.previousElementSibling.getBoundingClientRect().top - 20)}px;`">
+                            <div x-show="show" x-transition.opacity.duration.150ms
+                                 class="fixed z-[100] px-3 py-2 bg-slate-700 text-xs text-slate-200 rounded-lg shadow-xl pointer-events-none w-64 border border-slate-600"
+                                 :style="`left: ${Math.min(pos.right + 8, window.innerWidth - 272)}px; top: ${Math.max(8, pos.top - 20)}px;`">
                                 <p class="font-semibold text-primary-400 mb-1">Last Updated</p>
                                 <p>Most recent data pipeline execution timestamp. The pipeline runs daily at 03:00 UTC, fetching fresh data from all active sources and recalculating correlations.</p>
                             </div>
@@ -168,12 +180,15 @@
                                           x-text="signal.source_count + ' sources'"
                                           title="Click to see source breakdown"></span>
                                     <!-- Info Icon with Tooltip (positioned to the right to avoid top clipping) -->
-                                    <div class="relative inline-block group" @click.stop>
+                                    <div class="relative inline-block" x-data="{ show: false, pos: {} }" @click.stop
+                                         @mouseenter="pos = $el.firstElementChild.getBoundingClientRect(); show = true"
+                                         @mouseleave="show = false">
                                         <div class="w-4 h-4 rounded-full bg-blue-500/20 flex items-center justify-center cursor-help hover:bg-blue-500/40 transition">
                                             <span class="text-xs font-bold text-blue-400">i</span>
                                         </div>
-                                        <div class="fixed z-[100] px-3 py-2 bg-slate-700 text-xs text-slate-200 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none w-64 border border-slate-600"
-                                             :style="`left: ${$el.previousElementSibling.getBoundingClientRect().right + 8}px; top: ${Math.max(8, $el.previousElementSibling.getBoundingClientRect().top - 20)}px;`">
+                                        <div x-show="show" x-transition.opacity.duration.150ms
+                                             class="fixed z-[100] px-3 py-2 bg-slate-700 text-xs text-slate-200 rounded-lg shadow-xl pointer-events-none w-64 border border-slate-600"
+                                             :style="`left: ${Math.min(pos.right + 8, window.innerWidth - 272)}px; top: ${Math.max(8, pos.top - 20)}px;`">
                                             <div class="font-semibold text-primary-400 mb-1" x-text="signal.display_name"></div>
                                             <div x-text="signal.description || 'Behavioral signal tracking public interest and search momentum. Higher values indicate increased attention.'"></div>
                                             <div class="mt-2 pt-2 border-t border-slate-600 text-slate-400">
@@ -534,13 +549,16 @@
                     :class="predictionFilter === 'backtest_walkforward' ? 'bg-primary-600 text-white' : 'bg-slate-700 text-slate-400 hover:bg-slate-600'">
                     Backtest
                 </button>
-                <div class="relative group">
+                <div class="relative inline-block" x-data="{ show: false, pos: {} }"
+                     @mouseenter="pos = $el.firstElementChild.getBoundingClientRect(); show = true"
+                     @mouseleave="show = false">
                     <i data-lucide="info" class="w-3.5 h-3.5 text-slate-500 cursor-help"></i>
-                    <div class="absolute z-50 hidden group-hover:block bottom-full left-1/2 -translate-x-1/2 mb-2 w-80 p-3 bg-slate-900 border border-slate-600 rounded-lg shadow-xl text-xs text-slate-300">
-                        <p class="font-semibold text-white mb-1">Walk-Forward Backtest</p>
-                        <p>Expanding-window out-of-sample test. For each month, the model trains on all prior data then predicts the next month's direction.</p>
-                        <p class="mt-1 text-slate-400 font-mono">= correct_directions / total_steps &times; 100</p>
-                        <p class="mt-1">Uses Granger causality (p &le; 0.10) + signal momentum at the optimal lag.</p>
+                    <div x-show="show" x-transition.opacity.duration.150ms
+                         class="fixed z-[100] px-3 py-2 bg-slate-700 text-xs text-slate-200 rounded-lg shadow-xl pointer-events-none w-80 border border-slate-600"
+                         :style="`left: ${Math.min(pos.right + 8, window.innerWidth - 340)}px; top: ${Math.max(8, pos.top - 20)}px;`">
+                        <p class="font-semibold text-primary-400 mb-1">Walk-Forward Backtest</p>
+                        <p>Tests how well the model would have predicted the past. Each month it trains on all prior data, then predicts the next month. Measures direction accuracy over time.</p>
+                        <p class="mt-1 text-slate-400">Higher % = the Granger model correctly predicted up/down more often.</p>
                     </div>
                 </div>
                 <button @click="predictionFilter = 'granger_v1'; loadPredictions()"
@@ -553,14 +571,16 @@
                     :class="predictionFilter === 'backtest_regression' ? 'bg-primary-600 text-white' : 'bg-slate-700 text-slate-400 hover:bg-slate-600'">
                     Regression
                 </button>
-                <div class="relative group">
+                <div class="relative inline-block" x-data="{ show: false, pos: {} }"
+                     @mouseenter="pos = $el.firstElementChild.getBoundingClientRect(); show = true"
+                     @mouseleave="show = false">
                     <i data-lucide="info" class="w-3.5 h-3.5 text-slate-500 cursor-help"></i>
-                    <div class="absolute z-50 hidden group-hover:block bottom-full left-1/2 -translate-x-1/2 mb-2 w-80 p-3 bg-slate-900 border border-slate-600 rounded-lg shadow-xl text-xs text-slate-300">
-                        <p class="font-semibold text-white mb-1">OLS Regression Backtest</p>
-                        <p>Walk-forward with OLS linear regression. Fits slope + intercept on signal&rarr;target data, predicting both magnitude and direction.</p>
-                        <p class="mt-1 text-slate-400 font-mono">predicted = slope &times; signal + intercept</p>
-                        <p class="mt-1 text-slate-400 font-mono">R&sup2; = 1 &minus; SS<sub>res</sub> / SS<sub>tot</sub></p>
-                        <p class="mt-1">Produces calibrated % change predictions. Higher R&sup2; = better fit.</p>
+                    <div x-show="show" x-transition.opacity.duration.150ms
+                         class="fixed z-[100] px-3 py-2 bg-slate-700 text-xs text-slate-200 rounded-lg shadow-xl pointer-events-none w-80 border border-slate-600"
+                         :style="`left: ${Math.min(pos.right + 8, window.innerWidth - 340)}px; top: ${Math.max(8, pos.top - 20)}px;`">
+                        <p class="font-semibold text-primary-400 mb-1">OLS Regression Backtest</p>
+                        <p>Walk-forward test using linear regression. Fits a line through signal→target data to predict both direction and size of change.</p>
+                        <p class="mt-1 text-slate-400">Higher R² = the regression explains more variance. Calibrated % change predictions.</p>
                     </div>
                 </div>
             </div>
@@ -1278,9 +1298,13 @@
                             <i data-lucide="target" class="w-5 h-5 text-blue-400"></i>
                         </div>
                         <h3 class="text-lg font-semibold text-white">Model Accuracy</h3>
-                        <div class="relative group">
+                        <div class="relative inline-block" x-data="{ show: false, pos: {} }"
+                             @mouseenter="pos = $el.firstElementChild.getBoundingClientRect(); show = true"
+                             @mouseleave="show = false">
                             <i data-lucide="info" class="w-4 h-4 text-slate-500 cursor-help"></i>
-                            <div class="absolute z-50 hidden group-hover:block bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 p-3 bg-slate-900 border border-slate-600 rounded-lg shadow-xl text-xs text-slate-300">
+                            <div x-show="show" x-transition.opacity.duration.150ms
+                                 class="fixed z-[100] px-3 py-2 bg-slate-700 text-xs text-slate-200 rounded-lg shadow-xl pointer-events-none w-72 border border-slate-600"
+                                 :style="`left: ${Math.min(pos.right + 8, window.innerWidth - 300)}px; top: ${Math.max(8, pos.top - 20)}px;`">
                                 <p class="font-semibold text-white mb-1">Direction Accuracy</p>
                                 <p>Measures how often the Granger causal model correctly predicts whether a target variable goes up or down.</p>
                                 <p class="mt-1 text-slate-400 font-mono">= correct_directions / total_validated × 100</p>
@@ -1316,9 +1340,13 @@
                             <i data-lucide="percent" class="w-5 h-5 text-orange-400"></i>
                         </div>
                         <h3 class="text-lg font-semibold text-white">MAPE</h3>
-                        <div class="relative group">
+                        <div class="relative inline-block" x-data="{ show: false, pos: {} }"
+                             @mouseenter="pos = $el.firstElementChild.getBoundingClientRect(); show = true"
+                             @mouseleave="show = false">
                             <i data-lucide="info" class="w-4 h-4 text-slate-500 cursor-help"></i>
-                            <div class="absolute z-50 hidden group-hover:block bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 p-3 bg-slate-900 border border-slate-600 rounded-lg shadow-xl text-xs text-slate-300">
+                            <div x-show="show" x-transition.opacity.duration.150ms
+                                 class="fixed z-[100] px-3 py-2 bg-slate-700 text-xs text-slate-200 rounded-lg shadow-xl pointer-events-none w-72 border border-slate-600"
+                                 :style="`left: ${Math.min(pos.right + 8, window.innerWidth - 300)}px; top: ${Math.max(8, pos.top - 20)}px;`">
                                 <p class="font-semibold text-white mb-1">Mean Absolute Percentage Error</p>
                                 <p>Average magnitude of prediction error as a percentage. Measures how far off predicted values are from actual values, regardless of direction.</p>
                                 <p class="mt-1 text-slate-400 font-mono">= mean(abs(actual - predicted) / predicted &times; 100)</p>
@@ -1352,9 +1380,13 @@
                             <i data-lucide="clock" class="w-5 h-5 text-violet-400"></i>
                         </div>
                         <h3 class="text-lg font-semibold text-white">Lag Error</h3>
-                        <div class="relative group">
+                        <div class="relative inline-block" x-data="{ show: false, pos: {} }"
+                             @mouseenter="pos = $el.firstElementChild.getBoundingClientRect(); show = true"
+                             @mouseleave="show = false">
                             <i data-lucide="info" class="w-4 h-4 text-slate-500 cursor-help"></i>
-                            <div class="absolute z-50 hidden group-hover:block bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 p-3 bg-slate-900 border border-slate-600 rounded-lg shadow-xl text-xs text-slate-300">
+                            <div x-show="show" x-transition.opacity.duration.150ms
+                                 class="fixed z-[100] px-3 py-2 bg-slate-700 text-xs text-slate-200 rounded-lg shadow-xl pointer-events-none w-72 border border-slate-600"
+                                 :style="`left: ${Math.min(pos.right + 8, window.innerWidth - 300)}px; top: ${Math.max(8, pos.top - 20)}px;`">
                                 <p class="font-semibold text-white mb-1">Lag Prediction Error</p>
                                 <p>Average difference (in days) between when we predicted the peak/trough would occur and when it actually occurred.</p>
                                 <p class="mt-1 text-slate-400 font-mono">= avg |actual_lag_days &minus; predicted_lag_days|</p>
@@ -1387,9 +1419,13 @@
                             <i data-lucide="hammer" class="w-5 h-5 text-purple-400"></i>
                         </div>
                         <h3 class="text-lg font-semibold text-white">Build Quality</h3>
-                        <div class="relative group">
+                        <div class="relative inline-block" x-data="{ show: false, pos: {} }"
+                             @mouseenter="pos = $el.firstElementChild.getBoundingClientRect(); show = true"
+                             @mouseleave="show = false">
                             <i data-lucide="info" class="w-4 h-4 text-slate-500 cursor-help"></i>
-                            <div class="absolute z-50 hidden group-hover:block bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 p-3 bg-slate-900 border border-slate-600 rounded-lg shadow-xl text-xs text-slate-300">
+                            <div x-show="show" x-transition.opacity.duration.150ms
+                                 class="fixed z-[100] px-3 py-2 bg-slate-700 text-xs text-slate-200 rounded-lg shadow-xl pointer-events-none w-72 border border-slate-600"
+                                 :style="`left: ${Math.min(pos.right + 8, window.innerWidth - 300)}px; top: ${Math.max(8, pos.top - 20)}px;`">
                                 <p class="font-semibold text-white mb-1">Build Error Rate</p>
                                 <p>Tracks error rate across AI code generator builds — syntax errors, test failures, import issues, and runtime crashes.</p>
                                 <p class="mt-1 text-slate-400 font-mono">= failed_builds / total_builds × 100</p>
@@ -1424,9 +1460,13 @@
                             <i data-lucide="rocket" class="w-5 h-5 text-amber-400"></i>
                         </div>
                         <h3 class="text-lg font-semibold text-white">Exploitation Accuracy</h3>
-                        <div class="relative group">
+                        <div class="relative inline-block" x-data="{ show: false, pos: {} }"
+                             @mouseenter="pos = $el.firstElementChild.getBoundingClientRect(); show = true"
+                             @mouseleave="show = false">
                             <i data-lucide="info" class="w-4 h-4 text-slate-500 cursor-help"></i>
-                            <div class="absolute z-50 hidden group-hover:block bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 p-3 bg-slate-900 border border-slate-600 rounded-lg shadow-xl text-xs text-slate-300">
+                            <div x-show="show" x-transition.opacity.duration.150ms
+                                 class="fixed z-[100] px-3 py-2 bg-slate-700 text-xs text-slate-200 rounded-lg shadow-xl pointer-events-none w-72 border border-slate-600"
+                                 :style="`left: ${Math.min(pos.right + 8, window.innerWidth - 300)}px; top: ${Math.max(8, pos.top - 20)}px;`">
                                 <p class="font-semibold text-white mb-1">Market Prediction Accuracy</p>
                                 <p>Measures how accurately BUILD viability assessments predict real market outcomes — demand volume, competition level, and revenue potential.</p>
                                 <p class="mt-1 text-slate-400 font-mono">= (SUCCESS + PARTIAL) / total_validated × 100</p>
@@ -1461,9 +1501,13 @@
                             <i data-lucide="pound-sterling" class="w-5 h-5 text-green-400"></i>
                         </div>
                         <h3 class="text-lg font-semibold text-white">Revenue</h3>
-                        <div class="relative group">
+                        <div class="relative inline-block" x-data="{ show: false, pos: {} }"
+                             @mouseenter="pos = $el.firstElementChild.getBoundingClientRect(); show = true"
+                             @mouseleave="show = false">
                             <i data-lucide="info" class="w-4 h-4 text-slate-500 cursor-help"></i>
-                            <div class="absolute z-50 hidden group-hover:block bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 p-3 bg-slate-900 border border-slate-600 rounded-lg shadow-xl text-xs text-slate-300">
+                            <div x-show="show" x-transition.opacity.duration.150ms
+                                 class="fixed z-[100] px-3 py-2 bg-slate-700 text-xs text-slate-200 rounded-lg shadow-xl pointer-events-none w-72 border border-slate-600"
+                                 :style="`left: ${Math.min(pos.right + 8, window.innerWidth - 300)}px; top: ${Math.max(8, pos.top - 20)}px;`">
                                 <p class="font-semibold text-white mb-1">Monthly Recurring Revenue</p>
                                 <p>Total MRR across apps built and deployed by the MVP Builder. Each deployed app can connect to Stripe for subscription revenue.</p>
                                 <p class="mt-1 text-slate-400 font-mono">= sum(app.mrr) across deployed apps</p>
@@ -1670,12 +1714,15 @@
                     <div class="bg-slate-800 rounded-lg p-4 border border-slate-700">
                         <div class="flex items-center justify-between mb-1">
                             <p class="text-sm text-slate-400" x-text="model"></p>
-                            <div class="relative inline-block group" @click.stop>
+                            <div class="relative inline-block" x-data="{ show: false, pos: {} }" @click.stop
+                                 @mouseenter="pos = $el.firstElementChild.getBoundingClientRect(); show = true"
+                                 @mouseleave="show = false">
                                 <div class="w-4 h-4 rounded-full bg-blue-500/20 flex items-center justify-center cursor-help hover:bg-blue-500/40 transition">
                                     <span class="text-xs font-bold text-blue-400">i</span>
                                 </div>
-                                <div class="fixed z-[100] px-3 py-2 bg-slate-700 text-xs text-slate-200 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none w-64 border border-slate-600"
-                                     :style="`left: ${Math.min($el.previousElementSibling.getBoundingClientRect().right + 8, window.innerWidth - 272)}px; top: ${Math.max(8, $el.previousElementSibling.getBoundingClientRect().top - 20)}px;`">
+                                <div x-show="show" x-transition.opacity.duration.150ms
+                                     class="fixed z-[100] px-3 py-2 bg-slate-700 text-xs text-slate-200 rounded-lg shadow-xl pointer-events-none w-64 border border-slate-600"
+                                     :style="`left: ${Math.min(pos.right + 8, window.innerWidth - 272)}px; top: ${Math.max(8, pos.top - 20)}px;`">
                                     <p class="font-semibold text-primary-400 mb-1" x-text="model"></p>
                                     <template x-if="model.includes('granger') || model.includes('Granger')">
                                         <p>Tests whether past values of the signal improve prediction of the target beyond the target's own history. Confidence derived from Granger p-value.</p>
@@ -1719,12 +1766,15 @@
                                 <th class="text-left py-2 px-3">
                                     <div class="flex items-center gap-1">
                                         Signal → Target
-                                        <div class="relative inline-block group" @click.stop>
+                                        <div class="relative inline-block" x-data="{ show: false, pos: {} }" @click.stop
+                                             @mouseenter="pos = $el.firstElementChild.getBoundingClientRect(); show = true"
+                                             @mouseleave="show = false">
                                             <div class="w-4 h-4 rounded-full bg-blue-500/20 flex items-center justify-center cursor-help hover:bg-blue-500/40 transition">
                                                 <span class="text-xs font-bold text-blue-400">i</span>
                                             </div>
-                                            <div class="fixed z-[100] px-3 py-2 bg-slate-700 text-xs text-slate-200 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none w-64 border border-slate-600"
-                                                 :style="`left: ${$el.previousElementSibling.getBoundingClientRect().right + 8}px; top: ${Math.max(8, $el.previousElementSibling.getBoundingClientRect().top - 20)}px;`">
+                                            <div x-show="show" x-transition.opacity.duration.150ms
+                                                 class="fixed z-[100] px-3 py-2 bg-slate-700 text-xs text-slate-200 rounded-lg shadow-xl pointer-events-none w-64 border border-slate-600"
+                                                 :style="`left: ${Math.min(pos.right + 8, window.innerWidth - 272)}px; top: ${Math.max(8, pos.top - 20)}px;`">
                                                 <p class="font-semibold text-primary-400 mb-1">Signal → Target</p>
                                                 <p>The causal pair. Signal = leading indicator observed; Target = what should move after a lag period.</p>
                                             </div>
@@ -1734,12 +1784,15 @@
                                 <th class="text-center py-2 px-3">
                                     <div class="flex items-center justify-center gap-1">
                                         Direction
-                                        <div class="relative inline-block group" @click.stop>
+                                        <div class="relative inline-block" x-data="{ show: false, pos: {} }" @click.stop
+                                             @mouseenter="pos = $el.firstElementChild.getBoundingClientRect(); show = true"
+                                             @mouseleave="show = false">
                                             <div class="w-4 h-4 rounded-full bg-blue-500/20 flex items-center justify-center cursor-help hover:bg-blue-500/40 transition">
                                                 <span class="text-xs font-bold text-blue-400">i</span>
                                             </div>
-                                            <div class="fixed z-[100] px-3 py-2 bg-slate-700 text-xs text-slate-200 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none w-72 border border-slate-600"
-                                                 :style="`left: ${$el.previousElementSibling.getBoundingClientRect().right + 8}px; top: ${Math.max(8, $el.previousElementSibling.getBoundingClientRect().top - 20)}px;`">
+                                            <div x-show="show" x-transition.opacity.duration.150ms
+                                                 class="fixed z-[100] px-3 py-2 bg-slate-700 text-xs text-slate-200 rounded-lg shadow-xl pointer-events-none w-72 border border-slate-600"
+                                                 :style="`left: ${Math.min(pos.right + 8, window.innerWidth - 272)}px; top: ${Math.max(8, pos.top - 20)}px;`">
                                                 <p class="font-semibold text-primary-400 mb-1">Ensemble Direction</p>
                                                 <p>Weighted vote: ▲ UP or ▼ DOWN. Granger (40%), OLS (35%), ARIMA (25%). Weights auto-calibrate from historical accuracy.</p>
                                             </div>
@@ -1749,12 +1802,15 @@
                                 <th class="text-center py-2 px-3">
                                     <div class="flex items-center justify-center gap-1">
                                         Confidence
-                                        <div class="relative inline-block group" @click.stop>
+                                        <div class="relative inline-block" x-data="{ show: false, pos: {} }" @click.stop
+                                             @mouseenter="pos = $el.firstElementChild.getBoundingClientRect(); show = true"
+                                             @mouseleave="show = false">
                                             <div class="w-4 h-4 rounded-full bg-blue-500/20 flex items-center justify-center cursor-help hover:bg-blue-500/40 transition">
                                                 <span class="text-xs font-bold text-blue-400">i</span>
                                             </div>
-                                            <div class="fixed z-[100] px-3 py-2 bg-slate-700 text-xs text-slate-200 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none w-64 border border-slate-600"
-                                                 :style="`left: ${$el.previousElementSibling.getBoundingClientRect().right + 8}px; top: ${Math.max(8, $el.previousElementSibling.getBoundingClientRect().top - 20)}px;`">
+                                            <div x-show="show" x-transition.opacity.duration.150ms
+                                                 class="fixed z-[100] px-3 py-2 bg-slate-700 text-xs text-slate-200 rounded-lg shadow-xl pointer-events-none w-64 border border-slate-600"
+                                                 :style="`left: ${Math.min(pos.right + 8, window.innerWidth - 272)}px; top: ${Math.max(8, pos.top - 20)}px;`">
                                                 <p class="font-semibold text-primary-400 mb-1">Confidence Level</p>
                                                 <p>HIGH (&ge; 0.7) = strong model agreement. MEDIUM (0.4–0.7) = moderate. LOW (&lt; 0.4) = weak or only one model voting.</p>
                                             </div>
@@ -1764,12 +1820,15 @@
                                 <th class="text-right py-2 px-3">
                                     <div class="flex items-center justify-end gap-1">
                                         Change %
-                                        <div class="relative inline-block group" @click.stop>
+                                        <div class="relative inline-block" x-data="{ show: false, pos: {} }" @click.stop
+                                             @mouseenter="pos = $el.firstElementChild.getBoundingClientRect(); show = true"
+                                             @mouseleave="show = false">
                                             <div class="w-4 h-4 rounded-full bg-blue-500/20 flex items-center justify-center cursor-help hover:bg-blue-500/40 transition">
                                                 <span class="text-xs font-bold text-blue-400">i</span>
                                             </div>
-                                            <div class="fixed z-[100] px-3 py-2 bg-slate-700 text-xs text-slate-200 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none w-64 border border-slate-600"
-                                                 :style="`left: ${Math.min($el.previousElementSibling.getBoundingClientRect().right + 8, window.innerWidth - 272)}px; top: ${Math.max(8, $el.previousElementSibling.getBoundingClientRect().top - 20)}px;`">
+                                            <div x-show="show" x-transition.opacity.duration.150ms
+                                                 class="fixed z-[100] px-3 py-2 bg-slate-700 text-xs text-slate-200 rounded-lg shadow-xl pointer-events-none w-64 border border-slate-600"
+                                                 :style="`left: ${Math.min(pos.right + 8, window.innerWidth - 272)}px; top: ${Math.max(8, pos.top - 20)}px;`">
                                                 <p class="font-semibold text-primary-400 mb-1">Predicted Change %</p>
                                                 <p>Weighted predicted % change in the target over the next 30 days, from OLS regression slope, ARIMA forecast, and Granger momentum.</p>
                                             </div>
@@ -1779,12 +1838,15 @@
                                 <th class="text-center py-2 px-3">
                                     <div class="flex items-center justify-center gap-1">
                                         Status
-                                        <div class="relative inline-block group" @click.stop>
+                                        <div class="relative inline-block" x-data="{ show: false, pos: {} }" @click.stop
+                                             @mouseenter="pos = $el.firstElementChild.getBoundingClientRect(); show = true"
+                                             @mouseleave="show = false">
                                             <div class="w-4 h-4 rounded-full bg-blue-500/20 flex items-center justify-center cursor-help hover:bg-blue-500/40 transition">
                                                 <span class="text-xs font-bold text-blue-400">i</span>
                                             </div>
-                                            <div class="fixed z-[100] px-3 py-2 bg-slate-700 text-xs text-slate-200 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none w-64 border border-slate-600"
-                                                 :style="`left: ${$el.previousElementSibling.getBoundingClientRect().right + 8}px; top: ${Math.max(8, $el.previousElementSibling.getBoundingClientRect().top - 20)}px;`">
+                                            <div x-show="show" x-transition.opacity.duration.150ms
+                                                 class="fixed z-[100] px-3 py-2 bg-slate-700 text-xs text-slate-200 rounded-lg shadow-xl pointer-events-none w-64 border border-slate-600"
+                                                 :style="`left: ${Math.min(pos.right + 8, window.innerWidth - 272)}px; top: ${Math.max(8, pos.top - 20)}px;`">
                                                 <p class="font-semibold text-primary-400 mb-1">Prediction Status</p>
                                                 <p>Pending = awaiting target date. Validated = actual recorded. ✓ Correct / ✗ Wrong = direction accuracy check.</p>
                                             </div>
@@ -1794,12 +1856,15 @@
                                 <th class="text-right py-2 px-3">
                                     <div class="flex items-center justify-end gap-1">
                                         Predicted
-                                        <div class="relative inline-block group" @click.stop>
+                                        <div class="relative inline-block" x-data="{ show: false, pos: {} }" @click.stop
+                                             @mouseenter="pos = $el.firstElementChild.getBoundingClientRect(); show = true"
+                                             @mouseleave="show = false">
                                             <div class="w-4 h-4 rounded-full bg-blue-500/20 flex items-center justify-center cursor-help hover:bg-blue-500/40 transition">
                                                 <span class="text-xs font-bold text-blue-400">i</span>
                                             </div>
-                                            <div class="fixed z-[100] px-3 py-2 bg-slate-700 text-xs text-slate-200 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none w-64 border border-slate-600"
-                                                 :style="`left: ${Math.min($el.previousElementSibling.getBoundingClientRect().right + 8, window.innerWidth - 272)}px; top: ${Math.max(8, $el.previousElementSibling.getBoundingClientRect().top - 20)}px;`">
+                                            <div x-show="show" x-transition.opacity.duration.150ms
+                                                 class="fixed z-[100] px-3 py-2 bg-slate-700 text-xs text-slate-200 rounded-lg shadow-xl pointer-events-none w-64 border border-slate-600"
+                                                 :style="`left: ${Math.min(pos.right + 8, window.innerWidth - 272)}px; top: ${Math.max(8, pos.top - 20)}px;`">
                                                 <p class="font-semibold text-primary-400 mb-1">Prediction Date</p>
                                                 <p>Date this ensemble prediction was generated.</p>
                                             </div>

@@ -126,6 +126,7 @@ class EnsembleModel:
                     ["x_to_y", "y_to_x", "bidirectional"]
                 ),
             )
+            .order_by(CorrelationResult.abs_correlation.desc())
             .limit(max_pairs)
             .all()
         )
@@ -141,6 +142,7 @@ class EnsembleModel:
             )
 
         results = []
+        seen_pairs = set()
         for pair in pairs:
             var1 = self.db.query(VariableMetadata).get(pair.variable1_id)
             var2 = self.db.query(VariableMetadata).get(pair.variable2_id)
@@ -150,12 +152,17 @@ class EnsembleModel:
                     signal_var, target_var = var2, var1
                 else:
                     signal_var, target_var = var1, var2
+                # Deduplicate: skip if we've already predicted this pair
+                pair_key = tuple(sorted([signal_var.name, target_var.name]))
+                if pair_key in seen_pairs:
+                    continue
+                seen_pairs.add(pair_key)
                 r = self.predict(signal_var.name, target_var.name, store=store)
                 results.append(r)
 
-        correct = sum(1 for r in results if r.get("direction"))
         return {
             "pairs_predicted": len(results),
+            "unique_pairs": len(seen_pairs),
             "predictions": results,
         }
 
@@ -497,11 +504,12 @@ class EnsembleModel:
         granger = ensemble.get("sub_models", {}).get("granger", {})
 
         # Fallback chain for predicted_change_pct: ensemble combined → OLS → ARIMA → Granger momentum
-        change_pct = (
-            ensemble.get("predicted_change_pct")
-            or ols.get("predicted_change_pct")
-            or arima.get("predicted_change_pct")
-        )
+        # Use explicit `is not None` checks — Python `or` treats 0.0 as falsy
+        change_pct = ensemble.get("predicted_change_pct")
+        if change_pct is None:
+            change_pct = ols.get("predicted_change_pct")
+        if change_pct is None:
+            change_pct = arima.get("predicted_change_pct")
         if change_pct is None and granger.get("momentum") is not None:
             change_pct = round(granger["momentum"] * 100, 2)
 
