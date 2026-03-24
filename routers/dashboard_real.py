@@ -3483,13 +3483,62 @@ async def list_mvp_builds(
 
 @router.get("/exploitation/builds/{build_id}")
 async def get_mvp_build(build_id: int, db: Session = Depends(get_db)):
-    """Get a single MVP build with its files."""
+    """Get a single MVP build with its files.
+
+    Includes stale-build detection: if a build has been in GENERATING or QUEUED
+    for longer than 10 minutes, it is automatically marked as FAILED (the
+    background task likely died due to a deployment or crash).
+    """
     build = db.query(MVPBuild).filter(MVPBuild.id == build_id).first()
     if not build:
         raise HTTPException(status_code=404, detail="Build not found")
+
+    # Stale-build auto-fail: 10 minutes with no progress → dead task
+    STALE_THRESHOLD_SECONDS = 600
+    if build.status in ("GENERATING", "QUEUED"):
+        last_activity = build.updated_at or build.created_at
+        if last_activity and (datetime.utcnow() - last_activity).total_seconds() > STALE_THRESHOLD_SECONDS:
+            build.status = "FAILED"
+            build.error_message = (
+                "Build timed out — background task likely killed by a deployment restart. "
+                f"Last activity was {last_activity.isoformat()}Z."
+            )
+            steps = list(build.build_steps or [])
+            steps.append({
+                "step": "TIMEOUT",
+                "at": datetime.utcnow().isoformat(),
+                "detail": f"Auto-failed after {STALE_THRESHOLD_SECONDS}s with no progress",
+            })
+            build.build_steps = steps
+            db.commit()
+            db.refresh(build)
+            logger.warning("Build %d auto-failed as stale (last activity: %s)", build_id, last_activity)
+
     data = build.to_dict()
     data["files"] = [f.to_dict() for f in build.files]
     return data
+
+
+@router.delete("/exploitation/builds/{build_id}")
+async def cancel_mvp_build(build_id: int, db: Session = Depends(get_db)):
+    """Cancel/fail a stuck or in-progress build."""
+    build = db.query(MVPBuild).filter(MVPBuild.id == build_id).first()
+    if not build:
+        raise HTTPException(status_code=404, detail="Build not found")
+    if build.status in ("LIVE", "FAILED"):
+        return {"build_id": build_id, "status": build.status, "message": "Build already terminal"}
+    old_status = build.status
+    build.status = "FAILED"
+    build.error_message = f"Manually cancelled (was {old_status})"
+    steps = list(build.build_steps or [])
+    steps.append({
+        "step": "CANCELLED",
+        "at": datetime.utcnow().isoformat(),
+        "detail": f"Manually cancelled from {old_status}",
+    })
+    build.build_steps = steps
+    db.commit()
+    return {"build_id": build_id, "status": "FAILED", "previous_status": old_status}
 
 
 @router.get("/exploitation/builds/{build_id}/files")
