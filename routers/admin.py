@@ -1854,8 +1854,31 @@ def _run_granger_background(job_id: str):
                         corr.granger_p_value_xy = result['var1_to_var2']['p_value']
                     if result.get('var2_to_var1', {}).get('p_value'):
                         corr.granger_p_value_yx = result['var2_to_var1']['p_value']
-                    if result.get('optimal_lag'):
-                        corr.granger_lags = result['optimal_lag']
+
+                    # Set causal_direction (was previously missing from batch job)
+                    if result.get('causal_direction'):
+                        corr.causal_direction = result['causal_direction']
+
+                    # Set optimal lag from the significant direction
+                    # test_causality() returns var1_to_var2.lags, not top-level optimal_lag
+                    direction = result.get('causal_direction', 'none')
+                    xy_lags = result.get('var1_to_var2', {}).get('lags')
+                    yx_lags = result.get('var2_to_var1', {}).get('lags')
+                    if direction == 'x_to_y' and xy_lags is not None:
+                        corr.granger_lags = int(xy_lags)
+                    elif direction == 'y_to_x' and yx_lags is not None:
+                        corr.granger_lags = int(yx_lags)
+                    elif direction == 'bidirectional':
+                        # Use the smaller lag for bidirectional
+                        if xy_lags is not None and yx_lags is not None:
+                            corr.granger_lags = int(min(xy_lags, yx_lags))
+                        elif xy_lags is not None:
+                            corr.granger_lags = int(xy_lags)
+                        elif yx_lags is not None:
+                            corr.granger_lags = int(yx_lags)
+                    elif xy_lags is not None:
+                        # Fallback: use xy lags if direction unknown
+                        corr.granger_lags = int(xy_lags)
 
                     if result.get('var1_to_var2', {}).get('significant') or \
                        result.get('var2_to_var1', {}).get('significant'):

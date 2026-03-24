@@ -115,15 +115,15 @@ class EnsembleModel:
 
     def predict_all_pairs(self, *, max_pairs: int = 200, store: bool = True) -> Dict:
         """Run ensemble predictions for all significant Granger pairs."""
+        # Select pairs with significant Granger p-values.
+        # Accept pairs whether or not causal_direction has been populated,
+        # since the batch Granger job historically did not set this field.
         pairs = (
             self.db.query(CorrelationResult)
             .filter(
                 or_(
                     CorrelationResult.granger_p_value_xy <= GRANGER_P_THRESHOLD,
                     CorrelationResult.granger_p_value_yx <= GRANGER_P_THRESHOLD,
-                ),
-                CorrelationResult.causal_direction.in_(
-                    ["x_to_y", "y_to_x", "bidirectional"]
                 ),
             )
             .order_by(CorrelationResult.abs_correlation.desc())
@@ -147,11 +147,25 @@ class EnsembleModel:
             var1 = self.db.query(VariableMetadata).get(pair.variable1_id)
             var2 = self.db.query(VariableMetadata).get(pair.variable2_id)
             if var1 and var2:
-                # For y_to_x pairs, var2 is the signal and var1 is the target
-                if pair.causal_direction == "y_to_x":
+                # Determine signal→target direction from causal_direction
+                # or fall back to p-value comparison
+                direction = pair.causal_direction
+                if direction == "y_to_x":
                     signal_var, target_var = var2, var1
-                else:
+                elif direction == "x_to_y":
                     signal_var, target_var = var1, var2
+                elif direction == "bidirectional":
+                    signal_var, target_var = var1, var2
+                else:
+                    # causal_direction is NULL or 'none' — infer from p-values
+                    p_xy = pair.granger_p_value_xy
+                    p_yx = pair.granger_p_value_yx
+                    if p_yx is not None and p_yx <= GRANGER_P_THRESHOLD and \
+                       (p_xy is None or p_xy > GRANGER_P_THRESHOLD or p_yx < p_xy):
+                        signal_var, target_var = var2, var1
+                    else:
+                        signal_var, target_var = var1, var2
+
                 # Deduplicate: skip if we've already predicted this pair
                 pair_key = tuple(sorted([signal_var.name, target_var.name]))
                 if pair_key in seen_pairs:
@@ -178,16 +192,33 @@ class EnsembleModel:
         target_ts: List[Tuple[datetime, float]],
     ) -> Dict:
         """Use stored Granger results to predict direction + lag."""
+        # Query both variable orderings — the CorrelationResult may store
+        # the pair as (signal, target) or (target, signal)
         corr = (
             self.db.query(CorrelationResult)
             .filter(
-                CorrelationResult.variable1_id == signal_var.id,
-                CorrelationResult.variable2_id == target_var.id,
+                or_(
+                    (CorrelationResult.variable1_id == signal_var.id) &
+                    (CorrelationResult.variable2_id == target_var.id),
+                    (CorrelationResult.variable1_id == target_var.id) &
+                    (CorrelationResult.variable2_id == signal_var.id),
+                )
             )
             .first()
         )
 
-        if not corr or corr.granger_p_value_xy is None or corr.granger_p_value_xy > GRANGER_P_THRESHOLD:
+        if not corr:
+            return {"direction": None, "confidence": 0.0, "reason": "no Granger correlation found"}
+
+        # Pick the correct p-value based on which ordering matched
+        # If signal=var1, the signal→target direction is stored in granger_p_value_xy
+        # If signal=var2, the signal→target direction is stored in granger_p_value_yx
+        if corr.variable1_id == signal_var.id:
+            p_value = corr.granger_p_value_xy
+        else:
+            p_value = corr.granger_p_value_yx
+
+        if p_value is None or p_value > GRANGER_P_THRESHOLD:
             return {"direction": None, "confidence": 0.0, "reason": "no significant Granger relationship"}
 
         # Direction from recent signal momentum
@@ -200,12 +231,12 @@ class EnsembleModel:
             momentum = 0.0
 
         # Confidence: inverse of p-value, capped at 1.0
-        confidence = min(1.0 - corr.granger_p_value_xy, 1.0)
+        confidence = min(1.0 - p_value, 1.0)
 
         return {
             "direction": direction,
             "confidence": round(confidence, 4),
-            "p_value": corr.granger_p_value_xy,
+            "p_value": p_value,
             "optimal_lag": corr.granger_lags,
             "momentum": round(momentum, 4),
         }
@@ -388,10 +419,15 @@ class EnsembleModel:
         if change_pct_weight > 0:
             predicted_change_pct = round(change_pct_sum / change_pct_weight, 2)
 
+        # Extract lag prediction from Granger sub-model (only source of lag)
+        granger = sub_models.get("granger", {})
+        optimal_lag = granger.get("optimal_lag")
+
         return {
             "direction": direction,
             "confidence": round(confidence, 4),
             "predicted_change_pct": predicted_change_pct,
+            "optimal_lag": optimal_lag,
             "up_score": round(up_score, 4),
             "down_score": round(down_score, 4),
             "active_models": active_models,
@@ -528,6 +564,9 @@ class EnsembleModel:
             .first()
         )
 
+        # Extract optimal lag from ensemble output (sourced from Granger sub-model)
+        optimal_lag = ensemble.get("optimal_lag")
+
         if existing:
             # Update the existing prediction with fresh results
             existing.predicted_at = datetime.utcnow()
@@ -539,6 +578,7 @@ class EnsembleModel:
             existing.r_squared = ols.get("r_squared")
             existing.confidence = _confidence_label(ensemble["confidence"])
             existing.granger_p_value = granger.get("p_value")
+            existing.optimal_lag_days = optimal_lag
             self.db.flush()
             return
 
@@ -556,6 +596,7 @@ class EnsembleModel:
             confidence=_confidence_label(ensemble["confidence"]),
             model_version="ensemble_v1",
             granger_p_value=granger.get("p_value"),
+            optimal_lag_days=optimal_lag,
             status="pending",
         )
         self.db.add(pred)
