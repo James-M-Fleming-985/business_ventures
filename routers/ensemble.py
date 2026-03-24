@@ -117,10 +117,12 @@ def cleanup_duplicates(db: Session = Depends(get_db)):
 
 @router.delete("/cleanup-same-layer")
 def cleanup_same_layer(db: Session = Depends(get_db)):
-    """Remove ensemble predictions where both signal and target are the same layer.
+    """Remove ensemble predictions that violate cross-layer design.
 
-    These violate the cross-layer design: L1 behavioral signals should
-    only predict L2 exploitable targets.
+    Deletes predictions where:
+    - Both signal and target are the same layer (e.g. wiki→wiki)
+    - Signal is L2 and target is L1 (reversed orientation, e.g. stock→wiki)
+    Only keeps: L1 signal → L2 target (the correct design).
     """
     preds = (
         db.query(PredictionTracking)
@@ -136,9 +138,10 @@ def cleanup_same_layer(db: Session = Depends(get_db)):
             continue
         sig_l1 = sig.source in LAYER1_SOURCES
         tgt_l1 = tgt.source in LAYER1_SOURCES
-        if sig_l1 == tgt_l1:
-            # Same layer — delete
-            to_delete.append(p)
+        # Keep only L1 signal → L2 target
+        if sig_l1 and not tgt_l1:
+            continue  # correct orientation — keep
+        to_delete.append(p)
 
     for p in to_delete:
         db.delete(p)
