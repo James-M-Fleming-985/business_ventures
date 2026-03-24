@@ -2131,6 +2131,7 @@ function dashboardData() {
                 this.ensemblePredictions = null;
             }
             this.ensembleLoading = false;
+            this.$nextTick(() => { try { lucide.createIcons(); } catch(e) {} });
         },
 
         async runAllEnsemble() {

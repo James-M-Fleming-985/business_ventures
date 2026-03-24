@@ -334,6 +334,8 @@ class EnsembleModel:
         down_score = 0.0
         total_weight = 0.0
         active_models = 0
+        change_pct_sum = 0.0
+        change_pct_weight = 0.0
 
         for model_name, result in sub_models.items():
             w = self.weights.get(model_name, 0.0)
@@ -353,10 +355,17 @@ class EnsembleModel:
 
             total_weight += weighted
 
+            # Accumulate weighted predicted_change_pct from sub-models
+            sub_change = result.get("predicted_change_pct")
+            if sub_change is not None:
+                change_pct_sum += w * sub_change
+                change_pct_weight += w
+
         if active_models == 0:
             return {
                 "direction": None,
                 "confidence": 0.0,
+                "predicted_change_pct": None,
                 "active_models": 0,
                 "sub_models": sub_models,
                 "reason": "no sub-models produced a prediction",
@@ -367,9 +376,15 @@ class EnsembleModel:
         confidence = (margin / total_weight) if total_weight > 0 else 0.0
         confidence = min(confidence, 1.0)
 
+        # Weighted average change_pct from sub-models that produced one
+        predicted_change_pct = None
+        if change_pct_weight > 0:
+            predicted_change_pct = round(change_pct_sum / change_pct_weight, 2)
+
         return {
             "direction": direction,
             "confidence": round(confidence, 4),
+            "predicted_change_pct": predicted_change_pct,
             "up_score": round(up_score, 4),
             "down_score": round(down_score, 4),
             "active_models": active_models,
@@ -478,6 +493,46 @@ class EnsembleModel:
 
         last_target_val = target_ts[-1][1] if target_ts else None
         ols = ensemble.get("sub_models", {}).get("ols", {})
+        arima = ensemble.get("sub_models", {}).get("arima", {})
+        granger = ensemble.get("sub_models", {}).get("granger", {})
+
+        # Fallback chain for predicted_change_pct: ensemble combined → OLS → ARIMA → Granger momentum
+        change_pct = (
+            ensemble.get("predicted_change_pct")
+            or ols.get("predicted_change_pct")
+            or arima.get("predicted_change_pct")
+        )
+        if change_pct is None and granger.get("momentum") is not None:
+            change_pct = round(granger["momentum"] * 100, 2)
+
+        # Dedup: if a pending ensemble prediction exists for the same pair
+        # within the last 24 hours, update it instead of inserting a duplicate
+        cutoff = datetime.utcnow() - timedelta(hours=24)
+        existing = (
+            self.db.query(PredictionTracking)
+            .filter(
+                PredictionTracking.signal_name == signal_var.name,
+                PredictionTracking.target_name == target_var.name,
+                PredictionTracking.model_version.like("ensemble%"),
+                PredictionTracking.status == "pending",
+                PredictionTracking.predicted_at >= cutoff,
+            )
+            .first()
+        )
+
+        if existing:
+            # Update the existing prediction with fresh results
+            existing.predicted_at = datetime.utcnow()
+            existing.target_date = datetime.utcnow() + timedelta(days=30)
+            existing.predicted_direction = ensemble["direction"]
+            existing.predicted_value = ols.get("predicted_value")
+            existing.predicted_change_pct = change_pct
+            existing.current_target_value = last_target_val
+            existing.r_squared = ols.get("r_squared")
+            existing.confidence = _confidence_label(ensemble["confidence"])
+            existing.granger_p_value = granger.get("p_value")
+            self.db.flush()
+            return
 
         pred = PredictionTracking(
             prediction_id=f"ensemble_{uuid.uuid4().hex[:12]}",
@@ -487,12 +542,12 @@ class EnsembleModel:
             target_date=datetime.utcnow() + timedelta(days=30),
             predicted_direction=ensemble["direction"],
             predicted_value=ols.get("predicted_value"),
-            predicted_change_pct=ols.get("predicted_change_pct"),
+            predicted_change_pct=change_pct,
             current_target_value=last_target_val,
             r_squared=ols.get("r_squared"),
             confidence=_confidence_label(ensemble["confidence"]),
             model_version="ensemble_v1",
-            granger_p_value=ensemble.get("sub_models", {}).get("granger", {}).get("p_value"),
+            granger_p_value=granger.get("p_value"),
             status="pending",
         )
         self.db.add(pred)
