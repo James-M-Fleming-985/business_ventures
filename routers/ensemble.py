@@ -17,8 +17,8 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import PredictionTracking
-from services.ensemble_model import EnsembleModel
+from models import PredictionTracking, VariableMetadata
+from services.ensemble_model import EnsembleModel, LAYER1_SOURCES
 
 logger = logging.getLogger(__name__)
 
@@ -113,6 +113,37 @@ def cleanup_duplicates(db: Session = Depends(get_db)):
         db.delete(p)
     db.commit()
     return {"deleted": len(to_delete), "unique_pairs_remaining": len(seen)}
+
+
+@router.delete("/cleanup-same-layer")
+def cleanup_same_layer(db: Session = Depends(get_db)):
+    """Remove ensemble predictions where both signal and target are the same layer.
+
+    These violate the cross-layer design: L1 behavioral signals should
+    only predict L2 exploitable targets.
+    """
+    preds = (
+        db.query(PredictionTracking)
+        .filter(PredictionTracking.model_version.like("ensemble%"))
+        .all()
+    )
+
+    to_delete = []
+    for p in preds:
+        sig = db.query(VariableMetadata).filter(VariableMetadata.name == p.signal_name).first()
+        tgt = db.query(VariableMetadata).filter(VariableMetadata.name == p.target_name).first()
+        if not sig or not tgt:
+            continue
+        sig_l1 = sig.source in LAYER1_SOURCES
+        tgt_l1 = tgt.source in LAYER1_SOURCES
+        if sig_l1 == tgt_l1:
+            # Same layer — delete
+            to_delete.append(p)
+
+    for p in to_delete:
+        db.delete(p)
+    db.commit()
+    return {"deleted_same_layer": len(to_delete), "remaining": len(preds) - len(to_delete)}
 
 
 @router.get("/model-accuracy")

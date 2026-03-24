@@ -17,8 +17,8 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
-from sqlalchemy import or_
-from sqlalchemy.orm import Session
+from sqlalchemy import and_, or_
+from sqlalchemy.orm import Session, aliased
 
 from database import get_db_session
 from models import (
@@ -121,17 +121,32 @@ class EnsembleModel:
         return ensemble
 
     def predict_all_pairs(self, *, max_pairs: int = 200, store: bool = True) -> Dict:
-        """Run ensemble predictions for all significant Granger pairs."""
-        # Select pairs with significant Granger p-values.
-        # Accept pairs whether or not causal_direction has been populated,
-        # since the batch Granger job historically did not set this field.
+        """Run ensemble predictions for all significant cross-layer Granger pairs.
+
+        Cross-layer means one variable is Layer 1 (behavioral signal:
+        Wikipedia, Reddit) and the other is Layer 2 (exploitable macro:
+        FRED, stocks, ArXiv, etc.).  The filter is applied at the SQL
+        level so ``max_pairs`` is not wasted on same-layer pairs.
+        """
+        vm1 = aliased(VariableMetadata)
+        vm2 = aliased(VariableMetadata)
+
+        # Cross-layer condition: exactly one side must be L1
+        cross_layer = or_(
+            and_(vm1.source.in_(LAYER1_SOURCES), ~vm2.source.in_(LAYER1_SOURCES)),
+            and_(vm2.source.in_(LAYER1_SOURCES), ~vm1.source.in_(LAYER1_SOURCES)),
+        )
+
         pairs = (
-            self.db.query(CorrelationResult)
+            self.db.query(CorrelationResult, vm1, vm2)
+            .join(vm1, CorrelationResult.variable1_id == vm1.id)
+            .join(vm2, CorrelationResult.variable2_id == vm2.id)
             .filter(
                 or_(
                     CorrelationResult.granger_p_value_xy <= GRANGER_P_THRESHOLD,
                     CorrelationResult.granger_p_value_yx <= GRANGER_P_THRESHOLD,
                 ),
+                cross_layer,
             )
             .order_by(CorrelationResult.abs_correlation.desc())
             .limit(max_pairs)
@@ -141,8 +156,13 @@ class EnsembleModel:
         # Fallback: if no Granger pairs yet, use top correlated significant pairs
         if not pairs:
             pairs = (
-                self.db.query(CorrelationResult)
-                .filter(CorrelationResult.is_significant.is_(True))
+                self.db.query(CorrelationResult, vm1, vm2)
+                .join(vm1, CorrelationResult.variable1_id == vm1.id)
+                .join(vm2, CorrelationResult.variable2_id == vm2.id)
+                .filter(
+                    CorrelationResult.is_significant.is_(True),
+                    cross_layer,
+                )
                 .order_by(CorrelationResult.abs_correlation.desc())
                 .limit(max_pairs)
                 .all()
@@ -150,27 +170,12 @@ class EnsembleModel:
 
         results = []
         seen_pairs = set()
-        skipped_same_layer = 0
-        for pair in pairs:
-            var1 = self.db.query(VariableMetadata).get(pair.variable1_id)
-            var2 = self.db.query(VariableMetadata).get(pair.variable2_id)
-            if not var1 or not var2:
-                continue
-
-            # Enforce cross-layer: signal must be Layer 1 (behavioral),
-            # target must be Layer 2 (macro/exploitable).
-            # Skip same-layer pairs (e.g. wiki→wiki or stock→fred).
-            v1_is_l1 = var1.source in LAYER1_SOURCES
-            v2_is_l1 = var2.source in LAYER1_SOURCES
-
-            if v1_is_l1 and not v2_is_l1:
+        for corr_row, var1, var2 in pairs:
+            # Assign signal (L1) → target (L2)
+            if var1.source in LAYER1_SOURCES:
                 signal_var, target_var = var1, var2
-            elif v2_is_l1 and not v1_is_l1:
-                signal_var, target_var = var2, var1
             else:
-                # Both same layer — skip
-                skipped_same_layer += 1
-                continue
+                signal_var, target_var = var2, var1
 
             # Deduplicate: skip if we've already predicted this pair
             pair_key = tuple(sorted([signal_var.name, target_var.name]))
@@ -183,7 +188,6 @@ class EnsembleModel:
         return {
             "pairs_predicted": len(results),
             "unique_pairs": len(seen_pairs),
-            "skipped_same_layer": skipped_same_layer,
             "predictions": results,
         }
 
