@@ -42,6 +42,11 @@ DEFAULT_WEIGHTS = {
     "arima": 0.25,
 }
 
+# Layer 1 sources: fast behavioral signals (Wikipedia pageviews, Reddit activity)
+# Layer 2 is everything else (FRED, stocks, ArXiv, GDELT, etc.)
+# Ensemble should only predict L1 signal → L2 target (cross-layer pairs)
+LAYER1_SOURCES = ("wikipedia", "reddit")
+
 # Feature engineering window sizes
 ROLLING_WINDOWS = [7, 30, 90]
 
@@ -107,6 +112,8 @@ class EnsembleModel:
         ensemble["weights_used"] = dict(self.weights)
         ensemble["signal"] = signal_name
         ensemble["target"] = target_name
+        ensemble["signal_source"] = signal_var.source
+        ensemble["target_source"] = target_var.source
 
         if store:
             self._store_prediction(signal_var, target_var, ensemble, target_ts)
@@ -143,40 +150,40 @@ class EnsembleModel:
 
         results = []
         seen_pairs = set()
+        skipped_same_layer = 0
         for pair in pairs:
             var1 = self.db.query(VariableMetadata).get(pair.variable1_id)
             var2 = self.db.query(VariableMetadata).get(pair.variable2_id)
-            if var1 and var2:
-                # Determine signal→target direction from causal_direction
-                # or fall back to p-value comparison
-                direction = pair.causal_direction
-                if direction == "y_to_x":
-                    signal_var, target_var = var2, var1
-                elif direction == "x_to_y":
-                    signal_var, target_var = var1, var2
-                elif direction == "bidirectional":
-                    signal_var, target_var = var1, var2
-                else:
-                    # causal_direction is NULL or 'none' — infer from p-values
-                    p_xy = pair.granger_p_value_xy
-                    p_yx = pair.granger_p_value_yx
-                    if p_yx is not None and p_yx <= GRANGER_P_THRESHOLD and \
-                       (p_xy is None or p_xy > GRANGER_P_THRESHOLD or p_yx < p_xy):
-                        signal_var, target_var = var2, var1
-                    else:
-                        signal_var, target_var = var1, var2
+            if not var1 or not var2:
+                continue
 
-                # Deduplicate: skip if we've already predicted this pair
-                pair_key = tuple(sorted([signal_var.name, target_var.name]))
-                if pair_key in seen_pairs:
-                    continue
-                seen_pairs.add(pair_key)
-                r = self.predict(signal_var.name, target_var.name, store=store)
-                results.append(r)
+            # Enforce cross-layer: signal must be Layer 1 (behavioral),
+            # target must be Layer 2 (macro/exploitable).
+            # Skip same-layer pairs (e.g. wiki→wiki or stock→fred).
+            v1_is_l1 = var1.source in LAYER1_SOURCES
+            v2_is_l1 = var2.source in LAYER1_SOURCES
+
+            if v1_is_l1 and not v2_is_l1:
+                signal_var, target_var = var1, var2
+            elif v2_is_l1 and not v1_is_l1:
+                signal_var, target_var = var2, var1
+            else:
+                # Both same layer — skip
+                skipped_same_layer += 1
+                continue
+
+            # Deduplicate: skip if we've already predicted this pair
+            pair_key = tuple(sorted([signal_var.name, target_var.name]))
+            if pair_key in seen_pairs:
+                continue
+            seen_pairs.add(pair_key)
+            r = self.predict(signal_var.name, target_var.name, store=store)
+            results.append(r)
 
         return {
             "pairs_predicted": len(results),
             "unique_pairs": len(seen_pairs),
+            "skipped_same_layer": skipped_same_layer,
             "predictions": results,
         }
 
