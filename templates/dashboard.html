@@ -1752,10 +1752,24 @@
 
             <!-- Predictions Table -->
             <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
-                <h4 class="text-md font-semibold text-white mb-4">
-                    Recent Predictions
-                    <span class="text-sm font-normal text-slate-400" x-text="'(' + (ensemblePredictions?.count || 0) + ' total)'"></span>
-                </h4>
+                <!-- Table toolbar: title + page size selector -->
+                <div class="flex items-center justify-between mb-4">
+                    <h4 class="text-md font-semibold text-white">
+                        Predictions
+                        <span class="text-sm font-normal text-slate-400" x-text="'(' + (ensemblePredictions?.predictions || []).length + ' total)'"></span>
+                    </h4>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-slate-400">Show</span>
+                        <select x-model="ensemblePageSize" @change="ensemblePage = 1"
+                                class="bg-slate-700 border border-slate-600 text-slate-200 text-xs rounded px-2 py-1 focus:ring-primary-500 focus:border-primary-500">
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                            <option value="all">All</option>
+                        </select>
+                        <span class="text-xs text-slate-400">per page</span>
+                    </div>
+                </div>
                 <div x-show="(ensemblePredictions?.predictions || []).length === 0" class="text-sm text-slate-500 italic py-4">
                     No ensemble predictions yet. Click "Run All Pairs" to generate predictions.
                 </div>
@@ -1763,9 +1777,10 @@
                     <table x-show="(ensemblePredictions?.predictions || []).length > 0" class="w-full text-sm">
                         <thead>
                             <tr class="text-slate-400 border-b border-slate-700">
-                                <th class="text-left py-2 px-3">
+                                <th class="text-left py-2 px-3 cursor-pointer select-none hover:text-white transition" @click="toggleEnsembleSort('signal')">
                                     <div class="flex items-center gap-1">
                                         Signal → Target
+                                        <span x-show="ensembleSortCol === 'signal'" x-text="ensembleSortDir === 'asc' ? '▲' : '▼'" class="text-primary-400 text-xs"></span>
                                         <div class="relative inline-block" x-data="{ show: false, pos: {} }" @click.stop
                                              @mouseenter="pos = $el.firstElementChild.getBoundingClientRect(); show = true"
                                              @mouseleave="show = false">
@@ -1781,9 +1796,10 @@
                                         </div>
                                     </div>
                                 </th>
-                                <th class="text-center py-2 px-3">
+                                <th class="text-center py-2 px-3 cursor-pointer select-none hover:text-white transition" @click="toggleEnsembleSort('direction')">
                                     <div class="flex items-center justify-center gap-1">
                                         Direction
+                                        <span x-show="ensembleSortCol === 'direction'" x-text="ensembleSortDir === 'asc' ? '▲' : '▼'" class="text-primary-400 text-xs"></span>
                                         <div class="relative inline-block" x-data="{ show: false, pos: {} }" @click.stop
                                              @mouseenter="pos = $el.firstElementChild.getBoundingClientRect(); show = true"
                                              @mouseleave="show = false">
@@ -1799,9 +1815,10 @@
                                         </div>
                                     </div>
                                 </th>
-                                <th class="text-center py-2 px-3">
+                                <th class="text-center py-2 px-3 cursor-pointer select-none hover:text-white transition" @click="toggleEnsembleSort('confidence')">
                                     <div class="flex items-center justify-center gap-1">
                                         Confidence
+                                        <span x-show="ensembleSortCol === 'confidence'" x-text="ensembleSortDir === 'asc' ? '▲' : '▼'" class="text-primary-400 text-xs"></span>
                                         <div class="relative inline-block" x-data="{ show: false, pos: {} }" @click.stop
                                              @mouseenter="pos = $el.firstElementChild.getBoundingClientRect(); show = true"
                                              @mouseleave="show = false">
@@ -1817,9 +1834,10 @@
                                         </div>
                                     </div>
                                 </th>
-                                <th class="text-right py-2 px-3">
+                                <th class="text-right py-2 px-3 cursor-pointer select-none hover:text-white transition" @click="toggleEnsembleSort('change')">
                                     <div class="flex items-center justify-end gap-1">
                                         Change %
+                                        <span x-show="ensembleSortCol === 'change'" x-text="ensembleSortDir === 'asc' ? '▲' : '▼'" class="text-primary-400 text-xs"></span>
                                         <div class="relative inline-block" x-data="{ show: false, pos: {} }" @click.stop
                                              @mouseenter="pos = $el.firstElementChild.getBoundingClientRect(); show = true"
                                              @mouseleave="show = false">
@@ -1835,9 +1853,10 @@
                                         </div>
                                     </div>
                                 </th>
-                                <th class="text-center py-2 px-3">
+                                <th class="text-center py-2 px-3 cursor-pointer select-none hover:text-white transition" @click="toggleEnsembleSort('status')">
                                     <div class="flex items-center justify-center gap-1">
                                         Status
+                                        <span x-show="ensembleSortCol === 'status'" x-text="ensembleSortDir === 'asc' ? '▲' : '▼'" class="text-primary-400 text-xs"></span>
                                         <div class="relative inline-block" x-data="{ show: false, pos: {} }" @click.stop
                                              @mouseenter="pos = $el.firstElementChild.getBoundingClientRect(); show = true"
                                              @mouseleave="show = false">
@@ -1853,9 +1872,10 @@
                                         </div>
                                     </div>
                                 </th>
-                                <th class="text-right py-2 px-3">
+                                <th class="text-right py-2 px-3 cursor-pointer select-none hover:text-white transition" @click="toggleEnsembleSort('date')">
                                     <div class="flex items-center justify-end gap-1">
                                         Predicted
+                                        <span x-show="ensembleSortCol === 'date'" x-text="ensembleSortDir === 'asc' ? '▲' : '▼'" class="text-primary-400 text-xs"></span>
                                         <div class="relative inline-block" x-data="{ show: false, pos: {} }" @click.stop
                                              @mouseenter="pos = $el.firstElementChild.getBoundingClientRect(); show = true"
                                              @mouseleave="show = false">
@@ -1874,7 +1894,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <template x-for="pred in (ensemblePredictions?.predictions || [])" :key="pred.prediction_id">
+                            <template x-for="pred in ensemblePaged()" :key="pred.prediction_id">
                                 <tr class="border-b border-slate-700/50 hover:bg-slate-700/30">
                                     <td class="py-2 px-3 text-slate-300">
                                         <span x-text="pred.signal"></span>
@@ -1903,6 +1923,35 @@
                             </template>
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Pagination Controls -->
+                <div x-show="(ensemblePredictions?.predictions || []).length > 0 && ensemblePageSize !== 'all'"
+                     class="flex items-center justify-between mt-4 pt-3 border-t border-slate-700">
+                    <span class="text-xs text-slate-400"
+                          x-text="(() => {
+                              const total = (ensemblePredictions?.predictions || []).length;
+                              const size = parseInt(ensemblePageSize);
+                              const start = (ensemblePage - 1) * size + 1;
+                              const end = Math.min(ensemblePage * size, total);
+                              return 'Showing ' + start + '–' + end + ' of ' + total + ' predictions';
+                          })()"></span>
+                    <div class="flex items-center gap-2">
+                        <button @click="ensemblePage--" :disabled="ensemblePage <= 1"
+                                class="px-3 py-1 text-xs rounded bg-slate-700 hover:bg-slate-600 text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed transition">
+                            ← Prev
+                        </button>
+                        <span class="text-xs text-slate-400" x-text="'Page ' + ensemblePage + ' of ' + ensembleTotalPages()"></span>
+                        <button @click="ensemblePage++" :disabled="ensemblePage >= ensembleTotalPages()"
+                                class="px-3 py-1 text-xs rounded bg-slate-700 hover:bg-slate-600 text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed transition">
+                            Next →
+                        </button>
+                    </div>
+                </div>
+                <div x-show="ensemblePageSize === 'all' && (ensemblePredictions?.predictions || []).length > 0"
+                     class="mt-3 pt-3 border-t border-slate-700">
+                    <span class="text-xs text-slate-400"
+                          x-text="'Showing all ' + (ensemblePredictions?.predictions || []).length + ' predictions'"></span>
                 </div>
             </div>
         </div>

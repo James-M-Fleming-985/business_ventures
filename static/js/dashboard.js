@@ -119,6 +119,10 @@ function dashboardData() {
         ensemblePredictions: null,
         ensembleAccuracy: null,
         ensembleLoading: false,
+        ensembleSortCol: 'change',
+        ensembleSortDir: 'desc',
+        ensemblePageSize: 25,
+        ensemblePage: 1,
         
         // Exploitation Validation Modal
         validationModalOpen: false,
@@ -2110,11 +2114,59 @@ function dashboardData() {
         // ENSEMBLE AI PREDICTIONS (M2 Track A)
         // ============================================================
 
+        ensembleSorted() {
+            const preds = [...(this.ensemblePredictions?.predictions || [])];
+            const col = this.ensembleSortCol;
+            const dir = this.ensembleSortDir === 'asc' ? 1 : -1;
+            const confMap = { high: 3, medium: 2, low: 1 };
+            preds.sort((a, b) => {
+                let va, vb;
+                switch (col) {
+                    case 'signal': va = (a.signal || '').toLowerCase(); vb = (b.signal || '').toLowerCase(); break;
+                    case 'target': va = (a.target || '').toLowerCase(); vb = (b.target || '').toLowerCase(); break;
+                    case 'direction': va = a.direction || ''; vb = b.direction || ''; break;
+                    case 'confidence': va = confMap[a.confidence] || 0; vb = confMap[b.confidence] || 0; break;
+                    case 'change': va = a.predicted_change_pct ?? 0; vb = b.predicted_change_pct ?? 0; break;
+                    case 'status': va = a.status || ''; vb = b.status || ''; break;
+                    case 'date': va = a.predicted_at || ''; vb = b.predicted_at || ''; break;
+                    default: va = 0; vb = 0;
+                }
+                if (va < vb) return -1 * dir;
+                if (va > vb) return 1 * dir;
+                return 0;
+            });
+            return preds;
+        },
+
+        ensemblePaged() {
+            const sorted = this.ensembleSorted();
+            if (this.ensemblePageSize === 'all') return sorted;
+            const size = parseInt(this.ensemblePageSize);
+            const start = (this.ensemblePage - 1) * size;
+            return sorted.slice(start, start + size);
+        },
+
+        ensembleTotalPages() {
+            if (this.ensemblePageSize === 'all') return 1;
+            const total = (this.ensemblePredictions?.predictions || []).length;
+            return Math.max(1, Math.ceil(total / parseInt(this.ensemblePageSize)));
+        },
+
+        toggleEnsembleSort(col) {
+            if (this.ensembleSortCol === col) {
+                this.ensembleSortDir = this.ensembleSortDir === 'asc' ? 'desc' : 'asc';
+            } else {
+                this.ensembleSortCol = col;
+                this.ensembleSortDir = 'desc';
+            }
+            this.ensemblePage = 1;
+        },
+
         async loadEnsemblePredictions() {
             this.ensembleLoading = true;
             try {
                 const [predRes, accRes] = await Promise.all([
-                    fetch('/api/ensemble/predictions?limit=50'),
+                    fetch('/api/ensemble/predictions?limit=500'),
                     fetch('/api/ensemble/model-accuracy'),
                 ]);
                 if (predRes.ok) {
@@ -2130,6 +2182,7 @@ function dashboardData() {
                 console.error('Ensemble fetch error:', e);
                 this.ensemblePredictions = null;
             }
+            this.ensemblePage = 1;
             this.ensembleLoading = false;
             this.$nextTick(() => { try { lucide.createIcons(); } catch(e) {} });
         },
