@@ -214,6 +214,13 @@ async def startup_event():
                 conn.commit()
                 logger.info("✅ Added ensemble enrichment columns to exploitation_recommendations")
 
+            # M2 Track A: ensemble scoring columns (R² + predicted change %)
+            if 'ensemble_r_squared' not in exploit_cols and exploit_cols:
+                conn.execute(text("ALTER TABLE exploitation_recommendations ADD COLUMN ensemble_r_squared FLOAT"))
+                conn.execute(text("ALTER TABLE exploitation_recommendations ADD COLUMN ensemble_change_pct FLOAT"))
+                conn.commit()
+                logger.info("✅ Added ensemble scoring columns to exploitation_recommendations")
+
         # M2: Seed FRED + GDELT variables (idempotent — skips existing)
         try:
             from seed_fred_variables import seed_fred_variables
