@@ -12,7 +12,7 @@ from models import (
     VariableMetadata, TimeSeriesData, CorrelationResult,
     RollingCorrelation, APIStatus, AnalysisJob, PredictionTracking,
     ExploitationRecommendation, ExploitationValidation,
-    MVPBuild, MVPBuildFile
+    MVPBuild, MVPBuildFile, ProductDeployment
 )
 from correlation_analysis_service import CorrelationAnalysisService
 from services.granger_causality_service import GrangerCausalityService
@@ -3399,6 +3399,112 @@ def _run_build(build_id: int, recommendation_id: int, complexity: str):
             build_id=build_id,
             db_session=db,
         )
+
+        # ----- Post-build: push to GitHub + deploy to Railway -----
+        build = db.query(MVPBuild).filter(MVPBuild.id == build_id).first()
+        if build and build.status == 'LIVE':
+            try:
+                build.status = 'DEPLOYING'
+                db.commit()
+
+                from services.github_service import GitHubService
+                github_svc = GitHubService()
+                repo_name = None
+                github_url = None
+
+                if github_svc.enabled:
+                    repo_name = GitHubService.slugify(
+                        f"mvp-{build_id}-{rec.signal_display_name[:30]}"
+                    )
+                    repo_info = github_svc.create_repository(
+                        name=repo_name,
+                        description=(
+                            f"Auto-generated MVP: "
+                            f"{rec.signal_display_name} → {rec.target_display_name}"
+                        ),
+                    )
+                    github_url = repo_info["html_url"]
+
+                    build_files = (
+                        db.query(MVPBuildFile)
+                        .filter(MVPBuildFile.build_id == build_id)
+                        .all()
+                    )
+                    files = [
+                        (f.file_path, f.content)
+                        for f in build_files
+                        if f.content
+                    ]
+                    if files:
+                        github_svc.push_files(
+                            repo_name, files, f"MVP Build #{build_id}"
+                        )
+                    build.railway_url = github_url
+                    logger.info(
+                        f"Build {build_id}: pushed to GitHub {github_url}"
+                    )
+
+                # Railway: create project (deployment requires GitHub
+                # integration on Railway — connect repo in Railway UI).
+                from services.railway_service import RailwayService
+                railway_svc = RailwayService()
+                if railway_svc.enabled and repo_name:
+                    try:
+                        project = railway_svc.create_project(repo_name)
+                        build.railway_project_id = project.get("id")
+                        service = railway_svc.create_service(
+                            project["id"], repo_name
+                        )
+                        build.railway_service_id = service.get("id")
+                        logger.info(
+                            f"Build {build_id}: Railway project "
+                            f"{project.get('id')} created"
+                        )
+                    except Exception as rail_err:
+                        logger.warning(
+                            f"Build {build_id}: Railway setup failed "
+                            f"(GitHub push OK): {rail_err}"
+                        )
+
+                # Create ProductDeployment record
+                deployment = ProductDeployment(
+                    recommendation_id=recommendation_id,
+                    build_id=build_id,
+                    product_name=repo_name or f"mvp-{build_id}",
+                    app_id=f"mvp_{build_id}",
+                    description=(
+                        f"Auto-generated MVP: "
+                        f"{rec.signal_display_name} → {rec.target_display_name}"
+                    ),
+                    tech_stack={
+                        "framework": "fastapi",
+                        "language": "python",
+                        "hosting": "railway",
+                    },
+                    railway_url=build.railway_url,
+                    deployed_at=datetime.utcnow(),
+                    status="active",
+                )
+                db.add(deployment)
+                build.status = 'LIVE'
+                db.commit()
+                logger.info(f"Build {build_id}: deployment complete")
+
+            except Exception as deploy_err:
+                logger.warning(
+                    f"Build {build_id}: deployment step failed "
+                    f"(build preserved): {deploy_err}"
+                )
+                build = db.query(MVPBuild).filter(
+                    MVPBuild.id == build_id
+                ).first()
+                if build:
+                    build.status = 'LIVE'
+                    build.error_message = (
+                        f"Code generated OK. Deploy failed: "
+                        f"{str(deploy_err)[:200]}"
+                    )
+                    db.commit()
 
         # Auto-validate exploitation recommendation when build succeeds
         build = db.query(MVPBuild).filter(MVPBuild.id == build_id).first()
