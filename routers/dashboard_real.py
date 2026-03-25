@@ -2339,28 +2339,59 @@ def classify_action_type(target_source: str, target_name: str, correlation: floa
     return 'MONITOR'
 
 
-def compute_opportunity_score(p_value: float, correlation: float, sample_size: int, momentum: float) -> float:
-    """Compute a 0-100 opportunity score from statistical evidence + current momentum.
-    
-    Factors:
-    - p_value_score (0-40): Lower p = higher score, scaled from 0.05 threshold
-    - correlation_score (0-30): Stronger absolute correlation = higher
-    - sample_size_score (0-15): More data = more reliable, capped at 100
-    - momentum_score (0-15): Faster signal change = more urgent opportunity
+def compute_opportunity_score(p_value: float, correlation: float, sample_size: int, momentum: float,
+                              ensemble_confidence: str = None, ensemble_change_pct: float = None,
+                              model_accuracy_pct: float = None) -> float:
+    """Compute a 0-100 opportunity score from statistical evidence + ensemble AI intelligence.
+
+    Statistical factors (max 65 without ensemble):
+    - p_value_score (0-25): Lower p = higher score, scaled from 0.05 threshold
+    - correlation_score (0-20): Stronger absolute correlation = higher
+    - sample_size_score (0-10): More data = more reliable, capped at 100
+    - momentum_score (0-10): Faster signal change = more urgent opportunity
+
+    Ensemble AI factors (max 35, requires ensemble prediction):
+    - ensemble_confidence_score (0-20): high=20, medium=12, low=5
+    - ensemble_magnitude_score (0-10): Larger predicted % change = higher, capped at 20%
+    - model_track_record_score (0-5): Historical ensemble accuracy for this pair
+
+    When ensemble data is absent, max score is 65 — intentional: pairs without
+    ensemble coverage are less validated. Any model added to the ensemble automatically
+    feeds into this score via PredictionTracking.
     """
-    # P-value: 0.05 → 0 pts, 0.00 → 40 pts
-    p_value_score = max(0, (1 - (p_value or 1.0) / 0.05)) * 40
-    
-    # Correlation: |r| × 30
-    correlation_score = min(abs(correlation or 0), 1.0) * 30
-    
+    # --- Statistical evidence (max 65) ---
+    # P-value: 0.05 → 0 pts, 0.00 → 25 pts
+    p_value_score = max(0, (1 - (p_value or 1.0) / 0.05)) * 25
+
+    # Correlation: |r| × 20
+    correlation_score = min(abs(correlation or 0), 1.0) * 20
+
     # Sample size: capped at 100 observations
-    sample_size_score = min((sample_size or 0) / 100, 1.0) * 15
-    
+    sample_size_score = min((sample_size or 0) / 100, 1.0) * 10
+
     # Momentum: capped at 100% change rate
-    momentum_score = min(abs(momentum or 0) / 100, 1.0) * 15
-    
-    return round(p_value_score + correlation_score + sample_size_score + momentum_score, 1)
+    momentum_score = min(abs(momentum or 0) / 100, 1.0) * 10
+
+    # --- Ensemble AI intelligence (max 35) ---
+    # Ensemble confidence: high=20, medium=12, low=5, absent=0
+    confidence_map = {'high': 20, 'medium': 12, 'low': 5}
+    ensemble_confidence_score = confidence_map.get(ensemble_confidence, 0)
+
+    # Ensemble magnitude: larger predicted move = more actionable, capped at 20%
+    ensemble_magnitude_score = 0.0
+    if ensemble_change_pct is not None:
+        ensemble_magnitude_score = min(abs(ensemble_change_pct) / 20.0, 1.0) * 10
+
+    # Model track record: historical accuracy %, capped at 100%
+    model_track_record_score = 0.0
+    if model_accuracy_pct is not None:
+        model_track_record_score = min(model_accuracy_pct / 100.0, 1.0) * 5
+
+    return round(
+        p_value_score + correlation_score + sample_size_score + momentum_score +
+        ensemble_confidence_score + ensemble_magnitude_score + model_track_record_score,
+        1
+    )
 
 
 def generate_reasoning(signal_display: str, target_display: str, target_source: str,
@@ -2432,7 +2463,7 @@ def _categorize_market(target_name: str) -> str:
 
 
 def compute_build_viability(signal_var, target_var, p_value, correlation,
-                            lag, momentum, db) -> dict:
+                            lag, momentum, db, ensemble_change_pct=None) -> dict:
     """Compute BUILD-specific viability score from existing data.
 
     Uses Wikipedia pageviews as a demand proxy, time-series growth trends,
@@ -2544,9 +2575,15 @@ def compute_build_viability(signal_var, target_var, p_value, correlation,
     viability = min(viability, 100.0)
 
     # ---- Revenue potential T-shirt sizing ----
+    # Ensemble predicting strong growth can boost revenue assessment
+    ensemble_boost = (ensemble_change_pct is not None and ensemble_change_pct > 10)
     if estimated_monthly >= 50_000 and trend_dir == 'growing' and competition != 'HIGH':
         revenue = 'HIGH'
+    elif ensemble_boost and trend_dir == 'growing' and competition != 'HIGH':
+        revenue = 'HIGH'
     elif estimated_monthly >= 10_000 or (trend_dir == 'growing' and competition != 'HIGH'):
+        revenue = 'MEDIUM'
+    elif ensemble_boost:
         revenue = 'MEDIUM'
     else:
         revenue = 'LOW'
@@ -2600,7 +2637,7 @@ async def generate_exploitation_recommendations(db: Session = Depends(get_db)):
     Deduplicates by signal+target pair — updates existing recommendations.
     Also batch-creates PredictionTracking records for each recommendation.
     """
-    from sqlalchemy import or_, and_, desc, asc
+    from sqlalchemy import or_, and_, desc, asc, Integer
     from sqlalchemy.orm import aliased
     import numpy as np
     import uuid
@@ -2646,6 +2683,68 @@ async def generate_exploitation_recommendations(db: Session = Depends(get_db)):
         generated = 0
         updated = 0
         skipped = 0
+
+        # --- Pre-load ensemble predictions for efficient lookup ---
+        # Get latest ensemble prediction per signal+target pair
+        from sqlalchemy import func as sa_func
+
+        # Subquery: latest ensemble prediction_id per signal+target
+        latest_ensemble_sq = (
+            db.query(
+                PredictionTracking.signal_name,
+                PredictionTracking.target_name,
+                sa_func.max(PredictionTracking.predicted_at).label('max_at')
+            )
+            .filter(
+                PredictionTracking.model_version.like('ensemble%'),
+                PredictionTracking.status.in_(['pending', 'validated']),
+            )
+            .group_by(PredictionTracking.signal_name, PredictionTracking.target_name)
+            .subquery()
+        )
+
+        ensemble_preds_rows = (
+            db.query(PredictionTracking)
+            .join(
+                latest_ensemble_sq,
+                and_(
+                    PredictionTracking.signal_name == latest_ensemble_sq.c.signal_name,
+                    PredictionTracking.target_name == latest_ensemble_sq.c.target_name,
+                    PredictionTracking.predicted_at == latest_ensemble_sq.c.max_at,
+                )
+            )
+            .filter(PredictionTracking.model_version.like('ensemble%'))
+            .all()
+        )
+        # Index by (signal_name, target_name) for O(1) lookup
+        ensemble_cache = {}
+        for ep in ensemble_preds_rows:
+            ensemble_cache[(ep.signal_name, ep.target_name)] = ep
+
+        # --- Pre-load per-pair ensemble accuracy ---
+        accuracy_rows = (
+            db.query(
+                PredictionTracking.signal_name,
+                PredictionTracking.target_name,
+                sa_func.count(PredictionTracking.id).label('total'),
+                sa_func.sum(
+                    sa_func.cast(PredictionTracking.direction_correct, Integer)
+                ).label('correct'),
+            )
+            .filter(
+                PredictionTracking.model_version.like('ensemble%'),
+                PredictionTracking.status == 'validated',
+                PredictionTracking.direction_correct.isnot(None),
+            )
+            .group_by(PredictionTracking.signal_name, PredictionTracking.target_name)
+            .all()
+        )
+        accuracy_cache = {}
+        for row in accuracy_rows:
+            if row.total and row.total > 0:
+                accuracy_cache[(row.signal_name, row.target_name)] = round(
+                    (row.correct or 0) / row.total * 100, 1
+                )
         
         for var in layer1_vars:
             momentum = signal_momentum.get(var.id, 0.0)
@@ -2708,15 +2807,34 @@ async def generate_exploitation_recommendations(db: Session = Depends(get_db)):
                 action_type = classify_action_type(
                     target_var.source, target_var.name, corr, momentum
                 )
-                
-                # Score
-                score = compute_opportunity_score(p_value, corr, sample, momentum)
+
+                # --- Lookup ensemble prediction for this signal→target pair ---
+                ensemble_pred = ensemble_cache.get(
+                    (var.display_name, target_var.display_name)
+                )
+                ens_confidence = ensemble_pred.confidence if ensemble_pred else None
+                ens_direction = ensemble_pred.predicted_direction if ensemble_pred else None
+                ens_change_pct = ensemble_pred.predicted_change_pct if ensemble_pred else None
+                ens_r_squared = ensemble_pred.r_squared if ensemble_pred else None
+                ens_predicted_at = ensemble_pred.predicted_at if ensemble_pred else None
+                pair_accuracy = accuracy_cache.get(
+                    (var.display_name, target_var.display_name)
+                )
+
+                # Score (now incorporating ensemble intelligence)
+                score = compute_opportunity_score(
+                    p_value, corr, sample, momentum,
+                    ensemble_confidence=ens_confidence,
+                    ensemble_change_pct=ens_change_pct,
+                    model_accuracy_pct=pair_accuracy,
+                )
                 
                 # BUILD-specific viability scoring
                 viability = None
                 if action_type == 'BUILD':
                     viability = compute_build_viability(
-                        var, target_var, p_value, corr, lag, momentum, db
+                        var, target_var, p_value, corr, lag, momentum, db,
+                        ensemble_change_pct=ens_change_pct,
                     )
                     reasoning = generate_build_reasoning(
                         var.display_name, target_var.display_name,
@@ -2749,6 +2867,12 @@ async def generate_exploitation_recommendations(db: Session = Depends(get_db)):
                     existing.opportunity_score = score
                     existing.action_type = action_type
                     existing.reasoning = reasoning
+                    # Ensemble enrichment
+                    existing.ensemble_confidence = ens_confidence
+                    existing.ensemble_direction = ens_direction
+                    existing.ensemble_predicted_at = ens_predicted_at
+                    existing.ensemble_r_squared = ens_r_squared
+                    existing.ensemble_change_pct = ens_change_pct
                     if viability:
                         existing.build_viability_score = viability['build_viability_score']
                         existing.estimated_monthly_searches = viability['estimated_monthly_searches']
@@ -2777,6 +2901,11 @@ async def generate_exploitation_recommendations(db: Session = Depends(get_db)):
                         predicted_change_pct=predicted_change_pct,
                         signal_momentum=momentum,
                         opportunity_score=score,
+                        ensemble_confidence=ens_confidence,
+                        ensemble_direction=ens_direction,
+                        ensemble_predicted_at=ens_predicted_at,
+                        ensemble_r_squared=ens_r_squared,
+                        ensemble_change_pct=ens_change_pct,
                         build_viability_score=viability['build_viability_score'] if viability else None,
                         estimated_monthly_searches=viability['estimated_monthly_searches'] if viability else None,
                         search_trend_direction=viability['search_trend_direction'] if viability else None,
@@ -2879,7 +3008,11 @@ async def generate_exploitation_recommendations(db: Session = Depends(get_db)):
             "total_recommendations": total,
             "total_predictions": total_predictions,
             "by_action_type": by_action,
-            "signals_processed": len(layer1_vars)
+            "signals_processed": len(layer1_vars),
+            "ensemble_coverage": {
+                "predictions_available": len(ensemble_cache),
+                "pairs_with_accuracy": len(accuracy_cache),
+            },
         }
         
     except Exception as e:

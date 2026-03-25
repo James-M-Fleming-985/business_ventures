@@ -380,6 +380,8 @@ class ExploitationRecommendation(Base):
     ensemble_confidence = Column(String(20), nullable=True)    # 'high', 'medium', 'low' from ensemble model
     ensemble_direction = Column(String(10), nullable=True)     # 'up' or 'down' from ensemble prediction
     ensemble_predicted_at = Column(DateTime, nullable=True)    # When ensemble prediction was made
+    ensemble_r_squared = Column(Float, nullable=True)          # OLS R² from ensemble prediction
+    ensemble_change_pct = Column(Float, nullable=True)         # Ensemble-predicted % change magnitude
 
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -424,6 +426,11 @@ class ExploitationRecommendation(Base):
             "notes": self.notes,
             "target_growth_actual": self.target_growth_actual,
             "target_growth_measured_at": self.target_growth_measured_at.isoformat() if self.target_growth_measured_at else None,
+            "ensemble_confidence": self.ensemble_confidence,
+            "ensemble_direction": self.ensemble_direction,
+            "ensemble_predicted_at": self.ensemble_predicted_at.isoformat() if self.ensemble_predicted_at else None,
+            "ensemble_r_squared": self.ensemble_r_squared,
+            "ensemble_change_pct": self.ensemble_change_pct,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
