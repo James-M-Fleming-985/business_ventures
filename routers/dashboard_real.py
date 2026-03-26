@@ -2394,43 +2394,110 @@ def compute_opportunity_score(p_value: float, correlation: float, sample_size: i
     )
 
 
+def _strength_label(correlation: float) -> str:
+    """Return a plain-English strength label from absolute correlation."""
+    r = abs(correlation or 0)
+    if r >= 0.7:
+        return "strong"
+    elif r >= 0.4:
+        return "moderate"
+    else:
+        return "weak"
+
+
+def _relationship_label(correlation: float) -> str:
+    """Return proportional/inversely proportional from correlation sign."""
+    if (correlation or 0) >= 0:
+        return "proportional"
+    return "inversely proportional"
+
+
+def _source_friendly(target_source: str) -> str:
+    """Human-readable name for a target source type."""
+    return {
+        'stock': 'stock price', 'crypto': 'cryptocurrency price',
+        'fred': 'economic indicator', 'arxiv': 'research paper volume',
+        'clinicaltrials': 'clinical trial activity', 'gdelt': 'global event activity',
+    }.get(target_source, 'outcome metric')
+
+
 def generate_reasoning(signal_display: str, target_display: str, target_source: str,
-                       action_type: str, p_value: float, correlation: float, 
+                       action_type: str, p_value: float, correlation: float,
                        lag: int, momentum: float, predicted_direction: str,
-                       predicted_change_pct: float) -> str:
-    """Generate natural language reasoning for a recommendation."""
-    
-    # Direction of signal
+                       predicted_change_pct: float,
+                       ensemble_confidence: str = None,
+                       ensemble_direction: str = None) -> str:
+    """Generate two-part reasoning: statistical summary + plain English narrative."""
+
+    # --- Part 1: Statistical summary (compact) ---
     signal_dir = "rising" if momentum and momentum > 0 else "falling"
     mom_str = f"{abs(momentum or 0):.1f}%"
-    
-    # Correlation direction
     corr_str = f"r={correlation:.3f}" if correlation else "r=?"
     p_str = f"p={p_value:.4f}" if p_value else "p=?"
     lag_str = f"lag={lag}mo" if lag else ""
-    
     stats = f"({p_str}, {corr_str}" + (f", {lag_str}" if lag_str else "") + ")"
-    
-    # Action-specific phrasing
-    if action_type == 'BUY':
-        action_phrase = f"Consider BUYING {target_display}."
-    elif action_type == 'SELL':
-        action_phrase = f"Consider SELLING/SHORTING {target_display}."
-    elif action_type == 'BUILD':
-        action_phrase = f"BUILD opportunity: create a product/tool in the {target_display} space."
-    else:
-        action_phrase = f"Monitor {target_display} for strategic positioning."
-    
-    # Predicted change
-    change_str = ""
-    if predicted_change_pct is not None:
-        change_str = f" Predicted {predicted_direction or '?'} ~{abs(predicted_change_pct):.1f}%."
-    
-    return (
+
+    stat_line = (
         f"{signal_display} pageviews {signal_dir} ({mom_str}) → "
-        f"Granger-causes {target_display} {stats}.{change_str} "
-        f"{action_phrase}"
+        f"Granger-causes {target_display} {stats}."
     )
+
+    # --- Part 2: Plain English worked example ---
+    strength = _strength_label(correlation)
+    rel = _relationship_label(correlation)
+    source_name = _source_friendly(target_source)
+
+    # What the signal is doing
+    plain = (
+        f"In plain terms: Wikipedia searches for \"{signal_display}\" are "
+        f"{signal_dir} by {mom_str} week-over-week. "
+        f"We have identified a {strength}, {rel} relationship with "
+        f"{target_display} ({source_name})."
+    )
+
+    # What lag means
+    if lag:
+        plain += (
+            f" Historically, changes in {signal_display} search interest "
+            f"lead to changes in {target_display} by approximately {lag} "
+            f"month{'s' if lag != 1 else ''}."
+        )
+
+    # What the prediction is
+    if predicted_change_pct is not None and predicted_direction:
+        dir_word = "increase" if predicted_direction == 'up' else "decrease"
+        plain += (
+            f" Based on current momentum, {target_display} is predicted to "
+            f"{dir_word} by ~{abs(predicted_change_pct):.1f}% over the "
+            f"next {lag or 1} month{'s' if (lag or 1) != 1 else ''}."
+        )
+
+    # Ensemble confirmation
+    if ensemble_confidence and ensemble_direction:
+        ens_dir = "increase" if ensemble_direction == 'up' else "decrease"
+        plain += (
+            f" The ensemble AI ({ensemble_confidence} confidence) also "
+            f"predicts an {ens_dir}, reinforcing this signal."
+        )
+
+    # Action recommendation
+    if action_type == 'BUY':
+        plain += (
+            f" This suggests a buying opportunity for {target_display} "
+            f"before the predicted move materialises."
+        )
+    elif action_type == 'SELL':
+        plain += (
+            f" This suggests selling or shorting {target_display} "
+            f"ahead of the predicted decline."
+        )
+    elif action_type == 'MONITOR':
+        plain += (
+            f" This economic indicator should be monitored — it may "
+            f"inform timing decisions on related investments."
+        )
+
+    return f"{stat_line}\n\n{plain}"
 
 
 # Market category mapping for BUILD targets
@@ -2603,8 +2670,10 @@ def compute_build_viability(signal_var, target_var, p_value, correlation,
 def generate_build_reasoning(signal_display: str, target_display: str,
                              viability: dict, p_value, correlation,
                              lag, momentum, predicted_direction,
-                             predicted_change_pct) -> str:
-    """Generate enriched reasoning text for BUILD recommendations."""
+                             predicted_change_pct,
+                             ensemble_confidence: str = None,
+                             ensemble_direction: str = None) -> str:
+    """Generate enriched two-part reasoning for BUILD recommendations."""
     signal_dir = 'rising' if momentum and momentum > 0 else 'falling'
     mom_str = f"{abs(momentum or 0):.1f}%"
     stats = f"(p={p_value:.4f}, r={correlation:.3f}" + (f", lag={lag}mo" if lag else "") + ")"
@@ -2614,18 +2683,84 @@ def generate_build_reasoning(signal_display: str, target_display: str,
     revenue = viability.get('revenue_potential', 'LOW')
     duration = viability.get('opportunity_duration_months', 0)
     category = viability.get('market_category', 'general')
+    growth_pct = viability.get('search_growth_pct', 0)
+    competition = viability.get('competition_level', 'LOW')
 
     demand_str = f"~{searches:,}/mo searches" if searches else "limited search volume"
     trend_str = f"{trend} demand"
     window_str = f"~{duration}mo opportunity window" if duration else ""
 
-    return (
+    # --- Part 1: Statistical summary ---
+    stat_line = (
         f"{signal_display} {signal_dir} ({mom_str}) → "
         f"Granger-causes {target_display} {stats}. "
         f"BUILD opportunity in {category.replace('_', ' ')}: "
         f"{demand_str}, {trend_str}, {revenue} revenue potential"
         + (f", {window_str}" if window_str else "") + "."
     )
+
+    # --- Part 2: Plain English worked example ---
+    strength = _strength_label(correlation)
+    rel = _relationship_label(correlation)
+
+    plain = (
+        f"In plain terms: Wikipedia searches for \"{signal_display}\" are "
+        f"{signal_dir} by {mom_str} week-over-week. "
+        f"We have identified a {strength}, {rel} relationship with "
+        f"{target_display} (research/trial activity)."
+    )
+
+    # Lag explanation
+    if lag:
+        plain += (
+            f" Changes in {signal_display} search interest typically lead "
+            f"to changes in {target_display} by ~{lag} month{'s' if lag != 1 else ''}."
+        )
+
+    # Prediction narrative
+    if predicted_change_pct is not None and predicted_direction:
+        dir_word = "increase" if predicted_direction == 'up' else "decrease"
+        plain += (
+            f" Based on current momentum, {target_display} activity is predicted to "
+            f"{dir_word} by ~{abs(predicted_change_pct):.1f}% over the "
+            f"next {lag or 1} month{'s' if (lag or 1) != 1 else ''}."
+        )
+
+    # Ensemble confirmation
+    if ensemble_confidence and ensemble_direction:
+        ens_dir = "increase" if ensemble_direction == 'up' else "decrease"
+        plain += (
+            f" The ensemble AI ({ensemble_confidence} confidence) also "
+            f"predicts an {ens_dir}, reinforcing this signal."
+        )
+
+    # Market context
+    plain += (
+        f" There are currently {demand_str} for related topics "
+        f"with {trend} demand"
+    )
+    if growth_pct:
+        plain += f" ({growth_pct:+.1f}% growth)"
+    plain += f" and {competition.lower()} competition."
+
+    # Actionable BUILD suggestions based on category
+    build_suggestions = {
+        'health_tech': "clinical data dashboards, trial recruitment tools, or patient research portals",
+        'ai_tools': "AI-powered SaaS tools, model marketplaces, or developer integrations",
+        'deep_tech': "specialised analytics platforms, research collaboration tools, or API services",
+        'climate_tech': "sustainability trackers, carbon footprint calculators, or green investment tools",
+        'mental_health': "digital therapy platforms, wellbeing trackers, or community support apps",
+        'fintech': "portfolio trackers, market alert services, or financial education platforms",
+    }
+    suggestion = build_suggestions.get(category, "a SaaS product, data service, or content platform")
+
+    plain += (
+        f" This creates a {duration}-month window to build and launch "
+        f"{suggestion} targeting this {category.replace('_', ' ')} space "
+        f"with {revenue.lower()} revenue potential."
+    )
+
+    return f"{stat_line}\n\n{plain}"
 
 
 @router.get("/exploitation/generate")
@@ -2839,14 +2974,18 @@ async def generate_exploitation_recommendations(db: Session = Depends(get_db)):
                     reasoning = generate_build_reasoning(
                         var.display_name, target_var.display_name,
                         viability, p_value, corr, lag, momentum,
-                        predicted_direction, predicted_change_pct
+                        predicted_direction, predicted_change_pct,
+                        ensemble_confidence=ens_confidence,
+                        ensemble_direction=ens_direction,
                     )
                 else:
                     # Generate standard reasoning for BUY/SELL/MONITOR
                     reasoning = generate_reasoning(
                         var.display_name, target_var.display_name, target_var.source,
                         action_type, p_value, corr, lag, momentum,
-                        predicted_direction, predicted_change_pct
+                        predicted_direction, predicted_change_pct,
+                        ensemble_confidence=ens_confidence,
+                        ensemble_direction=ens_direction,
                     )
                 
                 # Upsert: update existing or create new

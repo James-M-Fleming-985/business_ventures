@@ -940,10 +940,24 @@
                                     <span x-text="rec.predicted_direction === 'up' ? '↑' : '↓'"></span>
                                     <span x-text="(rec.predicted_change_pct?.toFixed(1) || '?') + '%'"></span>
                                 </span>
+                                <template x-if="rec.ensemble_confidence">
+                                    <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase"
+                                        :class="{
+                                            'bg-green-500/20 text-green-400': rec.ensemble_confidence === 'high',
+                                            'bg-yellow-500/20 text-yellow-400': rec.ensemble_confidence === 'medium',
+                                            'bg-slate-500/20 text-slate-400': rec.ensemble_confidence === 'low'
+                                        }">
+                                        <span x-text="'AI: ' + rec.ensemble_confidence"></span>
+                                    </span>
+                                </template>
                             </div>
 
                             <!-- Reasoning -->
-                            <p class="text-sm text-slate-300 leading-relaxed" x-text="rec.reasoning"></p>
+                            <div class="text-sm text-slate-300 leading-relaxed space-y-2">
+                                <template x-for="para in (rec.reasoning || '').split('\n\n')" :key="para">
+                                    <p x-text="para" class="mb-0"></p>
+                                </template>
+                            </div>
 
                             <!-- BUILD Viability Section (only for BUILD recs) -->
                             <template x-if="rec.action_type === 'BUILD' && rec.build_viability_score != null">
