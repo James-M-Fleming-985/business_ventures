@@ -145,6 +145,17 @@ function dashboardData() {
         codeViewerOpen: false,
         codeViewerPath: '',
         codeViewerContent: '',
+
+        // ============================================================
+        // BUILDS PORTFOLIO TAB (M2 Track H)
+        // ============================================================
+        buildsPortfolio: null,
+        buildsPortfolioLoading: false,
+        buildsSortCol: 'created',
+        buildsSortDir: 'desc',
+        buildsPageSize: 25,
+        buildsPage: 1,
+        buildsExpandedRow: null,
         
         async init() {
             console.log('Initializing dashboard...');
@@ -2267,6 +2278,107 @@ function dashboardData() {
                 }
             } catch (e) {
                 console.error('Validation error:', e);
+            }
+        },
+
+        // ============================================================
+        // BUILDS PORTFOLIO (M2 Track H)
+        // ============================================================
+
+        buildsSorted() {
+            const builds = [...(this.buildsPortfolio?.builds || [])];
+            const col = this.buildsSortCol;
+            const dir = this.buildsSortDir === 'asc' ? 1 : -1;
+            const complexityMap = { LOW: 1, MEDIUM: 2, HIGH: 3 };
+            const statusMap = { QUEUED: 1, GENERATING: 2, UPLOADING: 3, DEPLOYING: 4, LIVE: 5, FAILED: 6 };
+            builds.sort((a, b) => {
+                let va, vb;
+                switch (col) {
+                    case 'id': va = a.id || 0; vb = b.id || 0; break;
+                    case 'iteration': va = a.iteration_number || 1; vb = b.iteration_number || 1; break;
+                    case 'recommendation': va = ((a.signal_display_name || '') + (a.target_display_name || '')).toLowerCase(); vb = ((b.signal_display_name || '') + (b.target_display_name || '')).toLowerCase(); break;
+                    case 'status': va = statusMap[a.status] || 0; vb = statusMap[b.status] || 0; break;
+                    case 'complexity': va = complexityMap[a.complexity] || 0; vb = complexityMap[b.complexity] || 0; break;
+                    case 'duration': va = a.duration_seconds || 0; vb = b.duration_seconds || 0; break;
+                    case 'cost': va = a.ai_cost_usd || 0; vb = b.ai_cost_usd || 0; break;
+                    case 'files': va = a.file_count || 0; vb = b.file_count || 0; break;
+                    case 'errors': va = a.total_errors || 0; vb = b.total_errors || 0; break;
+                    case 'created': va = a.created_at || ''; vb = b.created_at || ''; break;
+                    default: va = 0; vb = 0;
+                }
+                if (va < vb) return -1 * dir;
+                if (va > vb) return 1 * dir;
+                return 0;
+            });
+            return builds;
+        },
+
+        buildsPaged() {
+            const sorted = this.buildsSorted();
+            if (this.buildsPageSize === 'all') return sorted;
+            const size = parseInt(this.buildsPageSize);
+            const start = (this.buildsPage - 1) * size;
+            return sorted.slice(start, start + size);
+        },
+
+        buildsTotalPages() {
+            if (this.buildsPageSize === 'all') return 1;
+            const total = (this.buildsPortfolio?.builds || []).length;
+            return Math.max(1, Math.ceil(total / parseInt(this.buildsPageSize)));
+        },
+
+        toggleBuildsSort(col) {
+            if (this.buildsSortCol === col) {
+                this.buildsSortDir = this.buildsSortDir === 'asc' ? 'desc' : 'asc';
+            } else {
+                this.buildsSortCol = col;
+                this.buildsSortDir = 'desc';
+            }
+            this.buildsPage = 1;
+        },
+
+        async loadAllBuilds() {
+            this.buildsPortfolioLoading = true;
+            try {
+                const res = await fetch('/api/dashboard/exploitation/builds-portfolio');
+                if (!res.ok) {
+                    console.error('Failed to load builds portfolio:', res.status);
+                    return;
+                }
+                this.buildsPortfolio = await res.json();
+                this.$nextTick(() => { try { lucide.createIcons(); } catch(e) {} });
+            } catch (e) {
+                console.error('Load builds portfolio error:', e);
+            } finally {
+                this.buildsPortfolioLoading = false;
+            }
+        },
+
+        async iterateBuild(buildId, recId) {
+            if (!confirm('Iterate on this build? This will create a new version using ML insights from the previous build.')) return;
+            try {
+                const res = await fetch(`/api/dashboard/exploitation/builds/${buildId}/iterate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason: 'manual' }),
+                });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    alert('Iterate failed: ' + (err.detail || res.status));
+                    return;
+                }
+                const data = await res.json();
+                console.log('🔄 Iteration started:', data);
+                // Reload the portfolio to show the new build
+                await this.loadAllBuilds();
+                // Also update the per-card builds map for the Exploitation Board
+                if (recId) {
+                    this.builds = {...this.builds, [recId]: { status: data.status, build_id: data.build_id }};
+                    this.pollBuildStatus(recId, data.build_id);
+                }
+            } catch (e) {
+                console.error('Iterate error:', e);
+                alert('Iterate failed: ' + e.message);
             }
         },
 

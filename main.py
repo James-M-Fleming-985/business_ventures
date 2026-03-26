@@ -221,6 +221,15 @@ async def startup_event():
                 conn.commit()
                 logger.info("✅ Added ensemble scoring columns to exploitation_recommendations")
 
+            # M2 Track H: Build iteration tracking columns
+            if 'iteration_number' not in build_cols and build_cols:
+                conn.execute(text("ALTER TABLE mvp_builds ADD COLUMN iteration_number INTEGER DEFAULT 1"))
+                conn.execute(text("ALTER TABLE mvp_builds ADD COLUMN parent_build_id INTEGER REFERENCES mvp_builds(id)"))
+                conn.execute(text("ALTER TABLE mvp_builds ADD COLUMN iterate_reason VARCHAR(100)"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_build_parent ON mvp_builds (parent_build_id)"))
+                conn.commit()
+                logger.info("✅ Added iteration tracking columns to mvp_builds")
+
         # M2: Seed FRED + GDELT variables (idempotent — skips existing)
         try:
             from seed_fred_variables import seed_fred_variables

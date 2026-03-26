@@ -522,16 +522,23 @@ class MVPBuild(Base):
     # Progress tracking
     build_steps = Column(JSON)  # [{step, at, detail}, ...]
 
+    # Iteration tracking
+    iteration_number = Column(Integer, default=1)
+    parent_build_id = Column(Integer, ForeignKey('mvp_builds.id'), nullable=True)
+    iterate_reason = Column(String(100), nullable=True)  # error_fix, ml_recommendation_update, engagement_growth, custom
+
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
     recommendation = relationship('ExploitationRecommendation', backref='builds')
     files = relationship('MVPBuildFile', back_populates='build', cascade='all, delete-orphan')
+    parent_build = relationship('MVPBuild', remote_side=[id], backref='iterations')
 
     __table_args__ = (
         Index('ix_build_status', 'status'),
         Index('ix_build_rec_id', 'recommendation_id'),
+        Index('ix_build_parent', 'parent_build_id'),
     )
 
     def to_dict(self):
@@ -551,6 +558,9 @@ class MVPBuild(Base):
             "duration_seconds": self.duration_seconds,
             "ai_cost_usd": self.ai_cost_usd,
             "build_steps": self.build_steps,
+            "iteration_number": self.iteration_number or 1,
+            "parent_build_id": self.parent_build_id,
+            "iterate_reason": self.iterate_reason,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
             "file_count": len(self.files) if self.files else 0,

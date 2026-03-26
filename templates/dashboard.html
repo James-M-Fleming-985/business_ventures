@@ -398,6 +398,12 @@
             <i data-lucide="brain" class="w-4 h-4 inline mr-1"></i>
             Ensemble AI
         </button>
+        <button @click="activeView = 'builds'; loadAllBuilds()" 
+                :class="activeView === 'builds' ? 'bg-cyan-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'"
+                class="px-4 py-2 rounded-lg text-sm font-medium transition">
+            <i data-lucide="hammer" class="w-4 h-4 inline mr-1"></i>
+            Builds
+        </button>
     </div>
 
     <!-- Main Dashboard Grid (now secondary/tabbed) -->
@@ -1974,6 +1980,326 @@
         <div x-show="!ensembleLoading && !ensemblePredictions" class="flex flex-col items-center justify-center py-12 text-slate-500">
             <i data-lucide="brain" class="w-12 h-12 mb-3 opacity-30"></i>
             <p class="text-sm">No ensemble predictions loaded</p>
+            <p class="text-xs text-slate-600 mt-1">Check API connectivity</p>
+        </div>
+    </div>
+
+    <!-- ================================================================ -->
+    <!-- BUILDS PORTFOLIO TAB (M2 Track H)                                -->
+    <!-- ================================================================ -->
+    <div x-show="activeView === 'builds'" x-transition class="space-y-6">
+        <!-- Loading State -->
+        <div x-show="buildsPortfolioLoading" class="flex items-center justify-center py-12">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400"></div>
+            <span class="ml-3 text-slate-400">Loading builds portfolio...</span>
+        </div>
+
+        <!-- Builds Content -->
+        <div x-show="!buildsPortfolioLoading && buildsPortfolio">
+            <!-- Header -->
+            <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 bg-cyan-500/20 rounded-lg flex items-center justify-center">
+                            <i data-lucide="hammer" class="w-5 h-5 text-cyan-400"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold text-white">Build Portfolio</h3>
+                        <span class="px-2 py-0.5 bg-cyan-500/20 text-cyan-400 rounded text-xs">M2 Track H</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button @click="loadAllBuilds()" class="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm transition">
+                            <i data-lucide="refresh-cw" class="w-4 h-4 inline"></i>
+                        </button>
+                    </div>
+                </div>
+                <p class="text-sm text-slate-400">All MVP builds across recommendations — iterate on live or failed builds to close the ML feedback loop</p>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <div class="bg-slate-800 rounded-lg p-4 border border-slate-700">
+                    <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">Total Builds</p>
+                    <p class="text-2xl font-bold text-white" x-text="buildsPortfolio?.summary?.total || 0"></p>
+                </div>
+                <div class="bg-slate-800 rounded-lg p-4 border border-slate-700">
+                    <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">Live</p>
+                    <p class="text-2xl font-bold text-green-400" x-text="buildsPortfolio?.summary?.live || 0"></p>
+                </div>
+                <div class="bg-slate-800 rounded-lg p-4 border border-slate-700">
+                    <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">Failed</p>
+                    <p class="text-2xl font-bold text-red-400" x-text="buildsPortfolio?.summary?.failed || 0"></p>
+                </div>
+                <div class="bg-slate-800 rounded-lg p-4 border border-slate-700">
+                    <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">In Progress</p>
+                    <p class="text-2xl font-bold text-blue-400" x-text="buildsPortfolio?.summary?.in_progress || 0"></p>
+                </div>
+                <div class="bg-slate-800 rounded-lg p-4 border border-slate-700">
+                    <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">Total AI Cost</p>
+                    <p class="text-2xl font-bold text-amber-400" x-text="'$' + (buildsPortfolio?.summary?.total_ai_cost_usd || 0).toFixed(2)"></p>
+                </div>
+            </div>
+
+            <!-- Builds Table -->
+            <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                <!-- Table toolbar -->
+                <div class="flex items-center justify-between mb-4">
+                    <h4 class="text-md font-semibold text-white">
+                        Builds
+                        <span class="text-sm font-normal text-slate-400" x-text="'(' + (buildsPortfolio?.builds || []).length + ' total)'"></span>
+                    </h4>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-slate-400">Show</span>
+                        <select x-model="buildsPageSize" @change="buildsPage = 1"
+                                class="bg-slate-700 border border-slate-600 text-slate-200 text-xs rounded px-2 py-1 focus:ring-cyan-500 focus:border-cyan-500">
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                            <option value="all">All</option>
+                        </select>
+                        <span class="text-xs text-slate-400">per page</span>
+                    </div>
+                </div>
+
+                <div x-show="(buildsPortfolio?.builds || []).length === 0" class="text-sm text-slate-500 italic py-4">
+                    No builds yet. Start a build from the Exploitation Board tab.
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table x-show="(buildsPortfolio?.builds || []).length > 0" class="w-full text-sm">
+                        <thead>
+                            <tr class="text-slate-400 border-b border-slate-700">
+                                <th class="text-left py-2 px-3 cursor-pointer select-none hover:text-white transition" @click="toggleBuildsSort('id')">
+                                    Build # <span x-show="buildsSortCol === 'id'" x-text="buildsSortDir === 'asc' ? '▲' : '▼'" class="text-cyan-400"></span>
+                                </th>
+                                <th class="text-left py-2 px-3 cursor-pointer select-none hover:text-white transition" @click="toggleBuildsSort('iteration')">
+                                    Iter <span x-show="buildsSortCol === 'iteration'" x-text="buildsSortDir === 'asc' ? '▲' : '▼'" class="text-cyan-400"></span>
+                                </th>
+                                <th class="text-left py-2 px-3 cursor-pointer select-none hover:text-white transition" @click="toggleBuildsSort('recommendation')">
+                                    Recommendation <span x-show="buildsSortCol === 'recommendation'" x-text="buildsSortDir === 'asc' ? '▲' : '▼'" class="text-cyan-400"></span>
+                                </th>
+                                <th class="text-left py-2 px-3 cursor-pointer select-none hover:text-white transition" @click="toggleBuildsSort('status')">
+                                    Status <span x-show="buildsSortCol === 'status'" x-text="buildsSortDir === 'asc' ? '▲' : '▼'" class="text-cyan-400"></span>
+                                </th>
+                                <th class="text-left py-2 px-3 cursor-pointer select-none hover:text-white transition" @click="toggleBuildsSort('complexity')">
+                                    Complexity <span x-show="buildsSortCol === 'complexity'" x-text="buildsSortDir === 'asc' ? '▲' : '▼'" class="text-cyan-400"></span>
+                                </th>
+                                <th class="text-left py-2 px-3 cursor-pointer select-none hover:text-white transition" @click="toggleBuildsSort('duration')">
+                                    Duration <span x-show="buildsSortCol === 'duration'" x-text="buildsSortDir === 'asc' ? '▲' : '▼'" class="text-cyan-400"></span>
+                                </th>
+                                <th class="text-left py-2 px-3 cursor-pointer select-none hover:text-white transition" @click="toggleBuildsSort('cost')">
+                                    AI Cost <span x-show="buildsSortCol === 'cost'" x-text="buildsSortDir === 'asc' ? '▲' : '▼'" class="text-cyan-400"></span>
+                                </th>
+                                <th class="text-left py-2 px-3 cursor-pointer select-none hover:text-white transition" @click="toggleBuildsSort('files')">
+                                    Files <span x-show="buildsSortCol === 'files'" x-text="buildsSortDir === 'asc' ? '▲' : '▼'" class="text-cyan-400"></span>
+                                </th>
+                                <th class="text-left py-2 px-3 cursor-pointer select-none hover:text-white transition" @click="toggleBuildsSort('errors')">
+                                    Errors <span x-show="buildsSortCol === 'errors'" x-text="buildsSortDir === 'asc' ? '▲' : '▼'" class="text-cyan-400"></span>
+                                </th>
+                                <th class="text-left py-2 px-3">URL</th>
+                                <th class="text-left py-2 px-3">Engagement</th>
+                                <th class="text-left py-2 px-3">Revenue</th>
+                                <th class="text-left py-2 px-3 cursor-pointer select-none hover:text-white transition" @click="toggleBuildsSort('created')">
+                                    Created <span x-show="buildsSortCol === 'created'" x-text="buildsSortDir === 'asc' ? '▲' : '▼'" class="text-cyan-400"></span>
+                                </th>
+                                <th class="text-left py-2 px-3">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="b in buildsPaged()" :key="b.id">
+                                <tr class="border-b border-slate-700/50 hover:bg-slate-700/30 transition cursor-pointer"
+                                    @click="buildsExpandedRow = buildsExpandedRow === b.id ? null : b.id">
+                                    <!-- Build # -->
+                                    <td class="py-2 px-3 text-slate-300 font-mono" x-text="'#' + b.id"></td>
+                                    <!-- Iteration -->
+                                    <td class="py-2 px-3">
+                                        <span class="px-1.5 py-0.5 rounded text-xs font-medium"
+                                              :class="(b.iteration_number || 1) > 1 ? 'bg-cyan-500/20 text-cyan-400' : 'bg-slate-600/50 text-slate-400'"
+                                              x-text="'v' + (b.iteration_number || 1)"></span>
+                                    </td>
+                                    <!-- Recommendation -->
+                                    <td class="py-2 px-3 text-slate-300 max-w-[200px] truncate"
+                                        :title="(b.signal_display_name || '') + ' → ' + (b.target_display_name || '')"
+                                        x-text="(b.signal_display_name || '?') + ' → ' + (b.target_display_name || '?')"></td>
+                                    <!-- Status -->
+                                    <td class="py-2 px-3">
+                                        <span class="px-2 py-0.5 rounded-full text-xs font-medium"
+                                              :class="{
+                                                  'bg-green-500/20 text-green-400': b.status === 'LIVE',
+                                                  'bg-red-500/20 text-red-400': b.status === 'FAILED',
+                                                  'bg-blue-500/20 text-blue-400 animate-pulse': b.status === 'GENERATING',
+                                                  'bg-gray-500/20 text-gray-400': b.status === 'QUEUED',
+                                                  'bg-indigo-500/20 text-indigo-400': b.status === 'UPLOADING',
+                                                  'bg-purple-500/20 text-purple-400': b.status === 'DEPLOYING',
+                                              }" x-text="b.status"></span>
+                                    </td>
+                                    <!-- Complexity -->
+                                    <td class="py-2 px-3 text-slate-400 text-xs" x-text="b.complexity"></td>
+                                    <!-- Duration -->
+                                    <td class="py-2 px-3 text-slate-400 text-xs"
+                                        x-text="b.duration_seconds ? (b.duration_seconds < 60 ? b.duration_seconds.toFixed(0) + 's' : (b.duration_seconds / 60).toFixed(1) + 'm') : '—'"></td>
+                                    <!-- AI Cost -->
+                                    <td class="py-2 px-3 text-amber-400 text-xs font-mono"
+                                        x-text="b.ai_cost_usd ? '$' + b.ai_cost_usd.toFixed(2) : '—'"></td>
+                                    <!-- Files -->
+                                    <td class="py-2 px-3 text-slate-400 text-xs" x-text="b.file_count || 0"></td>
+                                    <!-- Errors -->
+                                    <td class="py-2 px-3 text-xs"
+                                        :class="(b.total_errors || 0) > 0 ? 'text-red-400' : 'text-slate-500'"
+                                        x-text="b.total_errors || 0"></td>
+                                    <!-- URL -->
+                                    <td class="py-2 px-3">
+                                        <template x-if="b.railway_url">
+                                            <a :href="b.railway_url" target="_blank" @click.stop
+                                               class="text-cyan-400 hover:text-cyan-300 text-xs underline">Visit</a>
+                                        </template>
+                                        <template x-if="!b.railway_url">
+                                            <span class="text-slate-600 text-xs">—</span>
+                                        </template>
+                                    </td>
+                                    <!-- Engagement (placeholder) -->
+                                    <td class="py-2 px-3 text-slate-600 text-xs">—</td>
+                                    <!-- Revenue (placeholder) -->
+                                    <td class="py-2 px-3 text-slate-600 text-xs">—</td>
+                                    <!-- Created -->
+                                    <td class="py-2 px-3 text-slate-500 text-xs"
+                                        x-text="b.created_at ? new Date(b.created_at).toLocaleDateString() + ' ' + new Date(b.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '—'"></td>
+                                    <!-- Actions -->
+                                    <td class="py-2 px-3" @click.stop>
+                                        <div class="flex items-center gap-1">
+                                            <button @click="iterateBuild(b.id, b.recommendation_id)"
+                                                    :disabled="!['LIVE', 'FAILED'].includes(b.status)"
+                                                    class="px-2 py-1 text-xs rounded bg-cyan-600 hover:bg-cyan-500 text-white transition disabled:opacity-30 disabled:cursor-not-allowed"
+                                                    title="Iterate — re-run build with ML insights">
+                                                <i data-lucide="repeat" class="w-3 h-3 inline"></i> Iterate
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <!-- Expandable Detail Row -->
+                                <tr x-show="buildsExpandedRow === b.id" class="bg-slate-900/50">
+                                    <td colspan="14" class="p-4">
+                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                            <!-- Build Steps Timeline -->
+                                            <div class="bg-slate-800 rounded-lg p-4 border border-slate-700">
+                                                <h5 class="text-sm font-semibold text-white mb-3">
+                                                    <i data-lucide="list-checks" class="w-4 h-4 inline mr-1 text-cyan-400"></i>
+                                                    Build Steps
+                                                </h5>
+                                                <div class="space-y-2">
+                                                    <template x-for="step in (b.build_steps || [])" :key="step.step + step.at">
+                                                        <div class="flex items-start gap-2 text-xs">
+                                                            <span class="w-2 h-2 rounded-full mt-1 flex-shrink-0"
+                                                                  :class="{
+                                                                      'bg-green-400': step.step.includes('DONE') || step.step === 'COMPLETE',
+                                                                      'bg-red-400': step.step === 'TIMEOUT' || step.step === 'CANCELLED',
+                                                                      'bg-blue-400': !step.step.includes('DONE') && step.step !== 'COMPLETE' && step.step !== 'TIMEOUT' && step.step !== 'CANCELLED',
+                                                                  }"></span>
+                                                            <div>
+                                                                <span class="text-slate-300 font-mono" x-text="step.step"></span>
+                                                                <span class="text-slate-500 ml-2" x-text="step.at ? new Date(step.at).toLocaleTimeString() : ''"></span>
+                                                                <p x-show="step.detail" class="text-slate-500 mt-0.5" x-text="step.detail"></p>
+                                                            </div>
+                                                        </div>
+                                                    </template>
+                                                    <p x-show="!(b.build_steps || []).length" class="text-slate-600 text-xs italic">No steps recorded</p>
+                                                </div>
+                                            </div>
+
+                                            <!-- Error Breakdown -->
+                                            <div class="bg-slate-800 rounded-lg p-4 border border-slate-700">
+                                                <h5 class="text-sm font-semibold text-white mb-3">
+                                                    <i data-lucide="alert-triangle" class="w-4 h-4 inline mr-1 text-red-400"></i>
+                                                    Error Breakdown
+                                                </h5>
+                                                <template x-if="b.error_breakdown">
+                                                    <div class="space-y-1">
+                                                        <template x-for="[type, count] in Object.entries(b.error_breakdown || {})" :key="type">
+                                                            <div class="flex justify-between text-xs">
+                                                                <span class="text-slate-400" x-text="type"></span>
+                                                                <span :class="count > 0 ? 'text-red-400' : 'text-slate-600'" x-text="count"></span>
+                                                            </div>
+                                                        </template>
+                                                    </div>
+                                                </template>
+                                                <p x-show="!b.error_breakdown" class="text-slate-600 text-xs italic">No error data</p>
+                                                <div x-show="b.error_message" class="mt-3 pt-3 border-t border-slate-700">
+                                                    <p class="text-xs text-red-400" x-text="b.error_message"></p>
+                                                </div>
+                                            </div>
+
+                                            <!-- Iteration Chain -->
+                                            <div class="bg-slate-800 rounded-lg p-4 border border-slate-700">
+                                                <h5 class="text-sm font-semibold text-white mb-3">
+                                                    <i data-lucide="git-branch" class="w-4 h-4 inline mr-1 text-cyan-400"></i>
+                                                    Iteration Chain
+                                                </h5>
+                                                <div x-show="b.parent_build_id" class="text-xs text-slate-400 mb-2">
+                                                    Parent: <span class="text-cyan-400 font-mono" x-text="'#' + b.parent_build_id"></span>
+                                                    <span x-show="b.iterate_reason" class="ml-2 px-1.5 py-0.5 bg-slate-700 rounded text-slate-300" x-text="b.iterate_reason"></span>
+                                                </div>
+                                                <div x-show="!b.parent_build_id && (b.iteration_number || 1) === 1" class="text-xs text-slate-600 italic">
+                                                    Original build (no iterations yet)
+                                                </div>
+                                                <div class="mt-3 flex items-center gap-1 flex-wrap">
+                                                    <template x-for="i in (b.iteration_number || 1)" :key="i">
+                                                        <span class="px-2 py-0.5 rounded text-xs"
+                                                              :class="i === (b.iteration_number || 1) ? 'bg-cyan-500/30 text-cyan-400 font-bold' : 'bg-slate-700 text-slate-500'"
+                                                              x-text="'v' + i"></span>
+                                                    </template>
+                                                </div>
+                                                <div class="mt-3">
+                                                    <button @click="iterateBuild(b.id, b.recommendation_id)"
+                                                            :disabled="!['LIVE', 'FAILED'].includes(b.status)"
+                                                            class="w-full px-3 py-2 text-xs rounded bg-cyan-600 hover:bg-cyan-500 text-white transition disabled:opacity-30 disabled:cursor-not-allowed">
+                                                        <i data-lucide="repeat" class="w-3 h-3 inline mr-1"></i>
+                                                        Iterate (v<span x-text="(b.iteration_number || 1) + 1"></span>)
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div x-show="buildsPageSize !== 'all' && (buildsPortfolio?.builds || []).length > 0"
+                     class="flex items-center justify-between mt-4 pt-3 border-t border-slate-700">
+                    <span class="text-xs text-slate-400"
+                          x-text="(() => {
+                              const total = (buildsPortfolio?.builds || []).length;
+                              const size = parseInt(buildsPageSize);
+                              const start = (buildsPage - 1) * size + 1;
+                              const end = Math.min(buildsPage * size, total);
+                              return 'Showing ' + start + '–' + end + ' of ' + total + ' builds';
+                          })()"></span>
+                    <div class="flex items-center gap-2">
+                        <button @click="buildsPage--" :disabled="buildsPage <= 1"
+                                class="px-3 py-1 text-xs rounded bg-slate-700 hover:bg-slate-600 text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed transition">
+                            ← Prev
+                        </button>
+                        <span class="text-xs text-slate-400" x-text="'Page ' + buildsPage + ' of ' + buildsTotalPages()"></span>
+                        <button @click="buildsPage++" :disabled="buildsPage >= buildsTotalPages()"
+                                class="px-3 py-1 text-xs rounded bg-slate-700 hover:bg-slate-600 text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed transition">
+                            Next →
+                        </button>
+                    </div>
+                </div>
+                <div x-show="buildsPageSize === 'all' && (buildsPortfolio?.builds || []).length > 0"
+                     class="mt-3 pt-3 border-t border-slate-700">
+                    <span class="text-xs text-slate-400"
+                          x-text="'Showing all ' + (buildsPortfolio?.builds || []).length + ' builds'"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- No Data State -->
+        <div x-show="!buildsPortfolioLoading && !buildsPortfolio" class="flex flex-col items-center justify-center py-12 text-slate-500">
+            <i data-lucide="hammer" class="w-12 h-12 mb-3 opacity-30"></i>
+            <p class="text-sm">No build data loaded</p>
             <p class="text-xs text-slate-600 mt-1">Check API connectivity</p>
         </div>
     </div>

@@ -3919,6 +3919,155 @@ async def cancel_mvp_build(build_id: int, db: Session = Depends(get_db)):
     return {"build_id": build_id, "status": "FAILED", "previous_status": old_status}
 
 
+@router.post("/exploitation/builds/{build_id}/iterate")
+async def iterate_mvp_build(
+    build_id: int,
+    request: Request,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    """Iterate on an existing MVP build.
+    
+    Creates a child build linked to the parent via parent_build_id,
+    incrementing iteration_number. Enriches the build spec with the
+    parent's error patterns and files for the AI to learn from.
+    
+    Only LIVE or FAILED builds can be iterated. Blocks if an active
+    (QUEUED/GENERATING) build already exists in the same chain.
+    """
+    parent = db.query(MVPBuild).filter(MVPBuild.id == build_id).first()
+    if not parent:
+        raise HTTPException(status_code=404, detail="Build not found")
+    
+    if parent.status not in ("LIVE", "FAILED"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot iterate a {parent.status} build. Only LIVE or FAILED builds can be iterated."
+        )
+    
+    # Concurrency guard: check for active builds in the same chain
+    active_sibling = db.query(MVPBuild).filter(
+        MVPBuild.recommendation_id == parent.recommendation_id,
+        MVPBuild.status.in_(["QUEUED", "GENERATING", "UPLOADING", "DEPLOYING"]),
+    ).first()
+    if active_sibling:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Build #{active_sibling.id} is already {active_sibling.status} for this recommendation. Wait for it to complete."
+        )
+    
+    body = await request.json() if request.headers.get("content-type", "").startswith("application/json") else {}
+    iterate_reason = body.get("reason", "manual")
+    complexity = body.get("complexity", parent.complexity or "LOW").upper()
+    if complexity not in ("LOW", "MEDIUM", "HIGH"):
+        complexity = parent.complexity or "LOW"
+    
+    # Create the child build
+    child = MVPBuild(
+        recommendation_id=parent.recommendation_id,
+        complexity=complexity,
+        status="QUEUED",
+        s3_prefix=f"mvp-builds/{parent.recommendation_id}/{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
+        iteration_number=(parent.iteration_number or 1) + 1,
+        parent_build_id=parent.id,
+        iterate_reason=iterate_reason,
+    )
+    db.add(child)
+    db.commit()
+    db.refresh(child)
+    
+    background_tasks.add_task(_run_build, child.id, parent.recommendation_id, complexity)
+    
+    return {
+        "build_id": child.id,
+        "parent_build_id": parent.id,
+        "iteration_number": child.iteration_number,
+        "status": child.status,
+        "iterate_reason": iterate_reason,
+    }
+
+
+@router.get("/exploitation/builds/{build_id}/iterations")
+async def get_build_iteration_chain(build_id: int, db: Session = Depends(get_db)):
+    """Get the full iteration chain for a build (all ancestors and descendants)."""
+    build = db.query(MVPBuild).filter(MVPBuild.id == build_id).first()
+    if not build:
+        raise HTTPException(status_code=404, detail="Build not found")
+    
+    # Walk up to the root
+    root = build
+    while root.parent_build_id:
+        parent = db.query(MVPBuild).filter(MVPBuild.id == root.parent_build_id).first()
+        if not parent:
+            break
+        root = parent
+    
+    # Collect the full chain from root downward
+    chain = [root.to_dict()]
+    current_id = root.id
+    while True:
+        child = db.query(MVPBuild).filter(MVPBuild.parent_build_id == current_id).first()
+        if not child:
+            break
+        chain.append(child.to_dict())
+        current_id = child.id
+    
+    return {"build_id": build_id, "chain": chain, "total_iterations": len(chain)}
+
+
+@router.get("/exploitation/builds-portfolio")
+async def list_builds_portfolio(
+    db: Session = Depends(get_db),
+):
+    """List all builds with recommendation context for the Builds Portfolio tab.
+    
+    Unlike the standard /builds endpoint (keyed by recommendation_id for cards),
+    this returns a flat list enriched with recommendation display names.
+    """
+    builds = db.query(MVPBuild).order_by(MVPBuild.created_at.desc()).limit(200).all()
+    
+    # Batch-fetch recommendation display names
+    rec_ids = list({b.recommendation_id for b in builds})
+    recs = {}
+    if rec_ids:
+        rec_rows = db.query(ExploitationRecommendation).filter(
+            ExploitationRecommendation.id.in_(rec_ids)
+        ).all()
+        recs = {r.id: r for r in rec_rows}
+    
+    result = []
+    for b in builds:
+        d = b.to_dict()
+        rec = recs.get(b.recommendation_id)
+        if rec:
+            d["signal_display_name"] = rec.signal_display_name
+            d["target_display_name"] = rec.target_display_name
+            d["action_type"] = getattr(rec, 'action_type', None)
+        else:
+            d["signal_display_name"] = "Unknown"
+            d["target_display_name"] = "Unknown"
+            d["action_type"] = None
+        result.append(d)
+    
+    # Summary stats
+    total = len(result)
+    live = sum(1 for b in result if b["status"] == "LIVE")
+    failed = sum(1 for b in result if b["status"] == "FAILED")
+    in_progress = sum(1 for b in result if b["status"] in ("QUEUED", "GENERATING", "UPLOADING", "DEPLOYING"))
+    total_cost = sum(b.get("ai_cost_usd") or 0 for b in result)
+    
+    return {
+        "builds": result,
+        "summary": {
+            "total": total,
+            "live": live,
+            "failed": failed,
+            "in_progress": in_progress,
+            "total_ai_cost_usd": round(total_cost, 2),
+        },
+    }
+
+
 @router.get("/exploitation/builds/{build_id}/files")
 async def get_mvp_build_files(build_id: int, db: Session = Depends(get_db)):
     """List generated files for a build."""
