@@ -404,6 +404,30 @@ class MVPBuilderService:
 
         return errors
 
+    @staticmethod
+    def _auto_fix_lint(content: str) -> Tuple[str, List[Dict[str, Any]]]:
+        """Auto-fix common lint issues in generated Python code.
+
+        Returns (fixed_content, list_of_fix_records).
+        """
+        fixes: List[Dict[str, Any]] = []
+        lines = content.split('\n')
+        for i, line in enumerate(lines):
+            # Bare except → except Exception
+            if re.match(r'^(\s*)except\s*:\s*$', line.rstrip()):
+                indent = re.match(r'^(\s*)', line).group(1)
+                lines[i] = f'{indent}except Exception:'
+                fixes.append({
+                    'type': 'LintWarning',
+                    'message': 'Bare except clause — auto-fixed to except Exception',
+                    'file': '',
+                    'line': i + 1,
+                    'category': 'syntax',
+                    'traceback_snippet': line.rstrip()[:120],
+                    'auto_fixed': True,
+                })
+        return '\n'.join(lines), fixes
+
     def _validate_templates_pre_build(self, files: List[Dict[str, Any]]) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
         """Run pre-build validation on all template files.
 
@@ -411,6 +435,17 @@ class MVPBuilderService:
         """
         clean: List[Dict[str, Any]] = []
         all_errors: List[Dict[str, Any]] = []
+
+        # Auto-fix pass: mechanically fix known lint issues before validation
+        for f in files:
+            if f.get('path', '').endswith('.py') and f.get('content'):
+                fixed_content, fix_records = self._auto_fix_lint(f['content'])
+                if fix_records:
+                    f['content'] = fixed_content
+                    for rec in fix_records:
+                        rec['file'] = f['path']
+                    all_errors.extend(fix_records)
+                    logger.info(f"Auto-fixed {len(fix_records)} lint issues in {f['path']}")
 
         for f in files:
             errs = self._validate_template_file(f.get('path', ''), f.get('content', ''))
@@ -710,7 +745,7 @@ class MVPBuilderService:
             clean_files, pre_build_errors = self._validate_templates_pre_build(all_files)
             collected_errors.extend(pre_build_errors)
 
-            syntax_errors = sum(1 for e in pre_build_errors if e['category'] == 'syntax')
+            syntax_errors = sum(1 for e in pre_build_errors if e['category'] == 'syntax' and not e.get('auto_fixed'))
             skipped_count = len(all_files) - len(clean_files)
             _step('PRE_BUILD_DONE', f"{skipped_count} files skipped, {syntax_errors} syntax errors found")
 
