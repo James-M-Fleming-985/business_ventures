@@ -3673,11 +3673,11 @@ def _run_build(build_id: int, recommendation_id: int, complexity: str):
         )
 
         # ----- Post-build: push to GitHub + deploy to Railway -----
+        # Mark LIVE *first* so the build is never stuck at DEPLOYING if
+        # the process dies mid-deploy.  Deployment is best-effort.
         build = db.query(MVPBuild).filter(MVPBuild.id == build_id).first()
         if build and build.status == 'LIVE':
             try:
-                build.status = 'DEPLOYING'
-                db.commit()
 
                 from services.github_service import GitHubService
                 github_svc = GitHubService()
@@ -3758,25 +3758,27 @@ def _run_build(build_id: int, recommendation_id: int, complexity: str):
                     status="active",
                 )
                 db.add(deployment)
-                build.status = 'LIVE'
                 db.commit()
                 logger.info(f"Build {build_id}: deployment complete")
 
             except Exception as deploy_err:
                 logger.warning(
                     f"Build {build_id}: deployment step failed "
-                    f"(build preserved): {deploy_err}"
+                    f"(build stays LIVE): {deploy_err}"
                 )
-                build = db.query(MVPBuild).filter(
-                    MVPBuild.id == build_id
-                ).first()
-                if build:
-                    build.status = 'LIVE'
-                    build.error_message = (
-                        f"Code generated OK. Deploy failed: "
-                        f"{str(deploy_err)[:200]}"
-                    )
-                    db.commit()
+                try:
+                    db.rollback()
+                    build = db.query(MVPBuild).filter(
+                        MVPBuild.id == build_id
+                    ).first()
+                    if build:
+                        build.error_message = (
+                            f"Code generated OK. Deploy failed: "
+                            f"{str(deploy_err)[:200]}"
+                        )
+                        db.commit()
+                except Exception:
+                    pass
 
         # Auto-validate exploitation recommendation when build succeeds
         build = db.query(MVPBuild).filter(MVPBuild.id == build_id).first()
@@ -3863,9 +3865,10 @@ async def list_mvp_builds(
 async def get_mvp_build(build_id: int, db: Session = Depends(get_db)):
     """Get a single MVP build with its files.
 
-    Includes stale-build detection: if a build has been in GENERATING or QUEUED
-    for longer than 10 minutes, it is automatically marked as FAILED (the
-    background task likely died due to a deployment or crash).
+    Includes stale-build detection: if a build has been in any active state
+    (QUEUED, GENERATING, UPLOADING, DEPLOYING) for longer than 10 minutes,
+    it is automatically marked as FAILED (the background task likely died
+    due to a deployment restart or crash).
     """
     build = db.query(MVPBuild).filter(MVPBuild.id == build_id).first()
     if not build:
@@ -3873,7 +3876,7 @@ async def get_mvp_build(build_id: int, db: Session = Depends(get_db)):
 
     # Stale-build auto-fail: 10 minutes with no progress → dead task
     STALE_THRESHOLD_SECONDS = 600
-    if build.status in ("GENERATING", "QUEUED"):
+    if build.status in ("GENERATING", "QUEUED", "UPLOADING", "DEPLOYING"):
         last_activity = build.updated_at or build.created_at
         if last_activity and (datetime.utcnow() - last_activity).total_seconds() > STALE_THRESHOLD_SECONDS:
             build.status = "FAILED"
