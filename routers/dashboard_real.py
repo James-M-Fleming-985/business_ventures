@@ -3676,7 +3676,9 @@ def _run_build(build_id: int, recommendation_id: int, complexity: str):
         # Mark LIVE *first* so the build is never stuck at DEPLOYING if
         # the process dies mid-deploy.  Deployment is best-effort.
         build = db.query(MVPBuild).filter(MVPBuild.id == build_id).first()
-        if build and build.status == 'LIVE':
+        if build and build.status in ('LIVE', 'DEPLOYING'):
+            build.status = 'LIVE'
+            db.commit()
             try:
 
                 from services.github_service import GitHubService
