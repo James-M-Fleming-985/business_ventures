@@ -682,4 +682,98 @@ any classes or functions. Output only valid Python code, no explanations.
                         'phase': 'RED' if 'test' in f.name else 'GREEN',
                     })
 
+        # --- Railway deployment scaffold ---
+        files.extend(self._generate_deployment_files(output_base))
+
         return files
+
+    def _generate_deployment_files(self, output_base: Path) -> List[Dict[str, Any]]:
+        """Generate requirements.txt, Procfile, and runtime.txt for Railway."""
+        deploy_files: List[Dict[str, Any]] = []
+
+        # Scan src/ for third-party imports to build requirements.txt
+        stdlib = {
+            'os', 'sys', 'json', 'datetime', 'time', 'math', 'random',
+            'collections', 'itertools', 'functools', 'pathlib', 'typing',
+            'dataclasses', 'abc', 're', 'io', 'logging', 'hashlib',
+            'uuid', 'copy', 'enum', 'statistics', 'csv', 'urllib',
+            'http', 'unittest', 'contextlib', 'textwrap', 'string',
+            'decimal', 'fractions', 'operator', 'struct', 'tempfile',
+            'shutil', 'glob', 'argparse', 'configparser', 'sqlite3',
+            'threading', 'multiprocessing', 'subprocess', 'socket',
+            'asyncio', 'concurrent', 'signal', 'traceback', 'warnings',
+            'pprint', 'inspect', 'importlib', 'pkgutil', 'base64',
+            'hmac', 'secrets', 'array', 'queue', 'heapq', 'bisect',
+        }
+        import_to_pkg = {
+            'fastapi': 'fastapi',
+            'uvicorn': 'uvicorn',
+            'pydantic': 'pydantic',
+            'requests': 'requests',
+            'httpx': 'httpx',
+            'sqlalchemy': 'sqlalchemy',
+            'pandas': 'pandas',
+            'numpy': 'numpy',
+            'scipy': 'scipy',
+            'sklearn': 'scikit-learn',
+            'bs4': 'beautifulsoup4',
+            'starlette': 'starlette',
+            'dotenv': 'python-dotenv',
+            'yaml': 'pyyaml',
+            'redis': 'redis',
+            'celery': 'celery',
+            'pytest': 'pytest',
+            'aiohttp': 'aiohttp',
+            'jinja2': 'jinja2',
+            'PIL': 'pillow',
+            'matplotlib': 'matplotlib',
+        }
+
+        detected_pkgs: set = set()
+        src_dir = output_base / 'src'
+        if src_dir.exists():
+            for f in src_dir.rglob('*.py'):
+                for line in f.read_text(errors='replace').splitlines():
+                    line = line.strip()
+                    if line.startswith('import ') or line.startswith('from '):
+                        mod = line.replace('import ', '').replace('from ', '').split('.')[0].split(' ')[0]
+                        if mod in import_to_pkg:
+                            detected_pkgs.add(import_to_pkg[mod])
+                        elif mod not in stdlib and not mod.startswith('layer_mvp'):
+                            detected_pkgs.add(mod)
+
+        # Always include fastapi + uvicorn for deployment
+        detected_pkgs.update(['fastapi', 'uvicorn'])
+        reqs = '\n'.join(sorted(detected_pkgs)) + '\n'
+        deploy_files.append({
+            'path': 'requirements.txt',
+            'content': reqs,
+            'size': len(reqs.encode()),
+            'phase': 'DEPLOY',
+        })
+
+        # Detect the main module name for Procfile
+        module_name = 'app'
+        if src_dir.exists():
+            py_files = [f for f in src_dir.glob('*.py')
+                        if f.name != '__init__.py']
+            if py_files:
+                module_name = py_files[0].stem
+
+        procfile = f'web: uvicorn src.{module_name}:app --host 0.0.0.0 --port ${{PORT:-8000}}\n'
+        deploy_files.append({
+            'path': 'Procfile',
+            'content': procfile,
+            'size': len(procfile.encode()),
+            'phase': 'DEPLOY',
+        })
+
+        runtime = 'python-3.12\n'
+        deploy_files.append({
+            'path': 'runtime.txt',
+            'content': runtime,
+            'size': len(runtime.encode()),
+            'phase': 'DEPLOY',
+        })
+
+        return deploy_files
