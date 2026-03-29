@@ -752,15 +752,31 @@ any classes or functions. Output only valid Python code, no explanations.
             'phase': 'DEPLOY',
         })
 
-        # Detect the main module name for Procfile
+        # Detect the main module and check if it has a FastAPI app
         module_name = 'app'
+        has_app = False
         if src_dir.exists():
             py_files = [f for f in src_dir.glob('*.py')
                         if f.name != '__init__.py']
             if py_files:
                 module_name = py_files[0].stem
+                code = py_files[0].read_text(errors='replace')
+                has_app = 'app = FastAPI' in code or 'app=FastAPI' in code
 
-        procfile = f'web: uvicorn src.{module_name}:app --host 0.0.0.0 --port ${{PORT:-8000}}\n'
+        if has_app:
+            procfile = f'web: uvicorn src.{module_name}:app --host 0.0.0.0 --port ${{PORT:-8000}}\n'
+        else:
+            # Generate a thin main.py wrapper that imports the module and
+            # exposes its classes/functions via a FastAPI health + info API.
+            main_py = self._generate_main_wrapper(src_dir, module_name)
+            deploy_files.append({
+                'path': 'main.py',
+                'content': main_py,
+                'size': len(main_py.encode()),
+                'phase': 'DEPLOY',
+            })
+            procfile = f'web: uvicorn main:app --host 0.0.0.0 --port ${{PORT:-8000}}\n'
+
         deploy_files.append({
             'path': 'Procfile',
             'content': procfile,
@@ -777,3 +793,77 @@ any classes or functions. Output only valid Python code, no explanations.
         })
 
         return deploy_files
+
+    @staticmethod
+    def _generate_main_wrapper(src_dir: Path, module_name: str) -> str:
+        """Generate a main.py that wraps a library module in a FastAPI app."""
+        # Discover public classes and functions to expose
+        code = ''
+        if (src_dir / f'{module_name}.py').exists():
+            code = (src_dir / f'{module_name}.py').read_text(errors='replace')
+
+        classes = []
+        functions = []
+        for line in code.splitlines():
+            stripped = line.strip()
+            if stripped.startswith('class ') and '(' in stripped:
+                name = stripped.split('class ')[1].split('(')[0].strip()
+                if not name.startswith('_'):
+                    classes.append(name)
+            elif stripped.startswith('def ') and not stripped.startswith('def _'):
+                name = stripped.split('def ')[1].split('(')[0].strip()
+                functions.append(name)
+
+        # Build import line
+        symbols = classes[:5] + functions[:5]  # limit to keep manageable
+        if symbols:
+            import_line = f"from src.{module_name} import {', '.join(symbols)}"
+        else:
+            import_line = f"import src.{module_name} as module"
+
+        # Build endpoint bodies that instantiate classes and call key methods
+        endpoints = []
+        for cls in classes[:3]:
+            endpoints.append(f'''
+@app.get("/api/{cls.lower()}")
+def get_{cls.lower()}():
+    """Auto-generated endpoint for {cls}."""
+    try:
+        instance = {cls}()
+        # Try common method names
+        for method in ["analyze", "run", "execute", "get_data", "process", "calculate", "evaluate"]:
+            if hasattr(instance, method):
+                result = getattr(instance, method)()
+                return {{"status": "ok", "class": "{cls}", "method": method, "result": str(result)[:1000]}}
+        return {{"status": "ok", "class": "{cls}", "message": "Instance created successfully"}}
+    except Exception as e:
+        return {{"status": "error", "class": "{cls}", "error": str(e)}}
+''')
+
+        endpoints_code = '\n'.join(endpoints) if endpoints else ''
+
+        return f'''"""Auto-generated FastAPI wrapper for {module_name}."""
+import sys
+import os
+sys.path.insert(0, os.path.dirname(__file__))
+
+from fastapi import FastAPI
+from fastapi.responses import JSONResponse
+
+{import_line}
+
+app = FastAPI(
+    title="{module_name.replace('_', ' ').title()}",
+    description="Auto-generated MVP API",
+    version="1.0.0",
+)
+
+@app.get("/")
+def root():
+    return {{"service": "{module_name}", "status": "running", "version": "1.0.0"}}
+
+@app.get("/health")
+def health():
+    return {{"status": "healthy"}}
+{endpoints_code}
+'''
