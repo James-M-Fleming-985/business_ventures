@@ -810,8 +810,10 @@ any classes or functions. Output only valid Python code, no explanations.
             # as module-level symbols.
             if line and not line[0].isspace():
                 stripped = line.strip()
-                if stripped.startswith('class ') and '(' in stripped:
-                    name = stripped.split('class ')[1].split('(')[0].strip()
+                if stripped.startswith('class '):
+                    # Handle both 'class Foo(Base):' and 'class Foo:'
+                    rest = stripped[len('class '):]
+                    name = rest.split('(')[0].split(':')[0].strip()
                     if not name.startswith('_'):
                         classes.append(name)
                 elif stripped.startswith('def ') and not stripped.startswith('def _'):
