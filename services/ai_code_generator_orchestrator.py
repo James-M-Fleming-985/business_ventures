@@ -796,7 +796,7 @@ any classes or functions. Output only valid Python code, no explanations.
 
     @staticmethod
     def _generate_main_wrapper(src_dir: Path, module_name: str) -> str:
-        """Generate a main.py that wraps a library module in a FastAPI app."""
+        """Generate a main.py that wraps a library module in a FastAPI app with HTML dashboard."""
         # Discover public classes and functions to expose
         code = ''
         if (src_dir / f'{module_name}.py').exists():
@@ -829,9 +829,12 @@ any classes or functions. Output only valid Python code, no explanations.
 
         # Build endpoint bodies that instantiate classes and call key methods
         endpoints = []
+        api_paths = []  # track for dashboard
         for cls in classes[:3]:
+            path = f"/api/{cls.lower()}"
+            api_paths.append({"path": path, "name": cls})
             endpoints.append(f'''
-@app.get("/api/{cls.lower()}")
+@app.get("{path}")
 def get_{cls.lower()}():
     """Auto-generated endpoint for {cls}."""
     try:
@@ -848,25 +851,118 @@ def get_{cls.lower()}():
 
         endpoints_code = '\n'.join(endpoints) if endpoints else ''
 
-        return f'''"""Auto-generated FastAPI wrapper for {module_name}."""
+        # Build the dashboard card HTML and JS for each endpoint
+        title = module_name.replace('_', ' ').replace('layer mvp ', 'MVP ').title()
+        cards_html = ''
+        fetch_js = ''
+        for ep in api_paths:
+            card_id = ep['name'].lower().replace(' ', '_')
+            label = ' '.join(
+                w for w in
+                __import__('re').sub(r'([A-Z])', r' \\1', ep['name']).split()
+            ).strip()
+            cards_html += (
+                f'<div class="card" id="card-{card_id}">'
+                f'<h3>{label}</h3>'
+                f'<div class="endpoint"><code>GET {ep["path"]}</code></div>'
+                f'<div class="result" id="result-{card_id}">'
+                f'<span class="loading">Loading...</span></div></div>\\n'
+            )
+            fetch_js += (
+                f'fetch("{ep["path"]}")'
+                f'.then(r=>r.json()).then(d=>{{'
+                f'document.getElementById("result-{card_id}").innerHTML='
+                f'renderResult(d)}}).catch(e=>{{'
+                f'document.getElementById("result-{card_id}").innerHTML='
+                f'"<span class=\\"error\\">"+e+"</span>"}});\\n'
+            )
+
+        dashboard_html = (
+            '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">'
+            '<meta name="viewport" content="width=device-width,initial-scale=1">'
+            f'<title>{title}</title>'
+            '<style>'
+            '*{margin:0;padding:0;box-sizing:border-box}'
+            'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;'
+            'background:#0f172a;color:#e2e8f0;min-height:100vh}'
+            'header{background:linear-gradient(135deg,#1e293b,#334155);'
+            'padding:2rem;border-bottom:2px solid #3b82f6}'
+            'header h1{font-size:1.8rem;color:#fff}'
+            'header p{color:#94a3b8;margin-top:0.3rem}'
+            '.status-bar{display:flex;gap:1rem;margin-top:1rem;flex-wrap:wrap}'
+            '.badge{padding:0.3rem 0.8rem;border-radius:9999px;font-size:0.75rem;font-weight:600}'
+            '.badge.live{background:#065f46;color:#6ee7b7}'
+            '.badge.api{background:#1e3a5f;color:#7dd3fc}'
+            '.container{max-width:1200px;margin:0 auto;padding:2rem}'
+            '.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(350px,1fr));gap:1.5rem}'
+            '.card{background:#1e293b;border:1px solid #334155;border-radius:12px;'
+            'padding:1.5rem;transition:border-color 0.2s}'
+            '.card:hover{border-color:#3b82f6}'
+            '.card h3{color:#f1f5f9;margin-bottom:0.5rem;font-size:1.1rem}'
+            '.endpoint{margin-bottom:1rem}'
+            '.endpoint code{background:#0f172a;padding:0.3rem 0.6rem;border-radius:6px;'
+            'font-size:0.8rem;color:#7dd3fc}'
+            '.result{background:#0f172a;border-radius:8px;padding:1rem;'
+            'font-size:0.85rem;max-height:300px;overflow-y:auto;line-height:1.5}'
+            '.result pre{white-space:pre-wrap;word-break:break-word}'
+            '.loading{color:#94a3b8}'
+            '.error{color:#fca5a5}'
+            '.ok{color:#6ee7b7}'
+            '.key{color:#7dd3fc}'
+            '.str{color:#fde68a}'
+            '.num{color:#c4b5fd}'
+            'footer{text-align:center;padding:2rem;color:#475569;font-size:0.8rem}'
+            '</style></head><body>'
+            f'<header><h1>{title}</h1>'
+            f'<p>Auto-generated MVP — {module_name}</p>'
+            '<div class="status-bar">'
+            '<span class="badge live">LIVE</span>'
+            f'<span class="badge api">{len(api_paths)} endpoint{"s" if len(api_paths)!=1 else ""}</span>'
+            '</div></header>'
+            '<div class="container"><div class="grid">'
+            f'{cards_html}'
+            '</div></div>'
+            '<footer>Built by Causal Affect MVP Pipeline</footer>'
+            '<script>'
+            'function renderResult(d){'
+            'if(d.status==="error")return"<span class=\\"error\\">Error: "+d.error+"</span>";'
+            'return"<pre>"+syntaxHL(JSON.stringify(d,null,2))+"</pre>"}'
+            'function syntaxHL(j){'
+            'return j.replace(/&/g,"&amp;").replace(/</g,"&lt;")'
+            '.replace(/"([^"]+)":/g,"<span class=\\"key\\">\\\"$1\\\"</span>:")'
+            '.replace(/: "([^"]*)"/g,": <span class=\\"str\\">\\\"$1\\\"</span>")'
+            '.replace(/: (\\\\d+\\\\.?\\\\d*)/g,": <span class=\\"num\\">$1</span>")}'
+            f'{fetch_js}'
+            '</script></body></html>'
+        )
+
+        return f'''"""Auto-generated FastAPI wrapper for {module_name} with HTML dashboard."""
+import re
 import sys
 import os
 sys.path.insert(0, os.path.dirname(__file__))
 
 from fastapi import FastAPI
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 
 {import_line}
 
 app = FastAPI(
-    title="{module_name.replace('_', ' ').title()}",
-    description="Auto-generated MVP API",
+    title="{title}",
+    description="Auto-generated MVP API with dashboard",
     version="1.0.0",
 )
 
-@app.get("/")
-def root():
-    return {{"service": "{module_name}", "status": "running", "version": "1.0.0"}}
+DASHBOARD_HTML = """{dashboard_html}"""
+
+@app.get("/", response_class=HTMLResponse)
+def dashboard():
+    """Interactive HTML dashboard."""
+    return DASHBOARD_HTML
+
+@app.get("/api/status")
+def api_status():
+    return {{"service": "{module_name}", "status": "running", "version": "1.0.0", "endpoints": {[ep['path'] for ep in api_paths]}}}
 
 @app.get("/health")
 def health():
