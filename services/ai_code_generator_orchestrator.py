@@ -805,14 +805,18 @@ any classes or functions. Output only valid Python code, no explanations.
         classes = []
         functions = []
         for line in code.splitlines():
-            stripped = line.strip()
-            if stripped.startswith('class ') and '(' in stripped:
-                name = stripped.split('class ')[1].split('(')[0].strip()
-                if not name.startswith('_'):
-                    classes.append(name)
-            elif stripped.startswith('def ') and not stripped.startswith('def _'):
-                name = stripped.split('def ')[1].split('(')[0].strip()
-                functions.append(name)
+            # Only detect TOP-LEVEL definitions (no leading whitespace).
+            # Indented 'def' lines are class methods and cannot be imported
+            # as module-level symbols.
+            if line and not line[0].isspace():
+                stripped = line.strip()
+                if stripped.startswith('class ') and '(' in stripped:
+                    name = stripped.split('class ')[1].split('(')[0].strip()
+                    if not name.startswith('_'):
+                        classes.append(name)
+                elif stripped.startswith('def ') and not stripped.startswith('def _'):
+                    name = stripped.split('def ')[1].split('(')[0].strip()
+                    functions.append(name)
 
         # Build import line
         symbols = classes[:5] + functions[:5]  # limit to keep manageable
