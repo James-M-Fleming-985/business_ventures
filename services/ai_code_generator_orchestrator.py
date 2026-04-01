@@ -651,7 +651,7 @@ any classes or functions. Output only valid Python code, no explanations.
                 analysis['methods'].append({'name': m.group(1), 'line': i})
         return analysis
 
-    def collect_generated_files(self) -> List[Dict[str, Any]]:
+    def collect_generated_files(self, spec: dict = None) -> List[Dict[str, Any]]:
         """Collect all files generated during the TDD cycle.
         Returns list of {path, content, size, phase} dicts."""
         output_base = Path(self.config['output_base_path'])
@@ -683,11 +683,11 @@ any classes or functions. Output only valid Python code, no explanations.
                     })
 
         # --- Railway deployment scaffold ---
-        files.extend(self._generate_deployment_files(output_base))
+        files.extend(self._generate_deployment_files(output_base, spec=spec))
 
         return files
 
-    def _generate_deployment_files(self, output_base: Path) -> List[Dict[str, Any]]:
+    def _generate_deployment_files(self, output_base: Path, spec: dict = None) -> List[Dict[str, Any]]:
         """Generate requirements.txt, Procfile, and runtime.txt for Railway."""
         deploy_files: List[Dict[str, Any]] = []
 
@@ -768,7 +768,7 @@ any classes or functions. Output only valid Python code, no explanations.
         else:
             # Generate a thin main.py wrapper that imports the module and
             # exposes its classes/functions via a FastAPI health + info API.
-            main_py = self._generate_main_wrapper(src_dir, module_name)
+            main_py = self._generate_main_wrapper(src_dir, module_name, spec=spec)
             deploy_files.append({
                 'path': 'main.py',
                 'content': main_py,
@@ -795,8 +795,10 @@ any classes or functions. Output only valid Python code, no explanations.
         return deploy_files
 
     @staticmethod
-    def _generate_main_wrapper(src_dir: Path, module_name: str) -> str:
+    def _generate_main_wrapper(src_dir: Path, module_name: str, spec: dict = None) -> str:
         """Generate a main.py that wraps a library module in a FastAPI app with HTML dashboard."""
+        import html as _html
+
         # Discover public classes and functions to expose
         code = ''
         if (src_dir / f'{module_name}.py').exists():
@@ -852,7 +854,6 @@ def get_{cls.lower()}():
         endpoints_code = '\n'.join(endpoints) if endpoints else ''
 
         # Build the dashboard card HTML and JS for each endpoint
-        title = module_name.replace('_', ' ').replace('layer mvp ', 'MVP ').title()
         cards_html = ''
         fetch_js = ''
         for ep in api_paths:
@@ -877,6 +878,68 @@ def get_{cls.lower()}():
                 f'"<span class=\\"error\\">"+e+"</span>"}});\\n'
             )
 
+        # --- Extract hero section data from spec + recommendation meta ---
+        _e = _html.escape
+        if spec:
+            hero_title = _e(spec.get('feature_name', '') or module_name.replace('_', ' ').title())
+            hero_subtitle = _e(spec.get('requirement_title', ''))
+        else:
+            hero_title = _e(module_name.replace('_', ' ').replace('layer mvp ', 'MVP ').title())
+            hero_subtitle = ''
+        title = hero_title
+
+        meta = spec.get('_meta', {}) if spec else {}
+        hero_description = _e(meta.get('reasoning', ''))
+        opportunity_score = meta.get('opportunity_score')
+        market_category = _e(meta.get('market_category', '') or '')
+        search_trend = _e(meta.get('search_trend_direction', '') or '')
+        monthly_searches = meta.get('estimated_monthly_searches')
+        competition = _e(meta.get('competition_level', '') or '')
+        viability = meta.get('build_viability_score')
+
+        # Build stats badges HTML
+        stats_badges = ''
+        if opportunity_score is not None:
+            stats_badges += f'<span class="badge score">Opportunity: {opportunity_score:.0f}/100</span>'
+        if market_category:
+            stats_badges += f'<span class="badge market">{market_category}</span>'
+        if search_trend:
+            trend_icon = '&#x2197;' if 'up' in search_trend.lower() or 'rising' in search_trend.lower() else '&#x2192;'
+            stats_badges += f'<span class="badge trend">{trend_icon} {search_trend}</span>'
+        if monthly_searches is not None:
+            stats_badges += f'<span class="badge searches">{int(monthly_searches):,}/mo searches</span>'
+        if competition:
+            stats_badges += f'<span class="badge competition">{competition} competition</span>'
+        if viability is not None:
+            stats_badges += f'<span class="badge viability">Viability: {viability:.0f}/100</span>'
+
+        # Build feature bullets from acceptance criteria
+        features_html = ''
+        if spec:
+            criteria = spec.get('acceptance_criteria', [])
+            if criteria:
+                bullets = ''
+                for ac in criteria[:6]:
+                    crit = _e(ac.get('criterion', '') if isinstance(ac, dict) else str(ac))
+                    if crit:
+                        bullets += f'<li>{crit}</li>'
+                if bullets:
+                    features_html = f'<div class="features"><h3>Features</h3><ul>{bullets}</ul></div>'
+
+        # Build hero section HTML
+        hero_html = ''
+        if hero_subtitle or hero_description or stats_badges or features_html:
+            hero_html = '<section class="hero">'
+            if hero_subtitle:
+                hero_html += f'<p class="hero-subtitle">{hero_subtitle}</p>'
+            if hero_description:
+                hero_html += f'<p class="hero-desc">{hero_description}</p>'
+            if stats_badges:
+                hero_html += f'<div class="stats-row">{stats_badges}</div>'
+            if features_html:
+                hero_html += features_html
+            hero_html += '</section>'
+
         dashboard_html = (
             '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">'
             '<meta name="viewport" content="width=device-width,initial-scale=1">'
@@ -893,6 +956,21 @@ def get_{cls.lower()}():
             '.badge{padding:0.3rem 0.8rem;border-radius:9999px;font-size:0.75rem;font-weight:600}'
             '.badge.live{background:#065f46;color:#6ee7b7}'
             '.badge.api{background:#1e3a5f;color:#7dd3fc}'
+            '.badge.score{background:#4c1d95;color:#c4b5fd}'
+            '.badge.market{background:#78350f;color:#fde68a}'
+            '.badge.trend{background:#064e3b;color:#6ee7b7}'
+            '.badge.searches{background:#1e3a5f;color:#7dd3fc}'
+            '.badge.competition{background:#7f1d1d;color:#fca5a5}'
+            '.badge.viability{background:#14532d;color:#86efac}'
+            '.hero{background:#1e293b;border-bottom:1px solid #334155;padding:2rem}'
+            '.hero-subtitle{color:#f1f5f9;font-size:1.15rem;font-weight:500;margin-bottom:0.5rem}'
+            '.hero-desc{color:#94a3b8;line-height:1.6;max-width:800px;margin-bottom:1rem}'
+            '.stats-row{display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:1rem}'
+            '.features{margin-top:0.5rem}'
+            '.features h3{color:#f1f5f9;font-size:1rem;margin-bottom:0.5rem}'
+            '.features ul{list-style:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:0.4rem}'
+            '.features li{color:#cbd5e1;font-size:0.9rem;padding-left:1.2rem;position:relative}'
+            '.features li::before{content:"\\2713";position:absolute;left:0;color:#6ee7b7}'
             '.container{max-width:1200px;margin:0 auto;padding:2rem}'
             '.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(350px,1fr));gap:1.5rem}'
             '.card{background:#1e293b;border:1px solid #334155;border-radius:12px;'
@@ -919,6 +997,7 @@ def get_{cls.lower()}():
             '<span class="badge live">LIVE</span>'
             f'<span class="badge api">{len(api_paths)} endpoint{"s" if len(api_paths)!=1 else ""}</span>'
             '</div></header>'
+            f'{hero_html}'
             '<div class="container"><div class="grid">'
             f'{cards_html}'
             '</div></div>'

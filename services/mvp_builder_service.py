@@ -624,7 +624,7 @@ class MVPBuilderService:
     # ------------------------------------------------------------------
 
     def build_mvp(self, requirement: str, complexity: str, build_id: int,
-                  db_session=None) -> Dict[str, Any]:
+                  db_session=None, recommendation_meta: dict = None) -> Dict[str, Any]:
         """
         YAML-driven TDD build pipeline:
         1. Generate LAYER_REQUIREMENTS spec via AI
@@ -677,7 +677,8 @@ class MVPBuilderService:
             if ai_available:
                 # --- AI pipeline: spec → RED → GREEN → REFACTOR ---
                 spec, spec_cost = generate_layer_spec_with_ai(
-                    requirement, complexity, build_id, self.anthropic_key
+                    requirement, complexity, build_id, self.anthropic_key,
+                    db_session=db_session,
                 )
                 total_ai_cost += spec_cost
 
@@ -720,8 +721,12 @@ class MVPBuilderService:
                 refactor_result = orchestrator.execute_refactor_phase(green_result)
                 _step('REFACTOR_DONE', f"status={refactor_result.get('status', 'UNKNOWN')}")
 
+                # Inject recommendation metadata into spec for dashboard hero
+                if recommendation_meta:
+                    spec['_meta'] = recommendation_meta
+
                 # Collect generated files
-                generated = orchestrator.collect_generated_files()
+                generated = orchestrator.collect_generated_files(spec=spec)
                 all_files.extend(generated)
             else:
                 # --- Template fallback: match + render Jinja templates ---
@@ -805,6 +810,40 @@ class MVPBuilderService:
                             content=f.get('content', ''),
                         ))
                     db_session.commit()
+
+                # Auto-create ProductDeployment on successful build (Track G — M2)
+                if db_session and final_status in ('LIVE', 'DEPLOYING'):
+                    try:
+                        from models import ProductDeployment, ExploitationRecommendation
+                        build = db_session.query(MVPBuild).get(build_id)
+                        rec_id = build.recommendation_id if build else None
+                        # Only create if no deployment already exists for this build
+                        existing_dep = db_session.query(ProductDeployment).filter(
+                            ProductDeployment.build_id == build_id
+                        ).first()
+                        if not existing_dep and rec_id:
+                            rec = db_session.query(ExploitationRecommendation).filter(
+                                ExploitationRecommendation.id == rec_id
+                            ).first()
+                            product_name = requirement[:80] if requirement else f"MVP-{build_id}"
+                            dep = ProductDeployment(
+                                recommendation_id=rec_id,
+                                build_id=build_id,
+                                product_name=product_name,
+                                app_id=f"mvp_{build_id}",
+                                description=requirement[:255] if requirement else None,
+                                tech_stack={"framework": "fastapi", "language": "python", "hosting": "railway"},
+                                pricing_model="freemium",
+                                market_category=getattr(rec, 'signal_display_name', None) if rec else None,
+                                target_demographic=getattr(rec, 'target_display_name', None) if rec else None,
+                                status="active",
+                                deployed_at=datetime.utcnow(),
+                            )
+                            db_session.add(dep)
+                            db_session.commit()
+                            logger.info("Auto-created ProductDeployment for build %d", build_id)
+                    except Exception as dep_exc:
+                        logger.warning("Failed to auto-create ProductDeployment for build %d: %s", build_id, dep_exc)
 
             # _step after commit is best-effort — don't let it flip LIVE → FAILED
             try:

@@ -3663,6 +3663,18 @@ def _run_build(build_id: int, recommendation_id: int, complexity: str):
 
         requirement = f"{rec.signal_display_name} → {rec.target_display_name}: {rec.reasoning or ''}"
 
+        recommendation_meta = {
+            'signal_display_name': rec.signal_display_name,
+            'target_display_name': rec.target_display_name,
+            'reasoning': rec.reasoning or '',
+            'opportunity_score': float(rec.opportunity_score) if rec.opportunity_score else None,
+            'market_category': getattr(rec, 'market_category', None),
+            'search_trend_direction': getattr(rec, 'search_trend_direction', None),
+            'estimated_monthly_searches': getattr(rec, 'estimated_monthly_searches', None),
+            'competition_level': getattr(rec, 'competition_level', None),
+            'build_viability_score': float(rec.build_viability_score) if getattr(rec, 'build_viability_score', None) else None,
+        }
+
         s3 = S3Service()
         builder = MVPBuilderService(s3)
         builder.build_mvp(
@@ -3670,6 +3682,7 @@ def _run_build(build_id: int, recommendation_id: int, complexity: str):
             complexity=complexity,
             build_id=build_id,
             db_session=db,
+            recommendation_meta=recommendation_meta,
         )
 
         # ----- Post-build: push to GitHub + deploy to Railway -----
@@ -4027,8 +4040,11 @@ async def list_builds_portfolio(
     """List all builds with recommendation context for the Builds Portfolio tab.
     
     Unlike the standard /builds endpoint (keyed by recommendation_id for cards),
-    this returns a flat list enriched with recommendation display names.
+    this returns a flat list enriched with recommendation display names and
+    commercial metrics (engagement + revenue) from ProductDeployment/ProductMetrics.
     """
+    from models import ProductMetrics
+    
     builds = db.query(MVPBuild).order_by(MVPBuild.created_at.desc()).limit(200).all()
     
     # Batch-fetch recommendation display names
@@ -4039,6 +4055,37 @@ async def list_builds_portfolio(
             ExploitationRecommendation.id.in_(rec_ids)
         ).all()
         recs = {r.id: r for r in rec_rows}
+    
+    # Batch-fetch deployments keyed by build_id
+    build_ids = [b.id for b in builds]
+    deployments = {}
+    if build_ids:
+        dep_rows = db.query(ProductDeployment).filter(
+            ProductDeployment.build_id.in_(build_ids)
+        ).all()
+        deployments = {d.build_id: d for d in dep_rows}
+
+    # Batch-fetch latest metrics per deployment
+    dep_ids = [d.id for d in dep_rows] if build_ids else []
+    metrics_map = {}
+    if dep_ids:
+        from sqlalchemy import func
+        # Get most recent metrics row per deployment
+        subq = (
+            db.query(
+                ProductMetrics.deployment_id,
+                func.max(ProductMetrics.period_end).label("latest")
+            )
+            .filter(ProductMetrics.deployment_id.in_(dep_ids))
+            .group_by(ProductMetrics.deployment_id)
+            .subquery()
+        )
+        latest_metrics = (
+            db.query(ProductMetrics)
+            .join(subq, (ProductMetrics.deployment_id == subq.c.deployment_id) & (ProductMetrics.period_end == subq.c.latest))
+            .all()
+        )
+        metrics_map = {m.deployment_id: m for m in latest_metrics}
     
     result = []
     for b in builds:
@@ -4052,6 +4099,20 @@ async def list_builds_portfolio(
             d["signal_display_name"] = "Unknown"
             d["target_display_name"] = "Unknown"
             d["action_type"] = None
+
+        # Enrich with commercial metrics (Track G)
+        dep = deployments.get(b.id)
+        if dep:
+            pm = metrics_map.get(dep.id)
+            d["engagement"] = (pm.unique_visitors or 0) if pm else 0
+            d["revenue_mrr"] = round((pm.mrr_cents or 0) / 100, 2) if pm else 0.0
+            d["deployment_status"] = dep.status
+            d["deployment_outcome"] = dep.outcome
+        else:
+            d["engagement"] = 0
+            d["revenue_mrr"] = 0.0
+            d["deployment_status"] = None
+            d["deployment_outcome"] = None
         result.append(d)
     
     # Summary stats
