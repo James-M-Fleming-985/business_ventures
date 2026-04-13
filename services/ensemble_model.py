@@ -561,8 +561,8 @@ class EnsembleModel:
             change_pct = round(granger["momentum"] * 100, 2)
 
         # Dedup: if a pending ensemble prediction exists for the same pair
-        # within the last 24 hours, update it instead of inserting a duplicate
-        cutoff = datetime.utcnow() - timedelta(hours=24)
+        # within the last 7 days, update it instead of inserting a duplicate
+        cutoff = datetime.utcnow() - timedelta(days=7)
         existing = (
             self.db.query(PredictionTracking)
             .filter(
@@ -630,6 +630,20 @@ def run_ensemble_predictions(db_session_factory, max_pairs: int = 200) -> Dict:
     """Entry point for APScheduler — runs ensemble on all significant pairs."""
     session = db_session_factory()
     try:
+        # Purge stale pending ensemble predictions older than 7 days
+        stale_cutoff = datetime.utcnow() - timedelta(days=7)
+        stale_deleted = (
+            session.query(PredictionTracking)
+            .filter(
+                PredictionTracking.model_version.like("ensemble%"),
+                PredictionTracking.status == "pending",
+                PredictionTracking.predicted_at < stale_cutoff,
+            )
+            .delete(synchronize_session="fetch")
+        )
+        if stale_deleted:
+            logger.info(f"Purged {stale_deleted} stale pending ensemble predictions")
+
         model = EnsembleModel(session)
         result = model.predict_all_pairs(max_pairs=max_pairs, store=True)
         session.commit()

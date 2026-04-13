@@ -2003,7 +2003,7 @@ async def get_predictions(
     Args:
         model_version: Filter by model version (e.g. 'backtest_walkforward', 'granger_v1')
     """
-    from sqlalchemy import desc
+    from sqlalchemy import desc, case
 
     try:
         q = db.query(PredictionTracking)
@@ -2011,7 +2011,12 @@ async def get_predictions(
             q = q.filter(PredictionTracking.status == status)
         if model_version:
             q = q.filter(PredictionTracking.model_version == model_version)
-        predictions = q.order_by(desc(PredictionTracking.predicted_at)).limit(limit).all()
+        # Validated predictions surface first, then pending — both sorted by date
+        status_priority = case(
+            (PredictionTracking.status == "validated", 0),
+            else_=1,
+        )
+        predictions = q.order_by(status_priority, desc(PredictionTracking.predicted_at)).limit(limit).all()
 
         # Compute accuracy summary
         total = len(predictions)
