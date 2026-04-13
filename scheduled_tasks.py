@@ -8,6 +8,7 @@ Daily 02:30 UTC: Update actual values for matured predictions.
 Weekly Sun 03:00 UTC: Snapshot accuracy baselines for trend tracking.
 Weekly Mon 04:00 UTC: Walk-forward backtest for all significant Granger pairs.
 Daily 05:00 UTC: Ensemble model predictions (Granger + OLS + ARIMA).
+Every 6h:      Aggregate MVP page-view beacons into ProductMetrics.
 """
 
 import logging
@@ -192,6 +193,101 @@ def snapshot_baselines(db_session_factory):
         logger.error(f"Baseline snapshot failed: {e}", exc_info=True)
 
 
+def aggregate_page_views(db_session_factory):
+    """Aggregate MvpPageView rows into ProductMetrics for engagement tracking.
+
+    Counts page_views and unique_visitors (distinct visitor_hash) per build
+    for the period since the last aggregation. Upserts into ProductMetrics
+    via the ProductDeployment join.
+    """
+    try:
+        from sqlalchemy import func
+        from models import (
+            MvpPageView, ProductDeployment, ProductMetrics, MVPBuild,
+        )
+
+        db = db_session_factory()
+        now = datetime.utcnow()
+
+        # Get all builds with page views
+        build_stats = (
+            db.query(
+                MvpPageView.build_id,
+                func.count(MvpPageView.id).label("total_views"),
+                func.count(func.distinct(MvpPageView.visitor_hash)).label("unique_visitors"),
+            )
+            .group_by(MvpPageView.build_id)
+            .all()
+        )
+
+        if not build_stats:
+            logger.info("Page-view aggregation: no beacon data to process")
+            db.close()
+            return
+
+        updated = 0
+        for build_id, total_views, unique_visitors in build_stats:
+            # Find or create ProductDeployment for this build
+            deployment = (
+                db.query(ProductDeployment)
+                .filter(ProductDeployment.build_id == build_id)
+                .first()
+            )
+            if not deployment:
+                # Auto-create a minimal deployment record
+                build = db.query(MVPBuild).get(build_id)
+                if not build:
+                    continue
+                deployment = ProductDeployment(
+                    build_id=build_id,
+                    product_name=f"mvp-{build_id}",
+                    app_id=f"mvp_{build_id}",
+                    railway_url=build.railway_url,
+                    deployed_at=build.created_at,
+                    status="active",
+                )
+                db.add(deployment)
+                db.flush()
+
+            # Upsert ProductMetrics — one row per deployment per day
+            period_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            period_end = now
+
+            metrics = (
+                db.query(ProductMetrics)
+                .filter(
+                    ProductMetrics.deployment_id == deployment.id,
+                    ProductMetrics.period_start == period_start,
+                )
+                .first()
+            )
+            if metrics:
+                metrics.page_views = total_views
+                metrics.unique_visitors = unique_visitors
+                metrics.period_end = period_end
+                metrics.source = "beacon"
+            else:
+                metrics = ProductMetrics(
+                    deployment_id=deployment.id,
+                    period_start=period_start,
+                    period_end=period_end,
+                    page_views=total_views,
+                    unique_visitors=unique_visitors,
+                    source="beacon",
+                )
+                db.add(metrics)
+            updated += 1
+
+        db.commit()
+        db.close()
+        logger.info(
+            f"Page-view aggregation complete: updated metrics for {updated} builds"
+        )
+
+    except Exception as e:
+        logger.error(f"Page-view aggregation failed: {e}", exc_info=True)
+
+
 def init_scheduler(db_session_factory):
     """Initialise APScheduler with daily and weekly jobs."""
     try:
@@ -273,11 +369,22 @@ def init_scheduler(db_session_factory):
         replace_existing=True,
     )
     
+    # Every 6 hours — aggregate MVP page-view beacons into ProductMetrics
+    scheduler.add_job(
+        aggregate_page_views,
+        CronTrigger(hour='*/6', minute=30),
+        args=[db_session_factory],
+        id='aggregate_mvp_page_views',
+        name='MVP page-view aggregation',
+        replace_existing=True,
+    )
+    
     scheduler.start()
     logger.info(
         "✅ APScheduler started — "
         "Wikipedia (01:00), Reddit (01:30), GDELT (02:00), "
         "validation (02:30), snapshot (Sun 03:00), "
-        "walk-forward (Mon 04:00), ensemble (05:00 UTC)"
+        "walk-forward (Mon 04:00), ensemble (05:00), "
+        "page-view agg (*/6:30 UTC)"
     )
     return scheduler

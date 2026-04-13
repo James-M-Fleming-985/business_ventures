@@ -12,7 +12,7 @@ from models import (
     VariableMetadata, TimeSeriesData, CorrelationResult,
     RollingCorrelation, APIStatus, AnalysisJob, PredictionTracking,
     ExploitationRecommendation, ExploitationValidation,
-    MVPBuild, MVPBuildFile, ProductDeployment
+    MVPBuild, MVPBuildFile, ProductDeployment, MvpPageView
 )
 from correlation_analysis_service import CorrelationAnalysisService
 from services.granger_causality_service import GrangerCausalityService
@@ -3731,7 +3731,8 @@ def _run_build(build_id: int, recommendation_id: int, complexity: str):
                         github_svc.push_files(
                             repo_name, files, f"MVP Build #{build_id}"
                         )
-                    build.railway_url = github_url
+                    build.github_url = github_url
+                    build.railway_url = github_url  # fallback until Railway domain generated
                     logger.info(
                         f"Build {build_id}: pushed to GitHub {github_url}"
                     )
@@ -3748,6 +3749,20 @@ def _run_build(build_id: int, recommendation_id: int, complexity: str):
                             project["id"], repo_name
                         )
                         build.railway_service_id = service.get("id")
+                        # Generate a public domain for the service
+                        env_id = railway_svc.get_default_environment(
+                            project["id"]
+                        )
+                        if env_id and service.get("id"):
+                            domain_url = railway_svc.generate_domain(
+                                service["id"], env_id
+                            )
+                            if domain_url:
+                                build.railway_url = domain_url
+                                logger.info(
+                                    f"Build {build_id}: Railway domain "
+                                    f"{domain_url}"
+                                )
                         logger.info(
                             f"Build {build_id}: Railway project "
                             f"{project.get('id')} created"
@@ -4158,3 +4173,47 @@ async def get_mvp_build_file_content(build_id: int, file_id: int, db: Session = 
     if not bf:
         raise HTTPException(status_code=404, detail="File not found")
     return bf.to_dict(include_content=True)
+
+
+# ==============================================================================
+# MVP Engagement Beacon
+# ==============================================================================
+
+@router.post("/mvp-beacon/{build_id}", status_code=204)
+async def mvp_beacon(build_id: int, request: Request, db: Session = Depends(get_db)):
+    """Receive page-view beacon pings from deployed MVPs.
+
+    Stores anonymised visitor data for engagement tracking.
+    Called by the JS beacon injected into generated MVP dashboards.
+    """
+    import hashlib
+
+    # Validate build exists
+    build = db.query(MVPBuild).filter(MVPBuild.id == build_id).first()
+    if not build:
+        return  # silently ignore unknown build IDs
+
+    # Anonymised visitor fingerprint — no PII stored
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = (request.headers.get("user-agent") or "")[:500]
+    visitor_hash = hashlib.sha256(
+        f"{client_ip}:{user_agent}".encode()
+    ).hexdigest()
+
+    # Parse optional referrer from body
+    referrer = None
+    try:
+        body = await request.json()
+        referrer = (body.get("r") or "")[:500] if isinstance(body, dict) else None
+    except Exception:
+        pass
+
+    pv = MvpPageView(
+        build_id=build_id,
+        visitor_hash=visitor_hash,
+        user_agent=user_agent,
+        referrer=referrer,
+    )
+    db.add(pv)
+    db.commit()
+    return

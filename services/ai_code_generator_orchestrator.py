@@ -651,7 +651,7 @@ any classes or functions. Output only valid Python code, no explanations.
                 analysis['methods'].append({'name': m.group(1), 'line': i})
         return analysis
 
-    def collect_generated_files(self, spec: dict = None) -> List[Dict[str, Any]]:
+    def collect_generated_files(self, spec: dict = None, build_id: int = None) -> List[Dict[str, Any]]:
         """Collect all files generated during the TDD cycle.
         Returns list of {path, content, size, phase} dicts."""
         output_base = Path(self.config['output_base_path'])
@@ -683,11 +683,11 @@ any classes or functions. Output only valid Python code, no explanations.
                     })
 
         # --- Railway deployment scaffold ---
-        files.extend(self._generate_deployment_files(output_base, spec=spec))
+        files.extend(self._generate_deployment_files(output_base, spec=spec, build_id=build_id))
 
         return files
 
-    def _generate_deployment_files(self, output_base: Path, spec: dict = None) -> List[Dict[str, Any]]:
+    def _generate_deployment_files(self, output_base: Path, spec: dict = None, build_id: int = None) -> List[Dict[str, Any]]:
         """Generate requirements.txt, Procfile, and runtime.txt for Railway."""
         deploy_files: List[Dict[str, Any]] = []
 
@@ -768,7 +768,7 @@ any classes or functions. Output only valid Python code, no explanations.
         else:
             # Generate a thin main.py wrapper that imports the module and
             # exposes its classes/functions via a FastAPI health + info API.
-            main_py = self._generate_main_wrapper(src_dir, module_name, spec=spec)
+            main_py = self._generate_main_wrapper(src_dir, module_name, spec=spec, build_id=build_id)
             deploy_files.append({
                 'path': 'main.py',
                 'content': main_py,
@@ -795,7 +795,7 @@ any classes or functions. Output only valid Python code, no explanations.
         return deploy_files
 
     @staticmethod
-    def _generate_main_wrapper(src_dir: Path, module_name: str, spec: dict = None) -> str:
+    def _generate_main_wrapper(src_dir: Path, module_name: str, spec: dict = None, build_id: int = None) -> str:
         """Generate a main.py that wraps a library module in a FastAPI app with HTML dashboard."""
         import html as _html
 
@@ -1011,7 +1011,8 @@ def get_{cls.lower()}():
             '.replace(/"([^"]+)":/g,"<span class=\\"key\\">\\\"$1\\\"</span>:")'
             '.replace(/: "([^"]*)"/g,": <span class=\\"str\\">\\\"$1\\\"</span>")'
             '.replace(/: (\\\\d+\\\\.?\\\\d*)/g,": <span class=\\"num\\">$1</span>")}'
-            f'{fetch_js}'
+            + (f'if(!sessionStorage.getItem("_ca_b")){{fetch("https://businessventures-production.up.railway.app/api/mvp-beacon/{build_id}",{{method:"POST",mode:"no-cors",headers:{{"Content-Type":"application/json"}},body:JSON.stringify({{r:document.referrer}})}}).catch(function(){{}});sessionStorage.setItem("_ca_b","1")}}' if build_id else '')
+            + f'{fetch_js}'
             '</script></body></html>'
         )
 

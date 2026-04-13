@@ -85,6 +85,32 @@ class RailwayService:
         )
         return data.get("serviceCreate", {})
 
+    def get_default_environment(self, project_id: str) -> Optional[str]:
+        """Get the default (production) environment ID for a project."""
+        if not self.enabled:
+            return None
+        data = self._gql(
+            """
+            query($projectId: String!) {
+                project(id: $projectId) {
+                    environments {
+                        edges {
+                            node {
+                                id
+                                name
+                            }
+                        }
+                    }
+                }
+            }
+            """,
+            {"projectId": project_id},
+        )
+        edges = data.get("project", {}).get("environments", {}).get("edges", [])
+        if edges:
+            return edges[0]["node"]["id"]
+        return None
+
     # ------------------------------------------------------------------
     # Deployment
     # ------------------------------------------------------------------

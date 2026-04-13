@@ -726,7 +726,7 @@ class MVPBuilderService:
                     spec['_meta'] = recommendation_meta
 
                 # Collect generated files
-                generated = orchestrator.collect_generated_files(spec=spec)
+                generated = orchestrator.collect_generated_files(spec=spec, build_id=build_id)
                 all_files.extend(generated)
             else:
                 # --- Template fallback: match + render Jinja templates ---

@@ -508,7 +508,8 @@ class MVPBuild(Base):
     # Railway deployment
     railway_project_id = Column(String(100))
     railway_service_id = Column(String(100))
-    railway_url = Column(String(500))  # Live MVP URL
+    railway_url = Column(String(500))  # Live MVP URL (Railway domain)
+    github_url = Column(String(500))   # GitHub repo URL
 
     # Error tracking
     error_message = Column(Text)
@@ -552,6 +553,7 @@ class MVPBuild(Base):
             "railway_project_id": self.railway_project_id,
             "railway_service_id": self.railway_service_id,
             "railway_url": self.railway_url,
+            "github_url": self.github_url,
             "error_message": self.error_message,
             "total_errors": self.total_errors,
             "error_breakdown": self.error_breakdown,
@@ -759,4 +761,26 @@ class ProductMetrics(Base):
         Index('ix_pm_deployment', 'deployment_id'),
         Index('ix_pm_period', 'period_start', 'period_end'),
         Index('ix_pm_deploy_period', 'deployment_id', 'period_start', unique=True),
+    )
+
+
+class MvpPageView(Base):
+    """Raw page-view beacon data from deployed MVPs.
+
+    Each row = one page load event. Aggregated periodically into
+    ProductMetrics for the builds-portfolio engagement column.
+    """
+    __tablename__ = 'mvp_page_views'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    build_id = Column(Integer, ForeignKey('mvp_builds.id'), nullable=False)
+    visitor_hash = Column(String(64), nullable=False)  # SHA-256(IP + UA), no PII
+    user_agent = Column(String(500))
+    referrer = Column(String(500))
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    build = relationship('MVPBuild', backref='page_views')
+
+    __table_args__ = (
+        Index('ix_mpv_build_time', 'build_id', 'created_at'),
     )
