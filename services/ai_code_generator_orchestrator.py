@@ -875,7 +875,7 @@ def get_{cls.lower()}():
                 f'document.getElementById("result-{card_id}").innerHTML='
                 f'renderResult(d)}}).catch(e=>{{'
                 f'document.getElementById("result-{card_id}").innerHTML='
-                f'"<span class=\\"error\\">"+e+"</span>"}});\\n'
+                f'"<span class=error>"+e+"</span>"}});\\n'
             )
 
         # --- Extract hero section data from spec + recommendation meta ---
@@ -1004,13 +1004,13 @@ def get_{cls.lower()}():
             '<footer>Built by Causal Affect MVP Pipeline</footer>'
             '<script>'
             'function renderResult(d){'
-            'if(d.status==="error")return"<span class=\\"error\\">Error: "+d.error+"</span>";'
+            'if(d.status==="error")return"<span class=error>Error: "+d.error+"</span>";'
             'return"<pre>"+syntaxHL(JSON.stringify(d,null,2))+"</pre>"}'
             'function syntaxHL(j){'
             'return j.replace(/&/g,"&amp;").replace(/</g,"&lt;")'
-            '.replace(/"([^"]+)":/g,"<span class=\\"key\\">\\\"$1\\\"</span>:")'
-            '.replace(/: "([^"]*)"/g,": <span class=\\"str\\">\\\"$1\\\"</span>")'
-            '.replace(/: (\\\\d+\\\\.?\\\\d*)/g,": <span class=\\"num\\">$1</span>")}'
+            '.replace(/"([^"]+)":/g,"<span class=key>$1</span>:")'
+            '.replace(/: "([^"]*)"/g,": <span class=str>$1</span>")'
+            '.replace(/: (\\\\d+\\\\.?\\\\d*)/g,": <span class=num>$1</span>")}'
             + (f'if(!sessionStorage.getItem("_ca_b")){{fetch("https://businessventures-production.up.railway.app/api/mvp-beacon/{build_id}",{{method:"POST",mode:"no-cors",headers:{{"Content-Type":"application/json"}},body:JSON.stringify({{r:document.referrer}})}}).catch(function(){{}});sessionStorage.setItem("_ca_b","1")}}' if build_id else '')
             + f'{fetch_js}'
             '</script></body></html>'
