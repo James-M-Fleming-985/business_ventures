@@ -47,6 +47,9 @@ from routers import subscription  # Stripe subscription endpoints
 from routers import revenue  # Revenue dashboard (Track E)
 from routers import ensemble  # Ensemble predictions (M2 Track A)
 
+# Import Commercial Intelligence router (Track G — M2)
+from routers import commercial_intelligence
+
 # Import Signal Radar router from Causal_affect
 try:
     # Add necessary paths for Signal Radar imports
@@ -100,6 +103,7 @@ app.include_router(auth.router)  # Authentication endpoints
 app.include_router(subscription.router)  # Stripe subscription endpoints
 app.include_router(revenue.router)  # Revenue dashboard (Track E)
 app.include_router(ensemble.router)  # Ensemble predictions (M2 Track A)
+app.include_router(commercial_intelligence.router)  # Commercial Intelligence (Track G)
 
 # Include Signal Radar if available
 if signal_radar_router is not None:
@@ -251,6 +255,36 @@ async def startup_event():
             app.state.scheduler = init_scheduler(SessionLocal)
         except Exception as sched_err:
             logger.warning(f"Scheduler init skipped: {sched_err}")
+
+        # Track G: Schedule daily GA4 engagement pull + revenue aggregation
+        try:
+            scheduler = getattr(app.state, 'scheduler', None)
+            if scheduler:
+                from services.ga4_service import pull_engagement_for_all_deployments
+                from services.commercial_intelligence_service import aggregate_all_deployments
+
+                def _commercial_intelligence_job():
+                    db = SessionLocal()
+                    try:
+                        agg = aggregate_all_deployments(db)
+                        logger.info("Commercial intelligence aggregation: %s", agg)
+                        ga4 = pull_engagement_for_all_deployments(db)
+                        logger.info("GA4 engagement pull: %s", ga4)
+                    except Exception as ci_err:
+                        logger.warning("Commercial intelligence job failed: %s", ci_err)
+                    finally:
+                        db.close()
+
+                scheduler.add_job(
+                    _commercial_intelligence_job,
+                    'interval',
+                    hours=24,
+                    id='commercial_intelligence_daily',
+                    replace_existing=True,
+                )
+                logger.info("✅ Commercial intelligence daily job scheduled")
+        except Exception as ci_sched_err:
+            logger.warning(f"Commercial intelligence scheduler skipped: {ci_sched_err}")
         
         # Start background data fetch (non-blocking)
         asyncio.create_task(fetch_fresh_data_background())

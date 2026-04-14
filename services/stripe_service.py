@@ -297,7 +297,18 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str) -> bool:
         _log_revenue_event(db, event, event_type, data)
     except Exception as e:
         logger.warning(f"Failed to log revenue event: {e}")
-    
+
+    # Aggregate revenue into ProductMetrics for commercial intelligence (Track G)
+    try:
+        from services.commercial_intelligence_service import aggregate_revenue_to_metrics
+        # Use 'causal_affect' as the default app_id for the platform itself
+        app_id = "causal_affect"
+        if event_type in ("invoice.payment_succeeded", "customer.subscription.updated",
+                          "customer.subscription.deleted", "checkout.session.completed"):
+            aggregate_revenue_to_metrics(db, app_id)
+    except Exception as e:
+        logger.warning(f"Failed to aggregate revenue to ProductMetrics: {e}")
+
     if event_type == "checkout.session.completed":
         return handle_checkout_completed(db, data)
     elif event_type == "customer.subscription.updated":

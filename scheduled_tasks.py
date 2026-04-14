@@ -12,7 +12,7 @@ Every 6h:      Aggregate MVP page-view beacons into ProductMetrics.
 """
 
 import logging
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 
 logger = logging.getLogger(__name__)
 
@@ -288,6 +288,113 @@ def aggregate_page_views(db_session_factory):
         logger.error(f"Page-view aggregation failed: {e}", exc_info=True)
 
 
+def aggregate_revenue_metrics(db_session_factory):
+    """Aggregate Stripe revenue events into ProductMetrics for all active deployments.
+
+    M3 Track C: closes the commercial feedback loop so the system learns
+    which builds generate revenue and can adjust future scoring.
+    """
+    try:
+        from services.commercial_intelligence_service import aggregate_revenue_to_metrics
+        from models import ProductDeployment
+
+        db = db_session_factory()
+        try:
+            deployments = (
+                db.query(ProductDeployment)
+                .filter(ProductDeployment.status == 'active')
+                .all()
+            )
+            if not deployments:
+                logger.info("Revenue aggregation: no active deployments")
+                return
+
+            updated = 0
+            for dep in deployments:
+                result = aggregate_revenue_to_metrics(db, dep.app_id)
+                if result:
+                    updated += 1
+
+            db.commit()
+            logger.info(f"Revenue aggregation: updated metrics for {updated}/{len(deployments)} deployments")
+        finally:
+            db.close()
+
+    except Exception as e:
+        logger.error(f"Revenue aggregation failed: {e}", exc_info=True)
+
+
+def retrain_ensemble_if_needed(db_session_factory):
+    """Auto-retrain ensemble model when accuracy drops below threshold.
+
+    M3 Track A: prediction feedback loop — monitors rolling accuracy
+    and triggers weight recalibration when performance degrades.
+    """
+    ACCURACY_THRESHOLD = 0.60  # Retrain if 30-day accuracy drops below 60%
+
+    try:
+        from models import PredictionTracking
+        from services.ensemble_model import EnsembleModel
+
+        db = db_session_factory()
+        try:
+            thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+            recent_validated = (
+                db.query(PredictionTracking)
+                .filter(
+                    PredictionTracking.status == 'validated',
+                    PredictionTracking.direction_correct.isnot(None),
+                    PredictionTracking.validated_at >= thirty_days_ago,
+                    PredictionTracking.model_version.like('%ensemble%'),
+                )
+                .all()
+            )
+
+            if len(recent_validated) < 10:
+                logger.info(
+                    f"Retrain check: only {len(recent_validated)} validated predictions "
+                    f"in last 30d — need >= 10 to evaluate"
+                )
+                return
+
+            correct = sum(1 for p in recent_validated if p.direction_correct)
+            accuracy = correct / len(recent_validated)
+            logger.info(
+                f"Retrain check: 30-day accuracy = {accuracy:.1%} "
+                f"({correct}/{len(recent_validated)}), threshold = {ACCURACY_THRESHOLD:.0%}"
+            )
+
+            if accuracy >= ACCURACY_THRESHOLD:
+                return
+
+            # Accuracy below threshold — trigger recalibration
+            logger.warning(
+                f"Accuracy {accuracy:.1%} below threshold {ACCURACY_THRESHOLD:.0%} "
+                f"— triggering ensemble weight recalibration"
+            )
+            model = EnsembleModel(db)
+            # Force recalibration by running predictions with updated weights
+            pairs = set(
+                (p.signal_name, p.target_name) for p in recent_validated
+            )
+            recalibrated = 0
+            for signal, target in list(pairs)[:50]:
+                try:
+                    weights = model._calibrate_weights(signal, target)
+                    if weights:
+                        recalibrated += 1
+                except Exception:
+                    pass
+
+            logger.info(f"Recalibrated weights for {recalibrated} signal-target pairs")
+
+        finally:
+            db.close()
+
+    except Exception as e:
+        logger.error(f"Ensemble retrain check failed: {e}", exc_info=True)
+
+
 def init_scheduler(db_session_factory):
     """Initialise APScheduler with daily and weekly jobs."""
     try:
@@ -379,12 +486,33 @@ def init_scheduler(db_session_factory):
         replace_existing=True,
     )
     
+    # Daily at 06:00 UTC — aggregate Stripe revenue into ProductMetrics (M3 Track C)
+    scheduler.add_job(
+        aggregate_revenue_metrics,
+        CronTrigger(hour=6, minute=0),
+        args=[db_session_factory],
+        id='daily_revenue_aggregation',
+        name='Daily revenue metrics aggregation',
+        replace_existing=True,
+    )
+    
+    # Weekly Wednesday at 03:30 UTC — check if ensemble needs retraining (M3 Track A)
+    scheduler.add_job(
+        retrain_ensemble_if_needed,
+        CronTrigger(day_of_week='wed', hour=3, minute=30),
+        args=[db_session_factory],
+        id='weekly_ensemble_retrain_check',
+        name='Weekly ensemble retrain check',
+        replace_existing=True,
+    )
+    
     scheduler.start()
     logger.info(
         "✅ APScheduler started — "
         "Wikipedia (01:00), Reddit (01:30), GDELT (02:00), "
         "validation (02:30), snapshot (Sun 03:00), "
         "walk-forward (Mon 04:00), ensemble (05:00), "
-        "page-view agg (*/6:30 UTC)"
+        "page-view agg (*/6:30), revenue agg (06:00), "
+        "retrain check (Wed 03:30 UTC)"
     )
     return scheduler

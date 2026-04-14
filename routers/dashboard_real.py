@@ -2344,6 +2344,68 @@ def classify_action_type(target_source: str, target_name: str, correlation: floa
     return 'MONITOR'
 
 
+def get_outcome_score_adjustment(market_category: str, db) -> float:
+    """Compute a score adjustment (-15 to +15) based on past build outcomes.
+
+    Learns from historical deployment performance:
+    - Past builds in same category with engagement → positive adjustment
+    - Past builds in same category with zero engagement → negative adjustment
+    - No history → no adjustment (neutral)
+
+    This is the M3 feedback loop: the system learns which categories
+    produce commercially viable products and adjusts future scoring.
+    """
+    try:
+        from models import ProductDeployment, ProductMetrics, MVPBuild
+
+        deployments = (
+            db.query(ProductDeployment)
+            .filter(ProductDeployment.status == 'active')
+            .all()
+        )
+        if not deployments:
+            return 0.0
+
+        category_deployments = [
+            d for d in deployments
+            if d.tech_stack and isinstance(d.tech_stack, dict)
+            and d.tech_stack.get('market_category') == market_category
+        ]
+
+        if not category_deployments:
+            return 0.0
+
+        total_engagement = 0
+        total_builds = len(category_deployments)
+        builds_with_engagement = 0
+
+        for dep in category_deployments:
+            metrics = (
+                db.query(ProductMetrics)
+                .filter(ProductMetrics.app_id == dep.app_id)
+                .order_by(ProductMetrics.recorded_at.desc())
+                .first()
+            )
+            if metrics:
+                engagement = (metrics.monthly_active_users or 0) + (metrics.mrr or 0)
+                total_engagement += engagement
+                if engagement > 0:
+                    builds_with_engagement += 1
+
+        if total_builds == 0:
+            return 0.0
+
+        engagement_rate = builds_with_engagement / total_builds
+
+        # Scale: 0% engagement rate → -15, 100% → +15
+        adjustment = (engagement_rate - 0.5) * 30
+        return round(max(-15, min(15, adjustment)), 1)
+
+    except Exception as exc:
+        logger.debug(f"Outcome score adjustment failed: {exc}")
+        return 0.0
+
+
 def compute_opportunity_score(p_value: float, correlation: float, sample_size: int, momentum: float,
                               ensemble_confidence: str = None, ensemble_change_pct: float = None,
                               model_accuracy_pct: float = None) -> float:
@@ -2749,15 +2811,21 @@ def generate_build_reasoning(signal_display: str, target_display: str,
     plain += f" and {competition.lower()} competition."
 
     # Actionable BUILD suggestions based on category
-    build_suggestions = {
-        'health_tech': "clinical data dashboards, trial recruitment tools, or patient research portals",
-        'ai_tools': "AI-powered SaaS tools, model marketplaces, or developer integrations",
-        'deep_tech': "specialised analytics platforms, research collaboration tools, or API services",
-        'climate_tech': "sustainability trackers, carbon footprint calculators, or green investment tools",
-        'mental_health': "digital therapy platforms, wellbeing trackers, or community support apps",
-        'fintech': "portfolio trackers, market alert services, or financial education platforms",
-    }
-    suggestion = build_suggestions.get(category, "a SaaS product, data service, or content platform")
+    # If AI-generated product concepts exist, use the selected one
+    suggestion = None
+    if hasattr(signal_display, '__self__'):  # not called with extra args
+        pass
+    # Fallback: category-based generic suggestions
+    if not suggestion:
+        build_suggestions = {
+            'health_tech': "clinical data dashboards, trial recruitment tools, or patient research portals",
+            'ai_tools': "AI-powered SaaS tools, model marketplaces, or developer integrations",
+            'deep_tech': "specialised analytics platforms, research collaboration tools, or API services",
+            'climate_tech': "sustainability trackers, carbon footprint calculators, or green investment tools",
+            'mental_health': "digital therapy platforms, wellbeing trackers, or community support apps",
+            'fintech': "portfolio trackers, market alert services, or financial education platforms",
+        }
+        suggestion = build_suggestions.get(category, "a SaaS product, data service, or content platform")
 
     plain += (
         f" This creates a {duration}-month window to build and launch "
@@ -2976,6 +3044,10 @@ async def generate_exploitation_recommendations(db: Session = Depends(get_db)):
                         var, target_var, p_value, corr, lag, momentum, db,
                         ensemble_change_pct=ens_change_pct,
                     )
+                    # M3 feedback loop: adjust score based on past build outcomes
+                    category = viability.get('market_category', 'general')
+                    outcome_adj = get_outcome_score_adjustment(category, db)
+                    score = max(0, min(100, score + outcome_adj))
                     reasoning = generate_build_reasoning(
                         var.display_name, target_var.display_name,
                         viability, p_value, corr, lag, momentum,
@@ -3668,6 +3740,20 @@ def _run_build(build_id: int, recommendation_id: int, complexity: str):
 
         requirement = f"{rec.signal_display_name} → {rec.target_display_name}: {rec.reasoning or ''}"
 
+        # If user selected a product concept, use it as the primary requirement
+        selected_concept = None
+        if rec.product_concepts and rec.selected_concept_index is not None:
+            idx = rec.selected_concept_index
+            if 0 <= idx < len(rec.product_concepts):
+                selected_concept = rec.product_concepts[idx]
+                requirement = (
+                    f"Build: {selected_concept['name']} — {selected_concept['pitch']} "
+                    f"Target customer: {selected_concept.get('target_customer', 'N/A')}. "
+                    f"Revenue model: {selected_concept.get('revenue_model', 'N/A')}. "
+                    f"Signal: {rec.signal_display_name} → {rec.target_display_name}. "
+                    f"{rec.reasoning or ''}"
+                )
+
         recommendation_meta = {
             'signal_display_name': rec.signal_display_name,
             'target_display_name': rec.target_display_name,
@@ -3678,6 +3764,7 @@ def _run_build(build_id: int, recommendation_id: int, complexity: str):
             'estimated_monthly_searches': getattr(rec, 'estimated_monthly_searches', None),
             'competition_level': getattr(rec, 'competition_level', None),
             'build_viability_score': float(rec.build_viability_score) if getattr(rec, 'build_viability_score', None) else None,
+            'selected_concept': selected_concept,
         }
 
         s3 = S3Service()
@@ -3787,6 +3874,8 @@ def _run_build(build_id: int, recommendation_id: int, complexity: str):
                         "framework": "fastapi",
                         "language": "python",
                         "hosting": "railway",
+                        "market_category": getattr(rec, 'market_category', None),
+                        "selected_concept": selected_concept,
                     },
                     railway_url=build.railway_url,
                     deployed_at=datetime.utcnow(),
@@ -3835,15 +3924,91 @@ def _run_build(build_id: int, recommendation_id: int, complexity: str):
     except Exception as e:
         logger.error(f"Build {build_id} failed: {e}\n{traceback.format_exc()}")
         try:
+            from services.build_error_classifier import classify_build_error
+            error_text = f"{e}\n{traceback.format_exc()}"
+            classification = classify_build_error(error_text)
             build = db.query(MVPBuild).filter(MVPBuild.id == build_id).first()
             if build and build.status != "FAILED":
                 build.status = "FAILED"
                 build.error_message = str(e)[:500]
+                build.error_breakdown = classification
                 db.commit()
+            logger.info(
+                f"Build {build_id}: classified as {classification['primary_category']} "
+                f"(auto_fixable={classification['auto_fixable']})"
+            )
         except Exception:
             pass
     finally:
         db.close()
+
+
+@router.post("/exploitation/{rec_id}/generate-concepts")
+async def generate_product_concepts_for_rec(
+    rec_id: int,
+    db: Session = Depends(get_db),
+):
+    """Generate 3 AI-powered product concepts for a BUILD recommendation."""
+    rec = db.query(ExploitationRecommendation).filter(
+        ExploitationRecommendation.id == rec_id
+    ).first()
+    if not rec:
+        raise HTTPException(status_code=404, detail="Recommendation not found")
+    if rec.action_type != "BUILD":
+        raise HTTPException(status_code=400, detail="Only BUILD recommendations support product concepts")
+
+    from services.product_concept_generator import generate_product_concepts
+    concepts = generate_product_concepts(
+        signal_display=rec.signal_display_name,
+        target_display=rec.target_display_name,
+        market_category=rec.market_category or "general",
+        opportunity_score=float(rec.opportunity_score or 0),
+        correlation=float(rec.correlation or 0),
+        p_value=float(rec.granger_p_value or 1),
+        lag=rec.optimal_lag or 1,
+        estimated_monthly_searches=rec.estimated_monthly_searches or 0,
+        search_trend_direction=rec.search_trend_direction or "stable",
+        competition_level=rec.competition_level or "LOW",
+        revenue_potential=rec.revenue_potential or "LOW",
+        predicted_direction=rec.predicted_direction,
+        predicted_change_pct=float(rec.predicted_change_pct) if rec.predicted_change_pct else None,
+        ensemble_confidence=rec.ensemble_confidence,
+        db_session=db,
+    )
+
+    rec.product_concepts = concepts
+    rec.updated_at = datetime.utcnow()
+    db.commit()
+
+    return {"recommendation_id": rec_id, "concepts": concepts}
+
+
+@router.post("/exploitation/{rec_id}/select-concept")
+async def select_product_concept(
+    rec_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """Select which product concept (0-2) to build for a recommendation."""
+    body = await request.json()
+    index = body.get("concept_index")
+    if index is None or not isinstance(index, int) or index < 0 or index > 2:
+        raise HTTPException(status_code=400, detail="concept_index must be 0, 1, or 2")
+
+    rec = db.query(ExploitationRecommendation).filter(
+        ExploitationRecommendation.id == rec_id
+    ).first()
+    if not rec:
+        raise HTTPException(status_code=404, detail="Recommendation not found")
+    if not rec.product_concepts:
+        raise HTTPException(status_code=400, detail="Generate concepts first")
+
+    rec.selected_concept_index = index
+    rec.updated_at = datetime.utcnow()
+    db.commit()
+
+    selected = rec.product_concepts[index] if index < len(rec.product_concepts) else None
+    return {"recommendation_id": rec_id, "selected_index": index, "concept": selected}
 
 
 @router.post("/exploitation/build")

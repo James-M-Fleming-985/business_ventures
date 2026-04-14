@@ -146,6 +146,9 @@ function dashboardData() {
         codeViewerPath: '',
         codeViewerContent: '',
 
+        // Product concepts state (M3 Track G)
+        conceptsLoading: {},
+
         // ============================================================
         // BUILDS PORTFOLIO TAB (M2 Track H)
         // ============================================================
@@ -156,7 +159,14 @@ function dashboardData() {
         buildsPageSize: 25,
         buildsPage: 1,
         buildsExpandedRow: null,
-        
+
+        // ============================================================
+        // COMMERCIAL INTELLIGENCE (Track G — M2)
+        // ============================================================
+        commercialCase: {},
+        commercialIntelligence: null,
+        iterateReason: {},
+
         async init() {
             console.log('Initializing dashboard...');
             await this.loadStats();
@@ -882,6 +892,8 @@ function dashboardData() {
                     console.log(`📊 Loaded ${this.exploitationRecommendations.length} exploitation recommendations`);
                     // Load build statuses for BUILD cards
                     await this.loadBuilds();
+                    // Load commercial intelligence for BUILD cards (Track G)
+                    this.loadCommercialCasesForBuildRecs();
                 }
             } catch (error) {
                 console.error('Failed to load exploitation recommendations:', error);
@@ -2354,13 +2366,13 @@ function dashboardData() {
             }
         },
 
-        async iterateBuild(buildId, recId) {
+        async iterateBuild(buildId, recId, reason) {
             if (!confirm('Iterate on this build? This will create a new version using ML insights from the previous build.')) return;
             try {
                 const res = await fetch(`/api/dashboard/exploitation/builds/${buildId}/iterate`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ reason: 'manual' }),
+                    body: JSON.stringify({ reason: reason || 'manual' }),
                 });
                 if (!res.ok) {
                     const err = await res.json().catch(() => ({}));
@@ -2380,6 +2392,74 @@ function dashboardData() {
                 console.error('Iterate error:', e);
                 alert('Iterate failed: ' + e.message);
             }
+        },
+
+        // ============================================================
+        // Product Concepts (M3 Track G)
+        // ============================================================
+        async generateConcepts(recId) {
+            console.log('💡 generateConcepts called for rec', recId);
+            this.conceptsLoading = {...this.conceptsLoading, [recId]: true};
+            try {
+                const res = await fetch(`/api/dashboard/exploitation/${recId}/generate-concepts`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    console.error('Concept generation failed:', err.detail || res.status);
+                    this.conceptsLoading = {...this.conceptsLoading, [recId]: false};
+                    return;
+                }
+                const data = await res.json();
+                console.log('💡 Generated concepts:', data.concepts);
+                // Update the recommendation in the local exploitation array
+                const idx = this.exploitation.findIndex(r => r.id === recId);
+                if (idx >= 0) {
+                    this.exploitation[idx] = {
+                        ...this.exploitation[idx],
+                        product_concepts: data.concepts,
+                        selected_concept_index: null,
+                    };
+                    this.exploitation = [...this.exploitation];
+                }
+            } catch (e) {
+                console.error('Concept generation error:', e);
+            }
+            this.conceptsLoading = {...this.conceptsLoading, [recId]: false};
+            this.$nextTick(() => { try { lucide.createIcons(); } catch(e) {} });
+        },
+
+        async selectConcept(recId, conceptIndex) {
+            console.log('✅ selectConcept', recId, conceptIndex);
+            try {
+                const res = await fetch(`/api/dashboard/exploitation/${recId}/select-concept`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ concept_index: conceptIndex }),
+                });
+                if (!res.ok) return;
+                // Update local state
+                const idx = this.exploitation.findIndex(r => r.id === recId);
+                if (idx >= 0) {
+                    this.exploitation[idx] = {
+                        ...this.exploitation[idx],
+                        selected_concept_index: conceptIndex,
+                    };
+                    this.exploitation = [...this.exploitation];
+                    // Auto-set complexity from concept
+                    const concept = this.exploitation[idx].product_concepts?.[conceptIndex];
+                    if (concept?.complexity) {
+                        this.buildComplexity = {
+                            ...this.buildComplexity,
+                            [recId]: concept.complexity,
+                        };
+                    }
+                }
+            } catch (e) {
+                console.error('Select concept error:', e);
+            }
+            this.$nextTick(() => { try { lucide.createIcons(); } catch(e) {} });
         },
 
         // ============================================================
@@ -2433,6 +2513,47 @@ function dashboardData() {
                 }
             };
             setTimeout(poll, 2000);
+        },
+
+        // ============================================================
+        // COMMERCIAL INTELLIGENCE (Track G — M2)
+        // ============================================================
+        async loadCommercialIntelligence() {
+            try {
+                const res = await fetch('/api/commercial-intelligence');
+                if (!res.ok) return;
+                this.commercialIntelligence = await res.json();
+                console.log('📊 Commercial intelligence loaded');
+            } catch (e) {
+                console.error('Commercial intelligence load error:', e);
+            }
+        },
+
+        async fetchCommercialCase(recId, signalName, targetName) {
+            try {
+                const res = await fetch('/api/commercial-intelligence/confidence', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        market_category: signalName || null,
+                        target_demographic: targetName || null,
+                        tech_stack: 'fastapi',
+                        pricing_model: 'freemium',
+                    }),
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                this.commercialCase = {...this.commercialCase, [recId]: data};
+            } catch (e) {
+                console.error('Commercial case fetch error:', e);
+            }
+        },
+
+        async loadCommercialCasesForBuildRecs() {
+            const buildRecs = this.exploitationRecommendations.filter(r => r.action_type === 'BUILD');
+            for (const rec of buildRecs) {
+                await this.fetchCommercialCase(rec.id, rec.signal_display_name, rec.target_display_name);
+            }
         },
 
         async loadBuilds() {

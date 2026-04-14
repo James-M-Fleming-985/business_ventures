@@ -383,6 +383,10 @@ class ExploitationRecommendation(Base):
     ensemble_r_squared = Column(Float, nullable=True)          # OLS R² from ensemble prediction
     ensemble_change_pct = Column(Float, nullable=True)         # Ensemble-predicted % change magnitude
 
+    # AI-generated product concepts (M3 Track G)
+    product_concepts = Column(JSON, nullable=True)             # List of 3 product concept dicts from LLM
+    selected_concept_index = Column(Integer, nullable=True)    # 0-2: which concept user selected for build
+
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -431,6 +435,8 @@ class ExploitationRecommendation(Base):
             "ensemble_predicted_at": self.ensemble_predicted_at.isoformat() if self.ensemble_predicted_at else None,
             "ensemble_r_squared": self.ensemble_r_squared,
             "ensemble_change_pct": self.ensemble_change_pct,
+            "product_concepts": self.product_concepts,
+            "selected_concept_index": self.selected_concept_index,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }

@@ -876,6 +876,12 @@ class MVPBuilderService:
                     build.status = 'FAILED'
                     build.error_message = str(exc)[:500]
                     build.duration_seconds = round(time.time() - start, 2)
+                    try:
+                        from services.build_error_classifier import classify_build_error
+                        classification = classify_build_error(str(exc))
+                        build.error_breakdown = classification
+                    except Exception:
+                        pass
                     db_session.commit()
             return {'build_id': build_id, 'files': 0, 'errors': 1,
                     'duration': round(time.time() - start, 2), 'status': 'FAILED'}
