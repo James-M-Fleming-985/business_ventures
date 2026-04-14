@@ -35,15 +35,42 @@ def generate_layer_spec_with_ai(
     complexity: str,
     build_id: int,
     anthropic_key: str,
+    db_session=None,
 ) -> Dict[str, Any]:
     """
     Use AI to generate a structured LAYER_REQUIREMENTS dict from a
     one-line business requirement.
 
+    If a db_session is provided, consults commercial intelligence to
+    inject historical deployment performance context into the AI prompt
+    (Track G — M3: YAML auto-generator consults commercial intelligence).
+
     Returns a dict that is a valid input for
     AICodeGeneratorOrchestrator.execute_full_cycle(requirements).
     """
     counts = COMPLEXITY_AC_COUNTS.get(complexity, COMPLEXITY_AC_COUNTS['MEDIUM'])
+
+    # Build commercial intelligence context if available
+    commercial_context = ""
+    confidence_note = ""
+    if db_session:
+        try:
+            from services.commercial_intelligence_service import (
+                get_commercial_context_for_spec,
+                get_configuration_confidence,
+            )
+            commercial_context = get_commercial_context_for_spec(db_session)
+            confidence = get_configuration_confidence(
+                db_session,
+                tech_stack="fastapi",
+                pricing_model="freemium",
+            )
+            confidence_note = (
+                f"\nCONFIGURATION CONFIDENCE: {confidence['overall_confidence']}% — "
+                f"{confidence['recommendation']}"
+            )
+        except Exception as exc:
+            logger.warning("Could not load commercial intelligence for spec: %s", exc)
 
     prompt = f"""You are an expert software architect. Given a business requirement,
 generate a structured YAML layer specification for automated code generation.
@@ -52,6 +79,8 @@ BUSINESS REQUIREMENT:
 "{requirement}"
 
 COMPLEXITY: {complexity}
+{commercial_context}
+{confidence_note}
 
 Generate a YAML document with EXACTLY this structure (output ONLY the YAML, no explanation):
 
