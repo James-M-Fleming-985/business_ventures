@@ -368,7 +368,7 @@
             <i data-lucide="award" class="w-4 h-4 inline mr-1"></i>
             Leaderboard
         </button>
-        <button @click="activeView = 'predictions'; triggerActualUpdate().then(() => loadPredictions())" 
+        <button @click="activeView = 'predictions'; triggerActualUpdate().then(() => loadPredictions()); loadVersionComparison()" 
                 :class="activeView === 'predictions' ? 'bg-primary-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'"
                 class="px-4 py-2 rounded-lg text-sm font-medium transition">
             <i data-lucide="target" class="w-4 h-4 inline mr-1"></i>
@@ -593,6 +593,35 @@
             <span class="text-xs text-slate-600" x-show="predictionFilter === 'backtest_walkforward'">Walk-forward historical accuracy — correlations recomputed at each point</span>
             <span class="text-xs text-slate-600" x-show="predictionFilter === 'granger_v1'">Forward-looking predictions from exploitation recommendations</span>
             <span class="text-xs text-slate-600" x-show="predictionFilter === 'backtest_regression'">Walk-forward with OLS regression slope — calibrated magnitude predictions</span>
+        </div>
+
+        <!-- Version Comparison Overlay -->
+        <div class="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <span class="text-xs text-slate-500 uppercase tracking-wider">Model Versions:</span>
+                    <template x-for="v in (versionComparisonData?.versions || [])" :key="v.version">
+                        <label class="flex items-center space-x-1.5 cursor-pointer group">
+                            <input type="checkbox"
+                                   :value="v.version"
+                                   x-model="selectedVersions"
+                                   @change="renderPredictionCharts()"
+                                   class="w-3.5 h-3.5 rounded border-slate-600 text-primary-500 focus:ring-primary-500 focus:ring-offset-0 bg-slate-700">
+                            <span class="text-xs font-medium group-hover:text-white transition"
+                                  :class="selectedVersions.includes(v.version) ? 'text-white' : 'text-slate-400'"
+                                  x-text="v.version + ' (' + (v.overall_accuracy !== null ? v.overall_accuracy + '%' : '—') + ')'"></span>
+                            <span class="text-xs text-slate-600" x-text="v.label"></span>
+                        </label>
+                    </template>
+                    <span x-show="!versionComparisonData" class="text-xs text-slate-600 italic">Run comparison to overlay model versions</span>
+                </div>
+                <button @click="runVersionComparison()"
+                        :disabled="versionComparisonLoading"
+                        class="px-3 py-1 bg-violet-600 hover:bg-violet-700 disabled:bg-slate-700 disabled:text-slate-500 rounded text-xs font-medium transition flex items-center gap-1">
+                    <i data-lucide="play" class="w-3 h-3" :class="{'animate-spin': versionComparisonLoading}"></i>
+                    <span x-text="versionComparisonLoading ? 'Running...' : (versionComparisonData ? 'Refresh' : 'Run Comparison')"></span>
+                </button>
+            </div>
         </div>
 
         <!-- Service Status Banner -->

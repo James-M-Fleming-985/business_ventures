@@ -101,6 +101,11 @@ function dashboardData() {
         recentPredictions: [],
         predictionFilter: '',
         
+        // Version comparison overlay
+        versionComparisonData: null,
+        selectedVersions: ['v1'],
+        versionComparisonLoading: false,
+        
         // ============================================================
         // PROGRAMME BASELINES (M0)
         // ============================================================
@@ -753,10 +758,17 @@ function dashboardData() {
         },
         
         renderPredictionCharts() {
-            if (typeof Plotly === 'undefined' || this.timeSeriesData.length === 0) return;
+            if (typeof Plotly === 'undefined') return;
             
-            const ts = this.timeSeriesData;
-            const months = ts.map(t => t.month);
+            // Version color palette
+            const VERSION_COLORS = {
+                'v1': '#94a3b8', // slate
+                'v2': '#6366f1', // indigo
+                'v3': '#22c55e', // green
+                'v4': '#a855f7', // purple
+                'v5': '#f97316', // orange
+                'v6': '#ec4899', // pink
+            };
             
             const chartLayout = (yTitle) => ({
                 paper_bgcolor: 'transparent',
@@ -771,80 +783,158 @@ function dashboardData() {
             });
             const chartConfig = { responsive: true, displayModeBar: false };
             
-            // Chart 1: Change % — Predicted vs Actual
+            // Determine data source: version comparison or raw time series
+            const hasVersionData = this.versionComparisonData && 
+                                   this.versionComparisonData.versions && 
+                                   this.versionComparisonData.versions.length > 0 &&
+                                   this.selectedVersions.length > 0;
+            
+            // --- Chart 1: Change % — Predicted vs Actual ---
             const el1 = document.getElementById('chartChangePct');
             if (el1) {
-                const predChange = ts.map(t => t.avg_predicted_change_pct);
-                const actChange = ts.map(t => t.avg_actual_change_pct);
-                Plotly.newPlot(el1, [
-                    {
-                        x: months, y: predChange, name: 'Predicted Change %',
-                        type: 'scatter', mode: 'lines+markers',
-                        line: { color: '#6366f1', width: 2.5 },
-                        marker: { size: 6 }
-                    },
-                    {
-                        x: months, y: actChange, name: 'Actual Change %',
-                        type: 'scatter', mode: 'lines+markers',
-                        line: { color: '#22c55e', width: 2.5 },
-                        marker: { size: 6 }
+                const traces = [];
+                
+                if (hasVersionData) {
+                    // Actuals from replay data
+                    const actuals = this.versionComparisonData.actuals?.time_series || [];
+                    if (actuals.length > 0) {
+                        traces.push({
+                            x: actuals.map(a => a.month), y: actuals.map(a => a.avg_actual_change_pct),
+                            name: 'Actual Change %', type: 'scatter', mode: 'lines+markers',
+                            line: { color: '#22c55e', width: 2.5 }, marker: { size: 6 }
+                        });
                     }
-                ], chartLayout('Change %'), chartConfig);
+                    // One trace per selected version
+                    for (const ver of this.versionComparisonData.versions) {
+                        if (!this.selectedVersions.includes(ver.version)) continue;
+                        const vts = ver.time_series || [];
+                        const color = VERSION_COLORS[ver.version] || '#94a3b8';
+                        traces.push({
+                            x: vts.map(t => t.month), y: vts.map(t => t.avg_predicted_change_pct),
+                            name: `Predicted ${ver.version}`, type: 'scatter', mode: 'lines+markers',
+                            line: { color, width: 2 }, marker: { size: 5 }
+                        });
+                    }
+                } else if (this.timeSeriesData.length > 0) {
+                    // Fallback: original single-version view
+                    const ts = this.timeSeriesData;
+                    const months = ts.map(t => t.month);
+                    traces.push(
+                        { x: months, y: ts.map(t => t.avg_predicted_change_pct), name: 'Predicted Change %', type: 'scatter', mode: 'lines+markers', line: { color: '#6366f1', width: 2.5 }, marker: { size: 6 } },
+                        { x: months, y: ts.map(t => t.avg_actual_change_pct), name: 'Actual Change %', type: 'scatter', mode: 'lines+markers', line: { color: '#22c55e', width: 2.5 }, marker: { size: 6 } }
+                    );
+                }
+                if (traces.length > 0) Plotly.newPlot(el1, traces, chartLayout('Change %'), chartConfig);
             }
             
-            // Chart 2: Lag — Predicted vs Actual
+            // --- Chart 2: Lag — Predicted vs Actual ---
             const el2 = document.getElementById('chartLag');
             if (el2) {
-                const predLag = ts.map(t => t.avg_predicted_lag);
-                const actLag = ts.map(t => t.avg_actual_lag);
-                Plotly.newPlot(el2, [
-                    {
-                        x: months, y: predLag, name: 'Predicted Lag (days)',
-                        type: 'scatter', mode: 'lines+markers',
-                        line: { color: '#6366f1', width: 2.5 },
-                        marker: { size: 6 }
-                    },
-                    {
-                        x: months, y: actLag, name: 'Actual Lag (days)',
-                        type: 'scatter', mode: 'lines+markers',
-                        line: { color: '#22c55e', width: 2.5 },
-                        marker: { size: 6 }
+                const traces = [];
+                
+                if (hasVersionData) {
+                    const actuals = this.versionComparisonData.actuals?.time_series || [];
+                    if (actuals.length > 0) {
+                        traces.push({
+                            x: actuals.map(a => a.month), y: actuals.map(a => a.avg_actual_lag),
+                            name: 'Actual Lag (days)', type: 'scatter', mode: 'lines+markers',
+                            line: { color: '#22c55e', width: 2.5 }, marker: { size: 6 }
+                        });
                     }
-                ], chartLayout('Days'), chartConfig);
+                    for (const ver of this.versionComparisonData.versions) {
+                        if (!this.selectedVersions.includes(ver.version)) continue;
+                        const vts = ver.time_series || [];
+                        const color = VERSION_COLORS[ver.version] || '#94a3b8';
+                        traces.push({
+                            x: vts.map(t => t.month), y: vts.map(t => t.avg_predicted_lag),
+                            name: `Predicted Lag ${ver.version}`, type: 'scatter', mode: 'lines+markers',
+                            line: { color, width: 2 }, marker: { size: 5 }
+                        });
+                    }
+                } else if (this.timeSeriesData.length > 0) {
+                    const ts = this.timeSeriesData;
+                    const months = ts.map(t => t.month);
+                    traces.push(
+                        { x: months, y: ts.map(t => t.avg_predicted_lag), name: 'Predicted Lag (days)', type: 'scatter', mode: 'lines+markers', line: { color: '#6366f1', width: 2.5 }, marker: { size: 6 } },
+                        { x: months, y: ts.map(t => t.avg_actual_lag), name: 'Actual Lag (days)', type: 'scatter', mode: 'lines+markers', line: { color: '#22c55e', width: 2.5 }, marker: { size: 6 } }
+                    );
+                }
+                if (traces.length > 0) Plotly.newPlot(el2, traces, chartLayout('Days'), chartConfig);
             }
             
-            // Chart 3: Direction Accuracy Over Time
+            // --- Chart 3: Direction Accuracy Over Time ---
             const el3 = document.getElementById('chartDirectionAcc');
             if (el3) {
-                const dirAcc = ts.map(t => t.direction_accuracy);
-                const counts = ts.map(t => t.count);
-                Plotly.newPlot(el3, [
-                    {
+                const traces = [];
+                
+                if (hasVersionData) {
+                    // Collect all months across versions for baseline lines
+                    let allMonths = [];
+                    for (const ver of this.versionComparisonData.versions) {
+                        if (this.selectedVersions.includes(ver.version)) {
+                            allMonths = allMonths.concat((ver.time_series || []).map(t => t.month));
+                        }
+                    }
+                    allMonths = [...new Set(allMonths)].sort();
+                    
+                    // Per-version accuracy traces
+                    for (const ver of this.versionComparisonData.versions) {
+                        if (!this.selectedVersions.includes(ver.version)) continue;
+                        const vts = ver.time_series || [];
+                        const color = VERSION_COLORS[ver.version] || '#94a3b8';
+                        const counts = vts.map(t => t.count);
+                        traces.push({
+                            x: vts.map(t => t.month), y: vts.map(t => t.direction_accuracy),
+                            name: `Accuracy ${ver.version} (${ver.overall_accuracy || '—'}%)`,
+                            type: 'scatter', mode: 'lines+markers',
+                            line: { color, width: 2.5 }, marker: { size: 6 },
+                            text: counts.map(c => c + ' predictions'),
+                            hovertemplate: '%{y:.1f}% (%{text})<extra></extra>'
+                        });
+                    }
+                    
+                    // Baseline lines
+                    if (allMonths.length >= 2) {
+                        traces.push({
+                            x: [allMonths[0], allMonths[allMonths.length - 1]], y: [50, 50],
+                            name: 'Random Baseline (50%)', type: 'scatter', mode: 'lines',
+                            line: { color: '#475569', width: 1.5, dash: 'dash' }
+                        });
+                        traces.push({
+                            x: [allMonths[0], allMonths[allMonths.length - 1]], y: [90, 90],
+                            name: 'M0 Target (90%)', type: 'scatter', mode: 'lines',
+                            line: { color: '#ef4444', width: 1.5, dash: 'dot' }
+                        });
+                    }
+                } else if (this.timeSeriesData.length > 0) {
+                    const ts = this.timeSeriesData;
+                    const months = ts.map(t => t.month);
+                    const dirAcc = ts.map(t => t.direction_accuracy);
+                    const counts = ts.map(t => t.count);
+                    traces.push({
                         x: months, y: dirAcc, name: 'Direction Accuracy',
                         type: 'scatter', mode: 'lines+markers',
-                        line: { color: '#f59e0b', width: 2.5 },
-                        marker: { size: 6 },
+                        line: { color: '#f59e0b', width: 2.5 }, marker: { size: 6 },
                         text: counts.map(c => c + ' predictions'),
                         hovertemplate: '%{y:.1f}% (%{text})<extra></extra>'
-                    },
-                    {
-                        x: [months[0], months[months.length - 1]],
-                        y: [50, 50],
-                        name: 'Random Baseline (50%)',
-                        type: 'scatter', mode: 'lines',
+                    });
+                    traces.push({
+                        x: [months[0], months[months.length - 1]], y: [50, 50],
+                        name: 'Random Baseline (50%)', type: 'scatter', mode: 'lines',
                         line: { color: '#475569', width: 1.5, dash: 'dash' }
-                    },
-                    {
-                        x: [months[0], months[months.length - 1]],
-                        y: [90, 90],
-                        name: 'M0 Target (90%)',
-                        type: 'scatter', mode: 'lines',
+                    });
+                    traces.push({
+                        x: [months[0], months[months.length - 1]], y: [90, 90],
+                        name: 'M0 Target (90%)', type: 'scatter', mode: 'lines',
                         line: { color: '#ef4444', width: 1.5, dash: 'dot' }
-                    }
-                ], {
-                    ...chartLayout('Accuracy %'),
-                    yaxis: { ...chartLayout('Accuracy %').yaxis, range: [0, 100] }
-                }, chartConfig);
+                    });
+                }
+                if (traces.length > 0) {
+                    Plotly.newPlot(el3, traces, {
+                        ...chartLayout('Accuracy %'),
+                        yaxis: { ...chartLayout('Accuracy %').yaxis, range: [0, 100] }
+                    }, chartConfig);
+                }
             }
         },
         
@@ -865,6 +955,35 @@ function dashboardData() {
                 console.error('Prediction validation failed:', error);
             } finally {
                 this.isUpdatingActuals = false;
+            }
+        },
+
+        async loadVersionComparison() {
+            try {
+                const response = await fetch('/api/dashboard/predictions/version-comparison');
+                if (response.ok) {
+                    this.versionComparisonData = await response.json();
+                    console.log('🔄 Version comparison loaded:', this.versionComparisonData.versions?.length, 'versions');
+                    this.$nextTick(() => this.renderPredictionCharts());
+                }
+            } catch (error) {
+                console.error('Version comparison load failed:', error);
+            }
+        },
+
+        async runVersionComparison() {
+            this.versionComparisonLoading = true;
+            try {
+                const response = await fetch('/api/dashboard/predictions/run-version-comparison', { method: 'POST' });
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('🔄 Version comparison computed:', result);
+                    await this.loadVersionComparison();
+                }
+            } catch (error) {
+                console.error('Version comparison run failed:', error);
+            } finally {
+                this.versionComparisonLoading = false;
             }
         },
 

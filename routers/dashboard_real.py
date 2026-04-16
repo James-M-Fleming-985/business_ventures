@@ -3491,6 +3491,60 @@ async def validate_predictions(db: Session = Depends(get_db)):
 
 
 # ==============================================================================
+# VERSION COMPARISON — Replay validated predictions through model configs
+# ==============================================================================
+
+# In-memory cache for replay results (expensive to compute)
+_version_comparison_cache: dict = {"data": None, "computed_at": None}
+
+@router.get("/predictions/version-comparison")
+async def get_version_comparison(db: Session = Depends(get_db)):
+    """Return cached replay results comparing model versions.
+
+    If no cached results exist, runs the replay on the fly (may be slow
+    for large datasets — prefer triggering via POST first).
+    """
+    global _version_comparison_cache
+    if _version_comparison_cache["data"] is not None:
+        return {
+            **_version_comparison_cache["data"],
+            "cached": True,
+            "computed_at": _version_comparison_cache["computed_at"],
+        }
+
+    # No cache — run inline (small datasets are fast enough)
+    try:
+        from services.ensemble_model import replay_validated_predictions
+        result = replay_validated_predictions(db)
+        _version_comparison_cache["data"] = result
+        _version_comparison_cache["computed_at"] = datetime.utcnow().isoformat()
+        return {**result, "cached": False, "computed_at": _version_comparison_cache["computed_at"]}
+    except Exception as e:
+        logger.error(f"Version comparison failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/predictions/run-version-comparison")
+async def run_version_comparison(db: Session = Depends(get_db)):
+    """Trigger a fresh replay comparison and cache the results."""
+    global _version_comparison_cache
+    try:
+        from services.ensemble_model import replay_validated_predictions
+        result = replay_validated_predictions(db)
+        _version_comparison_cache["data"] = result
+        _version_comparison_cache["computed_at"] = datetime.utcnow().isoformat()
+        return {
+            "status": "success",
+            "computed_at": _version_comparison_cache["computed_at"],
+            "total_predictions": result.get("total_predictions", 0),
+            "versions": len(result.get("versions", [])),
+        }
+    except Exception as e:
+        logger.error(f"Version comparison run failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==============================================================================
 # M0 Programme Baselines Endpoints
 # ==============================================================================
 

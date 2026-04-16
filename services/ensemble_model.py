@@ -54,9 +54,13 @@ ROLLING_WINDOWS = [7, 30, 90]
 class EnsembleModel:
     """Weighted ensemble combining Granger, OLS, and ARIMA sub-models."""
 
+    # Candidate ARIMA orders — searched once per target, cached
+    ARIMA_ORDERS = [(1, 1, 1), (2, 1, 1), (1, 1, 2), (2, 1, 2), (0, 1, 1)]
+
     def __init__(self, db: Session):
         self.db = db
         self.weights = dict(DEFAULT_WEIGHTS)
+        self._arima_order_cache: Dict[str, Tuple[int, int, int]] = {}
 
     # ------------------------------------------------------------------
     # Public interface
@@ -92,8 +96,8 @@ class EnsembleModel:
 
         # Run each sub-model
         granger_result = self._granger_predict(signal_var, target_var, signal_ts, target_ts)
-        ols_result = self._ols_predict(signal_ts, target_ts)
-        arima_result = self._arima_predict(target_ts)
+        ols_result = self._ols_predict(signal_ts, target_ts, features=features)
+        arima_result = self._arima_predict(target_ts, target_name=target_name)
 
         sub_models = {
             "granger": granger_result,
@@ -103,6 +107,8 @@ class EnsembleModel:
 
         # Calibrate weights from historical accuracy (if available)
         calibrated = self._calibrate_weights(signal_name, target_name)
+        if not calibrated:
+            calibrated = self._calibrate_weights_global()
         if calibrated:
             self.weights = calibrated
 
@@ -260,8 +266,14 @@ class EnsembleModel:
         self,
         signal_ts: List[Tuple[datetime, float]],
         target_ts: List[Tuple[datetime, float]],
+        features: Optional[Dict] = None,
     ) -> Dict:
-        """Expanding-window OLS regression predicting next target value."""
+        """Expanding-window OLS regression predicting next target value.
+
+        When *features* are supplied (ma_7, roc_30, volatility_90) they are
+        added as extra regressors alongside the raw signal for a multivariate
+        fit.  Falls back to univariate if the feature matrix is degenerate.
+        """
         # Align signal and target by date (monthly)
         sig_dict = {d.strftime("%Y-%m"): v for d, v in signal_ts}
         tgt_dict = {d.strftime("%Y-%m"): v for d, v in target_ts}
@@ -270,38 +282,71 @@ class EnsembleModel:
         if len(common) < MIN_OLS_TRAIN_MONTHS:
             return {"direction": None, "confidence": 0.0, "reason": "insufficient aligned data"}
 
-        x = np.array([sig_dict[k] for k in common])
+        x_raw = np.array([sig_dict[k] for k in common])
         y = np.array([tgt_dict[k] for k in common])
 
-        # OLS fit on full training window
-        try:
-            coeffs = np.polyfit(x, y, 1)
-        except (np.linalg.LinAlgError, ValueError):
-            return {"direction": None, "confidence": 0.0, "reason": "OLS fit failed"}
+        # --- Attempt multivariate OLS when features are available ----------
+        multivariate = False
+        feature_keys = ["ma_7", "roc_30", "volatility_90"]
+        if features and all(k in features for k in feature_keys) and len(common) >= MIN_OLS_TRAIN_MONTHS + 3:
+            try:
+                # Build feature matrix: [signal, ma_7, roc_30, volatility_90, 1]
+                feat_cols = np.array([features[k] for k in feature_keys])
+                # Broadcast scalar features across all rows (they describe the
+                # signal window at prediction time, constant per fit)
+                X = np.column_stack([
+                    x_raw,
+                    np.full(len(x_raw), feat_cols[0]),
+                    np.full(len(x_raw), feat_cols[1]),
+                    np.full(len(x_raw), feat_cols[2]),
+                    np.ones(len(x_raw)),
+                ])
+                # Least-squares fit
+                coeffs_mv, residuals, rank, sv = np.linalg.lstsq(X, y, rcond=None)
+                if rank >= X.shape[1]:
+                    # Predict using latest row
+                    x_next_row = np.array([x_raw[-1], feat_cols[0], feat_cols[1], feat_cols[2], 1.0])
+                    predicted_y = float(x_next_row @ coeffs_mv)
+                    y_pred = X @ coeffs_mv
+                    ss_res = float(np.sum((y - y_pred) ** 2))
+                    ss_tot = float(np.sum((y - np.mean(y)) ** 2))
+                    n, p = X.shape
+                    r_sq = 1 - (ss_res / ss_tot) if ss_tot > 0 else 0.0
+                    # Adjusted R² penalises extra regressors
+                    adj_r_sq = 1 - (1 - r_sq) * (n - 1) / max(n - p - 1, 1) if n > p + 1 else r_sq
+                    multivariate = True
+            except Exception:
+                pass  # fall through to univariate
 
-        slope, intercept = coeffs
+        if not multivariate:
+            # Univariate fallback: simple y = mx + b
+            try:
+                coeffs = np.polyfit(x_raw, y, 1)
+            except (np.linalg.LinAlgError, ValueError):
+                return {"direction": None, "confidence": 0.0, "reason": "OLS fit failed"}
 
-        # Predict next value using latest signal value
-        x_next = x[-1]
+            slope, intercept = coeffs
+            predicted_y = slope * x_raw[-1] + intercept
+
+            y_pred = np.polyval(coeffs, x_raw)
+            ss_res = float(np.sum((y - y_pred) ** 2))
+            ss_tot = float(np.sum((y - np.mean(y)) ** 2))
+            r_sq = 1 - (ss_res / ss_tot) if ss_tot > 0 else 0.0
+            adj_r_sq = r_sq  # no penalty for univariate
+
         y_last = y[-1]
-        predicted_y = slope * x_next + intercept
         change_pct = ((predicted_y - y_last) / abs(y_last) * 100) if y_last != 0 else 0.0
         direction = "up" if predicted_y > y_last else "down"
-
-        # R-squared as confidence
-        y_pred = np.polyval(coeffs, x)
-        ss_res = np.sum((y - y_pred) ** 2)
-        ss_tot = np.sum((y - np.mean(y)) ** 2)
-        r_squared = 1 - (ss_res / ss_tot) if ss_tot > 0 else 0.0
-        confidence = max(0.0, min(r_squared, 1.0))
+        confidence = max(0.0, min(adj_r_sq, 1.0))
 
         return {
             "direction": direction,
             "confidence": round(confidence, 4),
             "predicted_value": round(predicted_y, 4),
             "predicted_change_pct": round(change_pct, 2),
-            "r_squared": round(r_squared, 4),
-            "slope": round(slope, 6),
+            "r_squared": round(r_sq, 4),
+            "adj_r_squared": round(adj_r_sq, 4),
+            "multivariate": multivariate,
             "sample_size": len(common),
         }
 
@@ -309,8 +354,12 @@ class EnsembleModel:
     # Sub-model: ARIMA forecasting
     # ------------------------------------------------------------------
 
-    def _arima_predict(self, target_ts: List[Tuple[datetime, float]]) -> Dict:
-        """ARIMA(1,1,1) forecast on target variable's own history."""
+    def _arima_predict(self, target_ts: List[Tuple[datetime, float]], target_name: str = "") -> Dict:
+        """ARIMA forecast on target variable's own history.
+
+        Tries multiple orders and selects the one with the lowest AIC.
+        Caches the winning order per target to avoid repeated search.
+        """
         if len(target_ts) < MIN_ARIMA_POINTS:
             return {"direction": None, "confidence": 0.0, "reason": "insufficient data for ARIMA"}
 
@@ -320,23 +369,51 @@ class EnsembleModel:
         try:
             from statsmodels.tsa.arima.model import ARIMA
 
-            model = ARIMA(values, order=(1, 1, 1))
-            fitted = model.fit()
-            forecast = fitted.forecast(steps=1)[0]
+            cache_key = target_name or "default"
+
+            # Use cached order or search for best
+            if cache_key in self._arima_order_cache:
+                best_order = self._arima_order_cache[cache_key]
+                model = ARIMA(values, order=best_order)
+                fitted = model.fit()
+            else:
+                best_aic = float("inf")
+                fitted = None
+                best_order = (1, 1, 1)
+                for order in self.ARIMA_ORDERS:
+                    try:
+                        m = ARIMA(values, order=order)
+                        f = m.fit()
+                        if f.aic < best_aic:
+                            best_aic = f.aic
+                            fitted = f
+                            best_order = order
+                    except Exception:
+                        continue
+                if fitted is None:
+                    return {"direction": None, "confidence": 0.0, "reason": "all ARIMA orders failed"}
+                self._arima_order_cache[cache_key] = best_order
+
+            forecast_result = fitted.get_forecast(steps=1)
+            forecast = forecast_result.predicted_mean[0]
+            # Confidence from forecast standard error — lower SE → higher confidence
+            forecast_se = forecast_result.se_mean[0] if hasattr(forecast_result, 'se_mean') else None
+            if forecast_se is not None and abs(last_val) > 0:
+                # Normalise SE relative to the last value; cap at 1.0
+                confidence = max(0.0, min(1.0 - (forecast_se / abs(last_val)), 1.0))
+            else:
+                confidence = max(0.0, min(1.0 / (1.0 + abs(fitted.aic) / 1000.0), 1.0))
 
             direction = "up" if forecast > last_val else "down"
             change_pct = ((forecast - last_val) / abs(last_val) * 100) if last_val != 0 else 0.0
-
-            # AIC-based confidence: lower AIC → higher confidence (normalised)
-            aic = fitted.aic
-            confidence = max(0.0, min(1.0 / (1.0 + abs(aic) / 1000.0), 1.0))
 
             return {
                 "direction": direction,
                 "confidence": round(confidence, 4),
                 "forecast_value": round(forecast, 4),
                 "predicted_change_pct": round(change_pct, 2),
-                "aic": round(aic, 2),
+                "aic": round(fitted.aic, 2),
+                "order": list(best_order),
             }
         except Exception as e:
             logger.warning(f"ARIMA fit failed: {e}")
@@ -345,6 +422,32 @@ class EnsembleModel:
     # ------------------------------------------------------------------
     # Feature engineering
     # ------------------------------------------------------------------
+
+    def _arima_predict_fixed(self, target_ts: List[Tuple[datetime, float]]) -> Dict:
+        """Fixed ARIMA(1,1,1) — replicates original v1 behaviour for replay."""
+        if len(target_ts) < MIN_ARIMA_POINTS:
+            return {"direction": None, "confidence": 0.0, "reason": "insufficient data for ARIMA"}
+        values = np.array([v for _, v in target_ts])
+        last_val = values[-1]
+        try:
+            from statsmodels.tsa.arima.model import ARIMA
+            model = ARIMA(values, order=(1, 1, 1))
+            fitted = model.fit()
+            forecast = fitted.forecast(steps=1)[0]
+            direction = "up" if forecast > last_val else "down"
+            change_pct = ((forecast - last_val) / abs(last_val) * 100) if last_val != 0 else 0.0
+            aic = fitted.aic
+            confidence = max(0.0, min(1.0 / (1.0 + abs(aic) / 1000.0), 1.0))
+            return {
+                "direction": direction,
+                "confidence": round(confidence, 4),
+                "forecast_value": round(forecast, 4),
+                "predicted_change_pct": round(change_pct, 2),
+                "aic": round(aic, 2),
+                "order": [1, 1, 1],
+            }
+        except Exception as e:
+            return {"direction": None, "confidence": 0.0, "reason": f"ARIMA error: {e}"}
 
     def _engineer_features(self, ts: List[Tuple[datetime, float]]) -> Dict:
         """Compute rolling averages, rate of change, and volatility."""
@@ -514,6 +617,67 @@ class EnsembleModel:
         logger.info(f"Calibrated weights for {signal_name}→{target_name}: {calibrated}")
         return calibrated
 
+    def _calibrate_weights_global(self) -> Optional[Dict]:
+        """Global weight calibration using ALL validated predictions (any pair).
+
+        Fallback when per-pair calibration lacks data.  Requires ≥ 30
+        validated predictions to activate.
+        """
+        preds = (
+            self.db.query(PredictionTracking)
+            .filter(
+                PredictionTracking.status == "validated",
+                PredictionTracking.direction_correct.isnot(None),
+            )
+            .all()
+        )
+
+        if len(preds) < 30:
+            return None
+
+        model_stats: Dict[str, Dict[str, int]] = {}
+        for p in preds:
+            mv = p.model_version or "unknown"
+            bucket = None
+            if "granger" in mv:
+                bucket = "granger"
+            elif "ols" in mv or "walkforward" in mv or "backtest" in mv:
+                bucket = "ols"
+            elif "arima" in mv:
+                bucket = "arima"
+            elif "ensemble" in mv:
+                continue
+            else:
+                continue
+
+            if bucket not in model_stats:
+                model_stats[bucket] = {"correct": 0, "total": 0}
+            model_stats[bucket]["total"] += 1
+            if p.direction_correct:
+                model_stats[bucket]["correct"] += 1
+
+        if not model_stats:
+            return None
+
+        accuracies = {}
+        for m, s in model_stats.items():
+            accuracies[m] = s["correct"] / s["total"] if s["total"] > 0 else 0.5
+
+        total_acc = sum(accuracies.values())
+        if total_acc == 0:
+            return None
+
+        calibrated = {}
+        for m in DEFAULT_WEIGHTS:
+            calibrated[m] = accuracies[m] / total_acc if m in accuracies else DEFAULT_WEIGHTS[m]
+
+        total = sum(calibrated.values())
+        if total > 0:
+            calibrated = {k: round(v / total, 4) for k, v in calibrated.items()}
+
+        logger.info(f"Global calibrated weights (from {len(preds)} predictions): {calibrated}")
+        return calibrated
+
     # ------------------------------------------------------------------
     # Helpers
     # ------------------------------------------------------------------
@@ -605,7 +769,7 @@ class EnsembleModel:
             current_target_value=last_target_val,
             r_squared=ols.get("r_squared"),
             confidence=_confidence_label(ensemble["confidence"]),
-            model_version="ensemble_v1",
+            model_version="ensemble_v2",
             granger_p_value=granger.get("p_value"),
             optimal_lag_days=optimal_lag,
             status="pending",
@@ -620,6 +784,218 @@ def _confidence_label(score: float) -> str:
     elif score >= 0.4:
         return "medium"
     return "low"
+
+
+# ------------------------------------------------------------------
+# Model version configs for replay
+# ------------------------------------------------------------------
+
+MODEL_VERSION_CONFIGS = [
+    {
+        "version": "v1",
+        "label": "Baseline (univariate OLS, fixed ARIMA, default weights)",
+        "multivariate_ols": False,
+        "adaptive_arima": False,
+        "global_calibration": False,
+    },
+    {
+        "version": "v2",
+        "label": "+Multivariate OLS",
+        "multivariate_ols": True,
+        "adaptive_arima": False,
+        "global_calibration": False,
+    },
+    {
+        "version": "v3",
+        "label": "+Multivariate OLS +Adaptive ARIMA +Global Calibration",
+        "multivariate_ols": True,
+        "adaptive_arima": True,
+        "global_calibration": True,
+    },
+]
+
+
+def replay_validated_predictions(db: Session, configs: Optional[List[Dict]] = None) -> Dict:
+    """Replay validated predictions through different model configs.
+
+    For each validated prediction with a known actual direction, loads
+    the time series data available at prediction time and re-runs each
+    model config.  Returns per-version monthly aggregates suitable for
+    overlaying on the existing 3 charts.
+    """
+    from collections import defaultdict
+    from statistics import median
+
+    if configs is None:
+        configs = MODEL_VERSION_CONFIGS
+
+    # 1. Load all validated predictions with known actuals
+    preds = (
+        db.query(PredictionTracking)
+        .filter(
+            PredictionTracking.status == "validated",
+            PredictionTracking.actual_direction.isnot(None),
+        )
+        .order_by(PredictionTracking.predicted_at.asc())
+        .all()
+    )
+
+    if not preds:
+        return {"versions": [], "actuals": {"time_series": []}, "total_predictions": 0}
+
+    # 2. Preload time series and variables
+    var_cache: Dict[str, VariableMetadata] = {}
+    ts_cache: Dict[int, List[Tuple[datetime, float]]] = {}
+
+    def get_var(name: str) -> Optional[VariableMetadata]:
+        if name not in var_cache:
+            var_cache[name] = (
+                db.query(VariableMetadata)
+                .filter(VariableMetadata.name == name)
+                .first()
+            )
+        return var_cache[name]
+
+    def get_ts(variable_id: int) -> List[Tuple[datetime, float]]:
+        if variable_id not in ts_cache:
+            rows = (
+                db.query(TimeSeriesData)
+                .filter(TimeSeriesData.variable_id == variable_id)
+                .order_by(TimeSeriesData.timestamp.asc())
+                .all()
+            )
+            ts_cache[variable_id] = [(r.timestamp, r.value) for r in rows]
+        return ts_cache[variable_id]
+
+    # 3. Build actuals monthly aggregation
+    actuals_monthly: Dict[str, Dict] = defaultdict(lambda: {
+        "act_change": [], "act_lag": [], "count": 0
+    })
+    for p in preds:
+        if p.predicted_at:
+            mk = p.predicted_at.strftime("%Y-%m")
+            actuals_monthly[mk]["count"] += 1
+            if p.actual_change_pct is not None:
+                actuals_monthly[mk]["act_change"].append(p.actual_change_pct)
+            if p.actual_lag_days is not None:
+                actuals_monthly[mk]["act_lag"].append(p.actual_lag_days)
+
+    actuals_ts = []
+    for mk in sorted(actuals_monthly.keys()):
+        m = actuals_monthly[mk]
+        actuals_ts.append({
+            "month": mk,
+            "avg_actual_change_pct": round(median(m["act_change"]), 2) if m["act_change"] else None,
+            "avg_actual_lag": round(sum(m["act_lag"]) / len(m["act_lag"]), 1) if m["act_lag"] else None,
+            "count": m["count"],
+        })
+
+    # 4. For each config, replay every prediction
+    version_results = []
+    for cfg in configs:
+        model = EnsembleModel(db)
+        model._arima_order_cache = {}
+
+        per_pred: Dict[str, Dict] = defaultdict(lambda: {
+            "pred_change": [], "pred_lag": [], "direction_correct": [], "count": 0
+        })
+        total_correct = 0
+        total_count = 0
+
+        for p in preds:
+            signal_var = get_var(p.signal_name)
+            target_var = get_var(p.target_name)
+            if not signal_var or not target_var:
+                continue
+
+            # Filter time series to data available at prediction time
+            full_signal_ts = get_ts(signal_var.id)
+            full_target_ts = get_ts(target_var.id)
+            cutoff = p.predicted_at
+            signal_ts = [(d, v) for d, v in full_signal_ts if d <= cutoff]
+            target_ts = [(d, v) for d, v in full_target_ts if d <= cutoff]
+
+            if len(target_ts) < MIN_OLS_TRAIN_MONTHS:
+                continue
+
+            # Run sub-models with the config's settings
+            features = model._engineer_features(signal_ts)
+
+            # OLS: multivariate or univariate
+            if cfg.get("multivariate_ols"):
+                ols_result = model._ols_predict(signal_ts, target_ts, features=features)
+            else:
+                ols_result = model._ols_predict(signal_ts, target_ts, features=None)
+
+            # ARIMA: adaptive or fixed
+            if cfg.get("adaptive_arima"):
+                arima_result = model._arima_predict(target_ts, target_name=p.target_name)
+            else:
+                # Fixed ARIMA(1,1,1) — replicate v1 behaviour
+                arima_result = model._arima_predict_fixed(target_ts)
+
+            # Granger always the same (data-driven, no config knob)
+            granger_result = model._granger_predict(signal_var, target_var, signal_ts, target_ts)
+
+            sub_models = {"granger": granger_result, "ols": ols_result, "arima": arima_result}
+
+            # Weights: global calibration or defaults
+            if cfg.get("global_calibration"):
+                calibrated = model._calibrate_weights(p.signal_name, p.target_name)
+                if not calibrated:
+                    calibrated = model._calibrate_weights_global()
+                if calibrated:
+                    model.weights = calibrated
+                else:
+                    model.weights = dict(DEFAULT_WEIGHTS)
+            else:
+                model.weights = dict(DEFAULT_WEIGHTS)
+
+            ensemble = model._combine(sub_models)
+            pred_direction = ensemble.get("direction")
+            if pred_direction is None:
+                continue
+
+            is_correct = pred_direction == p.actual_direction
+            total_count += 1
+            if is_correct:
+                total_correct += 1
+
+            mk = p.predicted_at.strftime("%Y-%m")
+            per_pred[mk]["count"] += 1
+            per_pred[mk]["direction_correct"].append(is_correct)
+            if ensemble.get("predicted_change_pct") is not None:
+                per_pred[mk]["pred_change"].append(ensemble["predicted_change_pct"])
+            if ensemble.get("optimal_lag") is not None:
+                per_pred[mk]["pred_lag"].append(ensemble["optimal_lag"] * 30 if ensemble["optimal_lag"] else 30)
+
+        # Build monthly time series for this version
+        version_ts = []
+        for mk in sorted(per_pred.keys()):
+            m = per_pred[mk]
+            dc = m["direction_correct"]
+            version_ts.append({
+                "month": mk,
+                "avg_predicted_change_pct": round(median(m["pred_change"]), 2) if m["pred_change"] else None,
+                "avg_predicted_lag": round(sum(m["pred_lag"]) / len(m["pred_lag"]), 1) if m["pred_lag"] else None,
+                "direction_accuracy": round(sum(dc) / len(dc) * 100, 1) if dc else None,
+                "count": m["count"],
+            })
+
+        version_results.append({
+            "version": cfg["version"],
+            "label": cfg["label"],
+            "overall_accuracy": round(total_correct / total_count * 100, 1) if total_count > 0 else None,
+            "total": total_count,
+            "correct": total_correct,
+            "time_series": version_ts,
+        })
+
+    return {
+        "versions": version_results,
+        "actuals": {"time_series": actuals_ts},
+        "total_predictions": len(preds),
+    }
 
 
 # ------------------------------------------------------------------
