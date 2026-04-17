@@ -2538,33 +2538,21 @@ function dashboardData() {
                 });
                 if (!res.ok) {
                     const err = await res.json().catch(() => ({}));
-                    console.error('Concept generation failed:', err.detail || res.status);
+                    const msg = err.detail || err.error || `HTTP ${res.status}`;
+                    console.error('Concept generation failed:', msg);
+                    alert('Could not generate concepts: ' + msg);
                     this.conceptsLoading = {...this.conceptsLoading, [recId]: false};
                     return;
                 }
                 const data = await res.json();
                 console.log('💡 Generated concepts:', data.concepts);
-                // Update the recommendation in the local exploitation arrays
-                const idx = this.filteredExploitation.findIndex(r => r.id === recId);
-                if (idx >= 0) {
-                    this.filteredExploitation[idx] = {
-                        ...this.filteredExploitation[idx],
-                        product_concepts: data.concepts,
-                        selected_concept_index: null,
-                    };
-                    this.filteredExploitation = [...this.filteredExploitation];
-                }
-                // Also update master list
-                const mIdx = this.exploitationRecommendations.findIndex(r => r.id === recId);
-                if (mIdx >= 0) {
-                    this.exploitationRecommendations[mIdx] = {
-                        ...this.exploitationRecommendations[mIdx],
-                        product_concepts: data.concepts,
-                        selected_concept_index: null,
-                    };
-                }
+                // Reload the full recommendations list from server to ensure
+                // Alpine reactivity picks up the new product_concepts via
+                // a clean data cycle (x-if templates need fresh objects).
+                await this.loadExploitationRecommendations();
             } catch (e) {
                 console.error('Concept generation error:', e);
+                alert('Concept generation failed — check your connection and try again.');
             }
             this.conceptsLoading = {...this.conceptsLoading, [recId]: false};
             this.$nextTick(() => { try { lucide.createIcons(); } catch(e) {} });
