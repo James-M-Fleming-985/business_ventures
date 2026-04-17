@@ -901,21 +901,41 @@ def replay_validated_predictions(db: Session, configs: Optional[List[Dict]] = No
         })
         total_correct = 0
         total_count = 0
+        _skip_no_var = 0
+        _skip_ts_short = 0
+        _skip_no_dir = 0
 
         for p in preds:
             signal_var = get_var(p.signal_name)
             target_var = get_var(p.target_name)
             if not signal_var or not target_var:
+                _skip_no_var += 1
                 continue
 
             # Filter time series to data available at prediction time
             full_signal_ts = get_ts(signal_var.id)
             full_target_ts = get_ts(target_var.id)
             cutoff = p.predicted_at
-            signal_ts = [(d, v) for d, v in full_signal_ts if d <= cutoff]
-            target_ts = [(d, v) for d, v in full_target_ts if d <= cutoff]
+            # Normalise cutoff to naive datetime for comparison with date/datetime timestamps
+            if hasattr(cutoff, 'tzinfo') and cutoff.tzinfo is not None:
+                cutoff = cutoff.replace(tzinfo=None)
+            signal_ts = []
+            for d, v in full_signal_ts:
+                d_cmp = d if isinstance(d, datetime) else datetime(d.year, d.month, d.day)
+                if hasattr(d_cmp, 'tzinfo') and d_cmp.tzinfo is not None:
+                    d_cmp = d_cmp.replace(tzinfo=None)
+                if d_cmp <= cutoff:
+                    signal_ts.append((d, v))
+            target_ts = []
+            for d, v in full_target_ts:
+                d_cmp = d if isinstance(d, datetime) else datetime(d.year, d.month, d.day)
+                if hasattr(d_cmp, 'tzinfo') and d_cmp.tzinfo is not None:
+                    d_cmp = d_cmp.replace(tzinfo=None)
+                if d_cmp <= cutoff:
+                    target_ts.append((d, v))
 
             if len(target_ts) < MIN_OLS_TRAIN_MONTHS:
+                _skip_ts_short += 1
                 continue
 
             # Run sub-models with the config's settings
@@ -954,6 +974,7 @@ def replay_validated_predictions(db: Session, configs: Optional[List[Dict]] = No
             ensemble = model._combine(sub_models)
             pred_direction = ensemble.get("direction")
             if pred_direction is None:
+                _skip_no_dir += 1
                 continue
 
             is_correct = pred_direction == p.actual_direction
@@ -968,6 +989,12 @@ def replay_validated_predictions(db: Session, configs: Optional[List[Dict]] = No
                 per_pred[mk]["pred_change"].append(ensemble["predicted_change_pct"])
             if ensemble.get("optimal_lag") is not None:
                 per_pred[mk]["pred_lag"].append(ensemble["optimal_lag"] * 30 if ensemble["optimal_lag"] else 30)
+
+        logger.info(
+            f"Replay {cfg['version']}: {total_count} succeeded, "
+            f"skip_no_var={_skip_no_var}, skip_ts_short={_skip_ts_short}, "
+            f"skip_no_dir={_skip_no_dir}, total_preds={len(preds)}"
+        )
 
         # Build monthly time series for this version
         version_ts = []
