@@ -103,7 +103,7 @@ function dashboardData() {
         
         // Version comparison overlay
         versionComparisonData: null,
-        selectedVersions: ['v1'],
+        selectedVersions: [],
         versionComparisonLoading: false,
         
         // ============================================================
@@ -783,11 +783,10 @@ function dashboardData() {
             });
             const chartConfig = { responsive: true, displayModeBar: false };
             
-            // Determine data source: version comparison or raw time series
+            // Determine data source: version comparison data (if loaded) or raw time series
             const hasVersionData = this.versionComparisonData && 
                                    this.versionComparisonData.versions && 
-                                   this.versionComparisonData.versions.length > 0 &&
-                                   this.selectedVersions.length > 0;
+                                   this.versionComparisonData.versions.length > 0;
             
             // --- Chart 1: Change % — Predicted vs Actual ---
             const el1 = document.getElementById('chartChangePct');
@@ -795,7 +794,7 @@ function dashboardData() {
                 const traces = [];
                 
                 if (hasVersionData) {
-                    // Actuals from replay data
+                    // Actuals always shown (independent of version checkboxes)
                     const actuals = this.versionComparisonData.actuals?.time_series || [];
                     if (actuals.length > 0) {
                         traces.push({
@@ -804,19 +803,19 @@ function dashboardData() {
                             line: { color: '#22c55e', width: 2.5 }, marker: { size: 6 }
                         });
                     }
-                    // One trace per selected version
+                    // Overlay selected version prediction traces
                     for (const ver of this.versionComparisonData.versions) {
                         if (!this.selectedVersions.includes(ver.version)) continue;
                         const vts = ver.time_series || [];
                         const color = VERSION_COLORS[ver.version] || '#94a3b8';
                         traces.push({
                             x: vts.map(t => t.month), y: vts.map(t => t.avg_predicted_change_pct),
-                            name: `Predicted ${ver.version}`, type: 'scatter', mode: 'lines+markers',
+                            name: `Predicted ${ver.version} (${ver.label})`, type: 'scatter', mode: 'lines+markers',
                             line: { color, width: 2 }, marker: { size: 5 }
                         });
                     }
                 } else if (this.timeSeriesData.length > 0) {
-                    // Fallback: original single-version view
+                    // Fallback: original view before version comparison is loaded
                     const ts = this.timeSeriesData;
                     const months = ts.map(t => t.month);
                     traces.push(
@@ -824,7 +823,11 @@ function dashboardData() {
                         { x: months, y: ts.map(t => t.avg_actual_change_pct), name: 'Actual Change %', type: 'scatter', mode: 'lines+markers', line: { color: '#22c55e', width: 2.5 }, marker: { size: 6 } }
                     );
                 }
-                if (traces.length > 0) Plotly.newPlot(el1, traces, chartLayout('Change %'), chartConfig);
+                if (traces.length > 0) {
+                    Plotly.react(el1, traces, chartLayout('Change %'), chartConfig);
+                } else if (el1.data) {
+                    Plotly.purge(el1);
+                }
             }
             
             // --- Chart 2: Lag — Predicted vs Actual ---
@@ -833,6 +836,7 @@ function dashboardData() {
                 const traces = [];
                 
                 if (hasVersionData) {
+                    // Actuals always shown
                     const actuals = this.versionComparisonData.actuals?.time_series || [];
                     if (actuals.length > 0) {
                         traces.push({
@@ -841,13 +845,14 @@ function dashboardData() {
                             line: { color: '#22c55e', width: 2.5 }, marker: { size: 6 }
                         });
                     }
+                    // Overlay selected version prediction traces
                     for (const ver of this.versionComparisonData.versions) {
                         if (!this.selectedVersions.includes(ver.version)) continue;
                         const vts = ver.time_series || [];
                         const color = VERSION_COLORS[ver.version] || '#94a3b8';
                         traces.push({
                             x: vts.map(t => t.month), y: vts.map(t => t.avg_predicted_lag),
-                            name: `Predicted Lag ${ver.version}`, type: 'scatter', mode: 'lines+markers',
+                            name: `Predicted Lag ${ver.version} (${ver.label})`, type: 'scatter', mode: 'lines+markers',
                             line: { color, width: 2 }, marker: { size: 5 }
                         });
                     }
@@ -859,7 +864,11 @@ function dashboardData() {
                         { x: months, y: ts.map(t => t.avg_actual_lag), name: 'Actual Lag (days)', type: 'scatter', mode: 'lines+markers', line: { color: '#22c55e', width: 2.5 }, marker: { size: 6 } }
                     );
                 }
-                if (traces.length > 0) Plotly.newPlot(el2, traces, chartLayout('Days'), chartConfig);
+                if (traces.length > 0) {
+                    Plotly.react(el2, traces, chartLayout('Days'), chartConfig);
+                } else if (el2.data) {
+                    Plotly.purge(el2);
+                }
             }
             
             // --- Chart 3: Direction Accuracy Over Time ---
@@ -868,8 +877,9 @@ function dashboardData() {
                 const traces = [];
                 
                 if (hasVersionData) {
-                    // Collect all months across versions for baseline lines
-                    let allMonths = [];
+                    // Collect all months from actuals + selected versions for baseline lines
+                    const actuals = this.versionComparisonData.actuals?.time_series || [];
+                    let allMonths = actuals.map(a => a.month);
                     for (const ver of this.versionComparisonData.versions) {
                         if (this.selectedVersions.includes(ver.version)) {
                             allMonths = allMonths.concat((ver.time_series || []).map(t => t.month));
@@ -877,7 +887,7 @@ function dashboardData() {
                     }
                     allMonths = [...new Set(allMonths)].sort();
                     
-                    // Per-version accuracy traces
+                    // Per-version accuracy traces (only for selected versions)
                     for (const ver of this.versionComparisonData.versions) {
                         if (!this.selectedVersions.includes(ver.version)) continue;
                         const vts = ver.time_series || [];
@@ -885,7 +895,7 @@ function dashboardData() {
                         const counts = vts.map(t => t.count);
                         traces.push({
                             x: vts.map(t => t.month), y: vts.map(t => t.direction_accuracy),
-                            name: `Accuracy ${ver.version} (${ver.overall_accuracy || '—'}%)`,
+                            name: `Accuracy ${ver.version} (${ver.overall_accuracy ?? '—'}%)`,
                             type: 'scatter', mode: 'lines+markers',
                             line: { color, width: 2.5 }, marker: { size: 6 },
                             text: counts.map(c => c + ' predictions'),
@@ -893,7 +903,7 @@ function dashboardData() {
                         });
                     }
                     
-                    // Baseline lines
+                    // Baseline reference lines (always shown when version data loaded)
                     if (allMonths.length >= 2) {
                         traces.push({
                             x: [allMonths[0], allMonths[allMonths.length - 1]], y: [50, 50],
@@ -930,10 +940,12 @@ function dashboardData() {
                     });
                 }
                 if (traces.length > 0) {
-                    Plotly.newPlot(el3, traces, {
+                    Plotly.react(el3, traces, {
                         ...chartLayout('Accuracy %'),
                         yaxis: { ...chartLayout('Accuracy %').yaxis, range: [0, 100] }
                     }, chartConfig);
+                } else if (el3.data) {
+                    Plotly.purge(el3);
                 }
             }
         },
