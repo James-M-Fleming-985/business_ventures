@@ -3501,8 +3501,7 @@ _version_comparison_cache: dict = {"data": None, "computed_at": None}
 async def get_version_comparison(db: Session = Depends(get_db)):
     """Return cached replay results comparing model versions.
 
-    If no cached results exist, runs the replay on the fly (may be slow
-    for large datasets — prefer triggering via POST first).
+    Returns empty response if no cache — use POST to trigger computation.
     """
     global _version_comparison_cache
     if _version_comparison_cache["data"] is not None:
@@ -3512,16 +3511,15 @@ async def get_version_comparison(db: Session = Depends(get_db)):
             "computed_at": _version_comparison_cache["computed_at"],
         }
 
-    # No cache — run inline (small datasets are fast enough)
-    try:
-        from services.ensemble_model import replay_validated_predictions
-        result = replay_validated_predictions(db)
-        _version_comparison_cache["data"] = result
-        _version_comparison_cache["computed_at"] = datetime.utcnow().isoformat()
-        return {**result, "cached": False, "computed_at": _version_comparison_cache["computed_at"]}
-    except Exception as e:
-        logger.error(f"Version comparison failed: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+    # No cache — return empty (POST triggers the expensive replay)
+    return {
+        "versions": [],
+        "actuals": {"time_series": []},
+        "total_predictions": 0,
+        "cached": False,
+        "computed_at": None,
+        "message": "No cached results. Click 'Run Comparison' to compute.",
+    }
 
 
 @router.post("/predictions/run-version-comparison")

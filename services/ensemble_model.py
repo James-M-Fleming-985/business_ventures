@@ -815,13 +815,16 @@ MODEL_VERSION_CONFIGS = [
 ]
 
 
-def replay_validated_predictions(db: Session, configs: Optional[List[Dict]] = None) -> Dict:
+def replay_validated_predictions(db: Session, configs: Optional[List[Dict]] = None, max_predictions: int = 500) -> Dict:
     """Replay validated predictions through different model configs.
 
     For each validated prediction with a known actual direction, loads
     the time series data available at prediction time and re-runs each
     model config.  Returns per-version monthly aggregates suitable for
     overlaying on the existing 3 charts.
+
+    *max_predictions* caps the sample size for performance.  Predictions
+    are sampled evenly across time so monthly coverage is preserved.
     """
     from collections import defaultdict
     from statistics import median
@@ -842,6 +845,13 @@ def replay_validated_predictions(db: Session, configs: Optional[List[Dict]] = No
 
     if not preds:
         return {"versions": [], "actuals": {"time_series": []}, "total_predictions": 0}
+
+    # Downsample evenly if too many predictions (preserve time distribution)
+    total_available = len(preds)
+    if len(preds) > max_predictions:
+        step = len(preds) / max_predictions
+        preds = [preds[int(i * step)] for i in range(max_predictions)]
+        logger.info(f"Replay: sampled {len(preds)} of {total_available} predictions")
 
     # 2. Preload time series and variables
     var_cache: Dict[str, VariableMetadata] = {}
