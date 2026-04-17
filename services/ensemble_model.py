@@ -849,11 +849,19 @@ def replay_validated_predictions(db: Session, configs: Optional[List[Dict]] = No
 
     def get_var(name: str) -> Optional[VariableMetadata]:
         if name not in var_cache:
-            var_cache[name] = (
+            # Try name first, then display_name (predictions may store either)
+            result = (
                 db.query(VariableMetadata)
                 .filter(VariableMetadata.name == name)
                 .first()
             )
+            if result is None:
+                result = (
+                    db.query(VariableMetadata)
+                    .filter(VariableMetadata.display_name == name)
+                    .first()
+                )
+            var_cache[name] = result
         return var_cache[name]
 
     def get_ts(variable_id: int) -> List[Tuple[datetime, float]]:
