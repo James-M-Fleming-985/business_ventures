@@ -1016,6 +1016,12 @@ def replay_validated_predictions(db: Session, configs: Optional[List[Dict]] = No
             "total": total_count,
             "correct": total_correct,
             "time_series": version_ts,
+            "_debug": {
+                "skip_no_var": _skip_no_var,
+                "skip_ts_short": _skip_ts_short,
+                "skip_no_dir": _skip_no_dir,
+                "total_preds_input": len(preds),
+            },
         })
 
     return {
