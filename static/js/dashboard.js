@@ -2544,15 +2544,24 @@ function dashboardData() {
                 }
                 const data = await res.json();
                 console.log('💡 Generated concepts:', data.concepts);
-                // Update the recommendation in the local exploitation array
-                const idx = this.exploitation.findIndex(r => r.id === recId);
+                // Update the recommendation in the local exploitation arrays
+                const idx = this.filteredExploitation.findIndex(r => r.id === recId);
                 if (idx >= 0) {
-                    this.exploitation[idx] = {
-                        ...this.exploitation[idx],
+                    this.filteredExploitation[idx] = {
+                        ...this.filteredExploitation[idx],
                         product_concepts: data.concepts,
                         selected_concept_index: null,
                     };
-                    this.exploitation = [...this.exploitation];
+                    this.filteredExploitation = [...this.filteredExploitation];
+                }
+                // Also update master list
+                const mIdx = this.exploitationRecommendations.findIndex(r => r.id === recId);
+                if (mIdx >= 0) {
+                    this.exploitationRecommendations[mIdx] = {
+                        ...this.exploitationRecommendations[mIdx],
+                        product_concepts: data.concepts,
+                        selected_concept_index: null,
+                    };
                 }
             } catch (e) {
                 console.error('Concept generation error:', e);
@@ -2571,15 +2580,23 @@ function dashboardData() {
                 });
                 if (!res.ok) return;
                 // Update local state
-                const idx = this.exploitation.findIndex(r => r.id === recId);
+                const idx = this.filteredExploitation.findIndex(r => r.id === recId);
                 if (idx >= 0) {
-                    this.exploitation[idx] = {
-                        ...this.exploitation[idx],
+                    this.filteredExploitation[idx] = {
+                        ...this.filteredExploitation[idx],
                         selected_concept_index: conceptIndex,
                     };
-                    this.exploitation = [...this.exploitation];
+                    this.filteredExploitation = [...this.filteredExploitation];
+                    // Also update master list
+                    const mIdx = this.exploitationRecommendations.findIndex(r => r.id === recId);
+                    if (mIdx >= 0) {
+                        this.exploitationRecommendations[mIdx] = {
+                            ...this.exploitationRecommendations[mIdx],
+                            selected_concept_index: conceptIndex,
+                        };
+                    }
                     // Auto-set complexity from concept
-                    const concept = this.exploitation[idx].product_concepts?.[conceptIndex];
+                    const concept = this.filteredExploitation[idx].product_concepts?.[conceptIndex];
                     if (concept?.complexity) {
                         this.buildComplexity = {
                             ...this.buildComplexity,
