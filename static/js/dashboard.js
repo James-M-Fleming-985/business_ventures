@@ -812,8 +812,10 @@ function dashboardData() {
                             line: { color: '#22c55e', width: 2.5 }, marker: { size: 6, symbol: 'circle' }
                         });
                     }
-                    // Overlay selected version prediction traces
-                    for (const ver of this.versionComparisonData.versions) {
+                    // Overlay selected version prediction traces (reverse order:
+                    // later versions are drawn first so v1 ends up on top and stays
+                    // visible when its values overlap with v2/v3).
+                    for (const ver of [...this.versionComparisonData.versions].reverse()) {
                         if (!this.selectedVersions.includes(ver.version)) continue;
                         const vts = ver.time_series || [];
                         const color = VERSION_COLORS[ver.version] || '#94a3b8';
@@ -855,8 +857,9 @@ function dashboardData() {
                             line: { color: '#22c55e', width: 2.5 }, marker: { size: 6, symbol: 'circle' }
                         });
                     }
-                    // Overlay selected version prediction traces
-                    for (const ver of this.versionComparisonData.versions) {
+                    // Overlay selected version prediction traces (reverse order —
+                    // see Chart 1 comment for rationale).
+                    for (const ver of [...this.versionComparisonData.versions].reverse()) {
                         if (!this.selectedVersions.includes(ver.version)) continue;
                         const vts = ver.time_series || [];
                         const color = VERSION_COLORS[ver.version] || '#94a3b8';
@@ -898,8 +901,9 @@ function dashboardData() {
                     }
                     allMonths = [...new Set(allMonths)].sort();
                     
-                    // Per-version accuracy traces (only for selected versions)
-                    for (const ver of this.versionComparisonData.versions) {
+                    // Per-version accuracy traces (reverse order so v1 stays on top
+                    // when its values overlap with v2/v3 — see Chart 1 comment).
+                    for (const ver of [...this.versionComparisonData.versions].reverse()) {
                         if (!this.selectedVersions.includes(ver.version)) continue;
                         const vts = ver.time_series || [];
                         const color = VERSION_COLORS[ver.version] || '#94a3b8';
