@@ -387,6 +387,9 @@ class ExploitationRecommendation(Base):
     product_concepts = Column(JSON, nullable=True)             # List of 3 product concept dicts from LLM
     selected_concept_index = Column(Integer, nullable=True)    # 0-2: which concept user selected for build
     user_requirements = Column(Text, nullable=True)            # Free-text user requirements for build spec
+    concepts_generation_status = Column(String(20), nullable=True)  # NULL | 'generating' | 'done' | 'failed'
+    concepts_error = Column(Text, nullable=True)               # Error message if generation failed
+    concepts_generated_at = Column(DateTime, nullable=True)    # When concepts were last successfully generated
 
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -439,6 +442,9 @@ class ExploitationRecommendation(Base):
             "product_concepts": self.product_concepts,
             "selected_concept_index": self.selected_concept_index,
             "user_requirements": self.user_requirements,
+            "concepts_generation_status": self.concepts_generation_status,
+            "concepts_error": self.concepts_error,
+            "concepts_generated_at": self.concepts_generated_at.isoformat() if self.concepts_generated_at else None,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }

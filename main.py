@@ -240,6 +240,14 @@ async def startup_event():
                 conn.commit()
                 logger.info("✅ Added user_requirements column to exploitation_recommendations")
 
+            # Concept generation status tracking (background generation)
+            if 'concepts_generation_status' not in exploit_cols and exploit_cols:
+                conn.execute(text("ALTER TABLE exploitation_recommendations ADD COLUMN concepts_generation_status VARCHAR(20)"))
+                conn.execute(text("ALTER TABLE exploitation_recommendations ADD COLUMN concepts_error TEXT"))
+                conn.execute(text("ALTER TABLE exploitation_recommendations ADD COLUMN concepts_generated_at TIMESTAMP"))
+                conn.commit()
+                logger.info("✅ Added concept generation status columns to exploitation_recommendations")
+
         # M2: Seed FRED + GDELT variables (idempotent — skips existing)
         try:
             from seed_fred_variables import seed_fred_variables

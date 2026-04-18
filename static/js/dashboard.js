@@ -155,6 +155,35 @@ function dashboardData() {
         conceptsLoading: {},
         userRequirements: {},
 
+        // Exploitation card collapse (default: all collapsed; expanded persists in localStorage)
+        expandedExpRecs: {},  // { [recId]: true }
+
+        loadExpandedExpRecs() {
+            try {
+                const raw = localStorage.getItem('expandedExpRecs');
+                this.expandedExpRecs = raw ? JSON.parse(raw) : {};
+            } catch (e) {
+                this.expandedExpRecs = {};
+            }
+        },
+        toggleExpRec(recId) {
+            const next = { ...this.expandedExpRecs };
+            if (next[recId]) delete next[recId];
+            else next[recId] = true;
+            this.expandedExpRecs = next;
+            try { localStorage.setItem('expandedExpRecs', JSON.stringify(next)); } catch (e) {}
+        },
+        expandAllExpRecs() {
+            const next = {};
+            (this.exploitationRecommendations || []).forEach(r => { next[r.id] = true; });
+            this.expandedExpRecs = next;
+            try { localStorage.setItem('expandedExpRecs', JSON.stringify(next)); } catch (e) {}
+        },
+        collapseAllExpRecs() {
+            this.expandedExpRecs = {};
+            try { localStorage.setItem('expandedExpRecs', '{}'); } catch (e) {}
+        },
+
         // ============================================================
         // BUILDS PORTFOLIO TAB (M2 Track H)
         // ============================================================
@@ -175,6 +204,7 @@ function dashboardData() {
 
         async init() {
             console.log('Initializing dashboard...');
+            this.loadExpandedExpRecs();
             await this.loadStats();
             await this.loadSignalRadar();  // Load Layer 1 signals first
             await this.loadHeatmap();
@@ -1044,6 +1074,13 @@ function dashboardData() {
                         avg_score: summary.average_score || 0
                     };
                     console.log(`📊 Loaded ${this.exploitationRecommendations.length} exploitation recommendations`);
+                    // Resume polling for any rec that is mid-generation (server-side state)
+                    this.exploitationRecommendations.forEach(r => {
+                        if (r.concepts_generation_status === 'generating') {
+                            this.conceptsLoading = {...this.conceptsLoading, [r.id]: true};
+                            this.pollConceptsStatus(r.id);
+                        }
+                    });
                     // Load build statuses for BUILD cards
                     await this.loadBuilds();
                     // Load commercial intelligence for BUILD cards (Track G)
@@ -2559,26 +2596,73 @@ function dashboardData() {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                 });
-                if (!res.ok) {
+                if (!res.ok && res.status !== 202) {
                     const err = await res.json().catch(() => ({}));
-                    const msg = err.detail || err.error || `HTTP ${res.status}`;
-                    console.error('Concept generation failed:', msg);
-                    alert('Could not generate concepts: ' + msg);
+                    const msg = err.error || err.detail || `HTTP ${res.status}`;
+                    console.error('Concept generation kickoff failed:', msg);
+                    alert('Could not start concept generation: ' + msg);
                     this.conceptsLoading = {...this.conceptsLoading, [recId]: false};
                     return;
                 }
-                const data = await res.json();
-                console.log('💡 Generated concepts:', data.concepts);
-                // Reload the full recommendations list from server to ensure
-                // Alpine reactivity picks up the new product_concepts via
-                // a clean data cycle (x-if templates need fresh objects).
-                await this.loadExploitationRecommendations();
+                console.log('💡 Concept generation queued, polling status…');
+                this.pollConceptsStatus(recId);
             } catch (e) {
                 console.error('Concept generation error:', e);
                 alert('Concept generation failed — check your connection and try again.');
+                this.conceptsLoading = {...this.conceptsLoading, [recId]: false};
             }
-            this.conceptsLoading = {...this.conceptsLoading, [recId]: false};
-            this.$nextTick(() => { try { lucide.createIcons(); } catch(e) {} });
+        },
+
+        async pollConceptsStatus(recId, attempts = 0) {
+            // Poll every 2s for up to 5 minutes (150 attempts)
+            if (attempts > 150) {
+                console.error('Concept generation timed out');
+                alert('Concept generation timed out after 5 minutes. Please try again.');
+                this.conceptsLoading = {...this.conceptsLoading, [recId]: false};
+                return;
+            }
+            try {
+                const res = await fetch(`/api/dashboard/exploitation/${recId}/concepts/status`);
+                if (!res.ok) {
+                    setTimeout(() => this.pollConceptsStatus(recId, attempts + 1), 2000);
+                    return;
+                }
+                const data = await res.json();
+                if (data.status === 'done') {
+                    console.log('💡 Concepts ready');
+                    await this.loadExploitationRecommendations();
+                    this.conceptsLoading = {...this.conceptsLoading, [recId]: false};
+                    this.$nextTick(() => { try { lucide.createIcons(); } catch(e) {} });
+                } else if (data.status === 'failed') {
+                    console.error('Concept generation failed:', data.error);
+                    alert('Concept generation failed: ' + (data.error || 'unknown error'));
+                    this.conceptsLoading = {...this.conceptsLoading, [recId]: false};
+                } else {
+                    // still 'generating' or null — keep polling
+                    setTimeout(() => this.pollConceptsStatus(recId, attempts + 1), 2000);
+                }
+            } catch (e) {
+                console.error('Status poll error:', e);
+                setTimeout(() => this.pollConceptsStatus(recId, attempts + 1), 2000);
+            }
+        },
+
+        async clearConcepts(recId) {
+            if (!confirm('Clear stored product concepts for this recommendation?')) return;
+            try {
+                const res = await fetch(`/api/dashboard/exploitation/${recId}/clear-concepts`, {
+                    method: 'POST',
+                });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    alert('Clear failed: ' + (err.error || res.status));
+                    return;
+                }
+                await this.loadExploitationRecommendations();
+                this.$nextTick(() => { try { lucide.createIcons(); } catch(e) {} });
+            } catch (e) {
+                console.error('Clear concepts error:', e);
+            }
         },
 
         async selectConcept(recId, conceptIndex) {

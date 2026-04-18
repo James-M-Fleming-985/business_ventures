@@ -4,7 +4,7 @@ ALL ENDPOINTS USE REAL API DATA - NO MOCK/SYNTHETIC DATA
 """
 
 from fastapi import APIRouter, Request, Query, Depends, HTTPException, BackgroundTasks
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from database import get_db
@@ -3072,6 +3072,38 @@ async def generate_exploitation_recommendations(db: Session = Depends(get_db)):
                 ).first()
                 
                 if existing:
+                    # Detect material stat shifts that invalidate cached product concepts.
+                    # Concepts are tied to specific stat values; if those drift significantly,
+                    # the old concepts no longer reflect the opportunity.
+                    if existing.product_concepts:
+                        old_corr = existing.correlation or 0
+                        new_corr = corr or 0
+                        old_pred = existing.predicted_change_pct or 0
+                        new_pred = predicted_change_pct or 0
+                        old_p = existing.granger_p_value if existing.granger_p_value is not None else 1.0
+                        new_p = p_value if p_value is not None else 1.0
+
+                        def _shift_pct(old, new):
+                            if abs(old) < 1e-9:
+                                return float('inf') if abs(new) > 1e-9 else 0.0
+                            return abs(new - old) / abs(old) * 100
+
+                        corr_shift = _shift_pct(old_corr, new_corr)
+                        pred_shift = _shift_pct(old_pred, new_pred)
+                        p_crossed = (old_p < 0.05) != (new_p < 0.05)
+
+                        if corr_shift > 20 or pred_shift > 20 or p_crossed:
+                            logger.info(
+                                f"[concepts] rec_id={existing.id} clearing stale concepts "
+                                f"(corr_shift={corr_shift:.1f}%, pred_shift={pred_shift:.1f}%, "
+                                f"p_crossed={p_crossed})"
+                            )
+                            existing.product_concepts = None
+                            existing.selected_concept_index = None
+                            existing.concepts_generation_status = None
+                            existing.concepts_error = None
+                            existing.concepts_generated_at = None
+
                     # Update stats but preserve user status/notes
                     existing.granger_p_value = p_value
                     existing.correlation = corr
@@ -4012,44 +4044,152 @@ def _run_build(build_id: int, recommendation_id: int, complexity: str):
         db.close()
 
 
+def _run_concept_generation_background(rec_id: int):
+    """Background worker: call LLM and persist concepts. Owns its own DB session."""
+    from database import SessionLocal
+    from services.product_concept_generator import generate_product_concepts
+    db = SessionLocal()
+    try:
+        rec = db.query(ExploitationRecommendation).filter(
+            ExploitationRecommendation.id == rec_id
+        ).first()
+        if not rec:
+            logger.error(f"[concepts] rec {rec_id} not found in background task")
+            return
+
+        logger.info(
+            f"[concepts] rec_id={rec_id} starting LLM generation "
+            f"(signal='{rec.signal_display_name}' target='{rec.target_display_name}' "
+            f"category='{rec.market_category}')"
+        )
+        try:
+            concepts = generate_product_concepts(
+                signal_display=rec.signal_display_name,
+                target_display=rec.target_display_name,
+                market_category=rec.market_category or "general",
+                opportunity_score=float(rec.opportunity_score or 0),
+                correlation=float(rec.correlation or 0),
+                p_value=float(rec.granger_p_value or 1),
+                lag=rec.optimal_lag or 1,
+                estimated_monthly_searches=rec.estimated_monthly_searches or 0,
+                search_trend_direction=rec.search_trend_direction or "stable",
+                competition_level=rec.competition_level or "LOW",
+                revenue_potential=rec.revenue_potential or "LOW",
+                predicted_direction=rec.predicted_direction,
+                predicted_change_pct=float(rec.predicted_change_pct) if rec.predicted_change_pct else None,
+                ensemble_confidence=rec.ensemble_confidence,
+                db_session=db,
+            )
+            source = (concepts[0].get("source") if concepts else None)
+            logger.info(
+                f"[concepts] rec_id={rec_id} LLM returned {len(concepts)} concepts "
+                f"(source={source})"
+            )
+            rec.product_concepts = concepts
+            rec.concepts_generation_status = "done"
+            rec.concepts_error = None
+            rec.concepts_generated_at = datetime.utcnow()
+            rec.updated_at = datetime.utcnow()
+            db.commit()
+            logger.info(f"[concepts] rec_id={rec_id} committed concepts to DB")
+        except Exception as exc:
+            logger.exception(f"[concepts] rec_id={rec_id} generation failed: {type(exc).__name__}: {exc}")
+            try:
+                rec.concepts_generation_status = "failed"
+                rec.concepts_error = f"{type(exc).__name__}: {exc}"[:500]
+                rec.updated_at = datetime.utcnow()
+                db.commit()
+            except Exception:
+                logger.exception(f"[concepts] rec_id={rec_id} failed to persist error status")
+    finally:
+        db.close()
+
+
 @router.post("/exploitation/{rec_id}/generate-concepts")
 async def generate_product_concepts_for_rec(
     rec_id: int,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ):
-    """Generate 3 AI-powered product concepts for a BUILD recommendation."""
+    """Kick off async generation of 3 AI-powered product concepts for a BUILD recommendation.
+
+    Returns immediately with status='generating'. Client must poll
+    GET /exploitation/{rec_id}/concepts/status until status is 'done' or 'failed'.
+    """
+    try:
+        rec = db.query(ExploitationRecommendation).filter(
+            ExploitationRecommendation.id == rec_id
+        ).first()
+        if not rec:
+            return JSONResponse(status_code=404, content={"error": "Recommendation not found"})
+        if rec.action_type != "BUILD":
+            return JSONResponse(
+                status_code=400,
+                content={"error": "Only BUILD recommendations support product concepts"},
+            )
+        if rec.concepts_generation_status == "generating":
+            return JSONResponse(
+                status_code=409,
+                content={"error": "Concept generation already in progress for this recommendation"},
+            )
+
+        logger.info(f"[concepts] rec_id={rec_id} queued for background generation")
+        rec.concepts_generation_status = "generating"
+        rec.concepts_error = None
+        rec.updated_at = datetime.utcnow()
+        db.commit()
+
+        background_tasks.add_task(_run_concept_generation_background, rec_id)
+        return JSONResponse(
+            status_code=202,
+            content={
+                "recommendation_id": rec_id,
+                "status": "generating",
+                "message": "Concept generation started — poll /concepts/status",
+            },
+        )
+    except Exception as exc:
+        logger.exception(f"[concepts] rec_id={rec_id} endpoint failed before queueing")
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"{type(exc).__name__}: {exc}"},
+        )
+
+
+@router.get("/exploitation/{rec_id}/concepts/status")
+async def get_concepts_status(rec_id: int, db: Session = Depends(get_db)):
+    """Poll concept generation status for a recommendation."""
     rec = db.query(ExploitationRecommendation).filter(
         ExploitationRecommendation.id == rec_id
     ).first()
     if not rec:
-        raise HTTPException(status_code=404, detail="Recommendation not found")
-    if rec.action_type != "BUILD":
-        raise HTTPException(status_code=400, detail="Only BUILD recommendations support product concepts")
+        return JSONResponse(status_code=404, content={"error": "Recommendation not found"})
+    return {
+        "recommendation_id": rec_id,
+        "status": rec.concepts_generation_status,  # NULL | generating | done | failed
+        "error": rec.concepts_error,
+        "concepts_generated_at": rec.concepts_generated_at.isoformat() if rec.concepts_generated_at else None,
+        "concepts": rec.product_concepts if rec.concepts_generation_status == "done" else None,
+    }
 
-    from services.product_concept_generator import generate_product_concepts
-    concepts = generate_product_concepts(
-        signal_display=rec.signal_display_name,
-        target_display=rec.target_display_name,
-        market_category=rec.market_category or "general",
-        opportunity_score=float(rec.opportunity_score or 0),
-        correlation=float(rec.correlation or 0),
-        p_value=float(rec.granger_p_value or 1),
-        lag=rec.optimal_lag or 1,
-        estimated_monthly_searches=rec.estimated_monthly_searches or 0,
-        search_trend_direction=rec.search_trend_direction or "stable",
-        competition_level=rec.competition_level or "LOW",
-        revenue_potential=rec.revenue_potential or "LOW",
-        predicted_direction=rec.predicted_direction,
-        predicted_change_pct=float(rec.predicted_change_pct) if rec.predicted_change_pct else None,
-        ensemble_confidence=rec.ensemble_confidence,
-        db_session=db,
-    )
 
-    rec.product_concepts = concepts
+@router.post("/exploitation/{rec_id}/clear-concepts")
+async def clear_product_concepts(rec_id: int, db: Session = Depends(get_db)):
+    """Clear all stored product concepts for a recommendation (manual reset)."""
+    rec = db.query(ExploitationRecommendation).filter(
+        ExploitationRecommendation.id == rec_id
+    ).first()
+    if not rec:
+        return JSONResponse(status_code=404, content={"error": "Recommendation not found"})
+    rec.product_concepts = None
+    rec.selected_concept_index = None
+    rec.concepts_generation_status = None
+    rec.concepts_error = None
+    rec.concepts_generated_at = None
     rec.updated_at = datetime.utcnow()
     db.commit()
-
-    return {"recommendation_id": rec_id, "concepts": concepts}
+    logger.info(f"[concepts] rec_id={rec_id} concepts cleared by user")
+    return {"recommendation_id": rec_id, "status": "cleared"}
 
 
 @router.post("/exploitation/{rec_id}/select-concept")

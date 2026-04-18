@@ -942,8 +942,67 @@
 
         <!-- Recommendation Cards -->
         <div class="space-y-3">
+            <!-- Expand/Collapse all controls -->
+            <div x-show="(filteredExploitation || []).length > 0" class="flex items-center justify-end gap-2 text-xs">
+                <button @click="expandAllExpRecs()" class="text-slate-400 hover:text-cyan-400 transition flex items-center gap-1">
+                    <i data-lucide="chevrons-down" class="w-3 h-3"></i> Expand all
+                </button>
+                <span class="text-slate-600">|</span>
+                <button @click="collapseAllExpRecs()" class="text-slate-400 hover:text-cyan-400 transition flex items-center gap-1">
+                    <i data-lucide="chevrons-up" class="w-3 h-3"></i> Collapse all
+                </button>
+            </div>
             <template x-for="rec in filteredExploitation" :key="rec.id">
-                <div class="bg-slate-800 rounded-lg border border-slate-700 p-5 hover:border-slate-500 transition">
+                <div class="bg-slate-800 rounded-lg border border-slate-700 hover:border-slate-500 transition">
+                    <!-- Compact header (always visible, click to toggle) -->
+                    <div class="flex items-center gap-3 px-5 py-3 cursor-pointer select-none" @click="toggleExpRec(rec.id)">
+                        <i :data-lucide="expandedExpRecs[rec.id] ? 'chevron-down' : 'chevron-right'" class="w-4 h-4 text-slate-400 flex-shrink-0"></i>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase flex-shrink-0"
+                            :class="{
+                                'bg-green-500/20 text-green-400 border border-green-500/30': rec.action_type === 'BUY',
+                                'bg-red-500/20 text-red-400 border border-red-500/30': rec.action_type === 'SELL',
+                                'bg-blue-500/20 text-blue-400 border border-blue-500/30': rec.action_type === 'BUILD',
+                                'bg-slate-500/20 text-slate-400 border border-slate-500/30': rec.action_type === 'MONITOR'
+                            }" x-text="rec.action_type"></span>
+                        <h3 class="text-white font-semibold text-sm flex-1 min-w-0 truncate">
+                            <span x-text="rec.signal_display_name"></span>
+                            <span class="text-slate-500 mx-1">→</span>
+                            <span x-text="rec.target_display_name"></span>
+                        </h3>
+                        <!-- Build status mini-pill (BUILD recs with active builds) -->
+                        <template x-if="rec.action_type === 'BUILD' && builds[rec.id]">
+                            <span class="text-[9px] px-1.5 py-0.5 rounded font-medium uppercase flex-shrink-0" :class="{
+                                'bg-yellow-900/40 text-yellow-400': ['QUEUED','GENERATING','UPLOADING','DEPLOYING'].includes(builds[rec.id].status),
+                                'bg-green-900/40 text-green-400': builds[rec.id].status === 'LIVE',
+                                'bg-red-900/40 text-red-400': builds[rec.id].status === 'FAILED'
+                            }" x-text="builds[rec.id].status"></span>
+                        </template>
+                        <!-- Concept count pill -->
+                        <template x-if="rec.action_type === 'BUILD' && rec.product_concepts && rec.product_concepts.length > 0">
+                            <span class="text-[9px] px-1.5 py-0.5 rounded bg-cyan-900/40 text-cyan-300 flex-shrink-0">
+                                <span x-text="rec.product_concepts.length"></span> concepts
+                            </span>
+                        </template>
+                        <!-- Generation in-progress pill -->
+                        <template x-if="rec.concepts_generation_status === 'generating'">
+                            <span class="text-[9px] px-1.5 py-0.5 rounded bg-amber-900/40 text-amber-300 flex-shrink-0 flex items-center gap-1">
+                                <i data-lucide="loader-2" class="w-2.5 h-2.5 animate-spin"></i> generating
+                            </span>
+                        </template>
+                        <!-- Score -->
+                        <span class="text-[10px] text-slate-500 flex-shrink-0">Score</span>
+                        <span class="text-sm font-bold text-white flex-shrink-0" x-text="(rec.action_type === 'BUILD' && rec.build_viability_score != null ? rec.build_viability_score : rec.opportunity_score)?.toFixed(0) || 0"></span>
+                        <!-- Status pill -->
+                        <span class="text-[9px] px-1.5 py-0.5 rounded uppercase font-semibold flex-shrink-0" :class="{
+                            'bg-blue-900/40 text-blue-300': rec.status === 'NEW',
+                            'bg-amber-900/40 text-amber-300': rec.status === 'REVIEWING',
+                            'bg-violet-900/40 text-violet-300': rec.status === 'PURSUING',
+                            'bg-green-900/40 text-green-300': rec.status === 'COMPLETED',
+                            'bg-slate-700 text-slate-400': rec.status === 'DISMISSED'
+                        }" x-text="rec.status"></span>
+                    </div>
+                    <!-- Expanded body -->
+                    <div x-show="expandedExpRecs[rec.id]" x-transition class="px-5 pb-5">
                     <div class="flex flex-col md:flex-row md:items-start gap-4">
                         <!-- Left: Action Badge + Info -->
                         <div class="flex-1">
@@ -1131,14 +1190,27 @@
                                                 :class="conceptsLoading[rec.id] ? 'bg-slate-600 cursor-wait' : 'bg-cyan-600 hover:bg-cyan-700'"
                                                 class="px-3 py-1.5 text-white rounded-lg text-[10px] font-medium transition flex items-center justify-center gap-1 w-full">
                                                 <span x-show="!conceptsLoading[rec.id]" class="flex items-center gap-1"><i data-lucide="lightbulb" class="w-3 h-3"></i> Generate Product Ideas</span>
-                                                <span x-show="conceptsLoading[rec.id]" class="flex items-center gap-1"><i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i> Generating...</span>
+                                                <span x-show="conceptsLoading[rec.id]" class="flex items-center gap-1"><i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i> Generating with Claude (~30s)…</span>
                                             </button>
+                                            <template x-if="rec.concepts_generation_status === 'failed' && rec.concepts_error">
+                                                <div class="mt-1 text-[10px] px-2 py-1 rounded bg-red-900/30 text-red-300 border border-red-900/50">
+                                                    <span class="font-semibold">Last attempt failed:</span> <span x-text="rec.concepts_error"></span>
+                                                </div>
+                                            </template>
                                         </div>
                                         <div x-show="rec.product_concepts && rec.product_concepts.length > 0">
                                             <div class="space-y-1.5">
                                                 <div class="flex items-center gap-1 text-[10px] font-semibold text-cyan-400 uppercase tracking-wider">
                                                     <i data-lucide="lightbulb" class="w-3 h-3"></i> Product Concepts
+                                                    <template x-if="rec.product_concepts && rec.product_concepts[0] && !rec.product_concepts[0].source">
+                                                        <span class="ml-1 normal-case tracking-normal text-[9px] px-1 py-0.5 rounded bg-slate-700 text-slate-400" title="Generated before source tracking — Regenerate to refresh">Legacy</span>
+                                                    </template>
                                                 </div>
+                                                <template x-if="rec.concepts_generation_status === 'failed' && rec.concepts_error">
+                                                    <div class="text-[10px] px-2 py-1 rounded bg-red-900/30 text-red-300 border border-red-900/50">
+                                                        <span class="font-semibold">Last generation failed:</span> <span x-text="rec.concepts_error"></span>
+                                                    </div>
+                                                </template>
                                                 <template x-for="(concept, idx) in (rec.product_concepts || [])" :key="idx">
                                                     <div x-data="{ expanded: false }"
                                                         @click="selectConcept(rec.id, idx)"
@@ -1201,12 +1273,18 @@
                                                         </div>
                                                     </div>
                                                 </template>
-                                                <button @click="generateConcepts(rec.id)"
-                                                    :disabled="conceptsLoading[rec.id]"
-                                                    class="text-[9px] text-slate-500 hover:text-slate-400 transition w-full text-center py-0.5">
-                                                    <span x-show="!conceptsLoading[rec.id]">↻ Regenerate</span>
-                                                    <span x-show="conceptsLoading[rec.id]">Generating...</span>
-                                                </button>
+                                                <div class="flex items-center justify-center gap-3 pt-0.5">
+                                                    <button @click="generateConcepts(rec.id)"
+                                                        :disabled="conceptsLoading[rec.id]"
+                                                        class="text-[9px] text-slate-500 hover:text-slate-300 transition">
+                                                        <span x-show="!conceptsLoading[rec.id]">↻ Regenerate</span>
+                                                        <span x-show="conceptsLoading[rec.id]">Generating with Claude (~30s)…</span>
+                                                    </button>
+                                                    <span class="text-slate-700">|</span>
+                                                    <button @click.stop="clearConcepts(rec.id)"
+                                                        :disabled="conceptsLoading[rec.id]"
+                                                        class="text-[9px] text-slate-500 hover:text-red-400 transition">✕ Clear</button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -1365,6 +1443,7 @@
                             </template>
                         </div>
                     </div>
+                    </div><!-- /expanded body -->
                 </div>
             </template>
 
