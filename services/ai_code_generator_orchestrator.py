@@ -1011,7 +1011,7 @@ def get_{cls.lower()}():
             '.replace(/"([^"]+)":/g,"<span class=key>$1</span>:")'
             '.replace(/: "([^"]*)"/g,": <span class=str>$1</span>")'
             '.replace(/: (\\\\d+\\\\.?\\\\d*)/g,": <span class=num>$1</span>")}'
-            + (f'if(!sessionStorage.getItem("_ca_b")){{fetch("https://businessventures-production.up.railway.app/api/mvp-beacon/{build_id}",{{method:"POST",mode:"no-cors",headers:{{"Content-Type":"application/json"}},body:JSON.stringify({{r:document.referrer}})}}).catch(function(){{}});sessionStorage.setItem("_ca_b","1")}}' if build_id else '')
+            + (f'if(!sessionStorage.getItem("_ca_b")){{fetch("https://businessventures-production.up.railway.app/api/dashboard/mvp-beacon/{build_id}",{{method:"POST",mode:"no-cors",headers:{{"Content-Type":"application/json"}},body:JSON.stringify({{r:document.referrer}})}}).catch(function(){{}});sessionStorage.setItem("_ca_b","1")}}' if build_id else '')
             + f'{fetch_js}'
             '</script></body></html>'
         )

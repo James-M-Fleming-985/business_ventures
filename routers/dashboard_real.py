@@ -12,7 +12,7 @@ from models import (
     VariableMetadata, TimeSeriesData, CorrelationResult,
     RollingCorrelation, APIStatus, AnalysisJob, PredictionTracking,
     ExploitationRecommendation, ExploitationValidation,
-    MVPBuild, MVPBuildFile, ProductDeployment, MvpPageView
+    MVPBuild, MVPBuildFile, ProductDeployment, MvpPageView, ProductMetrics
 )
 from correlation_analysis_service import CorrelationAnalysisService
 from services.granger_causality_service import GrangerCausalityService
@@ -4646,5 +4646,75 @@ async def mvp_beacon(build_id: int, request: Request, db: Session = Depends(get_
         referrer=referrer,
     )
     db.add(pv)
+    db.flush()
+
+    # Inline upsert into ProductMetrics so the builds-portfolio engagement
+    # column reflects this visit immediately (without waiting for the 6-hourly
+    # aggregate_page_views job).
+    try:
+        from sqlalchemy import func
+        deployment = (
+            db.query(ProductDeployment)
+            .filter(ProductDeployment.build_id == build_id)
+            .first()
+        )
+        if not deployment:
+            deployment = ProductDeployment(
+                build_id=build_id,
+                product_name=f"mvp-{build_id}",
+                app_id=f"mvp_{build_id}",
+                railway_url=getattr(build, "railway_url", None),
+                deployed_at=getattr(build, "created_at", datetime.utcnow()),
+                status="active",
+            )
+            db.add(deployment)
+            db.flush()
+
+        now = datetime.utcnow()
+        period_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        # Recompute today's totals from MvpPageView for this build
+        total_views, unique_visitors = (
+            db.query(
+                func.count(MvpPageView.id),
+                func.count(func.distinct(MvpPageView.visitor_hash)),
+            )
+            .filter(
+                MvpPageView.build_id == build_id,
+                MvpPageView.created_at >= period_start,
+            )
+            .one()
+        )
+
+        metrics = (
+            db.query(ProductMetrics)
+            .filter(
+                ProductMetrics.deployment_id == deployment.id,
+                ProductMetrics.period_start == period_start,
+            )
+            .first()
+        )
+        if metrics:
+            metrics.page_views = int(total_views or 0)
+            metrics.unique_visitors = int(unique_visitors or 0)
+            metrics.period_end = now
+            metrics.source = "beacon"
+        else:
+            db.add(ProductMetrics(
+                deployment_id=deployment.id,
+                period_start=period_start,
+                period_end=now,
+                page_views=int(total_views or 0),
+                unique_visitors=int(unique_visitors or 0),
+                source="beacon",
+            ))
+    except Exception as e:
+        logger.warning(f"mvp_beacon: inline ProductMetrics upsert failed for build {build_id}: {e}")
+
     db.commit()
     return
+
+
+# Unprefixed alias is registered on the FastAPI app in main.py (see
+# `_legacy_mvp_beacon`) so historical MVPs that beacon to /api/mvp-beacon/{id}
+# (missing the /dashboard prefix) continue to register page views.

@@ -105,6 +105,23 @@ app.include_router(revenue.router)  # Revenue dashboard (Track E)
 app.include_router(ensemble.router)  # Ensemble predictions (M2 Track A)
 app.include_router(commercial_intelligence.router)  # Commercial Intelligence (Track G)
 
+
+# ---------------------------------------------------------------------------
+# Legacy beacon alias
+# Older deployed MVPs were generated with a beacon URL of /api/mvp-beacon/{id}
+# (missing the /dashboard prefix). Forward those calls to the real handler so
+# historical MVPs continue to register page views without a redeploy.
+# ---------------------------------------------------------------------------
+from fastapi import Request as _BeaconRequest
+from sqlalchemy.orm import Session as _BeaconSession
+from database import get_db as _beacon_get_db
+from routers.dashboard_real import mvp_beacon as _mvp_beacon_handler
+
+
+@app.post("/api/mvp-beacon/{build_id}", status_code=204, include_in_schema=False)
+async def _legacy_mvp_beacon(build_id: int, request: _BeaconRequest, db: _BeaconSession = Depends(_beacon_get_db)):
+    return await _mvp_beacon_handler(build_id, request, db)
+
 # Include Signal Radar if available
 if signal_radar_router is not None:
     app.include_router(signal_radar_router)
