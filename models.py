@@ -386,6 +386,7 @@ class ExploitationRecommendation(Base):
     # AI-generated product concepts (M3 Track G)
     product_concepts = Column(JSON, nullable=True)             # List of 3 product concept dicts from LLM
     selected_concept_index = Column(Integer, nullable=True)    # 0-2: which concept user selected for build
+    user_requirements = Column(Text, nullable=True)            # Free-text user requirements for build spec
 
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -437,6 +438,7 @@ class ExploitationRecommendation(Base):
             "ensemble_change_pct": self.ensemble_change_pct,
             "product_concepts": self.product_concepts,
             "selected_concept_index": self.selected_concept_index,
+            "user_requirements": self.user_requirements,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }

@@ -3313,6 +3313,9 @@ async def update_exploitation_recommendation(rec_id: int, request: Request, db: 
         if 'notes' in body:
             rec.notes = body['notes']
         
+        if 'user_requirements' in body:
+            rec.user_requirements = body['user_requirements']
+        
         rec.updated_at = datetime.utcnow()
         db.commit()
         
@@ -3806,6 +3809,19 @@ def _run_build(build_id: int, recommendation_id: int, complexity: str):
                     f"{rec.reasoning or ''}"
                 )
 
+        # Append or override with user-supplied requirements
+        user_reqs = (rec.user_requirements or '').strip()
+        if user_reqs and selected_concept:
+            # Mode 2: Concept + user requirements
+            requirement += f"\n\nKey user requirements:\n{user_reqs}"
+        elif user_reqs and not selected_concept:
+            # Mode 3: User requirements only (no concept selected)
+            requirement = (
+                f"User requirements:\n{user_reqs}\n\n"
+                f"Context — Signal: {rec.signal_display_name} → {rec.target_display_name}. "
+                f"{rec.reasoning or ''}"
+            )
+
         recommendation_meta = {
             'signal_display_name': rec.signal_display_name,
             'target_display_name': rec.target_display_name,
@@ -3817,6 +3833,7 @@ def _run_build(build_id: int, recommendation_id: int, complexity: str):
             'competition_level': getattr(rec, 'competition_level', None),
             'build_viability_score': float(rec.build_viability_score) if getattr(rec, 'build_viability_score', None) else None,
             'selected_concept': selected_concept,
+            'user_requirements': user_reqs or None,
         }
 
         s3 = S3Service()
@@ -4084,6 +4101,22 @@ async def start_mvp_build(
     ).first()
     if not rec:
         raise HTTPException(status_code=404, detail="Recommendation not found")
+
+    # Save user requirements if provided
+    user_requirements = (body.get("user_requirements") or "").strip()
+    if user_requirements:
+        rec.user_requirements = user_requirements
+        rec.updated_at = datetime.utcnow()
+        db.commit()
+
+    # Require at least a selected concept OR user requirements to build
+    has_concept = rec.product_concepts and rec.selected_concept_index is not None
+    has_reqs = bool((rec.user_requirements or "").strip())
+    if not has_concept and not has_reqs:
+        raise HTTPException(
+            status_code=400,
+            detail="Select a product concept or provide key requirements before building"
+        )
 
     build = MVPBuild(
         recommendation_id=recommendation_id,

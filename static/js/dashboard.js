@@ -153,6 +153,7 @@ function dashboardData() {
 
         // Product concepts state (M3 Track G)
         conceptsLoading: {},
+        userRequirements: {},
 
         // ============================================================
         // BUILDS PORTFOLIO TAB (M2 Track H)
@@ -1029,6 +1030,12 @@ function dashboardData() {
                     const data = await response.json();
                     this.exploitationRecommendations = data.recommendations || [];
                     this.filteredExploitation = this.exploitationRecommendations;
+                    // Hydrate userRequirements from persisted data
+                    const reqs = {};
+                    for (const rec of this.exploitationRecommendations) {
+                        if (rec.user_requirements) reqs[rec.id] = rec.user_requirements;
+                    }
+                    this.userRequirements = {...this.userRequirements, ...reqs};
                     const summary = data.summary || {};
                     this.exploitationStats = {
                         total: data.total || 0,
@@ -2615,17 +2622,34 @@ function dashboardData() {
         },
 
         // ============================================================
+        // User Requirements (per-recommendation)
+        // ============================================================
+        async saveUserRequirements(recId, text) {
+            try {
+                await fetch(`/api/dashboard/exploitation/recommendations/${recId}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_requirements: text }),
+                });
+                console.log('📝 Saved requirements for rec', recId);
+            } catch (e) {
+                console.error('Save requirements error:', e);
+            }
+        },
+
+        // ============================================================
         // MVP Build
         // ============================================================
         async startBuild(recId) {
             console.log('🔨 startBuild called for rec', recId);
             const complexity = this.buildComplexity[recId] || 'LOW';
+            const userReqs = (this.userRequirements[recId] || '').trim();
             this.buildInProgress = {...this.buildInProgress, [recId]: true};
             try {
                 const res = await fetch('/api/dashboard/exploitation/build', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ recommendation_id: recId, complexity }),
+                    body: JSON.stringify({ recommendation_id: recId, complexity, user_requirements: userReqs || undefined }),
                 });
                 if (!res.ok) {
                     const err = await res.json().catch(() => ({}));

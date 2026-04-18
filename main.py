@@ -234,6 +234,12 @@ async def startup_event():
                 conn.commit()
                 logger.info("✅ Added iteration tracking columns to mvp_builds")
 
+            # User requirements for build spec customisation
+            if 'user_requirements' not in exploit_cols and exploit_cols:
+                conn.execute(text("ALTER TABLE exploitation_recommendations ADD COLUMN user_requirements TEXT"))
+                conn.commit()
+                logger.info("✅ Added user_requirements column to exploitation_recommendations")
+
         # M2: Seed FRED + GDELT variables (idempotent — skips existing)
         try:
             from seed_fred_variables import seed_fred_variables
