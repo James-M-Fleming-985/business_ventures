@@ -760,14 +760,23 @@ function dashboardData() {
         renderPredictionCharts() {
             if (typeof Plotly === 'undefined') return;
             
-            // Version color palette
+            // Version color palette — distinct from Actual (green) so traces don't merge
             const VERSION_COLORS = {
                 'v1': '#94a3b8', // slate
                 'v2': '#6366f1', // indigo
-                'v3': '#22c55e', // green
+                'v3': '#f59e0b', // amber
                 'v4': '#a855f7', // purple
                 'v5': '#f97316', // orange
                 'v6': '#ec4899', // pink
+            };
+            // Per-version marker symbols so overlapping lines stay individually visible
+            const VERSION_MARKERS = {
+                'v1': 'circle',
+                'v2': 'square',
+                'v3': 'diamond',
+                'v4': 'triangle-up',
+                'v5': 'cross',
+                'v6': 'x',
             };
             
             const chartLayout = (yTitle) => ({
@@ -777,7 +786,7 @@ function dashboardData() {
                 margin: { t: 10, r: 20, b: 40, l: 60 },
                 xaxis: { gridcolor: '#1e293b', tickfont: { size: 10 }, tickangle: -45 },
                 yaxis: { title: yTitle, gridcolor: '#1e293b', tickfont: { size: 10 }, titlefont: { size: 11 } },
-                legend: { orientation: 'h', y: 1.12, font: { size: 11 } },
+                legend: { orientation: 'h', y: 1.12, font: { size: 10 }, itemwidth: 60 },
                 showlegend: true,
                 hovermode: 'x unified'
             });
@@ -799,8 +808,8 @@ function dashboardData() {
                     if (actuals.length > 0) {
                         traces.push({
                             x: actuals.map(a => a.month), y: actuals.map(a => a.avg_actual_change_pct),
-                            name: 'Actual Change %', type: 'scatter', mode: 'lines+markers',
-                            line: { color: '#22c55e', width: 2.5 }, marker: { size: 6 }
+                            name: 'Actual', type: 'scatter', mode: 'lines+markers',
+                            line: { color: '#22c55e', width: 2.5 }, marker: { size: 6, symbol: 'circle' }
                         });
                     }
                     // Overlay selected version prediction traces
@@ -808,10 +817,11 @@ function dashboardData() {
                         if (!this.selectedVersions.includes(ver.version)) continue;
                         const vts = ver.time_series || [];
                         const color = VERSION_COLORS[ver.version] || '#94a3b8';
+                        const symbol = VERSION_MARKERS[ver.version] || 'circle';
                         traces.push({
                             x: vts.map(t => t.month), y: vts.map(t => t.avg_predicted_change_pct),
-                            name: `Predicted ${ver.version} (${ver.label})`, type: 'scatter', mode: 'lines+markers',
-                            line: { color, width: 2 }, marker: { size: 5 }
+                            name: ver.version, type: 'scatter', mode: 'lines+markers',
+                            line: { color, width: 2 }, marker: { size: 6, symbol }
                         });
                     }
                 } else if (this.timeSeriesData.length > 0) {
@@ -819,8 +829,8 @@ function dashboardData() {
                     const ts = this.timeSeriesData;
                     const months = ts.map(t => t.month);
                     traces.push(
-                        { x: months, y: ts.map(t => t.avg_predicted_change_pct), name: 'Predicted Change %', type: 'scatter', mode: 'lines+markers', line: { color: '#6366f1', width: 2.5 }, marker: { size: 6 } },
-                        { x: months, y: ts.map(t => t.avg_actual_change_pct), name: 'Actual Change %', type: 'scatter', mode: 'lines+markers', line: { color: '#22c55e', width: 2.5 }, marker: { size: 6 } }
+                        { x: months, y: ts.map(t => t.avg_predicted_change_pct), name: 'Predicted', type: 'scatter', mode: 'lines+markers', line: { color: '#6366f1', width: 2.5 }, marker: { size: 6 } },
+                        { x: months, y: ts.map(t => t.avg_actual_change_pct), name: 'Actual', type: 'scatter', mode: 'lines+markers', line: { color: '#22c55e', width: 2.5 }, marker: { size: 6 } }
                     );
                 }
                 if (traces.length > 0) {
@@ -841,8 +851,8 @@ function dashboardData() {
                     if (actuals.length > 0) {
                         traces.push({
                             x: actuals.map(a => a.month), y: actuals.map(a => a.avg_actual_lag),
-                            name: 'Actual Lag (days)', type: 'scatter', mode: 'lines+markers',
-                            line: { color: '#22c55e', width: 2.5 }, marker: { size: 6 }
+                            name: 'Actual', type: 'scatter', mode: 'lines+markers',
+                            line: { color: '#22c55e', width: 2.5 }, marker: { size: 6, symbol: 'circle' }
                         });
                     }
                     // Overlay selected version prediction traces
@@ -850,18 +860,19 @@ function dashboardData() {
                         if (!this.selectedVersions.includes(ver.version)) continue;
                         const vts = ver.time_series || [];
                         const color = VERSION_COLORS[ver.version] || '#94a3b8';
+                        const symbol = VERSION_MARKERS[ver.version] || 'circle';
                         traces.push({
                             x: vts.map(t => t.month), y: vts.map(t => t.avg_predicted_lag),
-                            name: `Predicted Lag ${ver.version} (${ver.label})`, type: 'scatter', mode: 'lines+markers',
-                            line: { color, width: 2 }, marker: { size: 5 }
+                            name: ver.version, type: 'scatter', mode: 'lines+markers',
+                            line: { color, width: 2 }, marker: { size: 6, symbol }
                         });
                     }
                 } else if (this.timeSeriesData.length > 0) {
                     const ts = this.timeSeriesData;
                     const months = ts.map(t => t.month);
                     traces.push(
-                        { x: months, y: ts.map(t => t.avg_predicted_lag), name: 'Predicted Lag (days)', type: 'scatter', mode: 'lines+markers', line: { color: '#6366f1', width: 2.5 }, marker: { size: 6 } },
-                        { x: months, y: ts.map(t => t.avg_actual_lag), name: 'Actual Lag (days)', type: 'scatter', mode: 'lines+markers', line: { color: '#22c55e', width: 2.5 }, marker: { size: 6 } }
+                        { x: months, y: ts.map(t => t.avg_predicted_lag), name: 'Predicted', type: 'scatter', mode: 'lines+markers', line: { color: '#6366f1', width: 2.5 }, marker: { size: 6 } },
+                        { x: months, y: ts.map(t => t.avg_actual_lag), name: 'Actual', type: 'scatter', mode: 'lines+markers', line: { color: '#22c55e', width: 2.5 }, marker: { size: 6 } }
                     );
                 }
                 if (traces.length > 0) {
@@ -892,12 +903,13 @@ function dashboardData() {
                         if (!this.selectedVersions.includes(ver.version)) continue;
                         const vts = ver.time_series || [];
                         const color = VERSION_COLORS[ver.version] || '#94a3b8';
+                        const symbol = VERSION_MARKERS[ver.version] || 'circle';
                         const counts = vts.map(t => t.count);
                         traces.push({
                             x: vts.map(t => t.month), y: vts.map(t => t.direction_accuracy),
-                            name: `Accuracy ${ver.version} (${ver.overall_accuracy ?? '—'}%)`,
+                            name: `${ver.version} (${ver.overall_accuracy ?? '—'}%)`,
                             type: 'scatter', mode: 'lines+markers',
-                            line: { color, width: 2.5 }, marker: { size: 6 },
+                            line: { color, width: 2.5 }, marker: { size: 7, symbol },
                             text: counts.map(c => c + ' predictions'),
                             hovertemplate: '%{y:.1f}% (%{text})<extra></extra>'
                         });
@@ -907,12 +919,12 @@ function dashboardData() {
                     if (allMonths.length >= 2) {
                         traces.push({
                             x: [allMonths[0], allMonths[allMonths.length - 1]], y: [50, 50],
-                            name: 'Random Baseline (50%)', type: 'scatter', mode: 'lines',
+                            name: 'Random (50%)', type: 'scatter', mode: 'lines',
                             line: { color: '#475569', width: 1.5, dash: 'dash' }
                         });
                         traces.push({
                             x: [allMonths[0], allMonths[allMonths.length - 1]], y: [90, 90],
-                            name: 'M0 Target (90%)', type: 'scatter', mode: 'lines',
+                            name: 'Target (90%)', type: 'scatter', mode: 'lines',
                             line: { color: '#ef4444', width: 1.5, dash: 'dot' }
                         });
                     }

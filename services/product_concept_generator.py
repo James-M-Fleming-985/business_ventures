@@ -6,9 +6,19 @@ product concepts tailored to each specific exploitation opportunity.
 import json
 import logging
 import os
+from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
+
+
+def _stamp(concepts: List[Dict], source: str) -> List[Dict]:
+    """Tag each concept with its origin (ai|template) and a generation timestamp."""
+    ts = datetime.now(timezone.utc).isoformat()
+    for c in concepts:
+        c["source"] = source
+        c["generated_at"] = ts
+    return concepts
 
 
 def generate_product_concepts(
@@ -38,7 +48,7 @@ def generate_product_concepts(
     anthropic_key = os.getenv("ANTHROPIC_API_KEY")
     if not anthropic_key:
         logger.warning("ANTHROPIC_API_KEY not set — using template fallback for product concepts")
-        return _fallback_concepts(signal_display, target_display, market_category)
+        return _stamp(_fallback_concepts(signal_display, target_display, market_category), "template")
 
     # Gather outcome history for this market category if available
     outcome_context = ""
@@ -112,11 +122,11 @@ Output ONLY valid JSON, no markdown fences or explanation."""
             f"Generated {len(concepts)} product concepts for "
             f"{signal_display}→{target_display} (${cost:.4f})"
         )
-        return concepts
+        return _stamp(concepts, "ai")
 
     except Exception as exc:
         logger.error(f"AI product concept generation failed: {exc}")
-        return _fallback_concepts(signal_display, target_display, market_category)
+        return _stamp(_fallback_concepts(signal_display, target_display, market_category), "template")
 
 
 def _get_outcome_context(db_session, market_category: str) -> str:
