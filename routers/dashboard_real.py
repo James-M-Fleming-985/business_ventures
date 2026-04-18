@@ -3802,8 +3802,21 @@ async def get_programme_baselines(db: Session = Depends(get_db)):
 # MVP Build Endpoints
 # ==============================================================================
 
-def _run_build(build_id: int, recommendation_id: int, complexity: str):
-    """Background task that executes the full MVP build pipeline."""
+def _run_build(
+    build_id: int,
+    recommendation_id: int,
+    complexity: str,
+    parent_build_id: int = None,
+):
+    """Background task that executes the full MVP build pipeline.
+
+    When ``parent_build_id`` is supplied, this is an iteration build.
+    The BuildIntelligenceService aggregates evidence from the parent
+    (errors, engagement, revenue, signal freshness, prior files) and
+    that evidence is injected into the spec-generator AI prompt so the
+    next iteration's YAML requirements are derived from real user
+    behaviour on the live app.
+    """
     import traceback
     from database import SessionLocal
     from services.s3_service import S3Service
@@ -3868,6 +3881,27 @@ def _run_build(build_id: int, recommendation_id: int, complexity: str):
             'user_requirements': user_reqs or None,
         }
 
+        # Iteration intelligence — only populated when this is a child build.
+        iteration_meta = None
+        if parent_build_id:
+            try:
+                from services.build_intelligence_service import (
+                    gather_iteration_intelligence,
+                )
+                iteration_meta = gather_iteration_intelligence(parent_build_id, db)
+                logger.info(
+                    f"Build {build_id}: gathered iteration intelligence from "
+                    f"parent #{parent_build_id} "
+                    f"(chain_length={len(iteration_meta.get('chain', []))}, "
+                    f"engagement={iteration_meta.get('engagement', {}).get('unique_visitors', 0)} visitors, "
+                    f"mrr=${iteration_meta.get('revenue', {}).get('mrr_usd', 0):.2f})"
+                )
+            except Exception as exc:
+                logger.warning(
+                    f"Build {build_id}: failed to gather iteration intelligence "
+                    f"from parent #{parent_build_id}: {exc}"
+                )
+
         s3 = S3Service()
         builder = MVPBuilderService(s3)
         builder.build_mvp(
@@ -3876,6 +3910,7 @@ def _run_build(build_id: int, recommendation_id: int, complexity: str):
             build_id=build_id,
             db_session=db,
             recommendation_meta=recommendation_meta,
+            iteration_meta=iteration_meta,
         )
 
         # ----- Post-build: push to GitHub + deploy to Railway -----
@@ -4404,7 +4439,13 @@ async def iterate_mvp_build(
     db.commit()
     db.refresh(child)
     
-    background_tasks.add_task(_run_build, child.id, parent.recommendation_id, complexity)
+    background_tasks.add_task(
+        _run_build,
+        child.id,
+        parent.recommendation_id,
+        complexity,
+        parent.id,
+    )
     
     return {
         "build_id": child.id,

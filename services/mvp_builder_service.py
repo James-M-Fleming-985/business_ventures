@@ -624,7 +624,8 @@ class MVPBuilderService:
     # ------------------------------------------------------------------
 
     def build_mvp(self, requirement: str, complexity: str, build_id: int,
-                  db_session=None, recommendation_meta: dict = None) -> Dict[str, Any]:
+                  db_session=None, recommendation_meta: dict = None,
+                  iteration_meta: dict = None) -> Dict[str, Any]:
         """
         YAML-driven TDD build pipeline:
         1. Generate LAYER_REQUIREMENTS spec via AI
@@ -679,6 +680,7 @@ class MVPBuilderService:
                 spec, spec_cost = generate_layer_spec_with_ai(
                     requirement, complexity, build_id, self.anthropic_key,
                     db_session=db_session,
+                    iteration_meta=iteration_meta,
                 )
                 total_ai_cost += spec_cost
 
@@ -724,6 +726,12 @@ class MVPBuilderService:
                 # Inject recommendation metadata into spec for dashboard hero
                 if recommendation_meta:
                     spec['_meta'] = recommendation_meta
+
+                # Inject iteration intelligence so downstream consumers
+                # (spec persistence, debugging, future analytics) can see
+                # exactly what evidence drove this iteration's requirements.
+                if iteration_meta:
+                    spec['_iteration_meta'] = iteration_meta
 
                 # Collect generated files
                 generated = orchestrator.collect_generated_files(spec=spec, build_id=build_id)

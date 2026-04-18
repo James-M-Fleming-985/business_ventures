@@ -36,6 +36,7 @@ def generate_layer_spec_with_ai(
     build_id: int,
     anthropic_key: str,
     db_session=None,
+    iteration_meta: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """
     Use AI to generate a structured LAYER_REQUIREMENTS dict from a
@@ -44,6 +45,11 @@ def generate_layer_spec_with_ai(
     If a db_session is provided, consults commercial intelligence to
     inject historical deployment performance context into the AI prompt
     (Track G — M3: YAML auto-generator consults commercial intelligence).
+
+    If ``iteration_meta`` is provided (i.e. this is an iteration build),
+    the BuildIntelligenceService evidence is rendered into the prompt so
+    the AI derives the next iteration's requirements from real user
+    behaviour on the live app rather than from the recommendation alone.
 
     Returns a dict that is a valid input for
     AICodeGeneratorOrchestrator.execute_full_cycle(requirements).
@@ -72,6 +78,19 @@ def generate_layer_spec_with_ai(
         except Exception as exc:
             logger.warning("Could not load commercial intelligence for spec: %s", exc)
 
+    # Iteration intelligence — only present for iteration builds.
+    iteration_context = ""
+    if iteration_meta:
+        try:
+            from services.build_intelligence_service import (
+                format_intelligence_for_prompt,
+            )
+            iteration_context = format_intelligence_for_prompt(iteration_meta)
+            if iteration_context:
+                iteration_context = "\n" + iteration_context + "\n"
+        except Exception as exc:
+            logger.warning("Could not format iteration intelligence: %s", exc)
+
     prompt = f"""You are an expert software architect. Given a business requirement,
 generate a structured YAML layer specification for automated code generation.
 
@@ -81,6 +100,7 @@ BUSINESS REQUIREMENT:
 COMPLEXITY: {complexity}
 {commercial_context}
 {confidence_note}
+{iteration_context}
 
 Generate a YAML document with EXACTLY this structure (output ONLY the YAML, no explanation):
 
