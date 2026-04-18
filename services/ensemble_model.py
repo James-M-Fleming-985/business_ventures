@@ -47,8 +47,8 @@ DEFAULT_WEIGHTS = {
 # Ensemble should only predict L1 signal → L2 target (cross-layer pairs)
 LAYER1_SOURCES = ("wikipedia", "reddit")
 
-# Feature engineering window sizes
-ROLLING_WINDOWS = [7, 30, 90]
+# Feature engineering window sizes (months — data is monthly-aligned)
+ROLLING_WINDOWS = [3, 6, 12]
 
 
 class EnsembleModel:
@@ -61,6 +61,9 @@ class EnsembleModel:
         self.db = db
         self.weights = dict(DEFAULT_WEIGHTS)
         self._arima_order_cache: Dict[str, Tuple[int, int, int]] = {}
+        # Weight for blending ARIMA-derived lag with granger lag in _combine.
+        # 0.0 = use granger lag only (legacy behaviour).
+        self.lag_blend_arima = 0.0
 
     # ------------------------------------------------------------------
     # Public interface
@@ -285,32 +288,38 @@ class EnsembleModel:
         x_raw = np.array([sig_dict[k] for k in common])
         y = np.array([tgt_dict[k] for k in common])
 
-        # --- Attempt multivariate OLS when features are available ----------
+        # --- Attempt multivariate OLS when features flag is supplied -------
+        # NOTE: `features` is treated as a boolean flag to enable multivariate
+        # mode.  Per-row feature columns are built directly from x_raw so the
+        # design matrix is genuinely full-rank (the previous implementation
+        # broadcast scalar features as constant columns, which collapsed to
+        # rank ≤ 2 and silently fell back to univariate — causing v2 to
+        # produce identical predictions to v1).
         multivariate = False
-        feature_keys = ["ma_7", "roc_30", "volatility_90"]
-        if features and all(k in features for k in feature_keys) and len(common) >= MIN_OLS_TRAIN_MONTHS + 3:
+        n = len(x_raw)
+        if features and n >= MIN_OLS_TRAIN_MONTHS + 6:
             try:
-                # Build feature matrix: [signal, ma_7, roc_30, volatility_90, 1]
-                feat_cols = np.array([features[k] for k in feature_keys])
-                # Broadcast scalar features across all rows (they describe the
-                # signal window at prediction time, constant per fit)
-                X = np.column_stack([
-                    x_raw,
-                    np.full(len(x_raw), feat_cols[0]),
-                    np.full(len(x_raw), feat_cols[1]),
-                    np.full(len(x_raw), feat_cols[2]),
-                    np.ones(len(x_raw)),
+                # Per-row rolling mean (window=3) of the signal
+                ma3 = np.array([float(np.mean(x_raw[max(0, i - 2):i + 1])) for i in range(n)])
+                # Per-row rolling mean (window=6) of the signal
+                ma6 = np.array([float(np.mean(x_raw[max(0, i - 5):i + 1])) for i in range(n)])
+                # Per-row 3-period rate of change
+                roc = np.array([
+                    float((x_raw[i] - x_raw[max(0, i - 3)]) / abs(x_raw[max(0, i - 3)]))
+                    if x_raw[max(0, i - 3)] != 0 else 0.0
+                    for i in range(n)
                 ])
+                X = np.column_stack([x_raw, ma3, ma6, roc, np.ones(n)])
                 # Least-squares fit
                 coeffs_mv, residuals, rank, sv = np.linalg.lstsq(X, y, rcond=None)
                 if rank >= X.shape[1]:
                     # Predict using latest row
-                    x_next_row = np.array([x_raw[-1], feat_cols[0], feat_cols[1], feat_cols[2], 1.0])
+                    x_next_row = np.array([x_raw[-1], ma3[-1], ma6[-1], roc[-1], 1.0])
                     predicted_y = float(x_next_row @ coeffs_mv)
                     y_pred = X @ coeffs_mv
                     ss_res = float(np.sum((y - y_pred) ** 2))
                     ss_tot = float(np.sum((y - np.mean(y)) ** 2))
-                    n, p = X.shape
+                    p = X.shape[1]
                     r_sq = 1 - (ss_res / ss_tot) if ss_tot > 0 else 0.0
                     # Adjusted R² penalises extra regressors
                     adj_r_sq = 1 - (1 - r_sq) * (n - 1) / max(n - p - 1, 1) if n > p + 1 else r_sq
@@ -414,6 +423,9 @@ class EnsembleModel:
                 "predicted_change_pct": round(change_pct, 2),
                 "aic": round(fitted.aic, 2),
                 "order": list(best_order),
+                # ARIMA-derived lag proxy (months) — dominant AR order signals
+                # how many lags back the model considers significant.
+                "optimal_lag_months": int(best_order[0]) if best_order[0] > 0 else 1,
             }
         except Exception as e:
             logger.warning(f"ARIMA fit failed: {e}")
@@ -445,6 +457,8 @@ class EnsembleModel:
                 "predicted_change_pct": round(change_pct, 2),
                 "aic": round(aic, 2),
                 "order": [1, 1, 1],
+                # Fixed ARIMA(1,1,1) — AR order = 1 → 1-month lag proxy
+                "optimal_lag_months": 1,
             }
         except Exception as e:
             return {"direction": None, "confidence": 0.0, "reason": f"ARIMA error: {e}"}
@@ -533,9 +547,19 @@ class EnsembleModel:
         if change_pct_weight > 0:
             predicted_change_pct = round(change_pct_sum / change_pct_weight, 2)
 
-        # Extract lag prediction from Granger sub-model (only source of lag)
+        # Extract lag prediction — blend granger lag with ARIMA-derived lag
+        # using self.lag_blend_arima (0.0 = pure granger, 1.0 = pure ARIMA).
+        # Per-version blending lets v1/v2/v3 produce visually distinct lag
+        # traces on the dashboard even though Granger itself is config-free.
         granger = sub_models.get("granger", {})
-        optimal_lag = granger.get("optimal_lag")
+        arima = sub_models.get("arima", {})
+        granger_lag = granger.get("optimal_lag")
+        arima_lag = arima.get("optimal_lag_months")
+        if granger_lag is not None and arima_lag is not None and self.lag_blend_arima > 0.0:
+            blend = max(0.0, min(self.lag_blend_arima, 1.0))
+            optimal_lag = (1.0 - blend) * float(granger_lag) + blend * float(arima_lag)
+        else:
+            optimal_lag = granger_lag
 
         return {
             "direction": direction,
@@ -797,6 +821,7 @@ MODEL_VERSION_CONFIGS = [
         "multivariate_ols": False,
         "adaptive_arima": False,
         "global_calibration": False,
+        "lag_blend_arima": 0.0,
     },
     {
         "version": "v2",
@@ -804,6 +829,7 @@ MODEL_VERSION_CONFIGS = [
         "multivariate_ols": True,
         "adaptive_arima": False,
         "global_calibration": False,
+        "lag_blend_arima": 0.3,
     },
     {
         "version": "v3",
@@ -811,6 +837,7 @@ MODEL_VERSION_CONFIGS = [
         "multivariate_ols": True,
         "adaptive_arima": True,
         "global_calibration": True,
+        "lag_blend_arima": 0.6,
     },
 ]
 
@@ -983,6 +1010,11 @@ def replay_validated_predictions(db: Session, configs: Optional[List[Dict]] = No
                     model.weights = dict(DEFAULT_WEIGHTS)
             else:
                 model.weights = dict(DEFAULT_WEIGHTS)
+
+            # Apply per-version lag blending so each version produces a
+            # distinct optimal_lag in the ensemble output (pure-granger lag
+            # is identical across versions and would collapse the Lag chart).
+            model.lag_blend_arima = float(cfg.get("lag_blend_arima", 0.0))
 
             ensemble = model._combine(sub_models)
             pred_direction = ensemble.get("direction")
