@@ -107,6 +107,16 @@ function dashboardData() {
         versionComparisonLoading: false,
         
         // ============================================================
+        // MODEL CHANGELOG
+        // ============================================================
+        changelogEntries: [],
+        showChangelogModal: false,
+        changelogModalPos: { x: window.innerWidth - 520, y: 120, w: 480 },
+        _dragging: false,
+        _dragOffset: { x: 0, y: 0 },
+        _changelogHighlightDate: null,
+
+        // ============================================================
         // PROGRAMME BASELINES (M0)
         // ============================================================
         baselines: null,
@@ -1095,11 +1105,113 @@ function dashboardData() {
                     const result = await response.json();
                     console.log('🔄 Version comparison computed:', result);
                     await this.loadVersionComparison();
+                    // Refresh changelog after replay (auto-capture may have created entries)
+                    await this.loadModelChangelog();
                 }
             } catch (error) {
                 console.error('Version comparison run failed:', error);
             } finally {
                 this.versionComparisonLoading = false;
+            }
+        },
+
+        // ============================================================
+        // MODEL CHANGELOG METHODS
+        // ============================================================
+        async loadModelChangelog() {
+            try {
+                const response = await fetch('/api/dashboard/predictions/model-changelog');
+                if (response.ok) {
+                    const data = await response.json();
+                    this.changelogEntries = (data.entries || []).map(e => ({...e, _showConfig: false}));
+                    console.log('📋 Model changelog loaded:', this.changelogEntries.length, 'entries');
+                }
+            } catch (error) {
+                console.error('Model changelog load failed:', error);
+            }
+        },
+
+        exportChangelogCSV() {
+            if (!this.changelogEntries.length) return;
+            const headers = ['Date','Version','Type','Description','Direction Acc Before','Direction Acc After','Impact (pp)','Config Snapshot'];
+            const rows = this.changelogEntries.map(e => {
+                const before = e.metrics_before?.direction_accuracy;
+                const after = e.metrics_after?.direction_accuracy;
+                const impact = (before != null && after != null) ? (after - before).toFixed(1) : '';
+                return [
+                    e.changed_at || '',
+                    e.version,
+                    e.change_type,
+                    `"${(e.description || '').replace(/"/g, '""')}"`,
+                    before != null ? before : '',
+                    after != null ? after : '',
+                    impact,
+                    `"${JSON.stringify(e.config_snapshot || {}).replace(/"/g, '""')}"`,
+                ];
+            });
+            const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `model_changelog_${new Date().toISOString().slice(0,10)}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        },
+
+        // Draggable modal logic
+        startDragModal(e) {
+            this._dragging = true;
+            this._dragOffset = {
+                x: e.clientX - this.changelogModalPos.x,
+                y: e.clientY - this.changelogModalPos.y,
+            };
+            const onMove = (ev) => {
+                if (!this._dragging) return;
+                this.changelogModalPos.x = Math.max(0, Math.min(ev.clientX - this._dragOffset.x, window.innerWidth - this.changelogModalPos.w));
+                this.changelogModalPos.y = Math.max(0, ev.clientY - this._dragOffset.y);
+            };
+            const onUp = () => {
+                this._dragging = false;
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onUp);
+            };
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
+        },
+
+        // Crosshair: draw vertical line on charts at the changelog entry date
+        highlightChangelogDate(dateStr) {
+            if (!dateStr) return;
+            this._changelogHighlightDate = dateStr;
+            const chartIds = ['chartDirectionAcc', 'chartChangePct', 'chartLag'];
+            const month = dateStr.slice(0, 7); // YYYY-MM
+            for (const id of chartIds) {
+                const el = document.getElementById(id);
+                if (!el || !el.data || !el.data.length) continue;
+                try {
+                    Plotly.relayout(el, {
+                        shapes: [{
+                            type: 'line',
+                            x0: month, x1: month,
+                            y0: 0, y1: 1,
+                            yref: 'paper',
+                            line: { color: '#14b8a6', width: 2, dash: 'dot' },
+                        }],
+                    });
+                } catch (e) {}
+            }
+        },
+
+        clearChangelogHighlight() {
+            this._changelogHighlightDate = null;
+            const chartIds = ['chartDirectionAcc', 'chartChangePct', 'chartLag'];
+            for (const id of chartIds) {
+                const el = document.getElementById(id);
+                if (!el || !el.data) continue;
+                try {
+                    Plotly.relayout(el, { shapes: [] });
+                } catch (e) {}
             }
         },
 

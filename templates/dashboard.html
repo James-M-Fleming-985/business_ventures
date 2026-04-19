@@ -374,6 +374,12 @@
             <i data-lucide="target" class="w-4 h-4 inline mr-1"></i>
             Prediction Accuracy
         </button>
+        <button @click="activeView = 'changelog'; loadModelChangelog()" 
+                :class="activeView === 'changelog' ? 'bg-teal-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'"
+                class="px-4 py-2 rounded-lg text-sm font-medium transition">
+            <i data-lucide="file-clock" class="w-4 h-4 inline mr-1"></i>
+            Model Change Log
+        </button>
         <button @click="activeView = 'exploitation'; loadExploitationRecommendations()" 
                 :class="activeView === 'exploitation' ? 'bg-amber-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'"
                 class="px-4 py-2 rounded-lg text-sm font-medium transition">
@@ -626,6 +632,11 @@
                         class="px-3 py-1 bg-violet-600 hover:bg-violet-700 disabled:bg-slate-700 disabled:text-slate-500 rounded text-xs font-medium transition flex items-center gap-1">
                     <i data-lucide="play" class="w-3 h-3" :class="{'animate-spin': versionComparisonLoading}"></i>
                     <span x-text="versionComparisonLoading ? 'Running…' : (versionComparisonData?.versions?.length ? 'Refresh' : 'Run Comparison')"></span>
+                </button>
+                <button @click="showChangelogModal = !showChangelogModal; if(showChangelogModal && !changelogEntries.length) loadModelChangelog()"
+                        class="px-3 py-1 bg-teal-600 hover:bg-teal-700 rounded text-xs font-medium transition flex items-center gap-1">
+                    <i data-lucide="file-clock" class="w-3 h-3"></i>
+                    Change Log
                 </button>
             </div>
         </div>
@@ -882,6 +893,152 @@
             <i data-lucide="inbox" class="w-10 h-10 mb-2 opacity-30"></i>
             <p class="text-sm">No predictions recorded yet</p>
             <p class="text-xs text-slate-600 mt-1">Go to the Exploitation Board and click "Generate Recommendations" to batch-create predictions</p>
+        </div>
+    </div>
+
+    <!-- ==================== MODEL CHANGE LOG TAB ==================== -->
+    <div x-show="activeView === 'changelog'" x-transition class="space-y-6">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+                <h2 class="text-xl font-bold text-white">Model Change Log</h2>
+                <p class="text-sm text-slate-400">Full history of prediction model configuration changes with before/after impact metrics</p>
+            </div>
+            <button @click="exportChangelogCSV()"
+                    class="px-4 py-2 bg-teal-600 hover:bg-teal-700 rounded-lg text-sm font-medium transition flex items-center gap-2">
+                <i data-lucide="download" class="w-4 h-4"></i>
+                Export CSV
+            </button>
+        </div>
+
+        <div class="bg-slate-800 rounded-lg border border-slate-700 overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-slate-700 text-slate-400">
+                        <th class="text-left py-3 px-4">Date</th>
+                        <th class="text-left py-3 px-4">Version</th>
+                        <th class="text-left py-3 px-4">Type</th>
+                        <th class="text-left py-3 px-4">What Changed</th>
+                        <th class="text-right py-3 px-4">Direction Acc. Before</th>
+                        <th class="text-right py-3 px-4">Direction Acc. After</th>
+                        <th class="text-center py-3 px-4">Impact</th>
+                        <th class="text-left py-3 px-4">Config Snapshot</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template x-for="entry in changelogEntries" :key="entry.id">
+                        <tr class="border-b border-slate-700/50 hover:bg-slate-700/30 transition text-slate-300">
+                            <td class="py-3 px-4 text-xs whitespace-nowrap" x-text="entry.changed_at ? new Date(entry.changed_at).toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}) + ' ' + new Date(entry.changed_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : '—'"></td>
+                            <td class="py-3 px-4">
+                                <span class="px-2 py-0.5 rounded text-xs font-bold"
+                                      :class="{
+                                          'bg-slate-600 text-slate-200': entry.version === 'v1',
+                                          'bg-indigo-600/30 text-indigo-300': entry.version === 'v2',
+                                          'bg-amber-600/30 text-amber-300': entry.version === 'v3',
+                                          'bg-purple-600/30 text-purple-300': entry.version === 'v4',
+                                      }" x-text="entry.version"></span>
+                            </td>
+                            <td class="py-3 px-4 text-xs">
+                                <span class="px-2 py-0.5 rounded"
+                                      :class="{
+                                          'bg-green-500/20 text-green-400': entry.change_type === 'created',
+                                          'bg-blue-500/20 text-blue-400': entry.change_type === 'hyperparameter',
+                                          'bg-orange-500/20 text-orange-400': entry.change_type === 'architecture',
+                                      }" x-text="entry.change_type"></span>
+                            </td>
+                            <td class="py-3 px-4 text-xs max-w-xs truncate" :title="entry.description" x-text="entry.description"></td>
+                            <td class="py-3 px-4 text-right text-xs" x-text="entry.metrics_before?.direction_accuracy != null ? entry.metrics_before.direction_accuracy + '%' : '—'"></td>
+                            <td class="py-3 px-4 text-right text-xs" x-text="entry.metrics_after?.direction_accuracy != null ? entry.metrics_after.direction_accuracy + '%' : '—'"></td>
+                            <td class="py-3 px-4 text-center">
+                                <template x-if="entry.impact_assessed && entry.metrics_before?.direction_accuracy != null && entry.metrics_after?.direction_accuracy != null">
+                                    <span class="text-xs font-bold px-2 py-0.5 rounded"
+                                          :class="entry.metrics_after.direction_accuracy > entry.metrics_before.direction_accuracy ? 'bg-green-500/20 text-green-400' : (entry.metrics_after.direction_accuracy < entry.metrics_before.direction_accuracy ? 'bg-red-500/20 text-red-400' : 'bg-slate-600 text-slate-400')"
+                                          x-text="((entry.metrics_after.direction_accuracy - entry.metrics_before.direction_accuracy) >= 0 ? '+' : '') + (entry.metrics_after.direction_accuracy - entry.metrics_before.direction_accuracy).toFixed(1) + 'pp'"></span>
+                                </template>
+                                <template x-if="!entry.impact_assessed || entry.metrics_before?.direction_accuracy == null">
+                                    <span class="text-xs text-slate-600">—</span>
+                                </template>
+                            </td>
+                            <td class="py-3 px-4 text-xs">
+                                <button @click="entry._showConfig = !entry._showConfig"
+                                        class="text-teal-400 hover:text-teal-300 underline text-xs">
+                                    <span x-text="entry._showConfig ? 'hide' : 'view'"></span>
+                                </button>
+                                <pre x-show="entry._showConfig" class="mt-2 p-2 bg-slate-900 rounded text-[10px] text-slate-400 max-w-sm overflow-auto whitespace-pre-wrap"
+                                     x-text="JSON.stringify(entry.config_snapshot, null, 2)"></pre>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+            <div x-show="changelogEntries.length === 0" class="flex flex-col items-center justify-center py-12 text-slate-500">
+                <i data-lucide="file-clock" class="w-10 h-10 mb-2 opacity-30"></i>
+                <p class="text-sm">No changelog entries yet</p>
+                <p class="text-xs text-slate-600 mt-1">Run a version comparison to auto-capture the first entries</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== DRAGGABLE CHANGELOG MODAL ==================== -->
+    <div x-show="showChangelogModal && activeView === 'predictions'"
+         x-transition
+         class="fixed z-50 bg-slate-800 border border-teal-500/50 rounded-lg shadow-2xl"
+         :style="`left:${changelogModalPos.x}px; top:${changelogModalPos.y}px; width:${changelogModalPos.w}px;`"
+         @mousedown.self="startDragModal($event)">
+        <!-- Title bar (draggable handle) -->
+        <div class="flex items-center justify-between px-4 py-2 bg-slate-700 rounded-t-lg cursor-move select-none border-b border-slate-600"
+             @mousedown="startDragModal($event)">
+            <div class="flex items-center gap-2">
+                <i data-lucide="file-clock" class="w-3.5 h-3.5 text-teal-400"></i>
+                <span class="text-xs font-bold text-white">Model Change Log</span>
+                <span class="text-[10px] text-slate-400" x-text="changelogEntries.length + ' entries'"></span>
+            </div>
+            <div class="flex items-center gap-2">
+                <button @click="activeView = 'changelog'; loadModelChangelog(); showChangelogModal = false"
+                        class="text-[10px] text-teal-400 hover:text-teal-300 underline">full view</button>
+                <button @click="showChangelogModal = false" class="text-slate-400 hover:text-white transition">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+        <!-- Scrollable compact table -->
+        <div class="max-h-64 overflow-y-auto p-2">
+            <table class="w-full text-[11px]">
+                <thead>
+                    <tr class="text-slate-500 border-b border-slate-700">
+                        <th class="text-left py-1 px-2">When</th>
+                        <th class="text-left py-1 px-2">What</th>
+                        <th class="text-center py-1 px-2">Impact</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template x-for="entry in changelogEntries" :key="entry.id">
+                        <tr class="border-b border-slate-700/30 hover:bg-teal-500/10 transition text-slate-300 cursor-pointer"
+                            @mouseenter="highlightChangelogDate(entry.changed_at)"
+                            @mouseleave="clearChangelogHighlight()">
+                            <td class="py-1.5 px-2 whitespace-nowrap">
+                                <span class="font-bold mr-1" :class="{
+                                    'text-slate-400': entry.version === 'v1',
+                                    'text-indigo-400': entry.version === 'v2',
+                                    'text-amber-400': entry.version === 'v3',
+                                    'text-purple-400': entry.version === 'v4',
+                                }" x-text="entry.version"></span>
+                                <span class="text-slate-500" x-text="entry.changed_at ? new Date(entry.changed_at).toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'2-digit'}) : ''"></span>
+                            </td>
+                            <td class="py-1.5 px-2 truncate max-w-[180px]" :title="entry.description" x-text="entry.description"></td>
+                            <td class="py-1.5 px-2 text-center">
+                                <template x-if="entry.impact_assessed && entry.metrics_before?.direction_accuracy != null && entry.metrics_after?.direction_accuracy != null">
+                                    <span class="font-bold"
+                                          :class="entry.metrics_after.direction_accuracy > entry.metrics_before.direction_accuracy ? 'text-green-400' : (entry.metrics_after.direction_accuracy < entry.metrics_before.direction_accuracy ? 'text-red-400' : 'text-slate-400')"
+                                          x-text="((entry.metrics_after.direction_accuracy - entry.metrics_before.direction_accuracy) >= 0 ? '+' : '') + (entry.metrics_after.direction_accuracy - entry.metrics_before.direction_accuracy).toFixed(1) + 'pp'"></span>
+                                </template>
+                                <template x-if="!entry.impact_assessed || entry.metrics_before?.direction_accuracy == null">
+                                    <span class="text-slate-600">—</span>
+                                </template>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
         </div>
     </div>
 

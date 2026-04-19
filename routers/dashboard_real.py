@@ -3651,10 +3651,14 @@ async def get_version_comparison(db: Session = Depends(get_db)):
 
 @router.post("/predictions/run-version-comparison")
 async def run_version_comparison(db: Session = Depends(get_db)):
-    """Trigger a fresh replay comparison and persist the results to DB."""
+    """Trigger a fresh replay comparison and persist the results to DB.
+
+    Also auto-captures a model_changelog entry when the config snapshot
+    differs from the last logged entry (governance feedback loop).
+    """
     global _version_comparison_cache
     try:
-        from services.ensemble_model import replay_validated_predictions
+        from services.ensemble_model import replay_validated_predictions, MODEL_VERSION_CONFIGS
         result = replay_validated_predictions(db)
         computed_at = datetime.utcnow()
         _version_comparison_cache["data"] = result
@@ -3663,6 +3667,13 @@ async def run_version_comparison(db: Session = Depends(get_db)):
             _save_cache_to_db(db, result, computed_at)
         except Exception as e:
             logger.warning(f"Could not persist version comparison cache to DB: {e}")
+
+        # --- Auto-capture changelog entries ---
+        try:
+            _auto_capture_changelog(db, MODEL_VERSION_CONFIGS, result)
+        except Exception as e:
+            logger.warning(f"Changelog auto-capture failed: {e}")
+
         return {
             "status": "success",
             "computed_at": _version_comparison_cache["computed_at"],
@@ -3672,6 +3683,121 @@ async def run_version_comparison(db: Session = Depends(get_db)):
     except Exception as e:
         logger.error(f"Version comparison run failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+def _extract_version_metrics(result: dict, version: str) -> Optional[dict]:
+    """Extract direction_accuracy, median_change_error, median_lag_error for a version."""
+    for v in result.get("versions", []):
+        if v.get("version") == version:
+            return {
+                "direction_accuracy": v.get("overall_accuracy"),
+                "total_predictions": v.get("total"),
+                "correct": v.get("correct"),
+            }
+    return None
+
+
+def _auto_capture_changelog(db: Session, configs: list, replay_result: dict) -> None:
+    """Compare current configs against last logged snapshot and create
+    changelog entries for any changes detected."""
+    import json
+    from models import ModelChangelog
+
+    for cfg in configs:
+        ver = cfg["version"]
+        # Get the last changelog entry for this version
+        last_entry = (
+            db.query(ModelChangelog)
+            .filter(ModelChangelog.version == ver)
+            .order_by(ModelChangelog.changed_at.desc())
+            .first()
+        )
+
+        # Serialise for comparison (sort keys for deterministic compare)
+        current_snapshot = json.loads(json.dumps(cfg, sort_keys=True, default=str))
+
+        if last_entry is None:
+            # First time seeing this version — log creation
+            metrics = _extract_version_metrics(replay_result, ver)
+            entry = ModelChangelog(
+                version=ver,
+                changed_at=datetime.utcnow(),
+                change_type="created",
+                description=f"Model {ver} first logged: {cfg.get('label', '')}",
+                config_snapshot=current_snapshot,
+                previous_config=None,
+                metrics_before=None,
+                metrics_after=metrics,
+                impact_assessed=metrics is not None,
+            )
+            db.add(entry)
+        else:
+            prev_snapshot = json.loads(json.dumps(last_entry.config_snapshot, sort_keys=True, default=str))
+            if current_snapshot != prev_snapshot:
+                # Config changed — compute diff description
+                diffs = []
+                all_keys = set(list(current_snapshot.keys()) + list(prev_snapshot.keys()))
+                for k in sorted(all_keys):
+                    old_val = prev_snapshot.get(k)
+                    new_val = current_snapshot.get(k)
+                    if old_val != new_val:
+                        diffs.append(f"{k}: {old_val} → {new_val}")
+                desc = "; ".join(diffs) if diffs else "config updated"
+
+                metrics_now = _extract_version_metrics(replay_result, ver)
+                metrics_prev = last_entry.metrics_after  # previous run's metrics
+
+                entry = ModelChangelog(
+                    version=ver,
+                    changed_at=datetime.utcnow(),
+                    change_type="hyperparameter",
+                    description=desc,
+                    config_snapshot=current_snapshot,
+                    previous_config=prev_snapshot,
+                    metrics_before=metrics_prev,
+                    metrics_after=metrics_now,
+                    impact_assessed=metrics_now is not None and metrics_prev is not None,
+                )
+                db.add(entry)
+            else:
+                # Same config — update metrics_after on the last entry if not yet assessed
+                if not last_entry.impact_assessed:
+                    metrics_now = _extract_version_metrics(replay_result, ver)
+                    if metrics_now:
+                        last_entry.metrics_after = metrics_now
+                        last_entry.impact_assessed = True
+
+    db.commit()
+
+
+# ==============================================================================
+# MODEL CHANGELOG — Governance endpoint
+# ==============================================================================
+
+@router.get("/predictions/model-changelog")
+async def get_model_changelog(db: Session = Depends(get_db)):
+    """Return all model changelog entries ordered by date descending."""
+    from models import ModelChangelog
+    rows = (
+        db.query(ModelChangelog)
+        .order_by(ModelChangelog.changed_at.desc())
+        .all()
+    )
+    entries = []
+    for r in rows:
+        entries.append({
+            "id": r.id,
+            "version": r.version,
+            "changed_at": r.changed_at.isoformat() if r.changed_at else None,
+            "change_type": r.change_type,
+            "description": r.description,
+            "config_snapshot": r.config_snapshot,
+            "previous_config": r.previous_config,
+            "metrics_before": r.metrics_before,
+            "metrics_after": r.metrics_after,
+            "impact_assessed": r.impact_assessed,
+        })
+    return {"entries": entries, "total": len(entries)}
 
 
 # ==============================================================================
