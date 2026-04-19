@@ -4087,10 +4087,13 @@ def _run_build(
                 railway_svc = RailwayService()
                 if railway_svc.enabled and repo_name:
                     try:
-                        project = railway_svc.create_project(repo_name)
+                        # Railway has stricter name validation than GitHub —
+                        # use a short alphanumeric name to avoid rejection.
+                        railway_name = f"mvp-{build_id}"
+                        project = railway_svc.create_project(railway_name)
                         build.railway_project_id = project.get("id")
                         service = railway_svc.create_service(
-                            project["id"], repo_name
+                            project["id"], railway_name
                         )
                         build.railway_service_id = service.get("id")
                         # Generate a public domain for the service

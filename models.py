@@ -816,3 +816,24 @@ class VersionComparisonCache(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     data = Column(JSON, nullable=False)            # full replay payload
     computed_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class ModelChangelog(Base):
+    """Tracks every change to MODEL_VERSION_CONFIGS for governance.
+
+    Each row represents a single config change with before/after metrics
+    so the dashboard user can answer: what changed, when, and what impact
+    did it have on prediction accuracy.
+    """
+    __tablename__ = 'model_changelog'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    version = Column(String(20), nullable=False)            # e.g. 'v4'
+    changed_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    change_type = Column(String(50), nullable=False)         # 'created', 'hyperparameter', 'architecture'
+    description = Column(Text, nullable=False)                # human-readable summary
+    config_snapshot = Column(JSON, nullable=False)            # full config dict at this point
+    previous_config = Column(JSON)                            # config before change (null for 'created')
+    metrics_before = Column(JSON)                             # {direction_accuracy, median_change_error, median_lag_error}
+    metrics_after = Column(JSON)                              # populated after next replay
+    impact_assessed = Column(Boolean, default=False)          # True once metrics_after is filled
