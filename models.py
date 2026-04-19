@@ -368,6 +368,9 @@ class ExploitationRecommendation(Base):
     competition_level = Column(String(10))                     # 'LOW', 'MEDIUM', 'HIGH'
     market_category = Column(String(100))                      # e.g. 'health_tech', 'ai_tools'
 
+    # Origin
+    source = Column(String(20), nullable=True, default='granger')  # 'granger' (data-driven) or 'manual' (user idea)
+
     # Lifecycle
     status = Column(String(20), nullable=False, default='NEW') # NEW, REVIEWING, PURSUING, COMPLETED, DISMISSED
     notes = Column(Text)                                       # User free-text notes
@@ -430,6 +433,7 @@ class ExploitationRecommendation(Base):
             "revenue_potential": self.revenue_potential,
             "competition_level": self.competition_level,
             "market_category": self.market_category,
+            "source": self.source or 'granger',
             "status": self.status,
             "notes": self.notes,
             "target_growth_actual": self.target_growth_actual,

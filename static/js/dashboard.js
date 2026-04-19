@@ -155,6 +155,11 @@ function dashboardData() {
         conceptsLoading: {},
         userRequirements: {},
 
+        // Manual idea creation
+        manualIdeaModalOpen: false,
+        manualIdeaSubmitting: false,
+        manualIdeaForm: { idea_name: '', description: '', action_type: 'BUILD', market_category: '' },
+
         // Exploitation card collapse (default: all collapsed; expanded persists in localStorage)
         expandedExpRecs: {},  // { [recId]: true }
 
@@ -2754,6 +2759,41 @@ function dashboardData() {
             } catch (e) {
                 console.error('Save requirements error:', e);
             }
+        },
+
+        // ============================================================
+        // Manual Idea Creation
+        // ============================================================
+        async createManualIdea() {
+            if (!this.manualIdeaForm.idea_name.trim()) return;
+            this.manualIdeaSubmitting = true;
+            try {
+                const res = await fetch('/api/dashboard/exploitation/recommendations/manual', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(this.manualIdeaForm),
+                });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    alert('Failed to create idea: ' + (err.detail || res.status));
+                    this.manualIdeaSubmitting = false;
+                    return;
+                }
+                const newRec = await res.json();
+                console.log('💡 Created manual idea:', newRec.id, newRec.signal_display_name);
+                // Reset form + close modal
+                this.manualIdeaForm = { idea_name: '', description: '', action_type: 'BUILD', market_category: '' };
+                this.manualIdeaModalOpen = false;
+                // Reload the recommendations list to show the new card
+                await this.loadExploitationRecommendations();
+                // Auto-expand the new card
+                this.expandedExpRecs = {...this.expandedExpRecs, [newRec.id]: true};
+                this.$nextTick(() => { try { lucide.createIcons(); } catch(e) {} });
+            } catch (e) {
+                console.error('Create manual idea error:', e);
+                alert('Failed to create idea: ' + e.message);
+            }
+            this.manualIdeaSubmitting = false;
         },
 
         // ============================================================
