@@ -64,6 +64,12 @@ class EnsembleModel:
         # Weight for blending ARIMA-derived lag with granger lag in _combine.
         # 0.0 = use granger lag only (legacy behaviour).
         self.lag_blend_arima = 0.0
+        # v4 knobs
+        self.granger_use_coefficient_sign = False  # sign-aware Granger
+        self.ols_mode = "levels"  # 'levels' (legacy) or 'differences' (v4)
+        self.shrinkage_lambda = 1.0  # 1.0 = no shrinkage, <1.0 shrinks change% toward 0
+        # Cache of regression coefficient signs per (signal_id, target_id)
+        self._coef_sign_cache: Dict[Tuple[int, int], int] = {}
 
     # ------------------------------------------------------------------
     # Public interface
@@ -245,10 +251,29 @@ class EnsembleModel:
         if len(signal_ts) >= 2:
             recent = [v for _, v in signal_ts[-3:]]
             momentum = (recent[-1] - recent[0]) / abs(recent[0]) if recent[0] != 0 else 0.0
-            direction = "up" if momentum > 0 else "down"
+            naive_direction = "up" if momentum > 0 else "down"
         else:
-            direction = None
+            naive_direction = None
             momentum = 0.0
+
+        # v4: sign-aware Granger — multiply naive momentum direction by the
+        # sign of the regression coefficient β (Δy_t = α + Σβ_i Δx_{t-i}).
+        # If β is negative, an upward signal predicts a downward target.
+        coef_sign = None
+        if self.granger_use_coefficient_sign and naive_direction is not None:
+            try:
+                lag = int(corr.granger_lags or 1)
+            except (TypeError, ValueError):
+                lag = 1
+            coef_sign = self._compute_granger_coefficient_sign(
+                signal_var, target_var, signal_ts, target_ts, lag=lag
+            )
+            if coef_sign is not None and coef_sign < 0:
+                direction = "down" if naive_direction == "up" else "up"
+            else:
+                direction = naive_direction
+        else:
+            direction = naive_direction
 
         # Confidence: inverse of p-value, capped at 1.0
         confidence = min(1.0 - p_value, 1.0)
@@ -259,7 +284,67 @@ class EnsembleModel:
             "p_value": p_value,
             "optimal_lag": corr.granger_lags,
             "momentum": round(momentum, 4),
+            "coef_sign": coef_sign,
         }
+
+    def _compute_granger_coefficient_sign(
+        self,
+        signal_var: VariableMetadata,
+        target_var: VariableMetadata,
+        signal_ts: List[Tuple[datetime, float]],
+        target_ts: List[Tuple[datetime, float]],
+        lag: int = 1,
+    ) -> Optional[int]:
+        """Compute sign of summed Granger regression coefficients on first
+        differences: Δy_t = α + Σ_{i=1..lag} β_i Δx_{t-i} + γ Δy_{t-1}.
+
+        Returns +1, -1, or None if fit fails / insufficient data.
+        Cached per (signal_id, target_id) since coefficient sign is stable
+        relative to single-month time series updates.
+        """
+        cache_key = (signal_var.id, target_var.id)
+        if cache_key in self._coef_sign_cache:
+            return self._coef_sign_cache[cache_key]
+
+        sig_dict = {d.strftime("%Y-%m"): v for d, v in signal_ts}
+        tgt_dict = {d.strftime("%Y-%m"): v for d, v in target_ts}
+        common = sorted(set(sig_dict) & set(tgt_dict))
+        if len(common) < max(MIN_OLS_TRAIN_MONTHS + lag + 2, 8):
+            return None
+
+        x = np.array([sig_dict[k] for k in common], dtype=float)
+        y = np.array([tgt_dict[k] for k in common], dtype=float)
+        dx = np.diff(x)
+        dy = np.diff(y)
+        n = len(dy)
+        if n <= lag + 2:
+            return None
+
+        try:
+            # Target rows: Δy_t for t = lag..n-1
+            target = dy[lag:]
+            rows = len(target)
+            X_cols = []
+            for i in range(1, lag + 1):
+                X_cols.append(dx[lag - i:lag - i + rows])
+            # AR(1) term on Δy
+            X_cols.append(dy[lag - 1:lag - 1 + rows])
+            X_cols.append(np.ones(rows))
+            X = np.column_stack(X_cols)
+            if X.shape[0] < X.shape[1] + 2:
+                return None
+            coeffs, _, rank, _ = np.linalg.lstsq(X, target, rcond=None)
+            if rank < X.shape[1]:
+                return None
+            beta_sum = float(np.sum(coeffs[:lag]))
+        except Exception as exc:
+            logger.debug(f"coef_sign fit failed for {signal_var.name}->{target_var.name}: {exc}")
+            self._coef_sign_cache[cache_key] = None
+            return None
+
+        sign = 1 if beta_sum >= 0 else -1
+        self._coef_sign_cache[cache_key] = sign
+        return sign
 
     # ------------------------------------------------------------------
     # Sub-model: OLS linear regression (expanding window)
@@ -276,6 +361,11 @@ class EnsembleModel:
         When *features* are supplied (ma_7, roc_30, volatility_90) they are
         added as extra regressors alongside the raw signal for a multivariate
         fit.  Falls back to univariate if the feature matrix is degenerate.
+
+        When ``self.ols_mode == 'differences'`` (v4), regresses on first
+        differences with an autoregressive term:
+            Δy_t = α + β·Δx_{t-1} + γ·Δy_{t-1}
+        avoiding spurious-regression bias from level-on-level OLS.
         """
         # Align signal and target by date (monthly)
         sig_dict = {d.strftime("%Y-%m"): v for d, v in signal_ts}
@@ -287,6 +377,55 @@ class EnsembleModel:
 
         x_raw = np.array([sig_dict[k] for k in common])
         y = np.array([tgt_dict[k] for k in common])
+
+        # --- v4: differenced VAR(1) regression -----------------------------
+        if self.ols_mode == "differences" and len(common) >= MIN_OLS_TRAIN_MONTHS + 2:
+            try:
+                dx = np.diff(x_raw)
+                dy = np.diff(y)
+                if len(dy) >= MIN_OLS_TRAIN_MONTHS:
+                    target_d = dy[1:]
+                    X_d = np.column_stack([
+                        dx[:-1],          # β · Δx_{t-1}
+                        dy[:-1],          # γ · Δy_{t-1}
+                        np.ones(len(target_d)),
+                    ])
+                    coeffs_d, _, rank_d, _ = np.linalg.lstsq(X_d, target_d, rcond=None)
+                    if rank_d >= X_d.shape[1]:
+                        # Forecast Δy_{t+1} from latest observed Δx_t and Δy_t
+                        x_next_d = np.array([dx[-1], dy[-1], 1.0])
+                        delta_y_next = float(x_next_d @ coeffs_d)
+                        predicted_y = float(y[-1] + delta_y_next)
+                        y_pred_d = X_d @ coeffs_d
+                        ss_res = float(np.sum((target_d - y_pred_d) ** 2))
+                        ss_tot = float(np.sum((target_d - np.mean(target_d)) ** 2))
+                        r_sq = 1 - (ss_res / ss_tot) if ss_tot > 0 else 0.0
+                        n_d = len(target_d)
+                        p_d = X_d.shape[1]
+                        adj_r_sq = (
+                            1 - (1 - r_sq) * (n_d - 1) / max(n_d - p_d - 1, 1)
+                            if n_d > p_d + 1 else r_sq
+                        )
+                        y_last = y[-1]
+                        change_pct = (
+                            (predicted_y - y_last) / abs(y_last) * 100
+                        ) if y_last != 0 else 0.0
+                        direction = "up" if predicted_y > y_last else "down"
+                        confidence = max(0.0, min(adj_r_sq, 1.0))
+                        return {
+                            "direction": direction,
+                            "confidence": round(confidence, 4),
+                            "predicted_value": round(predicted_y, 4),
+                            "predicted_change_pct": round(change_pct, 2),
+                            "r_squared": round(r_sq, 4),
+                            "adj_r_squared": round(adj_r_sq, 4),
+                            "multivariate": True,
+                            "mode": "differences",
+                            "sample_size": len(common),
+                        }
+            except Exception as exc:
+                logger.debug(f"differenced OLS failed, falling back: {exc}")
+            # fall through to legacy path on failure
 
         # --- Attempt multivariate OLS when features flag is supplied -------
         # NOTE: `features` is treated as a boolean flag to enable multivariate
@@ -545,7 +684,15 @@ class EnsembleModel:
         # Weighted average change_pct from sub-models that produced one
         predicted_change_pct = None
         if change_pct_weight > 0:
-            predicted_change_pct = round(change_pct_sum / change_pct_weight, 2)
+            predicted_change_pct = change_pct_sum / change_pct_weight
+            # v4: James-Stein-style shrinkage toward zero to counteract the
+            # systematic negative bias inherited from levels-OLS + ARIMA drift.
+            # shrinkage_lambda < 1.0 pulls the prediction toward 0%.
+            lam = self.shrinkage_lambda
+            if lam is not None and lam != 1.0:
+                lam = max(0.0, min(float(lam), 1.0))
+                predicted_change_pct = predicted_change_pct * lam
+            predicted_change_pct = round(predicted_change_pct, 2)
 
         # Extract lag prediction — blend granger lag with ARIMA-derived lag
         # using self.lag_blend_arima (0.0 = pure granger, 1.0 = pure ARIMA).
@@ -839,6 +986,18 @@ MODEL_VERSION_CONFIGS = [
         "global_calibration": True,
         "lag_blend_arima": 0.6,
     },
+    {
+        "version": "v4",
+        "label": "Ensemble v4",
+        "multivariate_ols": True,
+        "adaptive_arima": True,
+        "global_calibration": True,
+        "lag_blend_arima": 0.6,
+        # v4-specific corrections
+        "granger_use_coefficient_sign": True,
+        "ols_mode": "differences",
+        "shrinkage_lambda": 0.5,
+    },
 ]
 
 
@@ -981,6 +1140,10 @@ def replay_validated_predictions(db: Session, configs: Optional[List[Dict]] = No
             # Run sub-models with the config's settings
             features = model._engineer_features(signal_ts)
 
+            # v4: sign-aware Granger and differenced OLS
+            model.granger_use_coefficient_sign = bool(cfg.get("granger_use_coefficient_sign", False))
+            model.ols_mode = str(cfg.get("ols_mode", "levels"))
+
             # OLS: multivariate or univariate
             if cfg.get("multivariate_ols"):
                 ols_result = model._ols_predict(signal_ts, target_ts, features=features)
@@ -1015,6 +1178,8 @@ def replay_validated_predictions(db: Session, configs: Optional[List[Dict]] = No
             # distinct optimal_lag in the ensemble output (pure-granger lag
             # is identical across versions and would collapse the Lag chart).
             model.lag_blend_arima = float(cfg.get("lag_blend_arima", 0.0))
+            # v4 knobs (no-op for v1/v2/v3)
+            model.shrinkage_lambda = float(cfg.get("shrinkage_lambda", 1.0))
 
             ensemble = model._combine(sub_models)
             pred_direction = ensemble.get("direction")

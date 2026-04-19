@@ -3529,16 +3529,50 @@ async def validate_predictions(db: Session = Depends(get_db)):
 # VERSION COMPARISON — Replay validated predictions through model configs
 # ==============================================================================
 
-# In-memory cache for replay results (expensive to compute)
+# Persisted to DB (VersionComparisonCache) so cache survives Railway
+# redeploys.  In-memory dict is kept ONLY as an intra-request short-circuit;
+# it is rehydrated from the DB on first read after a cold start.
 _version_comparison_cache: dict = {"data": None, "computed_at": None}
+
+
+def _load_cache_from_db(db: Session) -> None:
+    """Populate the in-process cache from the DB (single-row table)."""
+    from models import VersionComparisonCache
+    row = (
+        db.query(VersionComparisonCache)
+        .order_by(VersionComparisonCache.computed_at.desc())
+        .first()
+    )
+    if row is not None:
+        _version_comparison_cache["data"] = row.data
+        _version_comparison_cache["computed_at"] = (
+            row.computed_at.isoformat() if row.computed_at else None
+        )
+
+
+def _save_cache_to_db(db: Session, payload: dict, computed_at: datetime) -> None:
+    """Replace the cached row in the DB (table holds at most one row)."""
+    from models import VersionComparisonCache
+    db.query(VersionComparisonCache).delete()
+    db.add(VersionComparisonCache(data=payload, computed_at=computed_at))
+    db.commit()
+
 
 @router.get("/predictions/version-comparison")
 async def get_version_comparison(db: Session = Depends(get_db)):
     """Return cached replay results comparing model versions.
 
-    Returns empty response if no cache — use POST to trigger computation.
+    Reads from DB on cold start so cache survives Railway redeploys.
+    Returns empty response (with `cached=False`) only if no cache row
+    exists yet — frontend then auto-triggers POST.
     """
     global _version_comparison_cache
+    if _version_comparison_cache["data"] is None:
+        try:
+            _load_cache_from_db(db)
+        except Exception as e:
+            logger.warning(f"Could not load version comparison cache from DB: {e}")
+
     if _version_comparison_cache["data"] is not None:
         return {
             **_version_comparison_cache["data"],
@@ -3546,7 +3580,6 @@ async def get_version_comparison(db: Session = Depends(get_db)):
             "computed_at": _version_comparison_cache["computed_at"],
         }
 
-    # No cache — return empty (POST triggers the expensive replay)
     return {
         "versions": [],
         "actuals": {"time_series": []},
@@ -3559,13 +3592,18 @@ async def get_version_comparison(db: Session = Depends(get_db)):
 
 @router.post("/predictions/run-version-comparison")
 async def run_version_comparison(db: Session = Depends(get_db)):
-    """Trigger a fresh replay comparison and cache the results."""
+    """Trigger a fresh replay comparison and persist the results to DB."""
     global _version_comparison_cache
     try:
         from services.ensemble_model import replay_validated_predictions
         result = replay_validated_predictions(db)
+        computed_at = datetime.utcnow()
         _version_comparison_cache["data"] = result
-        _version_comparison_cache["computed_at"] = datetime.utcnow().isoformat()
+        _version_comparison_cache["computed_at"] = computed_at.isoformat()
+        try:
+            _save_cache_to_db(db, result, computed_at)
+        except Exception as e:
+            logger.warning(f"Could not persist version comparison cache to DB: {e}")
         return {
             "status": "success",
             "computed_at": _version_comparison_cache["computed_at"],

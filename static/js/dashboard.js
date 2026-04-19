@@ -103,7 +103,7 @@ function dashboardData() {
         
         // Version comparison overlay
         versionComparisonData: null,
-        selectedVersions: [],
+        selectedVersions: JSON.parse(localStorage.getItem('selectedVersions') || '[]'),
         versionComparisonLoading: false,
         
         // ============================================================
@@ -1022,12 +1022,47 @@ function dashboardData() {
                 const response = await fetch('/api/dashboard/predictions/version-comparison');
                 if (response.ok) {
                     this.versionComparisonData = await response.json();
-                    console.log('🔄 Version comparison loaded:', this.versionComparisonData.versions?.length, 'versions');
+                    const versions = this.versionComparisonData.versions || [];
+                    console.log('🔄 Version comparison loaded:', versions.length, 'versions',
+                                'cached:', this.versionComparisonData.cached);
+
+                    // Pre-tick all versions if user has no saved selection (or saved
+                    // selection references stale versions that no longer exist).
+                    const availableNames = versions.map(v => v.version);
+                    const validSaved = (this.selectedVersions || []).filter(
+                        v => availableNames.includes(v)
+                    );
+                    if (versions.length > 0 && validSaved.length === 0) {
+                        this.selectedVersions = availableNames;
+                        try { localStorage.setItem('selectedVersions', JSON.stringify(this.selectedVersions)); } catch (e) {}
+                    } else if (validSaved.length !== (this.selectedVersions || []).length) {
+                        this.selectedVersions = validSaved;
+                        try { localStorage.setItem('selectedVersions', JSON.stringify(this.selectedVersions)); } catch (e) {}
+                    }
+
+                    // If the cache is empty, auto-trigger the expensive replay
+                    // ONCE per session so users see overlays without clicking.
+                    if (versions.length === 0 && !sessionStorage.getItem('versionComparisonAutoTriggered')) {
+                        sessionStorage.setItem('versionComparisonAutoTriggered', '1');
+                        console.log('🔄 No cached version comparison — auto-triggering replay…');
+                        this.runVersionComparison();
+                        return;
+                    }
+
                     this.$nextTick(() => this.renderPredictionCharts());
                 }
             } catch (error) {
                 console.error('Version comparison load failed:', error);
             }
+        },
+
+        toggleSelectedVersion(version) {
+            // Helper used by the checkbox @change handler so we can persist
+            // the selection to localStorage immediately.
+            try {
+                localStorage.setItem('selectedVersions', JSON.stringify(this.selectedVersions));
+            } catch (e) {}
+            this.renderPredictionCharts();
         },
 
         async runVersionComparison() {

@@ -798,3 +798,17 @@ class MvpPageView(Base):
     __table_args__ = (
         Index('ix_mpv_build_time', 'build_id', 'created_at'),
     )
+
+
+class VersionComparisonCache(Base):
+    """Single-row cache for the expensive replay_validated_predictions output.
+
+    Persisted to DB so cache survives Railway redeploys (otherwise the
+    in-process dict was wiped on every container restart and the dashboard
+    checkboxes rendered empty until a user manually clicked "Run Comparison").
+    """
+    __tablename__ = 'version_comparison_cache'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    data = Column(JSON, nullable=False)            # full replay payload
+    computed_at = Column(DateTime, default=datetime.utcnow, nullable=False)
