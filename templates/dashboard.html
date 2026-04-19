@@ -699,39 +699,7 @@
 
         <!-- Predicted vs Actual Time Series Charts -->
         <div class="space-y-4">
-            <!-- Chart 1: Change % — Predicted vs Actual -->
-            <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
-                <div class="flex items-center justify-between mb-1">
-                    <div class="flex items-center space-x-2">
-                        <i data-lucide="trending-up" class="w-5 h-5 text-primary-400"></i>
-                        <h3 class="text-lg font-bold">Change % — Predicted vs Actual</h3>
-                    </div>
-                    <span class="text-xs px-2 py-0.5 rounded bg-slate-700 text-slate-400">validated only</span>
-                </div>
-                <p class="text-xs text-slate-500 mb-3">Median predicted change% (blue) vs median actual change% (green) across all pairs, per month</p>
-                <div id="chartChangePct" class="w-full" style="height: 300px;" x-show="timeSeriesData.length > 0"></div>
-                <div x-show="timeSeriesData.length === 0" class="flex items-center justify-center" style="height: 200px;">
-                    <p class="text-sm text-slate-600">No validated predictions yet — run backtest or wait for live predictions to mature</p>
-                </div>
-            </div>
-
-            <!-- Chart 2: Lag — Predicted vs Actual -->
-            <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
-                <div class="flex items-center justify-between mb-1">
-                    <div class="flex items-center space-x-2">
-                        <i data-lucide="clock" class="w-5 h-5 text-purple-400"></i>
-                        <h3 class="text-lg font-bold">Lag — Predicted vs Actual</h3>
-                    </div>
-                    <span class="text-xs px-2 py-0.5 rounded bg-slate-700 text-slate-400">validated only</span>
-                </div>
-                <p class="text-xs text-slate-500 mb-3">Mean predicted lag days (blue) vs mean actual lag to peak/trough (green) across all pairs, per month</p>
-                <div id="chartLag" class="w-full" style="height: 300px;" x-show="timeSeriesData.length > 0"></div>
-                <div x-show="timeSeriesData.length === 0" class="flex items-center justify-center" style="height: 200px;">
-                    <p class="text-sm text-slate-600">No validated predictions yet</p>
-                </div>
-            </div>
-
-            <!-- Chart 3: Direction Accuracy Over Time -->
+            <!-- Chart 1: Direction Accuracy Over Time -->
             <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
                 <div class="flex items-center justify-between mb-1">
                     <div class="flex items-center space-x-2">
@@ -740,8 +708,40 @@
                     </div>
                     <span class="text-xs px-2 py-0.5 rounded bg-slate-700 text-slate-400">validated only</span>
                 </div>
-                <p class="text-xs text-slate-500 mb-3">% of predictions with correct up/down direction per month — dashed line shows 50% random baseline</p>
+                <p class="text-xs text-slate-500 mb-3">Percentage of predictions with correct relationship direction between signal and target pairs for each month. Dashed line = 50% coin-flip baseline; dotted line = 90% M0 target.</p>
                 <div id="chartDirectionAcc" class="w-full" style="height: 250px;" x-show="timeSeriesData.length > 0"></div>
+                <div x-show="timeSeriesData.length === 0" class="flex items-center justify-center" style="height: 200px;">
+                    <p class="text-sm text-slate-600">No validated predictions yet</p>
+                </div>
+            </div>
+
+            <!-- Chart 2: Change % — Predicted vs Actual -->
+            <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                <div class="flex items-center justify-between mb-1">
+                    <div class="flex items-center space-x-2">
+                        <i data-lucide="trending-up" class="w-5 h-5 text-primary-400"></i>
+                        <h3 class="text-lg font-bold">Change % — Predicted vs Actual</h3>
+                    </div>
+                    <span class="text-xs px-2 py-0.5 rounded bg-slate-700 text-slate-400">validated only</span>
+                </div>
+                <p class="text-xs text-slate-500 mb-3">A chart to show predicted change in target based on signal and actual change in target based on signal across all pairs for each month.</p>
+                <div id="chartChangePct" class="w-full" style="height: 300px;" x-show="timeSeriesData.length > 0"></div>
+                <div x-show="timeSeriesData.length === 0" class="flex items-center justify-center" style="height: 200px;">
+                    <p class="text-sm text-slate-600">No validated predictions yet — run backtest or wait for live predictions to mature</p>
+                </div>
+            </div>
+
+            <!-- Chart 3: Lag — Predicted vs Actual -->
+            <div class="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                <div class="flex items-center justify-between mb-1">
+                    <div class="flex items-center space-x-2">
+                        <i data-lucide="clock" class="w-5 h-5 text-purple-400"></i>
+                        <h3 class="text-lg font-bold">Lag — Predicted vs Actual</h3>
+                    </div>
+                    <span class="text-xs px-2 py-0.5 rounded bg-slate-700 text-slate-400">validated only</span>
+                </div>
+                <p class="text-xs text-slate-500 mb-3">A chart to show predicted lag in target based on signal and actual lag in target based on signal across all pairs for each month.</p>
+                <div id="chartLag" class="w-full" style="height: 300px;" x-show="timeSeriesData.length > 0"></div>
                 <div x-show="timeSeriesData.length === 0" class="flex items-center justify-center" style="height: 200px;">
                     <p class="text-sm text-slate-600">No validated predictions yet</p>
                 </div>
