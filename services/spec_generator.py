@@ -102,6 +102,16 @@ COMPLEXITY: {complexity}
 {confidence_note}
 {iteration_context}
 
+IMPORTANT CONTEXT FOR REQUIREMENT PARSING:
+- If the requirement contains labelled sections like PRODUCT VISION, KEY FEATURES,
+  UI/UX STYLE, REQUIRED INTEGRATIONS, or TARGET USERS, use each section to generate
+  targeted acceptance criteria, test scenarios, and implementation details.
+- PRODUCT VISION should inform the feature_name and requirement_title.
+- KEY FEATURES should map directly to specific acceptance criteria.
+- UI/UX STYLE constraints should appear in acceptance criteria related to the interface.
+- REQUIRED INTEGRATIONS should generate dedicated integration test scenarios.
+- TARGET USERS should shape user-facing test scenarios and E2E workflows.
+
 Generate a YAML document with EXACTLY this structure (output ONLY the YAML, no explanation):
 
 layer_id: "LAYER-MVP-{build_id:04d}"

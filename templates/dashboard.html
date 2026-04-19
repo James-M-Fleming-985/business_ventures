@@ -1263,34 +1263,89 @@
                                         </div>
                                     </div>
 
-                                    <!-- RIGHT: Key Requirements -->
+                                    <!-- RIGHT: Structured Requirements -->
                                     <div class="w-full min-w-0 space-y-1">
                                         <div class="flex items-center justify-between">
                                             <div class="flex items-center gap-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                                                <i data-lucide="list-checks" class="w-3 h-3"></i> Key Requirements
-                                                <span class="normal-case text-slate-500 font-normal">(optional)</span>
+                                                <i data-lucide="list-checks" class="w-3 h-3"></i> Build Specification
+                                                <span class="normal-case text-slate-500 font-normal">(optional — shapes the MVP)</span>
                                             </div>
-                                            <button x-show="(userRequirements[rec.id] || '').trim().length > 0"
-                                                @click="userRequirements = {...userRequirements, [rec.id]: ''}; saveUserRequirements(rec.id, '')"
-                                                class="text-[9px] text-slate-500 hover:text-red-400 transition">Clear</button>
+                                            <button x-show="hasAnyRequirements(rec.id)"
+                                                @click="clearStructuredRequirements(rec.id)"
+                                                class="text-[9px] text-slate-500 hover:text-red-400 transition">Clear all</button>
                                         </div>
-                                        <textarea
-                                            :value="userRequirements[rec.id] || ''"
-                                            @input="userRequirements = {...userRequirements, [rec.id]: $event.target.value}"
-                                            @change="saveUserRequirements(rec.id, $event.target.value)"
-                                            placeholder="e.g. Must have Stripe payments, dark mode UI, email onboarding flow..."
-                                            rows="6"
-                                            class="w-full bg-slate-800 border border-slate-600 rounded-lg px-2 py-1.5 text-[11px] text-slate-200 placeholder-slate-500 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 outline-none resize-y transition"></textarea>
+
+                                        <!-- Vision -->
+                                        <div class="space-y-0.5">
+                                            <label class="block text-[9px] text-cyan-400 font-semibold uppercase tracking-wider">Vision</label>
+                                            <textarea
+                                                :value="(userRequirements[rec.id] || {}).vision || ''"
+                                                @input="updateStructuredReq(rec.id, 'vision', $event.target.value)"
+                                                @change="saveUserRequirements(rec.id)"
+                                                placeholder="What is this product? What problem does it solve? e.g. A personal finance tracker that gamifies saving..."
+                                                rows="2"
+                                                class="w-full bg-slate-800 border border-slate-600 rounded-lg px-2 py-1 text-[11px] text-slate-200 placeholder-slate-500 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 outline-none resize-y transition"></textarea>
+                                        </div>
+
+                                        <!-- Key Features -->
+                                        <div class="space-y-0.5">
+                                            <label class="block text-[9px] text-cyan-400 font-semibold uppercase tracking-wider">Key Features</label>
+                                            <textarea
+                                                :value="(userRequirements[rec.id] || {}).features || ''"
+                                                @input="updateStructuredReq(rec.id, 'features', $event.target.value)"
+                                                @change="saveUserRequirements(rec.id)"
+                                                placeholder="One feature per line: e.g.&#10;Budget tracking with categories&#10;Savings goals with progress bars&#10;Monthly spending reports"
+                                                rows="3"
+                                                class="w-full bg-slate-800 border border-slate-600 rounded-lg px-2 py-1 text-[11px] text-slate-200 placeholder-slate-500 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 outline-none resize-y transition"></textarea>
+                                        </div>
+
+                                        <!-- UI/UX Style -->
+                                        <div class="space-y-0.5">
+                                            <label class="block text-[9px] text-cyan-400 font-semibold uppercase tracking-wider">UI / UX Style</label>
+                                            <textarea
+                                                :value="(userRequirements[rec.id] || {}).ui_style || ''"
+                                                @input="updateStructuredReq(rec.id, 'ui_style', $event.target.value)"
+                                                @change="saveUserRequirements(rec.id)"
+                                                placeholder="e.g. Dark mode, minimal dashboard, mobile-first, card-based layout..."
+                                                rows="1"
+                                                class="w-full bg-slate-800 border border-slate-600 rounded-lg px-2 py-1 text-[11px] text-slate-200 placeholder-slate-500 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 outline-none resize-y transition"></textarea>
+                                        </div>
+
+                                        <!-- Integrations -->
+                                        <div class="space-y-0.5">
+                                            <label class="block text-[9px] text-cyan-400 font-semibold uppercase tracking-wider">Integrations</label>
+                                            <textarea
+                                                :value="(userRequirements[rec.id] || {}).integrations || ''"
+                                                @input="updateStructuredReq(rec.id, 'integrations', $event.target.value)"
+                                                @change="saveUserRequirements(rec.id)"
+                                                placeholder="e.g. Stripe payments, SendGrid email, Plaid API, OAuth login..."
+                                                rows="1"
+                                                class="w-full bg-slate-800 border border-slate-600 rounded-lg px-2 py-1 text-[11px] text-slate-200 placeholder-slate-500 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 outline-none resize-y transition"></textarea>
+                                        </div>
+
+                                        <!-- Target Users -->
+                                        <div class="space-y-0.5">
+                                            <label class="block text-[9px] text-cyan-400 font-semibold uppercase tracking-wider">Target Users</label>
+                                            <textarea
+                                                :value="(userRequirements[rec.id] || {}).target_users || ''"
+                                                @input="updateStructuredReq(rec.id, 'target_users', $event.target.value)"
+                                                @change="saveUserRequirements(rec.id)"
+                                                placeholder="e.g. Young professionals aged 25-35 who want to manage spending..."
+                                                rows="1"
+                                                class="w-full bg-slate-800 border border-slate-600 rounded-lg px-2 py-1 text-[11px] text-slate-200 placeholder-slate-500 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 outline-none resize-y transition"></textarea>
+                                        </div>
+
+                                        <!-- Build mode indicator -->
                                         <div class="text-[10px] px-1" :class="{
-                                            'text-cyan-400': rec.selected_concept_index != null && (userRequirements[rec.id] || '').trim(),
-                                            'text-violet-400': rec.selected_concept_index != null && !(userRequirements[rec.id] || '').trim(),
-                                            'text-amber-400': rec.selected_concept_index == null && (userRequirements[rec.id] || '').trim(),
-                                            'text-slate-500': rec.selected_concept_index == null && !(userRequirements[rec.id] || '').trim()
+                                            'text-cyan-400': rec.selected_concept_index != null && hasAnyRequirements(rec.id),
+                                            'text-violet-400': rec.selected_concept_index != null && !hasAnyRequirements(rec.id),
+                                            'text-amber-400': rec.selected_concept_index == null && hasAnyRequirements(rec.id),
+                                            'text-slate-500': rec.selected_concept_index == null && !hasAnyRequirements(rec.id)
                                         }">
-                                            <span x-show="rec.selected_concept_index != null && (userRequirements[rec.id] || '').trim()">⚡ Building from concept + your requirements</span>
-                                            <span x-show="rec.selected_concept_index != null && !(userRequirements[rec.id] || '').trim()">⚡ Building from selected concept</span>
-                                            <span x-show="rec.selected_concept_index == null && (userRequirements[rec.id] || '').trim()">⚡ Building from your requirements only</span>
-                                            <span x-show="rec.selected_concept_index == null && !(userRequirements[rec.id] || '').trim()">Select a concept or add requirements to build</span>
+                                            <span x-show="rec.selected_concept_index != null && hasAnyRequirements(rec.id)">⚡ Building from concept + your specification</span>
+                                            <span x-show="rec.selected_concept_index != null && !hasAnyRequirements(rec.id)">⚡ Building from selected concept</span>
+                                            <span x-show="rec.selected_concept_index == null && hasAnyRequirements(rec.id)">⚡ Building from your specification only</span>
+                                            <span x-show="rec.selected_concept_index == null && !hasAnyRequirements(rec.id)">Select a concept or add specification to build</span>
                                         </div>
                                     </div>
                                 </div>
@@ -1311,8 +1366,8 @@
                                         </div>
                                     </div>
                                     <button @click="startBuild(rec.id)"
-                                        :disabled="buildInProgress[rec.id] === true || (rec.selected_concept_index == null && !(userRequirements[rec.id] || '').trim())"
-                                        :class="buildInProgress[rec.id] === true || (rec.selected_concept_index == null && !(userRequirements[rec.id] || '').trim())
+                                        :disabled="buildInProgress[rec.id] === true || (rec.selected_concept_index == null && !hasAnyRequirements(rec.id))"
+                                        :class="buildInProgress[rec.id] === true || (rec.selected_concept_index == null && !hasAnyRequirements(rec.id))
                                             ? 'bg-slate-600 cursor-not-allowed opacity-60'
                                             : 'bg-violet-600 hover:bg-violet-700'"
                                         class="px-3 py-2.5 text-white rounded-lg text-sm font-semibold transition flex items-center justify-center gap-2 w-full">

@@ -3951,15 +3951,39 @@ def _run_build(
                     f"{rec.reasoning or ''}"
                 )
 
-        # Append or override with user-supplied requirements
-        user_reqs = (rec.user_requirements or '').strip()
-        if user_reqs and selected_concept:
+        # Append or override with user-supplied requirements (structured JSON)
+        user_reqs_raw = (rec.user_requirements or '').strip()
+        user_reqs_text = ''
+        if user_reqs_raw:
+            try:
+                import json as _json
+                structured = _json.loads(user_reqs_raw)
+                if isinstance(structured, dict):
+                    parts = []
+                    if structured.get('vision', '').strip():
+                        parts.append(f"PRODUCT VISION: {structured['vision'].strip()}")
+                    if structured.get('features', '').strip():
+                        parts.append(f"KEY FEATURES: {structured['features'].strip()}")
+                    if structured.get('ui_style', '').strip():
+                        parts.append(f"UI/UX STYLE: {structured['ui_style'].strip()}")
+                    if structured.get('integrations', '').strip():
+                        parts.append(f"REQUIRED INTEGRATIONS: {structured['integrations'].strip()}")
+                    if structured.get('target_users', '').strip():
+                        parts.append(f"TARGET USERS: {structured['target_users'].strip()}")
+                    user_reqs_text = '\n'.join(parts)
+                else:
+                    user_reqs_text = user_reqs_raw
+            except (ValueError, TypeError):
+                # Legacy plain-text requirements
+                user_reqs_text = user_reqs_raw
+
+        if user_reqs_text and selected_concept:
             # Mode 2: Concept + user requirements
-            requirement += f"\n\nKey user requirements:\n{user_reqs}"
-        elif user_reqs and not selected_concept:
+            requirement += f"\n\n{user_reqs_text}"
+        elif user_reqs_text and not selected_concept:
             # Mode 3: User requirements only (no concept selected)
             requirement = (
-                f"User requirements:\n{user_reqs}\n\n"
+                f"{user_reqs_text}\n\n"
                 f"Context — Signal: {rec.signal_display_name} → {rec.target_display_name}. "
                 f"{rec.reasoning or ''}"
             )
@@ -3975,7 +3999,7 @@ def _run_build(
             'competition_level': getattr(rec, 'competition_level', None),
             'build_viability_score': float(rec.build_viability_score) if getattr(rec, 'build_viability_score', None) else None,
             'selected_concept': selected_concept,
-            'user_requirements': user_reqs or None,
+            'user_requirements': user_reqs_raw or None,
         }
 
         # Iteration intelligence — only populated when this is a child build.
@@ -4394,7 +4418,7 @@ async def start_mvp_build(
     if not rec:
         raise HTTPException(status_code=404, detail="Recommendation not found")
 
-    # Save user requirements if provided
+    # Save user requirements if provided (stored as JSON string)
     user_requirements = (body.get("user_requirements") or "").strip()
     if user_requirements:
         rec.user_requirements = user_requirements
@@ -4403,7 +4427,19 @@ async def start_mvp_build(
 
     # Require at least a selected concept OR user requirements to build
     has_concept = rec.product_concepts and rec.selected_concept_index is not None
-    has_reqs = bool((rec.user_requirements or "").strip())
+    # Check for structured requirements — parse JSON if possible
+    _raw_reqs = (rec.user_requirements or "").strip()
+    has_reqs = False
+    if _raw_reqs:
+        try:
+            import json as _json
+            _parsed = _json.loads(_raw_reqs)
+            if isinstance(_parsed, dict):
+                has_reqs = any(v.strip() for v in _parsed.values() if isinstance(v, str))
+            else:
+                has_reqs = True
+        except (ValueError, TypeError):
+            has_reqs = bool(_raw_reqs)
     if not has_concept and not has_reqs:
         raise HTTPException(
             status_code=400,

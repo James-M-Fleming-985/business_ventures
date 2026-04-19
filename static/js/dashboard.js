@@ -1117,10 +1117,23 @@ function dashboardData() {
                     const data = await response.json();
                     this.exploitationRecommendations = data.recommendations || [];
                     this.filteredExploitation = this.exploitationRecommendations;
-                    // Hydrate userRequirements from persisted data
+                    // Hydrate userRequirements from persisted data (stored as JSON string)
                     const reqs = {};
                     for (const rec of this.exploitationRecommendations) {
-                        if (rec.user_requirements) reqs[rec.id] = rec.user_requirements;
+                        if (rec.user_requirements) {
+                            try {
+                                const parsed = JSON.parse(rec.user_requirements);
+                                if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                                    reqs[rec.id] = parsed;
+                                } else {
+                                    // Legacy flat string — migrate to vision field
+                                    reqs[rec.id] = { vision: rec.user_requirements, features: '', ui_style: '', integrations: '', target_users: '' };
+                                }
+                            } catch (e) {
+                                // Legacy flat string — migrate to vision field
+                                reqs[rec.id] = { vision: rec.user_requirements, features: '', ui_style: '', integrations: '', target_users: '' };
+                            }
+                        }
                     }
                     this.userRequirements = {...this.userRequirements, ...reqs};
                     const summary = data.summary || {};
@@ -2778,16 +2791,44 @@ function dashboardData() {
         },
 
         // ============================================================
-        // User Requirements (per-recommendation)
+        // User Requirements (per-recommendation) — structured fields
         // ============================================================
-        async saveUserRequirements(recId, text) {
+        hasAnyRequirements(recId) {
+            const r = this.userRequirements[recId];
+            if (!r || typeof r !== 'object') return false;
+            return !!(
+                (r.vision || '').trim() ||
+                (r.features || '').trim() ||
+                (r.ui_style || '').trim() ||
+                (r.integrations || '').trim() ||
+                (r.target_users || '').trim()
+            );
+        },
+
+        updateStructuredReq(recId, field, value) {
+            const current = this.userRequirements[recId] || {};
+            this.userRequirements = {
+                ...this.userRequirements,
+                [recId]: { ...current, [field]: value },
+            };
+        },
+
+        clearStructuredRequirements(recId) {
+            this.userRequirements = {
+                ...this.userRequirements,
+                [recId]: { vision: '', features: '', ui_style: '', integrations: '', target_users: '' },
+            };
+        },
+
+        async saveUserRequirements(recId) {
             try {
+                const structured = this.userRequirements[recId] || {};
                 await fetch(`/api/dashboard/exploitation/recommendations/${recId}`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_requirements: text }),
+                    body: JSON.stringify({ user_requirements: JSON.stringify(structured) }),
                 });
-                console.log('📝 Saved requirements for rec', recId);
+                console.log('📝 Saved structured requirements for rec', recId);
             } catch (e) {
                 console.error('Save requirements error:', e);
             }
@@ -2834,13 +2875,18 @@ function dashboardData() {
         async startBuild(recId) {
             console.log('🔨 startBuild called for rec', recId);
             const complexity = this.buildComplexity[recId] || 'LOW';
-            const userReqs = (this.userRequirements[recId] || '').trim();
+            const structured = this.userRequirements[recId] || {};
+            const hasReqs = this.hasAnyRequirements(recId);
             this.buildInProgress = {...this.buildInProgress, [recId]: true};
             try {
                 const res = await fetch('/api/dashboard/exploitation/build', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ recommendation_id: recId, complexity, user_requirements: userReqs || undefined }),
+                    body: JSON.stringify({
+                        recommendation_id: recId,
+                        complexity,
+                        user_requirements: hasReqs ? JSON.stringify(structured) : undefined,
+                    }),
                 });
                 if (!res.ok) {
                     const err = await res.json().catch(() => ({}));
