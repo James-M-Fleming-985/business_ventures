@@ -4610,6 +4610,36 @@ async def get_mvp_build_file_content(build_id: int, file_id: int, db: Session = 
 # MVP Engagement Beacon
 # ==============================================================================
 
+@router.get("/mvp-beacon-debug/{build_id}")
+async def mvp_beacon_debug(build_id: int, db: Session = Depends(get_db)):
+    """Temporary diagnostic: show raw beacon/engagement data for a build."""
+    from sqlalchemy import func
+
+    page_views = db.query(MvpPageView).filter(MvpPageView.build_id == build_id).all()
+    deployments = db.query(ProductDeployment).filter(ProductDeployment.build_id == build_id).all()
+    dep_ids = [d.id for d in deployments]
+    metrics = db.query(ProductMetrics).filter(ProductMetrics.deployment_id.in_(dep_ids)).all() if dep_ids else []
+
+    return {
+        "build_id": build_id,
+        "page_views_count": len(page_views),
+        "page_views_sample": [
+            {"id": pv.id, "visitor_hash": pv.visitor_hash[:12], "created_at": str(pv.created_at)}
+            for pv in page_views[:10]
+        ],
+        "deployments": [
+            {"id": d.id, "build_id": d.build_id, "product_name": d.product_name, "status": d.status}
+            for d in deployments
+        ],
+        "metrics": [
+            {"id": m.id, "deployment_id": m.deployment_id, "period_start": str(m.period_start),
+             "period_end": str(m.period_end), "page_views": m.page_views,
+             "unique_visitors": m.unique_visitors, "source": m.source}
+            for m in metrics
+        ],
+    }
+
+
 @router.post("/mvp-beacon/{build_id}", status_code=204)
 async def mvp_beacon(build_id: int, request: Request, db: Session = Depends(get_db)):
     """Receive page-view beacon pings from deployed MVPs.
