@@ -453,8 +453,14 @@ Tests will naturally fail in the RED phase because `{module_name}` does not exis
 (ImportError), and will pass once the implementation is generated.
 Do NOT use `assert False`, `pytest.fail()`, or `raise NotImplementedError` as placeholders.
 Do NOT wrap imports in try/except — let the ImportError happen naturally.
+"""
 
-Generate a complete Python test file with:
+        # Include the full product brief so tests are specific and behavioural
+        full_req = requirements.get('_requirement_text', '')
+        if full_req:
+            prompt += f"""\n═══ FULL PRODUCT BRIEF ═══\n{full_req}\n══════════════════════════\n\nUse this brief to write SPECIFIC, BEHAVIOURAL tests. Tests should verify\nthat classes process real data, return meaningful results, and implement\nthe actual features described. Do NOT write tests that only check if a\nclass can be instantiated — test that methods return correct data types,\nhandle edge cases, and implement the business logic described above.\n"""
+
+        prompt += f"""\nGenerate a complete Python test file with:
 - Import statements (pytest, unittest.mock, and `from {module_name} import ...`)
 - Test class for EACH acceptance criterion (UNIT tests)
 - Test class for EACH integration test scenario
@@ -498,25 +504,32 @@ You MUST define every class and function that the tests import.
             prompt += f"You MUST define ALL {len(required_symbols)} symbols above. Missing any will cause ImportError.\n"
             prompt += "═══════════════════════════════════════════════════════\n"
 
-        prompt += "\nRequirements:\n"
+        prompt += "\nAcceptance Criteria:\n"
         for ac in requirements.get('acceptance_criteria', []):
             criterion = ac.get('criterion', ac.get('description', ''))
+            desc = ac.get('description', '')
             prompt += f"\n- {criterion}"
+            if desc and desc != criterion:
+                prompt += f"\n  Detail: {desc}"
+
+        # Include the full user brief so the AI builds real functionality,
+        # not just the minimum to pass generic tests.
+        full_req = requirements.get('_requirement_text', '')
+        if full_req:
+            prompt += f"""\n\n═══ FULL PRODUCT BRIEF (build real, functional code for this) ═══\n{full_req}\n═══════════════════════════════════════════════════════════════════\n\nIMPORTANT: The code you generate must be a FUNCTIONAL MVP that implements
+the product described above. Do NOT generate stub methods that return empty
+lists or raise NotImplementedError. Every method must contain real working
+logic — use in-memory data structures where a database isn't available,
+implement real algorithms for scoring/classification, and build complete
+request/response flows. External API calls should be implemented with
+real HTTP client code (using requests or httpx) that can be configured
+via environment variables for API keys/URLs.
+"""
 
         if test_code_section:
             prompt += f"\n\nACTUAL TEST CODE (must pass when your implementation is imported):\n{test_code_section}"
 
-        prompt += """
-
-Generate complete, working Python implementation that:
-- Makes all tests pass
-- Follows best practices
-- Includes proper error handling
-- Has clear docstrings
-- Is production-ready code
-
-Output only valid Python code, no explanations.
-"""
+        prompt += """\n\nGenerate complete, working Python implementation that:\n- Makes all tests pass\n- Implements REAL business logic (not stubs or placeholders)\n- Uses in-memory storage where a database isn't available\n- Implements real algorithms for any scoring, classification, or analysis\n- Uses os.getenv() for any API keys or external service URLs\n- Follows best practices with proper error handling and docstrings\n\nOutput only valid Python code, no explanations.\n"""
         return prompt
 
     def _build_retry_prompt(

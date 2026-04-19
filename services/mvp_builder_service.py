@@ -684,6 +684,10 @@ class MVPBuilderService:
                 )
                 total_ai_cost += spec_cost
 
+                # Inject the original requirement text into the spec so the
+                # orchestrator can include the full user brief in code-gen prompts.
+                spec['_requirement_text'] = requirement
+
                 ac_count = len(spec.get('acceptance_criteria', []))
                 _step('SPEC_GENERATED', f"{ac_count} acceptance criteria, ${spec_cost:.4f}")
                 logger.info(f"Build {build_id}: spec generated with {ac_count} AC")

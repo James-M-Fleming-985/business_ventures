@@ -177,6 +177,50 @@ class RailwayService:
         return f"https://{domain}" if domain else None
 
     # ------------------------------------------------------------------
+    # Environment variables
+    # ------------------------------------------------------------------
+
+    def upsert_variable(
+        self, project_id: str, environment_id: str, service_id: str,
+        name: str, value: str,
+    ) -> bool:
+        """Set an environment variable on a Railway service."""
+        if not self.enabled:
+            return False
+        try:
+            self._gql(
+                """
+                mutation($input: VariableUpsertInput!) {
+                    variableUpsert(input: $input)
+                }
+                """,
+                {
+                    "input": {
+                        "projectId": project_id,
+                        "environmentId": environment_id,
+                        "serviceId": service_id,
+                        "name": name,
+                        "value": value,
+                    }
+                },
+            )
+            return True
+        except Exception as exc:
+            logger.warning("Failed to set variable %s: %s", name, exc)
+            return False
+
+    def upsert_variables(
+        self, project_id: str, environment_id: str, service_id: str,
+        variables: Dict[str, str],
+    ) -> int:
+        """Set multiple environment variables. Returns count of successes."""
+        count = 0
+        for name, value in variables.items():
+            if self.upsert_variable(project_id, environment_id, service_id, name, value):
+                count += 1
+        return count
+
+    # ------------------------------------------------------------------
     # Status
     # ------------------------------------------------------------------
 

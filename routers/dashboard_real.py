@@ -4240,6 +4240,41 @@ def _run_build(
                             f"Build {build_id}: Railway project "
                             f"{project.get('id')} created"
                         )
+
+                        # Push placeholder env vars so the user knows
+                        # which keys to configure for the MVP to work.
+                        if env_id and service.get("id"):
+                            env_vars = {"PORT": "8000"}
+                            # Scan generated code for os.getenv() calls
+                            try:
+                                import re as _re
+                                build_files_q = (
+                                    db.query(MVPBuildFile)
+                                    .filter(MVPBuildFile.build_id == build_id)
+                                    .all()
+                                )
+                                for bf in build_files_q:
+                                    if bf.content:
+                                        for m in _re.finditer(
+                                            r'os\.getenv\(["\']([A-Z_]+)["\']',
+                                            bf.content,
+                                        ):
+                                            var = m.group(1)
+                                            if var not in env_vars:
+                                                env_vars[var] = "CONFIGURE_ME"
+                                set_count = railway_svc.upsert_variables(
+                                    project["id"], env_id,
+                                    service["id"], env_vars,
+                                )
+                                logger.info(
+                                    f"Build {build_id}: set {set_count} "
+                                    f"Railway env vars: {list(env_vars.keys())}"
+                                )
+                            except Exception as var_err:
+                                logger.warning(
+                                    f"Build {build_id}: failed to set "
+                                    f"env vars: {var_err}"
+                                )
                     except Exception as rail_err:
                         logger.warning(
                             f"Build {build_id}: Railway setup failed "
