@@ -4507,18 +4507,21 @@ async def list_builds_portfolio(
         ).all()
         recs = {r.id: r for r in rec_rows}
     
-    # Batch-fetch deployments keyed by build_id
+    # Batch-fetch deployments — a build can have multiple ProductDeployments
+    # (one from the deploy step, one from commercial intelligence, etc.).
     build_ids = [b.id for b in builds]
-    deployments = {}
+    deps_by_build = {}   # build_id → list[ProductDeployment]
+    dep_rows = []
     if build_ids:
         dep_rows = db.query(ProductDeployment).filter(
             ProductDeployment.build_id.in_(build_ids)
         ).all()
-        deployments = {d.build_id: d for d in dep_rows}
+        for d in dep_rows:
+            deps_by_build.setdefault(d.build_id, []).append(d)
 
     # Batch-fetch latest metrics per deployment
     dep_ids = [d.id for d in dep_rows] if build_ids else []
-    metrics_map = {}
+    metrics_map = {}  # deployment_id → ProductMetrics
     if dep_ids:
         from sqlalchemy import func
         # Get most recent metrics row per deployment
@@ -4552,18 +4555,25 @@ async def list_builds_portfolio(
             d["action_type"] = None
 
         # Enrich with commercial metrics (Track G)
-        dep = deployments.get(b.id)
-        if dep:
+        # Aggregate across ALL deployments for this build (there can be >1).
+        build_deps = deps_by_build.get(b.id, [])
+        engagement = 0
+        revenue_mrr = 0.0
+        dep_status = None
+        dep_outcome = None
+        for dep in build_deps:
             pm = metrics_map.get(dep.id)
-            d["engagement"] = (pm.unique_visitors or 0) if pm else 0
-            d["revenue_mrr"] = round((pm.mrr_cents or 0) / 100, 2) if pm else 0.0
-            d["deployment_status"] = dep.status
-            d["deployment_outcome"] = dep.outcome
-        else:
-            d["engagement"] = 0
-            d["revenue_mrr"] = 0.0
-            d["deployment_status"] = None
-            d["deployment_outcome"] = None
+            if pm:
+                engagement = max(engagement, pm.unique_visitors or 0)
+                revenue_mrr = max(revenue_mrr, round((pm.mrr_cents or 0) / 100, 2))
+            if dep.status:
+                dep_status = dep.status
+            if dep.outcome:
+                dep_outcome = dep.outcome
+        d["engagement"] = engagement
+        d["revenue_mrr"] = revenue_mrr
+        d["deployment_status"] = dep_status
+        d["deployment_outcome"] = dep_outcome
         result.append(d)
     
     # Summary stats
@@ -4609,36 +4619,6 @@ async def get_mvp_build_file_content(build_id: int, file_id: int, db: Session = 
 # ==============================================================================
 # MVP Engagement Beacon
 # ==============================================================================
-
-@router.get("/mvp-beacon-debug/{build_id}")
-async def mvp_beacon_debug(build_id: int, db: Session = Depends(get_db)):
-    """Temporary diagnostic: show raw beacon/engagement data for a build."""
-    from sqlalchemy import func
-
-    page_views = db.query(MvpPageView).filter(MvpPageView.build_id == build_id).all()
-    deployments = db.query(ProductDeployment).filter(ProductDeployment.build_id == build_id).all()
-    dep_ids = [d.id for d in deployments]
-    metrics = db.query(ProductMetrics).filter(ProductMetrics.deployment_id.in_(dep_ids)).all() if dep_ids else []
-
-    return {
-        "build_id": build_id,
-        "page_views_count": len(page_views),
-        "page_views_sample": [
-            {"id": pv.id, "visitor_hash": pv.visitor_hash[:12], "created_at": str(pv.created_at)}
-            for pv in page_views[:10]
-        ],
-        "deployments": [
-            {"id": d.id, "build_id": d.build_id, "product_name": d.product_name, "status": d.status}
-            for d in deployments
-        ],
-        "metrics": [
-            {"id": m.id, "deployment_id": m.deployment_id, "period_start": str(m.period_start),
-             "period_end": str(m.period_end), "page_views": m.page_views,
-             "unique_visitors": m.unique_visitors, "source": m.source}
-            for m in metrics
-        ],
-    }
-
 
 @router.post("/mvp-beacon/{build_id}", status_code=204)
 async def mvp_beacon(build_id: int, request: Request, db: Session = Depends(get_db)):
