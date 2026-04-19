@@ -20,9 +20,14 @@ from pathlib import Path
 VERSION_FILE = Path(__file__).parent / "VERSION"
 __version__ = VERSION_FILE.read_text().strip() if VERSION_FILE.exists() else "2.0.14"
 
-# Read git commit from GIT_COMMIT file (created during build)
-GIT_COMMIT_FILE = Path(__file__).parent / "GIT_COMMIT"
-GIT_COMMIT = GIT_COMMIT_FILE.read_text().strip() if GIT_COMMIT_FILE.exists() else 'unknown'
+# Read git commit: prefer Railway's env var (always current), fall back to GIT_COMMIT file
+import os as _os_for_commit
+_railway_sha = _os_for_commit.environ.get('RAILWAY_GIT_COMMIT_SHA')
+if _railway_sha:
+    GIT_COMMIT = _railway_sha[:9]
+else:
+    GIT_COMMIT_FILE = Path(__file__).parent / "GIT_COMMIT"
+    GIT_COMMIT = GIT_COMMIT_FILE.read_text().strip() if GIT_COMMIT_FILE.exists() else 'unknown'
 
 # Setup logging
 logging.basicConfig(
