@@ -772,6 +772,31 @@ async def startup_event():
     logger.info("📈 CA-003: Drift Forecasting - Ready")
     logger.info("💬 CA-002-07: Natural Language Explanations - Ready")
 
+    # Recover any concept-generation rows stuck in 'generating' state from a
+    # crashed/restarted background task. Threshold = 10 minutes (LLM call ~60s).
+    try:
+        from datetime import datetime, timedelta
+        from database import SessionLocal
+        from models import ExploitationRecommendation
+        cutoff = datetime.utcnow() - timedelta(minutes=10)
+        db = SessionLocal()
+        try:
+            stuck = db.query(ExploitationRecommendation).filter(
+                ExploitationRecommendation.concepts_generation_status == "generating",
+                ExploitationRecommendation.updated_at < cutoff,
+            ).all()
+            if stuck:
+                for rec in stuck:
+                    rec.concepts_generation_status = "failed"
+                    rec.concepts_error = "Recovered from stuck state on startup (background task did not complete)"
+                    rec.updated_at = datetime.utcnow()
+                db.commit()
+                logger.info(f"🩹 Recovered {len(stuck)} stuck concept-generation row(s) on startup")
+        finally:
+            db.close()
+    except Exception as exc:
+        logger.warning(f"Concept-generation startup recovery skipped: {type(exc).__name__}: {exc}")
+
 
 @app.on_event("shutdown")
 async def shutdown_event():

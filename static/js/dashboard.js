@@ -155,6 +155,23 @@ function dashboardData() {
         conceptsLoading: {},
         userRequirements: {},
 
+        // Helpers for stuck-state UI: how long has this rec been 'generating'?
+        conceptsElapsedSeconds(rec) {
+            if (!rec || !rec.updated_at) return 0;
+            const updated = new Date(rec.updated_at).getTime();
+            if (isNaN(updated)) return 0;
+            return Math.floor((Date.now() - updated) / 1000);
+        },
+        conceptsElapsed(rec) {
+            const s = this.conceptsElapsedSeconds(rec);
+            if (s < 60) return s + 's';
+            return Math.floor(s / 60) + 'm ' + (s % 60) + 's';
+        },
+        conceptsStuck(rec) {
+            // Considered stuck after 2 minutes in 'generating' state.
+            return this.conceptsElapsedSeconds(rec) > 120;
+        },
+
         // Manual idea creation
         manualIdeaModalOpen: false,
         manualIdeaSubmitting: false,
@@ -2636,6 +2653,19 @@ function dashboardData() {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                 });
+                if (res.status === 409) {
+                    // Server says generation already in progress — likely stuck from a prior crashed task.
+                    this.conceptsLoading = {...this.conceptsLoading, [recId]: false};
+                    const proceed = confirm(
+                        'Generation appears to already be in progress (possibly stuck from a previous attempt). ' +
+                        'Clear and retry?'
+                    );
+                    if (proceed) {
+                        await this.clearConcepts(recId, true);  // silent clear
+                        return this.generateConcepts(recId);
+                    }
+                    return;
+                }
                 if (!res.ok && res.status !== 202) {
                     const err = await res.json().catch(() => ({}));
                     const msg = err.error || err.detail || `HTTP ${res.status}`;
@@ -2687,17 +2717,19 @@ function dashboardData() {
             }
         },
 
-        async clearConcepts(recId) {
-            if (!confirm('Clear stored product concepts for this recommendation?')) return;
+        async clearConcepts(recId, silent = false) {
+            if (!silent && !confirm('Clear stored product concepts for this recommendation?')) return;
             try {
                 const res = await fetch(`/api/dashboard/exploitation/${recId}/clear-concepts`, {
                     method: 'POST',
                 });
                 if (!res.ok) {
                     const err = await res.json().catch(() => ({}));
-                    alert('Clear failed: ' + (err.error || res.status));
+                    if (!silent) alert('Clear failed: ' + (err.error || res.status));
                     return;
                 }
+                // Always release the loading flag so UI un-freezes after a stuck-state clear.
+                this.conceptsLoading = {...this.conceptsLoading, [recId]: false};
                 await this.loadExploitationRecommendations();
                 this.$nextTick(() => { try { lucide.createIcons(); } catch(e) {} });
             } catch (e) {

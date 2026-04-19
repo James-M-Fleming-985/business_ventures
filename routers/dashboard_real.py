@@ -4290,12 +4290,32 @@ async def generate_product_concepts_for_rec(
 
 @router.get("/exploitation/{rec_id}/concepts/status")
 async def get_concepts_status(rec_id: int, db: Session = Depends(get_db)):
-    """Poll concept generation status for a recommendation."""
+    """Poll concept generation status for a recommendation.
+
+    Self-heals stale 'generating' state (>10 min old) by flipping to 'failed'.
+    """
     rec = db.query(ExploitationRecommendation).filter(
         ExploitationRecommendation.id == rec_id
     ).first()
     if not rec:
         return JSONResponse(status_code=404, content={"error": "Recommendation not found"})
+
+    # TTL self-heal: if 'generating' for >10 min, declare it failed so the UI
+    # un-freezes and the user can retry.
+    if rec.concepts_generation_status == "generating" and rec.updated_at:
+        age = datetime.utcnow() - rec.updated_at
+        if age.total_seconds() > 600:
+            logger.warning(
+                f"[concepts] rec_id={rec_id} stuck in 'generating' for {age.total_seconds():.0f}s — auto-failing"
+            )
+            rec.concepts_generation_status = "failed"
+            rec.concepts_error = (
+                f"Generation appears to have crashed (no response after {int(age.total_seconds()/60)} min). "
+                "Click Generate to retry."
+            )
+            rec.updated_at = datetime.utcnow()
+            db.commit()
+
     return {
         "recommendation_id": rec_id,
         "status": rec.concepts_generation_status,  # NULL | generating | done | failed
