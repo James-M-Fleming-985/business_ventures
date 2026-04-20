@@ -111,7 +111,7 @@ function dashboardData() {
         // ============================================================
         changelogEntries: [],
         showChangelogModal: false,
-        changelogModalPos: { x: window.innerWidth - 520, y: 120, w: 480 },
+        changelogModalPos: { x: Math.max(20, window.innerWidth - 520), y: 120, w: Math.min(480, window.innerWidth - 40) },
         _dragging: false,
         _dragOffset: { x: 0, y: 0 },
         _changelogHighlightDate: null,

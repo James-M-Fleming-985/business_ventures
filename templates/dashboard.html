@@ -627,17 +627,19 @@
                     <span x-show="!versionComparisonLoading && !(versionComparisonData?.versions?.length)"
                           class="text-xs text-slate-600 italic">Run comparison to overlay model versions</span>
                 </div>
-                <button @click="runVersionComparison()"
-                        :disabled="versionComparisonLoading"
-                        class="px-3 py-1 bg-violet-600 hover:bg-violet-700 disabled:bg-slate-700 disabled:text-slate-500 rounded text-xs font-medium transition flex items-center gap-1">
-                    <i data-lucide="play" class="w-3 h-3" :class="{'animate-spin': versionComparisonLoading}"></i>
-                    <span x-text="versionComparisonLoading ? 'Running…' : (versionComparisonData?.versions?.length ? 'Refresh' : 'Run Comparison')"></span>
-                </button>
-                <button @click="showChangelogModal = !showChangelogModal; if(showChangelogModal && !changelogEntries.length) loadModelChangelog()"
-                        class="px-3 py-1 bg-teal-600 hover:bg-teal-700 rounded text-xs font-medium transition flex items-center gap-1">
-                    <i data-lucide="file-clock" class="w-3 h-3"></i>
-                    Change Log
-                </button>
+                <div class="flex items-center gap-2">
+                    <button @click="runVersionComparison()"
+                            :disabled="versionComparisonLoading"
+                            class="px-3 py-1 bg-violet-600 hover:bg-violet-700 disabled:bg-slate-700 disabled:text-slate-500 rounded text-xs font-medium transition flex items-center gap-1">
+                        <i data-lucide="play" class="w-3 h-3" :class="{'animate-spin': versionComparisonLoading}"></i>
+                        <span x-text="versionComparisonLoading ? 'Running…' : (versionComparisonData?.versions?.length ? 'Refresh' : 'Run Comparison')"></span>
+                    </button>
+                    <button @click="showChangelogModal = !showChangelogModal; if(showChangelogModal && !changelogEntries.length) loadModelChangelog()"
+                            class="px-3 py-1 bg-teal-600 hover:bg-teal-700 rounded text-xs font-medium transition flex items-center gap-1">
+                        <i data-lucide="file-clock" class="w-3 h-3"></i>
+                        Change Log
+                    </button>
+                </div>
             </div>
         </div>
 
