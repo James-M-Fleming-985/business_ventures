@@ -817,258 +817,176 @@ any classes or functions. Output only valid Python code, no explanations.
 
         return deploy_files
 
-    @staticmethod
-    def _generate_main_wrapper(src_dir: Path, module_name: str, spec: dict = None, build_id: int = None) -> str:
-        """Generate a main.py that wraps a library module in a FastAPI app with HTML dashboard."""
+    def _generate_main_wrapper(self, src_dir: Path, module_name: str, spec: dict = None, build_id: int = None) -> str:
+        """Generate a main.py via AI that properly wires ALL service classes with rich UI."""
         import html as _html
 
-        # Discover public classes and functions to expose
-        code = ''
+        # Read the full implementation code so the AI can see every class/method
+        impl_code = ''
         if (src_dir / f'{module_name}.py').exists():
-            code = (src_dir / f'{module_name}.py').read_text(errors='replace')
+            impl_code = (src_dir / f'{module_name}.py').read_text(errors='replace')
 
-        classes = []
-        functions = []
-        for line in code.splitlines():
-            # Only detect TOP-LEVEL definitions (no leading whitespace).
-            # Indented 'def' lines are class methods and cannot be imported
-            # as module-level symbols.
-            if line and not line[0].isspace():
-                stripped = line.strip()
-                if stripped.startswith('class '):
-                    # Handle both 'class Foo(Base):' and 'class Foo:'
-                    rest = stripped[len('class '):]
-                    name = rest.split('(')[0].split(':')[0].strip()
-                    if not name.startswith('_'):
-                        classes.append(name)
-                elif stripped.startswith('def ') and not stripped.startswith('def _'):
-                    name = stripped.split('def ')[1].split('(')[0].strip()
-                    functions.append(name)
+        if not impl_code:
+            return self._generate_fallback_wrapper(module_name, spec, build_id)
 
-        # Build import line
-        symbols = classes[:5] + functions[:5]  # limit to keep manageable
-        if symbols:
-            import_line = f"from src.{module_name} import {', '.join(symbols)}"
-        else:
-            import_line = f"import src.{module_name} as module"
-
-        # Build endpoint bodies that instantiate classes and call key methods
-        endpoints = []
-        api_paths = []  # track for dashboard
-        for cls in classes[:3]:
-            path = f"/api/{cls.lower()}"
-            api_paths.append({"path": path, "name": cls})
-            endpoints.append(f'''
-@app.get("{path}")
-def get_{cls.lower()}():
-    """Auto-generated endpoint for {cls}."""
-    try:
-        instance = {cls}()
-        # Try common method names
-        for method in ["analyze", "run", "execute", "get_data", "process", "calculate", "evaluate"]:
-            if hasattr(instance, method):
-                result = getattr(instance, method)()
-                return {{"status": "ok", "class": "{cls}", "method": method, "result": str(result)[:1000]}}
-        return {{"status": "ok", "class": "{cls}", "message": "Instance created successfully"}}
-    except Exception as e:
-        return {{"status": "error", "class": "{cls}", "error": str(e)}}
-''')
-
-        endpoints_code = '\n'.join(endpoints) if endpoints else ''
-
-        # Build the dashboard card HTML and JS for each endpoint
-        cards_html = ''
-        fetch_js = ''
-        for ep in api_paths:
-            card_id = ep['name'].lower().replace(' ', '_')
-            label = ' '.join(
-                w for w in
-                __import__('re').sub(r'([A-Z])', r' \\1', ep['name']).split()
-            ).strip()
-            cards_html += (
-                f'<div class="card" id="card-{card_id}">'
-                f'<h3>{label}</h3>'
-                f'<div class="endpoint"><code>GET {ep["path"]}</code></div>'
-                f'<div class="result" id="result-{card_id}">'
-                f'<span class="loading">Loading...</span></div></div>\\n'
-            )
-            fetch_js += (
-                f'fetch("{ep["path"]}")'
-                f'.then(r=>r.json()).then(d=>{{'
-                f'document.getElementById("result-{card_id}").innerHTML='
-                f'renderResult(d)}}).catch(e=>{{'
-                f'document.getElementById("result-{card_id}").innerHTML='
-                f'"<span class=error>"+e+"</span>"}});\\n'
-            )
-
-        # --- Extract hero section data from spec + recommendation meta ---
-        _e = _html.escape
+        # --- Build the hero metadata section for the prompt ---
+        hero_context = ''
         if spec:
-            hero_title = _e(spec.get('feature_name', '') or module_name.replace('_', ' ').title())
-            hero_subtitle = _e(spec.get('requirement_title', ''))
-        else:
-            hero_title = _e(module_name.replace('_', ' ').replace('layer mvp ', 'MVP ').title())
-            hero_subtitle = ''
-        title = hero_title
+            hero_context += f"Feature name: {spec.get('feature_name', '')}\n"
+            hero_context += f"Requirement title: {spec.get('requirement_title', '')}\n"
 
-        meta = spec.get('_meta', {}) if spec else {}
-        hero_description = _e(meta.get('reasoning', ''))
-        opportunity_score = meta.get('opportunity_score')
-        market_category = _e(meta.get('market_category', '') or '')
-        search_trend = _e(meta.get('search_trend_direction', '') or '')
-        monthly_searches = meta.get('estimated_monthly_searches')
-        competition = _e(meta.get('competition_level', '') or '')
-        viability = meta.get('build_viability_score')
+            meta = spec.get('_meta', {})
+            if meta:
+                if meta.get('opportunity_score') is not None:
+                    hero_context += f"Opportunity score: {meta['opportunity_score']:.0f}/100\n"
+                if meta.get('market_category'):
+                    hero_context += f"Market category: {meta['market_category']}\n"
+                if meta.get('build_viability_score') is not None:
+                    hero_context += f"Viability score: {meta['build_viability_score']:.0f}/100\n"
+                if meta.get('reasoning'):
+                    hero_context += f"Description: {meta['reasoning']}\n"
 
-        # Build stats badges HTML
-        stats_badges = ''
-        if opportunity_score is not None:
-            stats_badges += f'<span class="badge score">Opportunity: {opportunity_score:.0f}/100</span>'
-        if market_category:
-            stats_badges += f'<span class="badge market">{market_category}</span>'
-        if search_trend:
-            trend_icon = '&#x2197;' if 'up' in search_trend.lower() or 'rising' in search_trend.lower() else '&#x2192;'
-            stats_badges += f'<span class="badge trend">{trend_icon} {search_trend}</span>'
-        if monthly_searches is not None:
-            stats_badges += f'<span class="badge searches">{int(monthly_searches):,}/mo searches</span>'
-        if competition:
-            stats_badges += f'<span class="badge competition">{competition} competition</span>'
-        if viability is not None:
-            stats_badges += f'<span class="badge viability">Viability: {viability:.0f}/100</span>'
-
-        # Build feature bullets from acceptance criteria
-        features_html = ''
-        if spec:
             criteria = spec.get('acceptance_criteria', [])
             if criteria:
-                bullets = ''
-                for ac in criteria[:6]:
-                    crit = _e(ac.get('criterion', '') if isinstance(ac, dict) else str(ac))
+                hero_context += "\nFeature list for hero section:\n"
+                for ac in criteria[:8]:
+                    crit = ac.get('criterion', '') if isinstance(ac, dict) else str(ac)
                     if crit:
-                        bullets += f'<li>{crit}</li>'
-                if bullets:
-                    features_html = f'<div class="features"><h3>Features</h3><ul>{bullets}</ul></div>'
+                        hero_context += f"  - {crit}\n"
 
-        # Build hero section HTML
-        hero_html = ''
-        if hero_subtitle or hero_description or stats_badges or features_html:
-            hero_html = '<section class="hero">'
-            if hero_subtitle:
-                hero_html += f'<p class="hero-subtitle">{hero_subtitle}</p>'
-            if hero_description:
-                hero_html += f'<p class="hero-desc">{hero_description}</p>'
-            if stats_badges:
-                hero_html += f'<div class="stats-row">{stats_badges}</div>'
-            if features_html:
-                hero_html += features_html
-            hero_html += '</section>'
+        # --- Get UI/UX requirements from the product brief ---
+        full_req = spec.get('_requirement_text', '') if spec else ''
 
-        dashboard_html = (
-            '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">'
-            '<meta name="viewport" content="width=device-width,initial-scale=1">'
-            f'<title>{title}</title>'
-            '<style>'
-            '*{margin:0;padding:0;box-sizing:border-box}'
-            'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;'
-            'background:#0f172a;color:#e2e8f0;min-height:100vh}'
-            'header{background:linear-gradient(135deg,#1e293b,#334155);'
-            'padding:2rem;border-bottom:2px solid #3b82f6}'
-            'header h1{font-size:1.8rem;color:#fff}'
-            'header p{color:#94a3b8;margin-top:0.3rem}'
-            '.status-bar{display:flex;gap:1rem;margin-top:1rem;flex-wrap:wrap}'
-            '.badge{padding:0.3rem 0.8rem;border-radius:9999px;font-size:0.75rem;font-weight:600}'
-            '.badge.live{background:#065f46;color:#6ee7b7}'
-            '.badge.api{background:#1e3a5f;color:#7dd3fc}'
-            '.badge.score{background:#4c1d95;color:#c4b5fd}'
-            '.badge.market{background:#78350f;color:#fde68a}'
-            '.badge.trend{background:#064e3b;color:#6ee7b7}'
-            '.badge.searches{background:#1e3a5f;color:#7dd3fc}'
-            '.badge.competition{background:#7f1d1d;color:#fca5a5}'
-            '.badge.viability{background:#14532d;color:#86efac}'
-            '.hero{background:#1e293b;border-bottom:1px solid #334155;padding:2rem}'
-            '.hero-subtitle{color:#f1f5f9;font-size:1.15rem;font-weight:500;margin-bottom:0.5rem}'
-            '.hero-desc{color:#94a3b8;line-height:1.6;max-width:800px;margin-bottom:1rem}'
-            '.stats-row{display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:1rem}'
-            '.features{margin-top:0.5rem}'
-            '.features h3{color:#f1f5f9;font-size:1rem;margin-bottom:0.5rem}'
-            '.features ul{list-style:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:0.4rem}'
-            '.features li{color:#cbd5e1;font-size:0.9rem;padding-left:1.2rem;position:relative}'
-            '.features li::before{content:"\\2713";position:absolute;left:0;color:#6ee7b7}'
-            '.container{max-width:1200px;margin:0 auto;padding:2rem}'
-            '.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(350px,1fr));gap:1.5rem}'
-            '.card{background:#1e293b;border:1px solid #334155;border-radius:12px;'
-            'padding:1.5rem;transition:border-color 0.2s}'
-            '.card:hover{border-color:#3b82f6}'
-            '.card h3{color:#f1f5f9;margin-bottom:0.5rem;font-size:1.1rem}'
-            '.endpoint{margin-bottom:1rem}'
-            '.endpoint code{background:#0f172a;padding:0.3rem 0.6rem;border-radius:6px;'
-            'font-size:0.8rem;color:#7dd3fc}'
-            '.result{background:#0f172a;border-radius:8px;padding:1rem;'
-            'font-size:0.85rem;max-height:300px;overflow-y:auto;line-height:1.5}'
-            '.result pre{white-space:pre-wrap;word-break:break-word}'
-            '.loading{color:#94a3b8}'
-            '.error{color:#fca5a5}'
-            '.ok{color:#6ee7b7}'
-            '.key{color:#7dd3fc}'
-            '.str{color:#fde68a}'
-            '.num{color:#c4b5fd}'
-            'footer{text-align:center;padding:2rem;color:#475569;font-size:0.8rem}'
-            '</style></head><body>'
-            f'<header><h1>{title}</h1>'
-            f'<p>Auto-generated MVP — {module_name}</p>'
-            '<div class="status-bar">'
-            '<span class="badge live">LIVE</span>'
-            f'<span class="badge api">{len(api_paths)} endpoint{"s" if len(api_paths)!=1 else ""}</span>'
-            '</div></header>'
-            f'{hero_html}'
-            '<div class="container"><div class="grid">'
-            f'{cards_html}'
-            '</div></div>'
-            '<footer>Built by Causal Affect MVP Pipeline</footer>'
-            '<script>'
-            'function renderResult(d){'
-            'if(d.status==="error")return"<span class=error>Error: "+d.error+"</span>";'
-            'return"<pre>"+syntaxHL(JSON.stringify(d,null,2))+"</pre>"}'
-            'function syntaxHL(j){'
-            'return j.replace(/&/g,"&amp;").replace(/</g,"&lt;")'
-            '.replace(/"([^"]+)":/g,"<span class=key>$1</span>:")'
-            '.replace(/: "([^"]*)"/g,": <span class=str>$1</span>")'
-            '.replace(/: (\\\\d+\\\\.?\\\\d*)/g,": <span class=num>$1</span>")}'
-            + (f'if(!sessionStorage.getItem("_ca_b")){{fetch("https://businessventures-production.up.railway.app/api/dashboard/mvp-beacon/{build_id}",{{method:"POST",mode:"no-cors",headers:{{"Content-Type":"application/json"}},body:JSON.stringify({{r:document.referrer}})}}).catch(function(){{}});sessionStorage.setItem("_ca_b","1")}}' if build_id else '')
-            + f'{fetch_js}'
-            '</script></body></html>'
-        )
+        # --- Build the AI prompt ---
+        # Truncate impl_code if excessively long to stay within token budget
+        impl_excerpt = impl_code[:12000] if len(impl_code) > 12000 else impl_code
 
-        return f'''"""Auto-generated FastAPI wrapper for {module_name} with HTML dashboard."""
-import re
-import sys
-import os
+        beacon_snippet = ''
+        if build_id:
+            beacon_snippet = (
+                f'Include this beacon script (once, in a script tag): '
+                f'if(!sessionStorage.getItem("_ca_b")){{fetch("https://businessventures-production.up.railway.app/api/dashboard/mvp-beacon/{build_id}",'
+                f'{{method:"POST",mode:"no-cors",headers:{{"Content-Type":"application/json"}},'
+                f'body:JSON.stringify({{r:document.referrer}})}}).catch(function(){{}});'
+                f'sessionStorage.setItem("_ca_b","1")}}'
+            )
+
+        prompt = f"""Generate a complete Python file (main.py) that creates a FastAPI application
+wrapping the implementation module below. This file will be the deployed web application.
+
+MODULE NAME: src.{module_name}
+All imports must use: from src.{module_name} import <ClassName>
+
+═══ IMPLEMENTATION SOURCE CODE ═══
+{impl_excerpt}
+═══════════════════════════════════
+
+═══ PRODUCT BRIEF & UI/UX REQUIREMENTS ═══
+{full_req}
+═══════════════════════════════════════════
+
+═══ HERO SECTION METADATA ═══
+{hero_context}
+═════════════════════════════
+
+REQUIREMENTS FOR main.py:
+
+1. IMPORTS & SETUP:
+   - Import ALL service classes from src.{module_name} (not just data models)
+   - Create a FastAPI app instance
+   - Include: from fastapi import FastAPI
+   - Include: from fastapi.responses import HTMLResponse, JSONResponse
+   - Include: sys.path.insert(0, os.path.dirname(__file__))
+
+2. REST API ENDPOINTS:
+   - GET / → returns the HTML dashboard (response_class=HTMLResponse)
+   - GET /health → returns {{"status": "healthy"}}
+   - GET /api/status → returns service info
+   - Create GET/POST endpoints for EACH major service class that call real methods
+   - Endpoints should instantiate service classes and call their actual methods
+   - Return real JSON data from the service methods
+   - Handle exceptions gracefully with proper error responses
+
+3. HTML DASHBOARD (as a DASHBOARD_HTML string constant):
+   - Use a dark theme (background: #0f172a, cards: #1e293b) with Tailwind-style CSS
+   - HERO SECTION at top: Show the feature name, requirement title, description,
+     and stat badges (opportunity score, market category, viability) from the metadata above
+   - Feature bullets with checkmark icons from acceptance criteria
+   - THE MAIN UI must implement the UI/UX described in the product brief above:
+     * If the brief mentions a feed/timeline → build a real event feed component
+     * If it mentions heatmaps → build a CSS grid/table heatmap visualization
+     * If it mentions filters → build working filter controls (dropdowns/inputs)
+     * If it mentions charts/dashboards → build metric cards and trend displays
+     * If it mentions search → build a search input
+   - Each UI component should fetch data from YOUR API endpoints via JavaScript fetch()
+   - Make the dashboard INTERACTIVE — filters should re-fetch data, clicking items shows details
+   - Use modern CSS (grid, flexbox) — no external CSS/JS dependencies
+   - The dashboard should be a SINGLE self-contained HTML page
+   {beacon_snippet}
+
+4. CODE QUALITY:
+   - The file must be valid Python that runs with: uvicorn main:app
+   - All string escaping must be correct (triple-quoted HTML string)
+   - Do NOT use placeholder/stub methods — call the real service methods
+   - Use try/except around service calls so the app doesn't crash
+
+Output ONLY valid Python code. No markdown fences, no explanations.
+"""
+
+        try:
+            logger.info("Generating AI-powered main.py wrapper for %s", module_name)
+            main_code = self.ai_provider.generate_code(prompt)
+            main_code = self._clean_code_fences(main_code)
+
+            # Basic validation: must contain FastAPI and app
+            if 'FastAPI' not in main_code or 'app' not in main_code:
+                logger.warning("AI wrapper missing FastAPI/app — falling back to template")
+                return self._generate_fallback_wrapper(module_name, spec, build_id)
+
+            # Ensure the sys.path fix is present
+            if 'sys.path.insert' not in main_code:
+                main_code = (
+                    'import sys, os\n'
+                    'sys.path.insert(0, os.path.dirname(__file__))\n\n'
+                    + main_code
+                )
+
+            logger.info("AI-generated main.py wrapper: %d lines", main_code.count('\n'))
+            return main_code
+
+        except Exception as e:
+            logger.error("AI wrapper generation failed: %s — using fallback", e)
+            return self._generate_fallback_wrapper(module_name, spec, build_id)
+
+    @staticmethod
+    def _generate_fallback_wrapper(module_name: str, spec: dict = None, build_id: int = None) -> str:
+        """Minimal fallback wrapper when AI generation fails."""
+        import html as _html
+        _e = _html.escape
+
+        if spec:
+            title = _e(spec.get('feature_name', '') or module_name.replace('_', ' ').title())
+        else:
+            title = _e(module_name.replace('_', ' ').title())
+
+        return f'''"""Fallback FastAPI wrapper for {module_name}."""
+import sys, os
 sys.path.insert(0, os.path.dirname(__file__))
 
 from fastapi import FastAPI
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse
 
-{import_line}
-
-app = FastAPI(
-    title="{title}",
-    description="Auto-generated MVP API with dashboard",
-    version="1.0.0",
-)
-
-DASHBOARD_HTML = """{dashboard_html}"""
+app = FastAPI(title="{title}", version="1.0.0")
 
 @app.get("/", response_class=HTMLResponse)
 def dashboard():
-    """Interactive HTML dashboard."""
-    return DASHBOARD_HTML
+    return "<html><body><h1>{title}</h1><p>MVP deployed — check /api/status</p></body></html>"
 
 @app.get("/api/status")
 def api_status():
-    return {{"service": "{module_name}", "status": "running", "version": "1.0.0", "endpoints": {[ep['path'] for ep in api_paths]}}}
+    return {{"service": "{module_name}", "status": "running", "version": "1.0.0"}}
 
 @app.get("/health")
 def health():
     return {{"status": "healthy"}}
-{endpoints_code}
 '''
