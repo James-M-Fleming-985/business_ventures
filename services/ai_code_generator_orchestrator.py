@@ -717,6 +717,16 @@ any classes or functions. Output only valid Python code, no explanations.
             'asyncio', 'concurrent', 'signal', 'traceback', 'warnings',
             'pprint', 'inspect', 'importlib', 'pkgutil', 'base64',
             'hmac', 'secrets', 'array', 'queue', 'heapq', 'bisect',
+            # Additional stdlib modules the AI commonly uses
+            'xml', 'html', 'email', 'zipfile', 'gzip', 'zlib', 'bz2',
+            'lzma', 'pickle', 'shelve', 'dbm', 'marshal', 'platform',
+            'ast', 'token', 'tokenize', 'keyword', 'binascii', 'codecs',
+            'locale', 'gettext', 'unicodedata', 'difflib', 'fnmatch',
+            'fileinput', 'linecache', 'numbers', 'cmath', 'weakref',
+            'types', 'ctypes', 'select', 'selectors', 'mmap', 'atexit',
+            'gc', 'site', 'dis', 'code', 'profile', 'pstats', 'timeit',
+            'trace', 'py_compile', 'compileall', 'syslog', 'errno',
+            'faulthandler', 'resource', 'fcntl', 'termios',
         }
         import_to_pkg = {
             'fastapi': 'fastapi',
