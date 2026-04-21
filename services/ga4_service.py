@@ -188,9 +188,12 @@ def pull_engagement_for_all_deployments(db: Session) -> Dict[str, int]:
             existing.unique_visitors = data["unique_visitors"]
             existing.avg_session_seconds = data["avg_session_seconds"]
             existing.period_end = now
+            if existing.build_id is None and dep.build_id is not None:
+                existing.build_id = dep.build_id  # PR5 backfill
         else:
             pm = ProductMetrics(
                 deployment_id=dep.id,
+                build_id=dep.build_id,  # PR5: bind metrics to the originating build
                 period_start=period_start,
                 period_end=now,
                 page_views=data["page_views"],

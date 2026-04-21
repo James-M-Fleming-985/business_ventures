@@ -4640,6 +4640,45 @@ async def get_build_evidence(build_id: int, db: Session = Depends(get_db)):
     }
 
 
+@router.get("/exploitation/builds/{build_id}/telemetry")
+async def get_build_telemetry(
+    build_id: int,
+    recompute: bool = False,
+    db: Session = Depends(get_db),
+):
+    """Per-build engagement + revenue telemetry (PR5).
+
+    Returns the latest BuildTelemetry row. Pass ``?recompute=true`` to force
+    an on-demand re-aggregation from RevenueEvent / ProductMetrics /
+    MvpPageView before responding.
+    """
+    from models import BuildTelemetry
+    from services.build_telemetry_service import recompute_build_telemetry
+
+    build = db.query(MVPBuild).filter(MVPBuild.id == build_id).first()
+    if not build:
+        raise HTTPException(status_code=404, detail="Build not found")
+
+    if recompute:
+        data = recompute_build_telemetry(db, build_id)
+        if data is None:
+            raise HTTPException(status_code=404, detail="Build not found")
+        return {"build_id": build_id, "telemetry": data, "recomputed": True}
+
+    row = (
+        db.query(BuildTelemetry)
+        .filter(BuildTelemetry.build_id == build_id)
+        .first()
+    )
+    if row is None:
+        # First read for this build — compute synchronously so the UI never
+        # sees an empty state when there's data to surface.
+        data = recompute_build_telemetry(db, build_id)
+        return {"build_id": build_id, "telemetry": data, "recomputed": True}
+
+    return {"build_id": build_id, "telemetry": row.to_dict(), "recomputed": False}
+
+
 @router.delete("/exploitation/builds/{build_id}")
 async def cancel_mvp_build(build_id: int, db: Session = Depends(get_db)):
     """Cancel/fail a stuck or in-progress build."""

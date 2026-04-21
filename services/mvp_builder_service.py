@@ -947,6 +947,15 @@ class MVPBuilderService:
                     except Exception as dep_exc:
                         logger.warning("Failed to auto-create ProductDeployment for build %d: %s", build_id, dep_exc)
 
+                # PR5: seed BuildTelemetry row so the dashboard has something to
+                # display before the first GA4/Stripe data lands. Idempotent.
+                if db_session and final_status in ('LIVE', 'DEPLOYING'):
+                    try:
+                        from services.build_telemetry_service import recompute_build_telemetry
+                        recompute_build_telemetry(db_session, build_id)
+                    except Exception as tel_exc:
+                        logger.warning("Failed to seed BuildTelemetry for build %d: %s", build_id, tel_exc)
+
             # _step after commit is best-effort — don't let it flip LIVE → FAILED
             try:
                 _step('COMPLETE', f"{len(all_files)} files, {total_errors} errors, {round(duration, 1)}s")

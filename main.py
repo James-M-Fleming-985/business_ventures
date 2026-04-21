@@ -262,6 +262,24 @@ async def startup_event():
                 conn.commit()
                 logger.info("✅ Added ac_verification column to mvp_builds")
 
+            # Track I PR5: per-build revenue / metrics binding + telemetry table
+            rev_cols = {c['name'] for c in inspector.get_columns('revenue_events')} if 'revenue_events' in table_names else set()
+            if rev_cols and 'build_id' not in rev_cols:
+                conn.execute(text("ALTER TABLE revenue_events ADD COLUMN build_id INTEGER REFERENCES mvp_builds(id)"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_rev_build ON revenue_events (build_id)"))
+                conn.commit()
+                logger.info("✅ Added build_id column to revenue_events")
+            pm_cols = {c['name'] for c in inspector.get_columns('product_metrics')} if 'product_metrics' in table_names else set()
+            if pm_cols and 'build_id' not in pm_cols:
+                conn.execute(text("ALTER TABLE product_metrics ADD COLUMN build_id INTEGER REFERENCES mvp_builds(id)"))
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_pm_build ON product_metrics (build_id)"))
+                conn.commit()
+                logger.info("✅ Added build_id column to product_metrics")
+            # build_telemetry is a brand-new table; Base.metadata.create_all handles
+            # creation on first boot, but log here so it's visible in Railway logs.
+            if 'build_telemetry' not in table_names:
+                logger.info("ℹ️  build_telemetry table missing — will be created by metadata.create_all")
+
             # User requirements for build spec customisation
             if 'user_requirements' not in exploit_cols and exploit_cols:
                 conn.execute(text("ALTER TABLE exploitation_recommendations ADD COLUMN user_requirements TEXT"))

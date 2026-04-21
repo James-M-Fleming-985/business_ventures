@@ -634,6 +634,9 @@ class RevenueEvent(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     app_id = Column(String(100), nullable=False)       # e.g. 'causal_affect', 'mvp_builder'
+    # PR5 — direct binding so revenue can be attributed to the exact build
+    # that produced it (not just the app_id, which is reused across iterations).
+    build_id = Column(Integer, ForeignKey('mvp_builds.id'), nullable=True)
     event_type = Column(String(50), nullable=False)     # subscription_created, subscription_renewed,
                                                         # subscription_upgraded, subscription_downgraded,
                                                         # subscription_cancelled, payment_failed
@@ -654,6 +657,7 @@ class RevenueEvent(Base):
         Index('ix_rev_type', 'event_type'),
         Index('ix_rev_event_at', 'event_at'),
         Index('ix_rev_stripe_event', 'stripe_event_id', unique=True),
+        Index('ix_rev_build', 'build_id'),  # PR5
     )
 
     def to_dict(self):
@@ -757,6 +761,9 @@ class ProductMetrics(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     deployment_id = Column(Integer, ForeignKey('product_deployments.id'), nullable=False)
+    # PR5 — direct binding so engagement metrics can be queried per build
+    # without an extra ProductDeployment join.
+    build_id = Column(Integer, ForeignKey('mvp_builds.id'), nullable=True)
 
     period_start = Column(DateTime, nullable=False)       # Start of measurement period
     period_end = Column(DateTime, nullable=False)          # End of measurement period
@@ -785,6 +792,7 @@ class ProductMetrics(Base):
         Index('ix_pm_deployment', 'deployment_id'),
         Index('ix_pm_period', 'period_start', 'period_end'),
         Index('ix_pm_deploy_period', 'deployment_id', 'period_start', unique=True),
+        Index('ix_pm_build', 'build_id'),  # PR5
     )
 
 
@@ -808,6 +816,65 @@ class MvpPageView(Base):
     __table_args__ = (
         Index('ix_mpv_build_time', 'build_id', 'created_at'),
     )
+
+
+class BuildTelemetry(Base):
+    """Per-build engagement + revenue snapshot (PR5 — Track I autonomous loop).
+
+    Aggregates GA4/page-view engagement and Stripe revenue for a single MVPBuild.
+    Updated by services.build_telemetry_service.recompute_build_telemetry on a
+    schedule and after material build/deployment events. The autonomous loop
+    consumes this to learn 'what kind of build gets the highest engagement and
+    the highest revenue', which drives prompt + complexity selection.
+    """
+    __tablename__ = 'build_telemetry'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    build_id = Column(Integer, ForeignKey('mvp_builds.id'), nullable=False, unique=True)
+
+    # Engagement (page-view beacons + GA4)
+    page_views = Column(Integer, default=0)
+    unique_visitors = Column(Integer, default=0)
+    avg_session_seconds = Column(Float)
+
+    # Revenue (Stripe)
+    total_revenue_cents = Column(Integer, default=0)
+    mrr_cents = Column(Integer, default=0)
+    subscriber_count = Column(Integer, default=0)
+    revenue_event_count = Column(Integer, default=0)
+
+    # Composite score consumed by the learning loop. Higher = better build.
+    # See build_telemetry_service.compute_engagement_revenue_score.
+    learning_score = Column(Float)
+
+    # Tracking
+    last_recomputed_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    build = relationship('MVPBuild', backref='telemetry')
+
+    __table_args__ = (
+        Index('ix_bt_build', 'build_id', unique=True),
+        Index('ix_bt_score', 'learning_score'),
+    )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "build_id": self.build_id,
+            "page_views": self.page_views or 0,
+            "unique_visitors": self.unique_visitors or 0,
+            "avg_session_seconds": self.avg_session_seconds,
+            "total_revenue_cents": self.total_revenue_cents or 0,
+            "total_revenue": round((self.total_revenue_cents or 0) / 100, 2),
+            "mrr_cents": self.mrr_cents or 0,
+            "mrr": round((self.mrr_cents or 0) / 100, 2),
+            "subscriber_count": self.subscriber_count or 0,
+            "revenue_event_count": self.revenue_event_count or 0,
+            "learning_score": self.learning_score,
+            "last_recomputed_at": self.last_recomputed_at.isoformat() if self.last_recomputed_at else None,
+        }
 
 
 class VersionComparisonCache(Base):

@@ -257,8 +257,25 @@ def _log_revenue_event(db: Session, event: dict, event_type: str, data: dict) ->
 
     event_at = datetime.utcfromtimestamp(event.get("created", 0)) if event.get("created") else datetime.utcnow()
 
+    # PR5: bind to the most recent ProductDeployment build for this app so
+    # revenue is attributable to the exact build iteration that earned it.
+    build_id = None
+    try:
+        from models import ProductDeployment  # local import to avoid cycles
+        dep = (
+            db.query(ProductDeployment)
+            .filter(ProductDeployment.app_id == "causal_affect")
+            .order_by(ProductDeployment.deployed_at.desc().nullslast())
+            .first()
+        )
+        if dep is not None:
+            build_id = dep.build_id
+    except Exception as exc:  # pragma: no cover — never block webhook on this
+        logger.warning("PR5: could not resolve build_id for revenue event: %s", exc)
+
     rev = RevenueEvent(
         app_id="causal_affect",
+        build_id=build_id,
         event_type=revenue_event_type,
         amount_cents=amount_cents,
         currency=currency,
