@@ -17,6 +17,7 @@ import tempfile
 import logging
 
 from services.ai_provider import AIProviderFactory
+from services.verification_engine import verify_acceptance_criteria
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +49,7 @@ class AICodeGeneratorOrchestrator:
         self._red_phase_results: Dict[str, Any] = {}
         self._green_phase_results: Dict[str, Any] = {}
         self._refactor_phase_results: Dict[str, Any] = {}
+        self._verification_phase_results: Dict[str, Any] = {}
 
         provider_type = config.get('provider', 'anthropic')
         self.ai_provider = AIProviderFactory.create_provider(provider_type)
@@ -325,6 +327,22 @@ class AICodeGeneratorOrchestrator:
             'timestamp': datetime.now().strftime('%Y%m%d_%H%M%S')
         }
 
+        # PR2 — REQ-AC traceability: map each AC to the test methods that
+        # claim to verify it (via `# REQ-AC-XXX` comments) and cross-reference
+        # pytest outcomes. Stored on the GREEN result so PR3 can persist and
+        # surface it in the dashboard.
+        try:
+            ac_verification = verify_acceptance_criteria(
+                test_files=test_files,
+                pytest_output=result['pytest_output'],
+                acceptance_criteria=requirements.get('acceptance_criteria', []),
+            )
+        except Exception as exc:  # noqa: BLE001 — verification must never fail the build
+            logger.warning("AC verification failed: %s", exc)
+            ac_verification = {'by_ac': {}, 'summary': {'error': str(exc)}}
+        self._green_phase_results['ac_verification'] = ac_verification
+        result['ac_verification'] = ac_verification
+
         self.phase_results['GREEN'] = result
         return result
 
@@ -364,21 +382,57 @@ class AICodeGeneratorOrchestrator:
         return result
 
     # ------------------------------------------------------------------
+    # VERIFICATION phase (PR2)
+    # ------------------------------------------------------------------
+
+    def execute_verification_phase(
+        self, green_results: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Surface the AC verification report computed during GREEN.
+
+        Kept as a distinct phase so future iterations can re-run verification
+        independently (e.g. after REFACTOR) without re-executing GREEN.
+        """
+        self.current_phase = 'VERIFICATION'
+        ac_verification = (
+            green_results.get('ac_verification')
+            or self._green_phase_results.get('ac_verification')
+            or {'by_ac': {}, 'summary': {}}
+        )
+        summary = ac_verification.get('summary', {}) or {}
+
+        result = {
+            'phase': 'VERIFICATION',
+            'status': 'PASS' if summary.get('verification_pct', 0) >= 80 else 'PARTIAL',
+            'ac_verification': ac_verification,
+            'summary': summary,
+        }
+        self._verification_phase_results = {
+            'status': 'COMPLETED',
+            'ac_verification': ac_verification,
+            'timestamp': datetime.now().strftime('%Y%m%d_%H%M%S'),
+        }
+        self.phase_results['VERIFICATION'] = result
+        return result
+
+    # ------------------------------------------------------------------
     # Full cycle
     # ------------------------------------------------------------------
 
     def execute_full_cycle(self, requirements: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute complete RED → GREEN → REFACTOR cycle."""
+        """Execute complete RED → GREEN → REFACTOR → VERIFICATION cycle."""
         red_result = self.execute_red_phase(requirements)
         green_result = self.execute_green_phase(requirements, red_result)
         refactor_result = self.execute_refactor_phase(green_result)
+        verification_result = self.execute_verification_phase(green_result)
 
         return {
             'status': 'COMPLETE',
             'phases': {
                 'RED': red_result,
                 'GREEN': green_result,
-                'REFACTOR': refactor_result
+                'REFACTOR': refactor_result,
+                'VERIFICATION': verification_result,
             }
         }
 
@@ -414,8 +468,9 @@ Feature: {requirements.get('feature_name', 'UNKNOWN')}
 ACCEPTANCE CRITERIA (UNIT TESTS):
 """
         for i, ac in enumerate(acceptance_criteria, 1):
+            ac_id = ac.get('criterion_id', f'AC-{i:03d}')
             criterion = ac.get('criterion', ac.get('description', 'No description'))
-            prompt += f"\n{i}. {criterion}"
+            prompt += f"\n{i}. [{ac_id}] {criterion}"
 
         if integration_scenarios:
             prompt += "\n\nINTEGRATION TEST SCENARIOS:\n"
@@ -469,6 +524,14 @@ Do NOT wrap imports in try/except — let the ImportError happen naturally.
 - Each test method MUST contain real assertions against expected behavior
 - Include docstrings for all classes and methods
 
+REQ TAGS — MANDATORY (for traceability):
+- Above EACH unit test class that covers an acceptance criterion, add a comment
+  on its own line: `# REQ-<AC-ID>` (e.g. `# REQ-AC-001`)
+- Above EACH unit test method, add the same `# REQ-<AC-ID>` comment
+  matching the acceptance criterion it verifies
+- These tags are parsed by the verification engine. Tests without REQ tags
+  will not count toward AC verification.
+
 Output only valid Python code, no explanations or markdown formatting.
 """
         return prompt
@@ -506,11 +569,18 @@ You MUST define every class and function that the tests import.
 
         prompt += "\nAcceptance Criteria:\n"
         for ac in requirements.get('acceptance_criteria', []):
+            ac_id = ac.get('criterion_id', 'AC-XXX')
             criterion = ac.get('criterion', ac.get('description', ''))
             desc = ac.get('description', '')
-            prompt += f"\n- {criterion}"
+            prompt += f"\n- [{ac_id}] {criterion}"
             if desc and desc != criterion:
                 prompt += f"\n  Detail: {desc}"
+
+        prompt += "\n\nREQ TAGS — MANDATORY (for traceability):\n"
+        prompt += "- Above EACH class that implements an acceptance criterion, add a comment\n"
+        prompt += "  on its own line: `# REQ-<AC-ID>` (e.g. `# REQ-AC-001`)\n"
+        prompt += "- A class can implement multiple ACs — add multiple REQ tag lines\n"
+        prompt += "- These tags are parsed by the verification engine to map ACs to code\n"
 
         # Include the full user brief so the AI builds real functionality,
         # not just the minimum to pass generic tests.
