@@ -1463,8 +1463,8 @@
             <!-- Empty State -->
             <div x-show="(filteredExploitation || []).length === 0" class="flex flex-col items-center justify-center py-12 text-slate-500">
                 <i data-lucide="rocket" class="w-12 h-12 mb-3 opacity-30"></i>
-                <p class="text-sm">No recommendations yet</p>
-                <p class="text-xs text-slate-600 mt-1">Click "Generate Recommendations" to scan all signals for exploitable opportunities</p>
+                <p class="text-sm" x-text="(exploitationSearchText || exploitationFilterAction || exploitationFilterStatus) ? 'No matching recommendations' : 'No recommendations yet'"></p>
+                <p class="text-xs text-slate-600 mt-1" x-text="(exploitationSearchText || exploitationFilterAction || exploitationFilterStatus) ? 'Try changing search text, filters, or sort order.' : 'Click \"Generate Recommendations\" to scan all signals for exploitable opportunities'"></p>
             </div>
         </div>
 
