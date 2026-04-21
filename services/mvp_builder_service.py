@@ -740,6 +740,45 @@ class MVPBuilderService:
                     f"({ver_summary.get('verification_pct', 0)}%)"
                 )
 
+                # PR4 — Auto-REFACTOR loop. If verification is below threshold,
+                # re-run GREEN (with retry-prompt feedback baked in) + REFACTOR
+                # + VERIFICATION up to max_verification_retries additional times.
+                min_pct = orchestrator.min_verification_pct
+                max_retries = orchestrator.max_verification_retries
+                ver_attempts = 1
+                while ver_attempts <= max_retries:
+                    pct = float(ver_summary.get('verification_pct', 0) or 0)
+                    if pct >= min_pct:
+                        break
+                    _step(
+                        'AUTO_REFACTOR',
+                        f"retry {ver_attempts}/{max_retries}: pct={pct}% < threshold={min_pct}%",
+                    )
+                    green_result = orchestrator.execute_green_phase(spec, red_result)
+                    green_status = green_result.get('status', 'UNKNOWN')
+                    tests_passed = green_result.get('tests_passed', 0)
+                    coverage = green_result.get('coverage', 0.0)
+                    refactor_result = orchestrator.execute_refactor_phase(green_result)
+                    verification_result = orchestrator.execute_verification_phase(green_result)
+                    ac_verification = verification_result.get('ac_verification') or {}
+                    ver_summary = ac_verification.get('summary', {}) or {}
+                    ver_attempts += 1
+                    _step(
+                        'AUTO_REFACTOR_DONE',
+                        f"attempt {ver_attempts}: verified="
+                        f"{ver_summary.get('fully_verified_acs', 0)}/{ver_summary.get('total_acs', 0)} "
+                        f"({ver_summary.get('verification_pct', 0)}%)"
+                    )
+
+                # Stamp retry metadata so the dashboard / telemetry can see it.
+                if isinstance(ac_verification, dict):
+                    ac_verification.setdefault('summary', {})
+                    ac_verification['summary']['attempts'] = ver_attempts
+                    ac_verification['summary']['threshold_pct'] = min_pct
+                    ac_verification['summary']['threshold_met'] = (
+                        float(ac_verification['summary'].get('verification_pct', 0) or 0) >= min_pct
+                    )
+
                 # Inject recommendation metadata into spec for dashboard hero
                 if recommendation_meta:
                     spec['_meta'] = recommendation_meta
@@ -805,9 +844,39 @@ class MVPBuilderService:
             total_errors = syntax_errors + test_errors
             _step('VALIDATION', f"{len(all_files)} files, {syntax_errors} syntax, {test_errors} test errors")
 
+            # PR4 — BLOCK deploy on persistent verification failure. If we ran
+            # the AI pipeline and the final ac_verification is below threshold,
+            # treat the build as FAILED and log a structured error so the
+            # dashboard / telemetry can attribute the block.
+            verification_blocked = False
+            if ai_available and ac_verification:
+                _ver = ac_verification.get('summary', {}) or {}
+                _met = _ver.get('threshold_met')
+                if _met is False:  # explicit False (None means no AC list at all)
+                    verification_blocked = True
+                    block_pct = _ver.get('verification_pct', 0)
+                    block_threshold = _ver.get('threshold_pct', 0)
+                    block_attempts = _ver.get('attempts', 1)
+                    collected_errors.append({
+                        'type': 'VerificationBelowThreshold',
+                        'message': (
+                            f'AC verification {block_pct}% < threshold {block_threshold}% '
+                            f'after {block_attempts} attempt(s) — deploy blocked'
+                        ),
+                        'file': 'verification_engine',
+                        'line': 0,
+                        'category': 'verification',
+                        'traceback_snippet': '',
+                    })
+                    _step(
+                        'VERIFICATION_BLOCKED_DEPLOY',
+                        f"pct={block_pct}% < threshold={block_threshold}% (attempts={block_attempts})",
+                    )
+                    total_errors = max(total_errors, 1)
+
             # --- 6. Build ML-consumable error report + persist to DB ---
             duration = time.time() - start
-            final_status = 'FAILED' if total_errors > 0 else (
+            final_status = 'FAILED' if (total_errors > 0 or verification_blocked) else (
                 'DEPLOYING' if os.getenv('RAILWAY_TOKEN') else 'LIVE'
             )
 
@@ -827,6 +896,12 @@ class MVPBuilderService:
                         build.ac_verification = ac_verification
                     if total_errors > 0:
                         build.error_message = f"{syntax_errors} syntax + {test_errors} test errors"
+                    elif verification_blocked:
+                        _ver = ac_verification.get('summary', {}) or {}
+                        build.error_message = (
+                            f"AC verification {_ver.get('verification_pct', 0)}% < threshold "
+                            f"{_ver.get('threshold_pct', 0)}% after {_ver.get('attempts', 1)} attempt(s)"
+                        )
                     for f in all_files:
                         db_session.add(MVPBuildFile(
                             build_id=build_id,

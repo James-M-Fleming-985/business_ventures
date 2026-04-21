@@ -31,6 +31,14 @@ PHASE_TRANSITIONS = {
 
 DEFAULT_MAX_TOKENS = 20480
 
+# PR4 — Auto-REFACTOR loop & deploy gate.
+# If VERIFICATION reports verification_pct below this threshold, the
+# orchestrator will retry GREEN+VERIFICATION up to MAX_VERIFICATION_RETRIES
+# times. mvp_builder_service then BLOCKS deploy if the final pct is still
+# below the threshold. Both can be overridden in the config dict.
+DEFAULT_MIN_VERIFICATION_PCT = 80.0
+DEFAULT_MAX_VERIFICATION_RETRIES = 2
+
 
 class AICodeGeneratorOrchestrator:
     """
@@ -50,6 +58,16 @@ class AICodeGeneratorOrchestrator:
         self._green_phase_results: Dict[str, Any] = {}
         self._refactor_phase_results: Dict[str, Any] = {}
         self._verification_phase_results: Dict[str, Any] = {}
+
+        # PR4 — verification thresholds. Read from config first, then env, then default.
+        self.min_verification_pct: float = float(
+            config.get('min_verification_pct',
+                      os.getenv('MIN_AC_VERIFICATION_PCT', DEFAULT_MIN_VERIFICATION_PCT))
+        )
+        self.max_verification_retries: int = int(
+            config.get('max_verification_retries',
+                      os.getenv('MAX_VERIFICATION_RETRIES', DEFAULT_MAX_VERIFICATION_RETRIES))
+        )
 
         provider_type = config.get('provider', 'anthropic')
         self.ai_provider = AIProviderFactory.create_provider(provider_type)
@@ -420,11 +438,40 @@ class AICodeGeneratorOrchestrator:
     # ------------------------------------------------------------------
 
     def execute_full_cycle(self, requirements: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute complete RED → GREEN → REFACTOR → VERIFICATION cycle."""
+        """Execute complete RED → GREEN → REFACTOR → VERIFICATION cycle.
+
+        PR4 — Auto-REFACTOR loop: if VERIFICATION reports
+        ``verification_pct`` below ``self.min_verification_pct``, re-run
+        GREEN (with the prior failing pytest output as feedback) and
+        VERIFICATION up to ``self.max_verification_retries`` additional
+        times. The deploy gate in mvp_builder_service then blocks deploy
+        if the final pct is still below threshold.
+        """
         red_result = self.execute_red_phase(requirements)
         green_result = self.execute_green_phase(requirements, red_result)
         refactor_result = self.execute_refactor_phase(green_result)
         verification_result = self.execute_verification_phase(green_result)
+
+        verification_attempts = 1
+        for retry in range(self.max_verification_retries):
+            pct = float((verification_result.get('summary') or {}).get('verification_pct', 0) or 0)
+            if pct >= self.min_verification_pct:
+                break
+            logger.info(
+                "Auto-REFACTOR retry %d/%d: verification_pct=%.1f%% < threshold=%.1f%%",
+                retry + 1, self.max_verification_retries, pct, self.min_verification_pct,
+            )
+            green_result = self.execute_green_phase(requirements, red_result)
+            refactor_result = self.execute_refactor_phase(green_result)
+            verification_result = self.execute_verification_phase(green_result)
+            verification_attempts += 1
+
+        verification_result['attempts'] = verification_attempts
+        verification_result['threshold_met'] = (
+            float((verification_result.get('summary') or {}).get('verification_pct', 0) or 0)
+            >= self.min_verification_pct
+        )
+        verification_result['min_verification_pct'] = self.min_verification_pct
 
         return {
             'status': 'COMPLETE',
