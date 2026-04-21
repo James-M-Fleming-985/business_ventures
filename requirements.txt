@@ -57,3 +57,6 @@ apscheduler==3.10.4
 # Testing (required for build pipeline GREEN phase)
 pytest>=7.0.0
 pytest-cov>=4.0.0
+
+# Google Analytics 4 Data API (Track G — engagement metrics)
+google-analytics-data==0.18.7
