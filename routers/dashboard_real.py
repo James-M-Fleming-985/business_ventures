@@ -4779,6 +4779,53 @@ def ga4_healthcheck():
     return out
 
 
+@router.get("/exploitation/stripe/healthcheck")
+def stripe_healthcheck():
+    """Verify Stripe credentials from the live deploy.
+
+    Confirms env vars are present and that ``stripe.api_key`` can perform
+    a no-op API call (``Account.retrieve``). Wrapped in a hard timeout so
+    a hung HTTPS call cannot stall the event loop.
+    """
+    import concurrent.futures
+
+    out = {
+        "secret_key_set": bool(os.getenv("STRIPE_SECRET_KEY")),
+        "webhook_secret_set": bool(os.getenv("STRIPE_WEBHOOK_SECRET")),
+        "publishable_key_set": bool(os.getenv("STRIPE_PUBLISHABLE_KEY")),
+        "mode": None,
+        "api_call_ok": False,
+        "account_id": None,
+        "error": None,
+    }
+
+    sk = (os.getenv("STRIPE_SECRET_KEY") or "").strip()
+    if sk.startswith("sk_test_"):
+        out["mode"] = "test"
+    elif sk.startswith("sk_live_"):
+        out["mode"] = "live"
+
+    def _probe():
+        import stripe
+        stripe.api_key = sk
+        acct = stripe.Account.retrieve()
+        out["api_call_ok"] = True
+        out["account_id"] = acct.get("id")
+
+    if not sk:
+        out["error"] = "STRIPE_SECRET_KEY not set"
+        return out
+
+    try:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+            ex.submit(_probe).result(timeout=10)
+    except concurrent.futures.TimeoutError:
+        out["error"] = "Timeout after 10s (Stripe API hung)"
+    except Exception as exc:
+        out["error"] = f"{type(exc).__name__}: {str(exc)[:300]}"
+    return out
+
+
 @router.get("/exploitation/builds/{build_id}/telemetry")
 async def get_build_telemetry(
     build_id: int,
