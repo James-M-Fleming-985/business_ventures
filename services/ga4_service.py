@@ -24,8 +24,8 @@ from models import ProductDeployment, ProductMetrics
 
 logger = logging.getLogger(__name__)
 
-GA4_PROPERTY_ID = os.getenv("GA4_PROPERTY_ID")
-GA4_CREDENTIALS_JSON = os.getenv("GA4_CREDENTIALS_JSON")
+GA4_PROPERTY_ID = (os.getenv("GA4_PROPERTY_ID") or "").strip()
+GA4_CREDENTIALS_JSON = (os.getenv("GA4_CREDENTIALS_JSON") or "").strip()
 
 _analytics_client = None
 
