@@ -4732,13 +4732,14 @@ async def get_build_evidence(build_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/exploitation/ga4/healthcheck")
-async def ga4_healthcheck():
+def ga4_healthcheck():
     """Verify GA4 credentials + Data API access from the live deploy.
 
-    Returns a small diagnostic so the operator can confirm the env vars
-    are loaded and the service account can read the configured property.
-    Does not return any user data; only top-level totals for the past 7 days.
+    Sync route so blocking gRPC calls run in FastAPI's threadpool and
+    cannot stall the event loop. Wrapped in a hard timeout.
     """
+    import concurrent.futures
+
     out = {
         "property_id_set": bool(os.getenv("GA4_PROPERTY_ID")),
         "measurement_id_set": bool(os.getenv("GA4_MEASUREMENT_ID")),
@@ -4748,24 +4749,31 @@ async def ga4_healthcheck():
         "rows_returned": 0,
         "error": None,
     }
-    try:
-        from services.ga4_service import _get_analytics_client, GA4_PROPERTY_ID
+
+    def _probe():
+        from services.ga4_service import _get_analytics_client, GA4_PROPERTY_ID as PID
         client = _get_analytics_client()
         out["client_initialised"] = client is not None
         if client is None:
             out["error"] = "GA4 client failed to initialise (check env vars + credentials JSON)"
-            return out
+            return
         from google.analytics.data_v1beta.types import DateRange, Metric, RunReportRequest
         req = RunReportRequest(
-            property=GA4_PROPERTY_ID,
+            property=PID,
             date_ranges=[DateRange(start_date="7daysAgo", end_date="today")],
             metrics=[Metric(name="screenPageViews"), Metric(name="totalUsers")],
         )
-        resp = client.run_report(req)
+        resp = client.run_report(req, timeout=10.0)
         out["api_call_ok"] = True
         out["rows_returned"] = len(resp.rows)
         if resp.rows:
             out["sample"] = [m.value for m in resp.rows[0].metric_values]
+
+    try:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+            ex.submit(_probe).result(timeout=15)
+    except concurrent.futures.TimeoutError:
+        out["error"] = "Timeout after 15s (GA4 client hung — likely bad credentials or network)"
     except Exception as exc:
         out["error"] = f"{type(exc).__name__}: {str(exc)[:300]}"
     return out
