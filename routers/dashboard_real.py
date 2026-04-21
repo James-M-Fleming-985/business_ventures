@@ -20,6 +20,7 @@ from typing import Optional, List
 from datetime import datetime, timedelta
 import logging
 import math
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -3273,10 +3274,12 @@ async def generate_exploitation_recommendations(db: Session = Depends(get_db)):
 async def get_exploitation_recommendations(
     status: Optional[str] = None,
     action_type: Optional[str] = None,
+    search: Optional[str] = Query(None, max_length=120),
+    sort_by: str = Query("score_desc"),
     db: Session = Depends(get_db)
 ):
-    """Get all exploitation recommendations, optionally filtered by status and action type."""
-    from sqlalchemy import desc
+    """Get exploitation recommendations with optional filter/search/sort."""
+    from sqlalchemy import desc, asc, or_
     
     try:
         query = db.query(ExploitationRecommendation)
@@ -3285,8 +3288,29 @@ async def get_exploitation_recommendations(
             query = query.filter(ExploitationRecommendation.status == status.upper())
         if action_type:
             query = query.filter(ExploitationRecommendation.action_type == action_type.upper())
+
+        if search:
+            term = search.strip()
+            if term:
+                like = f"%{term}%"
+                query = query.filter(
+                    or_(
+                        ExploitationRecommendation.signal_display_name.ilike(like),
+                        ExploitationRecommendation.target_display_name.ilike(like),
+                        ExploitationRecommendation.market_category.ilike(like),
+                    )
+                )
+
+        sort_map = {
+            "score_desc": desc(ExploitationRecommendation.opportunity_score),
+            "score_asc": asc(ExploitationRecommendation.opportunity_score),
+            "signal_asc": asc(ExploitationRecommendation.signal_display_name),
+            "target_asc": asc(ExploitationRecommendation.target_display_name),
+            "updated_desc": desc(ExploitationRecommendation.updated_at),
+        }
+        order_clause = sort_map.get(sort_by, sort_map["score_desc"])
         
-        results = query.order_by(desc(ExploitationRecommendation.opportunity_score)).all()
+        results = query.order_by(order_clause).all()
         
         # Summary stats
         all_recs = db.query(ExploitationRecommendation).all()
@@ -3302,6 +3326,12 @@ async def get_exploitation_recommendations(
             "recommendations": [r.to_dict() for r in results],
             "total": len(all_recs),
             "filtered_count": len(results),
+            "applied_filters": {
+                "status": status,
+                "action_type": action_type,
+                "search": (search or "").strip() or None,
+                "sort_by": sort_by if sort_by in sort_map else "score_desc",
+            },
             "summary": {
                 "by_action_type": by_action,
                 "by_status": by_status,
@@ -3825,6 +3855,7 @@ async def get_programme_baselines(db: Session = Depends(get_db)):
         "build_errors": {"error_rate_pct": 0, "total_builds": 0, "successful_builds": 0, "failed_builds": 0, "target": 5, "trend": []},
         "exploitation": {"viability_accuracy_pct": 0, "validated_count": 0, "total_build_recommendations": 0, "target": 90},
         "revenue": {"total_mrr": 0, "total_subscribers": 0, "app_count": 0, "apps": [], "target_mrr": 20000, "snapshot_date": None},
+        "autonomous_loop": {"ac_pass_rate_pct": 0.0, "builds_with_evidence": 0, "deploy_blocked_count": 0, "avg_learning_score": 0.0, "telemetry_builds": 0, "top_builds": [], "min_verification_pct_target": 80},
     }
 
     try:
@@ -3922,6 +3953,65 @@ async def get_programme_baselines(db: Session = Depends(get_db)):
             with open(config_path) as f:
                 revenue_data = json.load(f)
 
+        # 5. Autonomous Loop (Track I PR6) — surface AC verification + learning telemetry
+        autonomous_loop = {
+            "ac_pass_rate_pct": 0.0,
+            "builds_with_evidence": 0,
+            "deploy_blocked_count": 0,
+            "avg_learning_score": 0.0,
+            "telemetry_builds": 0,
+            "top_builds": [],
+            "min_verification_pct_target": 80,
+        }
+        try:
+            from models import BuildTelemetry  # local import — table created on first boot
+            evidenced = [b for b in (all_builds or []) if b.ac_verification]
+            ac_pass_rates = []
+            blocked = 0
+            for b in evidenced:
+                summary = (b.ac_verification or {}).get("summary") or {}
+                pct = summary.get("verified_pct")
+                if isinstance(pct, (int, float)):
+                    ac_pass_rates.append(float(pct))
+                # Build steps may include the VERIFICATION_BLOCKED_DEPLOY marker
+                for step in (b.build_steps or []):
+                    if step.get("step") == "VERIFICATION_BLOCKED_DEPLOY":
+                        blocked += 1
+                        break
+            avg_pass = sum(ac_pass_rates) / len(ac_pass_rates) if ac_pass_rates else 0.0
+
+            telemetry_rows = db.query(BuildTelemetry).all()
+            scores = [t.learning_score for t in telemetry_rows if t.learning_score is not None]
+            avg_score = sum(scores) / len(scores) if scores else 0.0
+
+            top = (
+                db.query(BuildTelemetry)
+                .filter(BuildTelemetry.learning_score.isnot(None))
+                .order_by(BuildTelemetry.learning_score.desc())
+                .limit(5)
+                .all()
+            )
+
+            autonomous_loop = {
+                "ac_pass_rate_pct": round(avg_pass, 1),
+                "builds_with_evidence": len(evidenced),
+                "deploy_blocked_count": blocked,
+                "avg_learning_score": round(avg_score, 4),
+                "telemetry_builds": len(telemetry_rows),
+                "top_builds": [
+                    {
+                        "build_id": t.build_id,
+                        "learning_score": t.learning_score,
+                        "unique_visitors": t.unique_visitors or 0,
+                        "total_revenue": round((t.total_revenue_cents or 0) / 100, 2),
+                    }
+                    for t in top
+                ],
+                "min_verification_pct_target": int(os.environ.get("MIN_AC_VERIFICATION_PCT", "80")),
+            }
+        except Exception as e:
+            logger.warning(f"Autonomous loop metrics unavailable: {e}")
+
         return {
             "model_accuracy": {
                 "direction_accuracy_pct": round(model_accuracy, 1),
@@ -3962,6 +4052,7 @@ async def get_programme_baselines(db: Session = Depends(get_db)):
                 "target_mrr": 20000,
                 "snapshot_date": revenue_data.get("snapshot_date"),
             },
+            "autonomous_loop": autonomous_loop,
         }
 
     except Exception as e:
