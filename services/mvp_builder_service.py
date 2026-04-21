@@ -674,6 +674,7 @@ class MVPBuilderService:
             tests_passed = 0
             coverage = 0.0
             red_result = {}
+            ac_verification: Optional[Dict[str, Any]] = None  # PR3 — set by VERIFICATION phase
 
             if ai_available:
                 # --- AI pipeline: spec → RED → GREEN → REFACTOR ---
@@ -726,6 +727,18 @@ class MVPBuilderService:
                 _step('REFACTOR_PHASE', 'Improving code quality…')
                 refactor_result = orchestrator.execute_refactor_phase(green_result)
                 _step('REFACTOR_DONE', f"status={refactor_result.get('status', 'UNKNOWN')}")
+
+                # PR3 — VERIFICATION phase: surface the AC traceability report
+                # already computed during GREEN. Persisted to MVPBuild below.
+                _step('VERIFICATION', 'Mapping acceptance criteria → tests…')
+                verification_result = orchestrator.execute_verification_phase(green_result)
+                ac_verification = verification_result.get('ac_verification') or {}
+                ver_summary = ac_verification.get('summary', {}) or {}
+                _step(
+                    'VERIFICATION_DONE',
+                    f"verified={ver_summary.get('fully_verified_acs', 0)}/{ver_summary.get('total_acs', 0)} "
+                    f"({ver_summary.get('verification_pct', 0)}%)"
+                )
 
                 # Inject recommendation metadata into spec for dashboard hero
                 if recommendation_meta:
@@ -810,6 +823,8 @@ class MVPBuilderService:
                     build.duration_seconds = round(duration, 2)
                     build.ai_cost_usd = round(total_ai_cost, 6) if total_ai_cost > 0 else None
                     build.status = final_status
+                    if ac_verification is not None:
+                        build.ac_verification = ac_verification
                     if total_errors > 0:
                         build.error_message = f"{syntax_errors} syntax + {test_errors} test errors"
                     for f in all_files:

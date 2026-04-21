@@ -256,6 +256,12 @@ async def startup_event():
                 conn.commit()
                 logger.info("✅ Added iteration tracking columns to mvp_builds")
 
+            # Track I PR3: REQ-AC verification evidence column
+            if 'ac_verification' not in build_cols and build_cols:
+                conn.execute(text("ALTER TABLE mvp_builds ADD COLUMN ac_verification JSON"))
+                conn.commit()
+                logger.info("✅ Added ac_verification column to mvp_builds")
+
             # User requirements for build spec customisation
             if 'user_requirements' not in exploit_cols and exploit_cols:
                 conn.execute(text("ALTER TABLE exploitation_recommendations ADD COLUMN user_requirements TEXT"))

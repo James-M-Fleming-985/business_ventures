@@ -541,6 +541,11 @@ class MVPBuild(Base):
     # Progress tracking
     build_steps = Column(JSON)  # [{step, at, detail}, ...]
 
+    # PR3 — REQ-AC traceability evidence: per-AC verification report from
+    # the orchestrator's VERIFICATION phase. Shape: {by_ac: {...}, summary: {...}}.
+    # See services.verification_engine.verify_acceptance_criteria.
+    ac_verification = Column(JSON)
+
     # Iteration tracking
     iteration_number = Column(Integer, default=1)
     parent_build_id = Column(Integer, ForeignKey('mvp_builds.id'), nullable=True)
@@ -578,6 +583,7 @@ class MVPBuild(Base):
             "duration_seconds": self.duration_seconds,
             "ai_cost_usd": self.ai_cost_usd,
             "build_steps": self.build_steps,
+            "ac_verification": self.ac_verification,
             "iteration_number": self.iteration_number or 1,
             "parent_build_id": self.parent_build_id,
             "iterate_reason": self.iterate_reason,

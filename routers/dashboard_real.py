@@ -4607,6 +4607,39 @@ async def get_mvp_build(build_id: int, db: Session = Depends(get_db)):
     return data
 
 
+@router.get("/exploitation/builds/{build_id}/evidence")
+async def get_build_evidence(build_id: int, db: Session = Depends(get_db)):
+    """Read-only REQ-AC traceability evidence for a build (PR3).
+
+    Returns the per-AC verification report produced by the orchestrator's
+    VERIFICATION phase, plus enough context for the dashboard to render a
+    "View Build Evidence" panel. No spec/test source is returned here \u2014
+    file content is already available via /exploitation/builds/{id}/files.
+    """
+    build = db.query(MVPBuild).filter(MVPBuild.id == build_id).first()
+    if not build:
+        raise HTTPException(status_code=404, detail="Build not found")
+
+    ac_verification = build.ac_verification or {"by_ac": {}, "summary": {}}
+    summary = ac_verification.get("summary", {}) or {}
+    by_ac = ac_verification.get("by_ac", {}) or {}
+
+    # Surface spec + test files separately so the UI can deep-link into the
+    # existing file-viewer for source inspection.
+    spec_files = [f.to_dict() for f in build.files if f.template_id == 'SPEC']
+    test_files = [f.to_dict() for f in build.files if 'test' in (f.file_path or '').lower()]
+
+    return {
+        "build_id": build_id,
+        "status": build.status,
+        "summary": summary,
+        "by_ac": by_ac,
+        "spec_files": spec_files,
+        "test_files": test_files,
+        "has_evidence": bool(by_ac),
+    }
+
+
 @router.delete("/exploitation/builds/{build_id}")
 async def cancel_mvp_build(build_id: int, db: Session = Depends(get_db)):
     """Cancel/fail a stuck or in-progress build."""

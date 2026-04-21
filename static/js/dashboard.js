@@ -163,6 +163,11 @@ function dashboardData() {
         codeViewerPath: '',
         codeViewerContent: '',
 
+        // PR3 — REQ-AC traceability evidence modal state
+        evidenceModalOpen: false,
+        evidenceLoading: false,
+        evidenceData: null,
+
         // Manual idea creation, product-concept selection, and user-supplied
         // build specifications removed (Track I — autonomous loop closure).
         // Discovery is the sole origin of recommendations; the system auto-
@@ -2858,6 +2863,28 @@ function dashboardData() {
                 this.codeViewerContent = data.content || '(empty file)';
             } catch (e) {
                 this.codeViewerContent = 'Error: ' + e.message;
+            }
+        },
+
+        // PR3 — Open the read-only Build Evidence modal for a given build.
+        async openBuildEvidence(buildId) {
+            this.evidenceData = null;
+            this.evidenceLoading = true;
+            this.evidenceModalOpen = true;
+            try {
+                const res = await fetch(`/api/dashboard/exploitation/builds/${buildId}/evidence`);
+                if (!res.ok) {
+                    console.error('Evidence fetch failed:', res.status);
+                    this.evidenceData = { build_id: buildId, has_evidence: false, summary: {}, by_ac: {}, spec_files: [], test_files: [] };
+                    return;
+                }
+                this.evidenceData = await res.json();
+            } catch (e) {
+                console.error('Evidence fetch error:', e);
+                this.evidenceData = { build_id: buildId, has_evidence: false, summary: {}, by_ac: {}, spec_files: [], test_files: [] };
+            } finally {
+                this.evidenceLoading = false;
+                this.$nextTick(() => { try { lucide.createIcons(); } catch (e) {} });
             }
         }
     };
