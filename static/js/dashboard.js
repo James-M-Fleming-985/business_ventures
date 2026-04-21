@@ -153,37 +153,20 @@ function dashboardData() {
         },
 
         // MVP Build state
+        // Track I (autonomous loop closure): complexity, concept, and spec are
+        // derived server-side from the Discovery recommendation. The user only
+        // decides WHEN to build via the Build MVP button.
         builds: {},
-        buildComplexity: {},
         buildInProgress: {},
         buildDetailOpen: null,
         codeViewerOpen: false,
         codeViewerPath: '',
         codeViewerContent: '',
 
-        // Product concepts state (M3 Track G)
-        conceptsLoading: {},
-        userRequirements: {},
-
-        // Helpers for stuck-state UI: how long has this rec been 'generating'?
-        conceptsElapsedSeconds(rec) {
-            if (!rec || !rec.updated_at) return 0;
-            const updated = new Date(rec.updated_at).getTime();
-            if (isNaN(updated)) return 0;
-            return Math.floor((Date.now() - updated) / 1000);
-        },
-        conceptsElapsed(rec) {
-            const s = this.conceptsElapsedSeconds(rec);
-            if (s < 60) return s + 's';
-            return Math.floor(s / 60) + 'm ' + (s % 60) + 's';
-        },
-        conceptsStuck(rec) {
-            // Considered stuck after 2 minutes in 'generating' state.
-            return this.conceptsElapsedSeconds(rec) > 120;
-        },
-
-        // Manual idea creation removed (Track I — autonomous loop closure):
-        // Discovery is the sole origin of recommendations.
+        // Manual idea creation, product-concept selection, and user-supplied
+        // build specifications removed (Track I — autonomous loop closure).
+        // Discovery is the sole origin of recommendations; the system auto-
+        // derives concept/spec/complexity from the recommendation.
 
         // Exploitation card collapse (default: all collapsed; expanded persists in localStorage)
         expandedExpRecs: {},  // { [recId]: true }
@@ -1227,25 +1210,6 @@ function dashboardData() {
                     const data = await response.json();
                     this.exploitationRecommendations = data.recommendations || [];
                     this.filteredExploitation = this.exploitationRecommendations;
-                    // Hydrate userRequirements from persisted data (stored as JSON string)
-                    const reqs = {};
-                    for (const rec of this.exploitationRecommendations) {
-                        if (rec.user_requirements) {
-                            try {
-                                const parsed = JSON.parse(rec.user_requirements);
-                                if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-                                    reqs[rec.id] = parsed;
-                                } else {
-                                    // Legacy flat string — migrate to vision field
-                                    reqs[rec.id] = { vision: rec.user_requirements, features: '', ui_style: '', integrations: '', target_users: '' };
-                                }
-                            } catch (e) {
-                                // Legacy flat string — migrate to vision field
-                                reqs[rec.id] = { vision: rec.user_requirements, features: '', ui_style: '', integrations: '', target_users: '' };
-                            }
-                        }
-                    }
-                    this.userRequirements = {...this.userRequirements, ...reqs};
                     const summary = data.summary || {};
                     this.exploitationStats = {
                         total: data.total || 0,
@@ -1254,13 +1218,6 @@ function dashboardData() {
                         avg_score: summary.average_score || 0
                     };
                     console.log(`📊 Loaded ${this.exploitationRecommendations.length} exploitation recommendations`);
-                    // Resume polling for any rec that is mid-generation (server-side state)
-                    this.exploitationRecommendations.forEach(r => {
-                        if (r.concepts_generation_status === 'generating') {
-                            this.conceptsLoading = {...this.conceptsLoading, [r.id]: true};
-                            this.pollConceptsStatus(r.id);
-                        }
-                    });
                     // Load build statuses for BUILD cards
                     await this.loadBuilds();
                     // Load commercial intelligence for BUILD cards (Track G)
@@ -2766,185 +2723,6 @@ function dashboardData() {
         },
 
         // ============================================================
-        // Product Concepts (M3 Track G)
-        // ============================================================
-        async generateConcepts(recId) {
-            console.log('💡 generateConcepts called for rec', recId);
-            this.conceptsLoading = {...this.conceptsLoading, [recId]: true};
-            try {
-                const res = await fetch(`/api/dashboard/exploitation/${recId}/generate-concepts`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                });
-                if (res.status === 409) {
-                    // Server says generation already in progress — likely stuck from a prior crashed task.
-                    this.conceptsLoading = {...this.conceptsLoading, [recId]: false};
-                    const proceed = confirm(
-                        'Generation appears to already be in progress (possibly stuck from a previous attempt). ' +
-                        'Clear and retry?'
-                    );
-                    if (proceed) {
-                        await this.clearConcepts(recId, true);  // silent clear
-                        return this.generateConcepts(recId);
-                    }
-                    return;
-                }
-                if (!res.ok && res.status !== 202) {
-                    const err = await res.json().catch(() => ({}));
-                    const msg = err.error || err.detail || `HTTP ${res.status}`;
-                    console.error('Concept generation kickoff failed:', msg);
-                    alert('Could not start concept generation: ' + msg);
-                    this.conceptsLoading = {...this.conceptsLoading, [recId]: false};
-                    return;
-                }
-                console.log('💡 Concept generation queued, polling status…');
-                this.pollConceptsStatus(recId);
-            } catch (e) {
-                console.error('Concept generation error:', e);
-                alert('Concept generation failed — check your connection and try again.');
-                this.conceptsLoading = {...this.conceptsLoading, [recId]: false};
-            }
-        },
-
-        async pollConceptsStatus(recId, attempts = 0) {
-            // Poll every 2s for up to 5 minutes (150 attempts)
-            if (attempts > 150) {
-                console.error('Concept generation timed out');
-                alert('Concept generation timed out after 5 minutes. Please try again.');
-                this.conceptsLoading = {...this.conceptsLoading, [recId]: false};
-                return;
-            }
-            try {
-                const res = await fetch(`/api/dashboard/exploitation/${recId}/concepts/status`);
-                if (!res.ok) {
-                    setTimeout(() => this.pollConceptsStatus(recId, attempts + 1), 2000);
-                    return;
-                }
-                const data = await res.json();
-                if (data.status === 'done') {
-                    console.log('💡 Concepts ready');
-                    await this.loadExploitationRecommendations();
-                    this.conceptsLoading = {...this.conceptsLoading, [recId]: false};
-                    this.$nextTick(() => { try { lucide.createIcons(); } catch(e) {} });
-                } else if (data.status === 'failed') {
-                    console.error('Concept generation failed:', data.error);
-                    alert('Concept generation failed: ' + (data.error || 'unknown error'));
-                    this.conceptsLoading = {...this.conceptsLoading, [recId]: false};
-                } else {
-                    // still 'generating' or null — keep polling
-                    setTimeout(() => this.pollConceptsStatus(recId, attempts + 1), 2000);
-                }
-            } catch (e) {
-                console.error('Status poll error:', e);
-                setTimeout(() => this.pollConceptsStatus(recId, attempts + 1), 2000);
-            }
-        },
-
-        async clearConcepts(recId, silent = false) {
-            if (!silent && !confirm('Clear stored product concepts for this recommendation?')) return;
-            try {
-                const res = await fetch(`/api/dashboard/exploitation/${recId}/clear-concepts`, {
-                    method: 'POST',
-                });
-                if (!res.ok) {
-                    const err = await res.json().catch(() => ({}));
-                    if (!silent) alert('Clear failed: ' + (err.error || res.status));
-                    return;
-                }
-                // Always release the loading flag so UI un-freezes after a stuck-state clear.
-                this.conceptsLoading = {...this.conceptsLoading, [recId]: false};
-                await this.loadExploitationRecommendations();
-                this.$nextTick(() => { try { lucide.createIcons(); } catch(e) {} });
-            } catch (e) {
-                console.error('Clear concepts error:', e);
-            }
-        },
-
-        async selectConcept(recId, conceptIndex) {
-            console.log('✅ selectConcept', recId, conceptIndex);
-            try {
-                const res = await fetch(`/api/dashboard/exploitation/${recId}/select-concept`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ concept_index: conceptIndex }),
-                });
-                if (!res.ok) return;
-                // Update local state
-                const idx = this.filteredExploitation.findIndex(r => r.id === recId);
-                if (idx >= 0) {
-                    this.filteredExploitation[idx] = {
-                        ...this.filteredExploitation[idx],
-                        selected_concept_index: conceptIndex,
-                    };
-                    this.filteredExploitation = [...this.filteredExploitation];
-                    // Also update master list
-                    const mIdx = this.exploitationRecommendations.findIndex(r => r.id === recId);
-                    if (mIdx >= 0) {
-                        this.exploitationRecommendations[mIdx] = {
-                            ...this.exploitationRecommendations[mIdx],
-                            selected_concept_index: conceptIndex,
-                        };
-                    }
-                    // Auto-set complexity from concept
-                    const concept = this.filteredExploitation[idx].product_concepts?.[conceptIndex];
-                    if (concept?.complexity) {
-                        this.buildComplexity = {
-                            ...this.buildComplexity,
-                            [recId]: concept.complexity,
-                        };
-                    }
-                }
-            } catch (e) {
-                console.error('Select concept error:', e);
-            }
-            this.$nextTick(() => { try { lucide.createIcons(); } catch(e) {} });
-        },
-
-        // ============================================================
-        // User Requirements (per-recommendation) — structured fields
-        // ============================================================
-        hasAnyRequirements(recId) {
-            const r = this.userRequirements[recId];
-            if (!r || typeof r !== 'object') return false;
-            return !!(
-                (r.vision || '').trim() ||
-                (r.features || '').trim() ||
-                (r.ui_style || '').trim() ||
-                (r.integrations || '').trim() ||
-                (r.target_users || '').trim()
-            );
-        },
-
-        updateStructuredReq(recId, field, value) {
-            const current = this.userRequirements[recId] || {};
-            this.userRequirements = {
-                ...this.userRequirements,
-                [recId]: { ...current, [field]: value },
-            };
-        },
-
-        clearStructuredRequirements(recId) {
-            this.userRequirements = {
-                ...this.userRequirements,
-                [recId]: { vision: '', features: '', ui_style: '', integrations: '', target_users: '' },
-            };
-        },
-
-        async saveUserRequirements(recId) {
-            try {
-                const structured = this.userRequirements[recId] || {};
-                await fetch(`/api/dashboard/exploitation/recommendations/${recId}`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_requirements: JSON.stringify(structured) }),
-                });
-                console.log('📝 Saved structured requirements for rec', recId);
-            } catch (e) {
-                console.error('Save requirements error:', e);
-            }
-        },
-
-        // ============================================================
         // Manual Idea Creation removed (Track I — autonomous loop closure)
         // ============================================================
 
@@ -2953,9 +2731,9 @@ function dashboardData() {
         // ============================================================
         async startBuild(recId) {
             console.log('🔨 startBuild called for rec', recId);
-            const complexity = this.buildComplexity[recId] || 'LOW';
-            const structured = this.userRequirements[recId] || {};
-            const hasReqs = this.hasAnyRequirements(recId);
+            // Track I (autonomous loop closure): no client-supplied complexity
+            // or user_requirements. The server derives spec + complexity from
+            // the Discovery recommendation.
             this.buildInProgress = {...this.buildInProgress, [recId]: true};
             try {
                 const res = await fetch('/api/dashboard/exploitation/build', {
@@ -2963,8 +2741,6 @@ function dashboardData() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         recommendation_id: recId,
-                        complexity,
-                        user_requirements: hasReqs ? JSON.stringify(structured) : undefined,
                     }),
                 });
                 if (!res.ok) {

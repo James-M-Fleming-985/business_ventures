@@ -3344,10 +3344,11 @@ async def update_exploitation_recommendation(rec_id: int, request: Request, db: 
         
         if 'notes' in body:
             rec.notes = body['notes']
-        
-        if 'user_requirements' in body:
-            rec.user_requirements = body['user_requirements']
-        
+
+        # Track I (autonomous loop closure): user_requirements is no longer
+        # accepted from the client. The system derives the build spec from the
+        # Discovery recommendation itself.
+
         rec.updated_at = datetime.utcnow()
         db.commit()
         
@@ -4513,13 +4514,20 @@ async def start_mvp_build(
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ):
-    """Kick off an MVP build for a BUILD recommendation."""
+    """Kick off an MVP build for a BUILD recommendation.
+
+    Track I (autonomous loop closure): the only required input is
+    ``recommendation_id``. The server derives the spec and complexity from the
+    Discovery recommendation. Any client-supplied ``complexity`` or
+    ``user_requirements`` fields in the request body are ignored.
+
+    TODO (M3 — prompt-learning loop): replace the hardcoded ``LOW`` default
+    with a model that picks complexity based on engagement + revenue
+    telemetry from prior builds.
+    """
     body = await request.json()
 
     recommendation_id = body.get("recommendation_id")
-    complexity = body.get("complexity", "LOW").upper()
-    if complexity not in ("LOW", "MEDIUM", "HIGH"):
-        raise HTTPException(status_code=400, detail="complexity must be LOW, MEDIUM, or HIGH")
     if not recommendation_id:
         raise HTTPException(status_code=400, detail="recommendation_id is required")
 
@@ -4529,33 +4537,8 @@ async def start_mvp_build(
     if not rec:
         raise HTTPException(status_code=404, detail="Recommendation not found")
 
-    # Save user requirements if provided (stored as JSON string)
-    user_requirements = (body.get("user_requirements") or "").strip()
-    if user_requirements:
-        rec.user_requirements = user_requirements
-        rec.updated_at = datetime.utcnow()
-        db.commit()
-
-    # Require at least a selected concept OR user requirements to build
-    has_concept = rec.product_concepts and rec.selected_concept_index is not None
-    # Check for structured requirements — parse JSON if possible
-    _raw_reqs = (rec.user_requirements or "").strip()
-    has_reqs = False
-    if _raw_reqs:
-        try:
-            import json as _json
-            _parsed = _json.loads(_raw_reqs)
-            if isinstance(_parsed, dict):
-                has_reqs = any(v.strip() for v in _parsed.values() if isinstance(v, str))
-            else:
-                has_reqs = True
-        except (ValueError, TypeError):
-            has_reqs = bool(_raw_reqs)
-    if not has_concept and not has_reqs:
-        raise HTTPException(
-            status_code=400,
-            detail="Select a product concept or provide key requirements before building"
-        )
+    # Autonomous default; future: learned from telemetry.
+    complexity = "LOW"
 
     build = MVPBuild(
         recommendation_id=recommendation_id,
