@@ -4770,6 +4770,86 @@ async def get_build_telemetry(
     return {"build_id": build_id, "telemetry": row.to_dict(), "recomputed": False}
 
 
+@router.get("/exploitation/learning/prompt-correlation")
+async def get_prompt_correlation(db: Session = Depends(get_db)):
+    """Per-prompt-version learning correlation (PR7).
+
+    Groups all builds by ``MVPBuild.prompt_version`` and returns the avg
+    learning_score, avg AC pass rate, total revenue, and build count for
+    each version. Drives the "which prompt vintage actually produces
+    engaging, monetisable products" question — the core of the
+    autonomous loop's learning objective.
+    """
+    from collections import defaultdict
+    from models import BuildTelemetry
+
+    builds = db.query(MVPBuild).filter(MVPBuild.prompt_version.isnot(None)).all()
+
+    telemetry_by_build = {
+        t.build_id: t for t in db.query(BuildTelemetry).all()
+    }
+
+    groups: dict = defaultdict(lambda: {
+        "build_count": 0,
+        "live_count": 0,
+        "failed_count": 0,
+        "ac_pass_rates": [],
+        "learning_scores": [],
+        "total_revenue_cents": 0,
+        "total_visitors": 0,
+        "blocked_deploy_count": 0,
+    })
+
+    for b in builds:
+        g = groups[b.prompt_version]
+        g["build_count"] += 1
+        if b.status == "LIVE":
+            g["live_count"] += 1
+        elif b.status == "FAILED":
+            g["failed_count"] += 1
+
+        summary = (b.ac_verification or {}).get("summary") or {}
+        pct = summary.get("verified_pct")
+        if isinstance(pct, (int, float)):
+            g["ac_pass_rates"].append(float(pct))
+
+        for step in (b.build_steps or []):
+            if step.get("step") == "VERIFICATION_BLOCKED_DEPLOY":
+                g["blocked_deploy_count"] += 1
+                break
+
+        t = telemetry_by_build.get(b.id)
+        if t is not None:
+            if t.learning_score is not None:
+                g["learning_scores"].append(t.learning_score)
+            g["total_revenue_cents"] += t.total_revenue_cents or 0
+            g["total_visitors"] += t.unique_visitors or 0
+
+    versions = []
+    for version, g in groups.items():
+        avg_ac = sum(g["ac_pass_rates"]) / len(g["ac_pass_rates"]) if g["ac_pass_rates"] else 0.0
+        avg_score = sum(g["learning_scores"]) / len(g["learning_scores"]) if g["learning_scores"] else 0.0
+        versions.append({
+            "prompt_version": version,
+            "build_count": g["build_count"],
+            "live_count": g["live_count"],
+            "failed_count": g["failed_count"],
+            "live_rate_pct": round(g["live_count"] / g["build_count"] * 100, 1) if g["build_count"] else 0.0,
+            "blocked_deploy_count": g["blocked_deploy_count"],
+            "avg_ac_pass_rate_pct": round(avg_ac, 1),
+            "avg_learning_score": round(avg_score, 4),
+            "total_revenue": round(g["total_revenue_cents"] / 100, 2),
+            "total_unique_visitors": g["total_visitors"],
+        })
+
+    versions.sort(key=lambda v: v["avg_learning_score"], reverse=True)
+    return {
+        "versions": versions,
+        "total_versioned_builds": sum(g["build_count"] for g in groups.values()),
+        "best_version": versions[0]["prompt_version"] if versions else None,
+    }
+
+
 @router.delete("/exploitation/builds/{build_id}")
 async def cancel_mvp_build(build_id: int, db: Session = Depends(get_db)):
     """Cancel/fail a stuck or in-progress build."""

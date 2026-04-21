@@ -262,6 +262,12 @@ async def startup_event():
                 conn.commit()
                 logger.info("✅ Added ac_verification column to mvp_builds")
 
+            # Track I PR7: prompt-version stamp on each build (for correlation)
+            if 'prompt_version' not in build_cols and build_cols:
+                conn.execute(text("ALTER TABLE mvp_builds ADD COLUMN prompt_version VARCHAR(50)"))
+                conn.commit()
+                logger.info("✅ Added prompt_version column to mvp_builds")
+
             # Track I PR5: per-build revenue / metrics binding + telemetry table
             rev_cols = {c['name'] for c in inspector.get_columns('revenue_events')} if 'revenue_events' in table_names else set()
             if rev_cols and 'build_id' not in rev_cols:

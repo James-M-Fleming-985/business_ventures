@@ -708,6 +708,18 @@ class MVPBuilderService:
                     'output_base_path': str(work_path),
                 })
 
+                # PR7 — stamp the build with the orchestrator's prompt vintage
+                # so per-prompt-version correlation analysis can run later.
+                if db_session:
+                    try:
+                        from services.ai_code_generator_orchestrator import PROMPT_VERSION
+                        b_row = db_session.query(MVPBuild).get(build_id)
+                        if b_row is not None and not b_row.prompt_version:
+                            b_row.prompt_version = PROMPT_VERSION
+                            db_session.commit()
+                    except Exception as pv_exc:
+                        logger.warning("Failed to stamp prompt_version on build %d: %s", build_id, pv_exc)
+
                 # RED phase
                 _step('RED_PHASE', 'Generating failing tests…')
                 red_result = orchestrator.execute_red_phase(spec)

@@ -39,6 +39,13 @@ DEFAULT_MAX_TOKENS = 20480
 DEFAULT_MIN_VERIFICATION_PCT = 80.0
 DEFAULT_MAX_VERIFICATION_RETRIES = 2
 
+# PR7 — Prompt versioning. Bump this string whenever the system prompts,
+# REQ-AC tag scheme, or phase contract changes so we can correlate build
+# outcomes (learning_score, ac_pass_rate, revenue) against prompt vintage.
+# The mvp_builder_service writes this onto MVPBuild.prompt_version when
+# the orchestrator is invoked.
+PROMPT_VERSION = "v1.1-track-i-pr2-pr7"
+
 
 class AICodeGeneratorOrchestrator:
     """

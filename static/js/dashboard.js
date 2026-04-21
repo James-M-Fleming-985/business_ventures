@@ -73,6 +73,9 @@ function dashboardData() {
         filteredExploitation: [],
         exploitationFilterAction: '',
         exploitationFilterStatus: '',
+        exploitationSearchText: '',
+        exploitationSortBy: 'score_desc',
+        exploitationSearchDebounceTimer: null,
         isGeneratingRecommendations: false,
         exploitationStats: { total: 0, by_action_type: {}, avg_score: 0 },
 
@@ -202,6 +205,33 @@ function dashboardData() {
             try { localStorage.setItem('expandedExpRecs', '{}'); } catch (e) {}
         },
 
+        loadExploitationPreferences() {
+            try {
+                const raw = localStorage.getItem('exploitationFilters');
+                const prefs = raw ? JSON.parse(raw) : {};
+                this.exploitationFilterAction = prefs.action || '';
+                this.exploitationFilterStatus = prefs.status || '';
+                this.exploitationSearchText = prefs.search || '';
+                this.exploitationSortBy = prefs.sortBy || 'score_desc';
+            } catch (e) {
+                this.exploitationFilterAction = '';
+                this.exploitationFilterStatus = '';
+                this.exploitationSearchText = '';
+                this.exploitationSortBy = 'score_desc';
+            }
+        },
+
+        saveExploitationPreferences() {
+            try {
+                localStorage.setItem('exploitationFilters', JSON.stringify({
+                    action: this.exploitationFilterAction,
+                    status: this.exploitationFilterStatus,
+                    search: this.exploitationSearchText,
+                    sortBy: this.exploitationSortBy,
+                }));
+            } catch (e) {}
+        },
+
         // ============================================================
         // BUILDS PORTFOLIO TAB (M2 Track H)
         // ============================================================
@@ -223,6 +253,7 @@ function dashboardData() {
         async init() {
             console.log('Initializing dashboard...');
             this.loadExpandedExpRecs();
+            this.loadExploitationPreferences();
             await this.loadStats();
             await this.loadSignalRadar();  // Load Layer 1 signals first
             await this.loadHeatmap();
@@ -1209,12 +1240,15 @@ function dashboardData() {
                 const params = new URLSearchParams();
                 if (this.exploitationFilterAction) params.set('action_type', this.exploitationFilterAction);
                 if (this.exploitationFilterStatus) params.set('status', this.exploitationFilterStatus);
+                if ((this.exploitationSearchText || '').trim()) params.set('search', this.exploitationSearchText.trim());
+                if (this.exploitationSortBy) params.set('sort_by', this.exploitationSortBy);
                 const url = '/api/dashboard/exploitation/recommendations' + (params.toString() ? '?' + params : '');
                 const response = await fetch(url);
                 if (response.ok) {
                     const data = await response.json();
                     this.exploitationRecommendations = data.recommendations || [];
                     this.filteredExploitation = this.exploitationRecommendations;
+                    this.saveExploitationPreferences();
                     const summary = data.summary || {};
                     this.exploitationStats = {
                         total: data.total || 0,
@@ -1254,11 +1288,24 @@ function dashboardData() {
         },
 
         filterExploitation() {
-            this.filteredExploitation = this.exploitationRecommendations.filter(rec => {
-                if (this.exploitationFilterAction && rec.action_type !== this.exploitationFilterAction) return false;
-                if (this.exploitationFilterStatus && rec.status !== this.exploitationFilterStatus) return false;
-                return true;
-            });
+            this.loadExploitationRecommendations();
+        },
+
+        onExploitationSearchInput() {
+            if (this.exploitationSearchDebounceTimer) {
+                clearTimeout(this.exploitationSearchDebounceTimer);
+            }
+            this.exploitationSearchDebounceTimer = setTimeout(() => {
+                this.loadExploitationRecommendations();
+            }, 250);
+        },
+
+        clearExploitationFilters() {
+            this.exploitationFilterAction = '';
+            this.exploitationFilterStatus = '';
+            this.exploitationSearchText = '';
+            this.exploitationSortBy = 'score_desc';
+            this.loadExploitationRecommendations();
         },
 
         async updateRecommendationStatus(id, newStatus) {

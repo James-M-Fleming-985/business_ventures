@@ -546,6 +546,12 @@ class MVPBuild(Base):
     # See services.verification_engine.verify_acceptance_criteria.
     ac_verification = Column(JSON)
 
+    # PR7 — Prompt vintage used by the AI code generator orchestrator for
+    # this build. Enables correlating build outcomes against prompt
+    # changes so the loop can learn which prompt versions actually
+    # produce engaging, monetisable products.
+    prompt_version = Column(String(50), nullable=True)
+
     # Iteration tracking
     iteration_number = Column(Integer, default=1)
     parent_build_id = Column(Integer, ForeignKey('mvp_builds.id'), nullable=True)
