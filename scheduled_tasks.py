@@ -193,6 +193,24 @@ def snapshot_baselines(db_session_factory):
         logger.error(f"Baseline snapshot failed: {e}", exc_info=True)
 
 
+def pull_ga4_engagement(db_session_factory):
+    """Pull GA4 engagement metrics for all active deployments into ProductMetrics.
+
+    Calls services.ga4_service.pull_engagement_for_all_deployments which is a
+    no-op when GA4 env vars are not configured.
+    """
+    try:
+        from services.ga4_service import pull_engagement_for_all_deployments
+        db = db_session_factory()
+        try:
+            result = pull_engagement_for_all_deployments(db)
+            logger.info(f"GA4 pull complete: {result}")
+        finally:
+            db.close()
+    except Exception as e:
+        logger.error(f"GA4 pull failed: {e}", exc_info=True)
+
+
 def aggregate_page_views(db_session_factory):
     """Aggregate MvpPageView rows into ProductMetrics for engagement tracking.
 
@@ -485,6 +503,16 @@ def init_scheduler(db_session_factory):
         name='MVP page-view aggregation',
         replace_existing=True,
     )
+
+    # Every 6 hours (offset by 15 min from beacon agg) — pull GA4 engagement
+    scheduler.add_job(
+        pull_ga4_engagement,
+        CronTrigger(hour='*/6', minute=45),
+        args=[db_session_factory],
+        id='pull_ga4_engagement',
+        name='GA4 engagement pull',
+        replace_existing=True,
+    )
     
     # Daily at 06:00 UTC — aggregate Stripe revenue into ProductMetrics (M3 Track C)
     scheduler.add_job(
@@ -512,7 +540,7 @@ def init_scheduler(db_session_factory):
         "Wikipedia (01:00), Reddit (01:30), GDELT (02:00), "
         "validation (02:30), snapshot (Sun 03:00), "
         "walk-forward (Mon 04:00), ensemble (05:00), "
-        "page-view agg (*/6:30), revenue agg (06:00), "
+        "page-view agg (*/6:30), GA4 pull (*/6:45), revenue agg (06:00), "
         "retrain check (Wed 03:30 UTC)"
     )
     return scheduler

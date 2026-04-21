@@ -995,6 +995,17 @@ any classes or functions. Output only valid Python code, no explanations.
                 f'sessionStorage.setItem("_ca_b","1")}}'
             )
 
+        # PR8b: also inject Google Analytics 4 gtag if a measurement ID is configured
+        ga4_measurement_id = (os.getenv("GA4_MEASUREMENT_ID") or "").strip()
+        if ga4_measurement_id and build_id:
+            beacon_snippet += (
+                f'\n   Also include this Google Analytics 4 snippet inside <head> '
+                f'(two separate <script> tags, exactly as shown):\n'
+                f'   <script async src="https://www.googletagmanager.com/gtag/js?id={ga4_measurement_id}"></script>\n'
+                f'   <script>window.dataLayer=window.dataLayer||[];function gtag(){{dataLayer.push(arguments);}}'
+                f'gtag("js",new Date());gtag("config","{ga4_measurement_id}",{{"send_page_view":true}});</script>'
+            )
+
         prompt = f"""Generate a complete Python file (main.py) that creates a FastAPI application
 wrapping the implementation module below. This file will be the deployed web application.
 
