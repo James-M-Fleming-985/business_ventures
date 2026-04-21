@@ -1078,11 +1078,8 @@
                     <i data-lucide="refresh-cw" class="w-4 h-4" :class="isGeneratingRecommendations && 'animate-spin'"></i>
                     <span x-text="isGeneratingRecommendations ? 'Generating...' : 'Generate Recommendations'"></span>
                 </button>
-                <button @click="manualIdeaModalOpen = true"
-                        class="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg text-sm font-medium transition flex items-center gap-2">
-                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
-                    Add Your Own Idea
-                </button>
+                <!-- Manual idea injection removed (Track I — autonomous loop closure):
+                     Discovery is the sole origin of recommendations. -->
             </div>
         </div>
 
@@ -1134,8 +1131,6 @@
                                 'bg-blue-500/20 text-blue-400 border border-blue-500/30': rec.action_type === 'BUILD',
                                 'bg-slate-500/20 text-slate-400 border border-slate-500/30': rec.action_type === 'MONITOR'
                             }" x-text="rec.action_type"></span>
-                        <span x-show="rec.source === 'manual'"
-                            class="px-1.5 py-0.5 rounded-full text-[9px] font-semibold uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 flex-shrink-0">Your Idea</span>
                         <h3 class="text-white font-semibold text-sm flex-1 min-w-0 truncate">
                             <span x-text="rec.signal_display_name"></span>
                             <span class="text-slate-500 mx-1">→</span>
@@ -1719,76 +1714,8 @@
             </div>
         </div>
 
-        <!-- Add Your Own Idea Modal -->
-        <div x-show="manualIdeaModalOpen" x-transition
-             class="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
-             @click.self="manualIdeaModalOpen = false">
-            <div class="bg-slate-800 rounded-xl border border-slate-600 p-6 w-full max-w-lg shadow-2xl">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
-                        <i data-lucide="lightbulb" class="w-5 h-5 text-cyan-400"></i>
-                        Add Your Own Idea
-                    </h3>
-                    <button @click="manualIdeaModalOpen = false" class="text-slate-400 hover:text-white">
-                        <i data-lucide="x" class="w-5 h-5"></i>
-                    </button>
-                </div>
-                <p class="text-sm text-slate-400 mb-5">Create a new exploitation opportunity from your own business idea. It will appear on the board and flow through the same build pipeline.</p>
-
-                <div class="space-y-4">
-                    <!-- Idea Name -->
-                    <div>
-                        <label class="block text-xs text-slate-400 uppercase tracking-wider mb-1">Idea Name *</label>
-                        <input type="text" x-model="manualIdeaForm.idea_name"
-                            placeholder="e.g. AI-powered meal planner"
-                            class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white placeholder:text-slate-500 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 outline-none">
-                    </div>
-
-                    <!-- Description -->
-                    <div>
-                        <label class="block text-xs text-slate-400 uppercase tracking-wider mb-1">Description / Reasoning</label>
-                        <textarea x-model="manualIdeaForm.description" rows="3"
-                            placeholder="Describe your idea, target market, revenue model..."
-                            class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-slate-300 resize-none placeholder:text-slate-500 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 outline-none"></textarea>
-                    </div>
-
-                    <!-- Action Type -->
-                    <div>
-                        <label class="block text-xs text-slate-400 uppercase tracking-wider mb-1">Action Type</label>
-                        <div class="flex gap-2">
-                            <template x-for="at in ['BUILD','BUY','SELL','MONITOR']" :key="at">
-                                <button @click="manualIdeaForm.action_type = at"
-                                    :class="manualIdeaForm.action_type === at
-                                        ? 'bg-cyan-600 text-white border-cyan-500'
-                                        : 'bg-slate-700 text-slate-400 border-slate-600 hover:border-slate-500'"
-                                    class="flex-1 px-3 py-1.5 rounded-lg text-xs font-semibold uppercase border transition"
-                                    x-text="at"></button>
-                            </template>
-                        </div>
-                    </div>
-
-                    <!-- Market Category -->
-                    <div>
-                        <label class="block text-xs text-slate-400 uppercase tracking-wider mb-1">Market Category <span class="normal-case font-normal">(optional)</span></label>
-                        <input type="text" x-model="manualIdeaForm.market_category"
-                            placeholder="e.g. health_tech, ai_tools, fintech"
-                            class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white placeholder:text-slate-500 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 outline-none">
-                    </div>
-
-                    <!-- Submit -->
-                    <button @click="createManualIdea()"
-                        :disabled="!manualIdeaForm.idea_name.trim() || manualIdeaSubmitting"
-                        :class="!manualIdeaForm.idea_name.trim() || manualIdeaSubmitting
-                            ? 'bg-slate-600 cursor-not-allowed opacity-60'
-                            : 'bg-cyan-600 hover:bg-cyan-700'"
-                        class="w-full px-4 py-2.5 text-white rounded-lg text-sm font-medium transition flex items-center justify-center gap-2">
-                        <i data-lucide="plus-circle" class="w-4 h-4" x-show="!manualIdeaSubmitting"></i>
-                        <i data-lucide="loader-2" class="w-4 h-4 animate-spin" x-show="manualIdeaSubmitting"></i>
-                        <span x-text="manualIdeaSubmitting ? 'Creating...' : 'Create Idea'"></span>
-                    </button>
-                </div>
-            </div>
-        </div>
+        <!-- Manual idea modal removed (Track I — autonomous loop closure):
+             user-injected ideas bypass Discovery and are no longer accepted. -->
     </div>
 
     <!-- ============================================================ -->

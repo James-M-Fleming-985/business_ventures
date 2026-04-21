@@ -276,6 +276,16 @@ async def startup_event():
                 conn.commit()
                 logger.info("✅ Added source column to exploitation_recommendations")
 
+        # Track I (autonomous loop closure): hard-delete any legacy manually-injected
+        # recommendations. Manual idea injection has been removed; existing rows are
+        # purged so they cannot contaminate downstream learning signals.
+        try:
+            from migrations.delete_manual_recommendations import upgrade as _delete_manual_recs
+            _delete_manual_recs()
+            logger.info("✅ Track I migration: legacy manual recommendations purged")
+        except Exception as mig_err:
+            logger.warning(f"Track I manual-recommendations purge skipped: {mig_err}")
+
         # M2: Seed FRED + GDELT variables (idempotent — skips existing)
         try:
             from seed_fred_variables import seed_fred_variables

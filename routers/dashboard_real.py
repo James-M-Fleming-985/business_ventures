@@ -3361,63 +3361,10 @@ async def update_exploitation_recommendation(rec_id: int, request: Request, db: 
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/exploitation/recommendations/manual")
-async def create_manual_recommendation(request: Request, db: Session = Depends(get_db)):
-    """Create a user-sourced exploitation recommendation (manual idea).
-
-    Body: {
-        "idea_name": "AI-powered meal planner",
-        "description": "Build a subscription meal planning app...",
-        "action_type": "BUILD",          // optional, defaults to BUILD
-        "market_category": "health_tech"  // optional
-    }
-    """
-    try:
-        body = await request.json()
-
-        idea_name = (body.get("idea_name") or "").strip()
-        description = (body.get("description") or "").strip()
-        if not idea_name:
-            raise HTTPException(status_code=400, detail="idea_name is required")
-
-        action_type = (body.get("action_type") or "BUILD").upper()
-        if action_type not in ("BUY", "SELL", "BUILD", "MONITOR"):
-            raise HTTPException(status_code=400, detail="action_type must be BUY, SELL, BUILD, or MONITOR")
-
-        market_category = (body.get("market_category") or "").strip() or None
-
-        # Synthetic signal/target names — unique per idea to satisfy the unique index
-        import time
-        ts = int(time.time() * 1000)
-        signal_name = f"manual_{ts}"
-        target_name = f"manual_idea_{ts}"
-
-        rec = ExploitationRecommendation(
-            signal_name=signal_name,
-            signal_display_name=idea_name,
-            target_name=target_name,
-            target_display_name=idea_name,
-            target_source="manual",
-            action_type=action_type,
-            reasoning=description,
-            source="manual",
-            status="NEW",
-            opportunity_score=50,  # Neutral starting score for manual ideas
-            build_viability_score=50 if action_type == "BUILD" else None,
-            market_category=market_category,
-        )
-        db.add(rec)
-        db.commit()
-        db.refresh(rec)
-        logger.info(f"✅ Created manual recommendation: {rec.id} — {idea_name}")
-        return rec.to_dict()
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Create manual recommendation failed: {e}", exc_info=True)
-        db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+# Manual recommendation endpoint removed (Track I — autonomous loop closure):
+# Discovery is the sole origin of recommendations. User-injected ideas would
+# bypass the Discovery → Adapt → Exploit → Monitor → Learn → Optimize loop.
+# See Causal_Affect_Scaling_Plan.yaml#out_of_scope.
 
 
 # ============================================================================
