@@ -257,24 +257,59 @@ def _log_revenue_event(db: Session, event: dict, event_type: str, data: dict) ->
 
     event_at = datetime.utcfromtimestamp(event.get("created", 0)) if event.get("created") else datetime.utcnow()
 
-    # PR5: bind to the most recent ProductDeployment build for this app so
-    # revenue is attributable to the exact build iteration that earned it.
+    # PR8c: per-MVP attribution via Stripe metadata.
+    # Generated MVPs put {build_id, app_id} on both checkout.session.metadata
+    # and subscription_data.metadata so every downstream event can be routed
+    # back to the build that earned it. For invoice.* events the metadata
+    # lives on the subscription, so we pull it from there if needed.
+    app_id = None
     build_id = None
-    try:
-        from models import ProductDeployment  # local import to avoid cycles
-        dep = (
-            db.query(ProductDeployment)
-            .filter(ProductDeployment.app_id == "causal_affect")
-            .order_by(ProductDeployment.deployed_at.desc().nullslast())
-            .first()
-        )
-        if dep is not None:
-            build_id = dep.build_id
-    except Exception as exc:  # pragma: no cover — never block webhook on this
-        logger.warning("PR5: could not resolve build_id for revenue event: %s", exc)
+
+    def _extract_meta(obj):
+        try:
+            meta = obj.get("metadata") if hasattr(obj, "get") else None
+        except Exception:
+            meta = None
+        if not meta:
+            return None, None
+        bid = meta.get("build_id")
+        aid = meta.get("app_id")
+        try:
+            bid = int(bid) if bid not in (None, "") else None
+        except (TypeError, ValueError):
+            bid = None
+        return aid or None, bid
+
+    app_id, build_id = _extract_meta(data)
+
+    # invoice.* events carry no metadata of their own — pull from the subscription.
+    if (not app_id or build_id is None) and stripe_subscription_id:
+        try:
+            sub = stripe.Subscription.retrieve(stripe_subscription_id)
+            sub_app, sub_bid = _extract_meta(sub)
+            app_id = app_id or sub_app
+            build_id = build_id if build_id is not None else sub_bid
+        except Exception as exc:
+            logger.warning("PR8c: subscription metadata fetch failed: %s", exc)
+
+    # Fallback for legacy platform-level revenue (causal_affect itself).
+    if not app_id:
+        app_id = "causal_affect"
+        try:
+            from models import ProductDeployment  # local import to avoid cycles
+            dep = (
+                db.query(ProductDeployment)
+                .filter(ProductDeployment.app_id == "causal_affect")
+                .order_by(ProductDeployment.deployed_at.desc().nullslast())
+                .first()
+            )
+            if dep is not None and build_id is None:
+                build_id = dep.build_id
+        except Exception as exc:  # pragma: no cover — never block webhook on this
+            logger.warning("PR8c: causal_affect fallback lookup failed: %s", exc)
 
     rev = RevenueEvent(
-        app_id="causal_affect",
+        app_id=app_id,
         build_id=build_id,
         event_type=revenue_event_type,
         amount_cents=amount_cents,
@@ -318,8 +353,16 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str) -> bool:
     # Aggregate revenue into ProductMetrics for commercial intelligence (Track G)
     try:
         from services.commercial_intelligence_service import aggregate_revenue_to_metrics
-        # Use 'causal_affect' as the default app_id for the platform itself
-        app_id = "causal_affect"
+        # PR8c: route the aggregation to the right MVP via metadata.
+        meta = data.get("metadata") if hasattr(data, "get") else None
+        app_id = (meta or {}).get("app_id") if meta else None
+        if not app_id and isinstance(data.get("subscription"), str):
+            try:
+                sub = stripe.Subscription.retrieve(data["subscription"])
+                app_id = (sub.get("metadata") or {}).get("app_id")
+            except Exception:
+                pass
+        app_id = app_id or "causal_affect"
         if event_type in ("invoice.payment_succeeded", "customer.subscription.updated",
                           "customer.subscription.deleted", "checkout.session.completed"):
             aggregate_revenue_to_metrics(db, app_id)

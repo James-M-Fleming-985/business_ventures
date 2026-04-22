@@ -169,3 +169,83 @@ def recompute_build_telemetry(db: Session, build_id: int) -> Optional[dict]:
         build_id, unique_visitors, total_revenue_cents, learning_score,
     )
     return row.to_dict()
+
+
+def aggregate_lineage_telemetry(db: Session, build_id: int) -> Optional[dict]:
+    """PR8c: aggregate engagement + revenue across an entire iteration chain.
+
+    Walks parent_build_id up to the root, then collects every descendant.
+    Returns per-iteration breakdown plus chain totals so the loop can answer
+    'did iteration N actually beat iteration N-1'.
+    """
+    from models import MVPBuild, RevenueEvent
+
+    seed = db.query(MVPBuild).filter(MVPBuild.id == build_id).first()
+    if seed is None:
+        return None
+
+    # Walk up to the root.
+    root = seed
+    visited = {root.id}
+    while root.parent_build_id and root.parent_build_id not in visited:
+        parent = db.query(MVPBuild).filter(MVPBuild.id == root.parent_build_id).first()
+        if parent is None:
+            break
+        root = parent
+        visited.add(root.id)
+
+    # Collect entire chain by walking children breadth-first.
+    chain_ids = [root.id]
+    frontier = [root.id]
+    while frontier:
+        children = (
+            db.query(MVPBuild.id)
+            .filter(MVPBuild.parent_build_id.in_(frontier))
+            .all()
+        )
+        next_frontier = [cid for (cid,) in children if cid not in chain_ids]
+        chain_ids.extend(next_frontier)
+        frontier = next_frontier
+
+    # Per-build breakdown.
+    iterations = []
+    chain_revenue_cents = 0
+    chain_event_count = 0
+    chain_visitors = 0
+    chain_page_views = 0
+    for cid in chain_ids:
+        # Ensure telemetry is fresh for each leg.
+        recompute_build_telemetry(db, cid)
+        from models import BuildTelemetry
+        bt = db.query(BuildTelemetry).filter(BuildTelemetry.build_id == cid).first()
+        b = db.query(MVPBuild).filter(MVPBuild.id == cid).first()
+        if bt is None or b is None:
+            continue
+        iterations.append({
+            "build_id": cid,
+            "iteration_number": b.iteration_number or 1,
+            "status": b.status,
+            "page_views": bt.page_views or 0,
+            "unique_visitors": bt.unique_visitors or 0,
+            "total_revenue_cents": bt.total_revenue_cents or 0,
+            "subscriber_count": bt.subscriber_count or 0,
+            "learning_score": bt.learning_score,
+        })
+        chain_revenue_cents += bt.total_revenue_cents or 0
+        chain_event_count += bt.revenue_event_count or 0
+        chain_visitors += bt.unique_visitors or 0
+        chain_page_views += bt.page_views or 0
+
+    iterations.sort(key=lambda x: x["iteration_number"])
+
+    return {
+        "root_build_id": root.id,
+        "iteration_count": len(iterations),
+        "totals": {
+            "page_views": chain_page_views,
+            "unique_visitors": chain_visitors,
+            "total_revenue_cents": chain_revenue_cents,
+            "revenue_event_count": chain_event_count,
+        },
+        "iterations": iterations,
+    }

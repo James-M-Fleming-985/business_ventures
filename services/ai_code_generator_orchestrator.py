@@ -891,6 +891,10 @@ any classes or functions. Output only valid Python code, no explanations.
 
         # Always include fastapi + uvicorn for deployment
         detected_pkgs.update(['fastapi', 'uvicorn'])
+        # PR8c: include stripe if the platform has Stripe configured, since
+        # the generator prompt instructs the AI to add a checkout endpoint.
+        if (os.getenv("STRIPE_SECRET_KEY") or "").strip():
+            detected_pkgs.add('stripe')
         reqs = '\n'.join(sorted(detected_pkgs)) + '\n'
         deploy_files.append({
             'path': 'requirements.txt',
@@ -1006,6 +1010,36 @@ any classes or functions. Output only valid Python code, no explanations.
                 f'gtag("js",new Date());gtag("config","{ga4_measurement_id}",{{"send_page_view":true}});</script>'
             )
 
+        # PR8c: instruct the generator to scaffold a Stripe checkout endpoint
+        # so the MVP can collect subscription revenue with metadata that lets
+        # the platform webhook attribute every event back to this build_id.
+        # Only injected when the platform has Stripe configured + a build_id.
+        stripe_block = ''
+        if (os.getenv("STRIPE_SECRET_KEY") or "").strip() and build_id:
+            stripe_block = (
+                "\n5. STRIPE CHECKOUT (REQUIRED — the platform attributes revenue via metadata):\n"
+                "   Add `import stripe` and at module load:\n"
+                "       stripe.api_key = os.getenv(\"STRIPE_SECRET_KEY\")\n"
+                "       MVP_BUILD_ID = os.getenv(\"MVP_BUILD_ID\", \"\")\n"
+                "       MVP_APP_ID = os.getenv(\"MVP_APP_ID\", \"\")\n"
+                "   Add a POST endpoint `/api/checkout/{tier}` (tier in: pro_monthly, pro_yearly,\n"
+                "   enterprise_monthly, enterprise_yearly) that:\n"
+                "     - Maps tier→price_id via os.getenv(\"STRIPE_PRICE_\" + tier.upper())\n"
+                "     - Calls stripe.checkout.Session.create(\n"
+                "           mode=\"subscription\",\n"
+                "           line_items=[{\"price\": price_id, \"quantity\": 1}],\n"
+                "           success_url=str(request.base_url) + \"checkout/success?session_id={CHECKOUT_SESSION_ID}\",\n"
+                "           cancel_url=str(request.base_url) + \"checkout/cancel\",\n"
+                "           metadata={\"build_id\": MVP_BUILD_ID, \"app_id\": MVP_APP_ID},\n"
+                "           subscription_data={\"metadata\": {\"build_id\": MVP_BUILD_ID, \"app_id\": MVP_APP_ID}},\n"
+                "       )\n"
+                "     - Returns JSONResponse({\"checkout_url\": session.url})\n"
+                "   Add GET `/checkout/success` and GET `/checkout/cancel` returning simple HTMLResponse pages.\n"
+                "   In the HTML dashboard, render Subscribe buttons for each tier whose\n"
+                "   STRIPE_PRICE_* env var is set; the button POSTs to /api/checkout/{tier}\n"
+                "   then `window.location = data.checkout_url`.\n"
+            )
+
         prompt = f"""Generate a complete Python file (main.py) that creates a FastAPI application
 wrapping the implementation module below. This file will be the deployed web application.
 
@@ -1064,7 +1098,7 @@ REQUIREMENTS FOR main.py:
    - All string escaping must be correct (triple-quoted HTML string)
    - Do NOT use placeholder/stub methods — call the real service methods
    - Use try/except around service calls so the app doesn't crash
-
+{stripe_block}
 Output ONLY valid Python code. No markdown fences, no explanations.
 """
 

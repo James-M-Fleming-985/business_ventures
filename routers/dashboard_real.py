@@ -3279,7 +3279,7 @@ async def get_exploitation_recommendations(
     db: Session = Depends(get_db)
 ):
     """Get exploitation recommendations with optional filter/search/sort."""
-    from sqlalchemy import desc, asc, or_
+    from sqlalchemy import desc, asc, or_, case, and_
     
     try:
         query = db.query(ExploitationRecommendation)
@@ -3301,16 +3301,46 @@ async def get_exploitation_recommendations(
                     )
                 )
 
+        effective_display_score = case(
+            (
+                and_(
+                    ExploitationRecommendation.action_type == 'BUILD',
+                    ExploitationRecommendation.build_viability_score.isnot(None),
+                ),
+                ExploitationRecommendation.build_viability_score,
+            ),
+            else_=ExploitationRecommendation.opportunity_score,
+        )
+
         sort_map = {
-            "score_desc": desc(ExploitationRecommendation.opportunity_score),
-            "score_asc": asc(ExploitationRecommendation.opportunity_score),
-            "signal_asc": asc(ExploitationRecommendation.signal_display_name),
-            "target_asc": asc(ExploitationRecommendation.target_display_name),
-            "updated_desc": desc(ExploitationRecommendation.updated_at),
+            "score_desc": [
+                desc(effective_display_score).nullslast(),
+                desc(ExploitationRecommendation.updated_at),
+                desc(ExploitationRecommendation.id),
+            ],
+            "score_asc": [
+                asc(effective_display_score).nullslast(),
+                desc(ExploitationRecommendation.updated_at),
+                desc(ExploitationRecommendation.id),
+            ],
+            "signal_asc": [
+                asc(ExploitationRecommendation.signal_display_name),
+                desc(ExploitationRecommendation.updated_at),
+                desc(ExploitationRecommendation.id),
+            ],
+            "target_asc": [
+                asc(ExploitationRecommendation.target_display_name),
+                desc(ExploitationRecommendation.updated_at),
+                desc(ExploitationRecommendation.id),
+            ],
+            "updated_desc": [
+                desc(ExploitationRecommendation.updated_at),
+                desc(ExploitationRecommendation.id),
+            ],
         }
-        order_clause = sort_map.get(sort_by, sort_map["score_desc"])
+        order_clauses = sort_map.get(sort_by, sort_map["score_desc"])
         
-        results = query.order_by(order_clause).all()
+        results = query.order_by(*order_clauses).all()
         
         # Summary stats
         all_recs = db.query(ExploitationRecommendation).all()
@@ -4284,6 +4314,26 @@ def _run_build(
                         # which keys to configure for the MVP to work.
                         if env_id and service.get("id"):
                             env_vars = {"PORT": "8000"}
+                            # PR8c: inject build identity + Stripe credentials
+                            # so the generated MVP can attribute revenue back to
+                            # this exact build via Stripe checkout metadata.
+                            env_vars["MVP_BUILD_ID"] = str(build_id)
+                            env_vars["MVP_APP_ID"] = f"mvp_{build_id}"
+                            for _stripe_var in (
+                                "STRIPE_SECRET_KEY",
+                                "STRIPE_PUBLISHABLE_KEY",
+                                "STRIPE_PRICE_PRO_MONTHLY",
+                                "STRIPE_PRICE_PRO_YEARLY",
+                                "STRIPE_PRICE_ENTERPRISE_MONTHLY",
+                                "STRIPE_PRICE_ENTERPRISE_YEARLY",
+                            ):
+                                _val = os.getenv(_stripe_var)
+                                if _val:
+                                    env_vars[_stripe_var] = _val
+                            # GA4 measurement ID for client-side gtag in MVP
+                            _ga4 = os.getenv("GA4_MEASUREMENT_ID")
+                            if _ga4:
+                                env_vars["GA4_MEASUREMENT_ID"] = _ga4
                             # Scan generated code for os.getenv() calls
                             try:
                                 import re as _re
@@ -4863,6 +4913,22 @@ async def get_build_telemetry(
         return {"build_id": build_id, "telemetry": data, "recomputed": True}
 
     return {"build_id": build_id, "telemetry": row.to_dict(), "recomputed": False}
+
+
+@router.get("/exploitation/builds/{build_id}/lineage-telemetry")
+async def get_build_lineage_telemetry(build_id: int, db: Session = Depends(get_db)):
+    """PR8c: per-iteration revenue + engagement rollup across the chain.
+
+    Walks parent_build_id to the root, then collects every descendant and
+    returns iteration-by-iteration metrics plus chain totals so the loop
+    can answer 'did iteration N actually beat iteration N-1'.
+    """
+    from services.build_telemetry_service import aggregate_lineage_telemetry
+
+    data = aggregate_lineage_telemetry(db, build_id)
+    if data is None:
+        raise HTTPException(status_code=404, detail="Build not found")
+    return data
 
 
 @router.get("/exploitation/learning/prompt-correlation")
