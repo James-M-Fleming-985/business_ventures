@@ -996,7 +996,7 @@ MODEL_VERSION_CONFIGS = [
         # v4-specific corrections
         "granger_use_coefficient_sign": True,
         "ols_mode": "differences",
-        "shrinkage_lambda": 0.85,
+        "shrinkage_lambda": 0.95,
     },
 ]
 
