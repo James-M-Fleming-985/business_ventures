@@ -25,12 +25,12 @@ railway link
 ### Step 4: Set Environment Variables
 ```bash
 # Security keys (from .env)
-railway variables set SECRET_KEY="kzs6bCPuakEZbhTy0QWBL6RemHWg9hBPM9bvXCMmd4U"
-railway variables set JWT_SECRET_KEY="EeYuhDw23Ep4wG6_K8Av5MOzsHoHxtuk2vA41Hivhnw"
-railway variables set ENCRYPTION_KEY="kI4Yw4mfxz1P7k4EF2fnxKrgrZkXhNVf8ym4zTtN_2g="
+railway variables set SECRET_KEY="<ROTATED-REDACTED-SECRET_KEY>"
+railway variables set JWT_SECRET_KEY="<ROTATED-REDACTED-JWT_SECRET_KEY>"
+railway variables set ENCRYPTION_KEY="<ROTATED-REDACTED-ENCRYPTION_KEY>"
 
 # API Keys
-railway variables set ALPHA_VANTAGE_API_KEY="LXZVLRE451QDNO34"
+railway variables set ALPHA_VANTAGE_API_KEY="<ROTATED-REDACTED-ALPHA_VANTAGE_API_KEY>"
 railway variables set FRED_API_KEY=""  # Optional - add later
 railway variables set OPENWEATHER_API_KEY=""  # Optional - add later
 
