@@ -14,7 +14,7 @@ Curated 13 high-value APIs focused on your interests:
 - No waiting periods, instant access
 
 **Working APIs**:
-- ✅ Alpha Vantage (Stock market data) - Your key: `LXZVLRE451QDNO34`
+- ✅ Alpha Vantage (Stock market data) - Your key: `<ROTATED-REDACTED-ALPHA_VANTAGE_API_KEY>`
 - ✅ World Bank (Global economic indicators)
 - ✅ US Census (Demographics)
 - ✅ USGS (Earthquake data)
@@ -123,12 +123,12 @@ meaningful."
 **Environment Variables** (`.env` created):
 ```bash
 # Security Keys (Generated)
-SECRET_KEY=kzs6bCPuakEZbhTy0QWBL6RemHWg9hBPM9bvXCMmd4U
-JWT_SECRET_KEY=EeYuhDw23Ep4wG6_K8Av5MOzsHoHxtuk2vA41Hivhnw
-ENCRYPTION_KEY=kI4Yw4mfxz1P7k4EF2fnxKrgrZkXhNVf8ym4zTtN_2g=
+SECRET_KEY=<ROTATED-REDACTED-SECRET_KEY>
+JWT_SECRET_KEY=<ROTATED-REDACTED-JWT_SECRET_KEY>
+ENCRYPTION_KEY=<ROTATED-REDACTED-ENCRYPTION_KEY>
 
 # API Keys (Collected)
-ALPHA_VANTAGE_API_KEY=LXZVLRE451QDNO34
+ALPHA_VANTAGE_API_KEY=<ROTATED-REDACTED-ALPHA_VANTAGE_API_KEY>
 ```
 
 **Railway Configuration** (`railway.toml`):
@@ -196,10 +196,10 @@ You're now ready to deploy! Here's the simple process:
 5. **Wait**: Railway auto-detects configuration and deploys
 6. **Set Variables**: In Railway dashboard, add:
    ```
-   SECRET_KEY=kzs6bCPuakEZbhTy0QWBL6RemHWg9hBPM9bvXCMmd4U
-   JWT_SECRET_KEY=EeYuhDw23Ep4wG6_K8Av5MOzsHoHxtuk2vA41Hivhnw
-   ENCRYPTION_KEY=kI4Yw4mfxz1P7k4EF2fnxKrgrZkXhNVf8ym4zTtN_2g=
-   ALPHA_VANTAGE_API_KEY=LXZVLRE451QDNO34
+   SECRET_KEY=<ROTATED-REDACTED-SECRET_KEY>
+   JWT_SECRET_KEY=<ROTATED-REDACTED-JWT_SECRET_KEY>
+   ENCRYPTION_KEY=<ROTATED-REDACTED-ENCRYPTION_KEY>
+   ALPHA_VANTAGE_API_KEY=<ROTATED-REDACTED-ALPHA_VANTAGE_API_KEY>
    ENVIRONMENT=production
    DEBUG=False
    ```
@@ -218,8 +218,8 @@ railway login
 railway init
 
 # Set variables
-railway variables set SECRET_KEY="kzs6bCPuakEZbhTy0QWBL6RemHWg9hBPM9bvXCMmd4U"
-railway variables set ALPHA_VANTAGE_API_KEY="LXZVLRE451QDNO34"
+railway variables set SECRET_KEY="<ROTATED-REDACTED-SECRET_KEY>"
+railway variables set ALPHA_VANTAGE_API_KEY="<ROTATED-REDACTED-ALPHA_VANTAGE_API_KEY>"
 # ... (see RAILWAY_DEPLOYMENT_GUIDE.md for full list)
 
 # Deploy
