@@ -9,6 +9,7 @@ Key change: import path uses local ai_provider instead of control_tower paths.
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone
+import ast
 import os
 import yaml
 import subprocess
@@ -143,6 +144,19 @@ class AICodeGeneratorOrchestrator:
 
         test_code = self.ai_provider.generate_code(prompt)
         test_code = self._clean_code_fences(test_code)
+        for retry in range(2):
+            try:
+                ast.parse(test_code)
+                break
+            except SyntaxError as syn:
+                logger.warning(
+                    "RED phase: generated tests are not valid Python (%s); regenerating (%d/2). Head: %r",
+                    syn, retry + 1, test_code[:200],
+                )
+                test_code = self._clean_code_fences(self.ai_provider.generate_code(
+                    prompt + f"\n\nYour previous output was not valid Python ({syn}). "
+                    "Output ONLY the Python source, starting with the first import line."
+                ))
 
         output_base = Path(self.config['output_base_path'])
         test_dir = output_base / 'tests'
@@ -268,6 +282,11 @@ class AICodeGeneratorOrchestrator:
             impl_code = self.ai_provider.generate_code(prompt)
             impl_code = self._clean_code_fences(impl_code)
             impl_file.write_text(impl_code)
+            try:
+                ast.parse(impl_code)
+            except SyntaxError as syn:
+                logger.warning("GREEN attempt %d: generated code is not valid Python (%s). Head: %r",
+                               attempt, syn, impl_code[:200])
 
             tests_passed = 0
             coverage = 0.0
@@ -759,6 +778,19 @@ any classes or functions. Output only valid Python code, no explanations.
     def _clean_code_fences(code: str) -> str:
         if not code:
             return code
+        stripped = code.strip()
+        # Already valid Python (even if it contains ``` inside strings): leave it alone.
+        if not stripped.startswith('```'):
+            try:
+                ast.parse(stripped)
+                return stripped + '\n'
+            except SyntaxError:
+                pass
+            # Newer models often add prose around a fenced block: keep the largest block.
+            blocks = re.findall(r'```[\w+-]*[ \t]*\n(.*?)(?:\n[ \t]*```|\Z)', stripped, re.DOTALL)
+            if blocks:
+                stripped = max(blocks, key=len).strip()
+                return stripped + '\n'
         lines = code.split('\n')
         if lines and lines[0].strip().startswith('```'):
             lines = lines[1:]
