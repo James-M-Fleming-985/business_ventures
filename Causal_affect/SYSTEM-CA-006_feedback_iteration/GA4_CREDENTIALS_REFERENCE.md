@@ -41,9 +41,9 @@ GA4_SERVICE_ACCOUNT_PATH="./secrets/google-analytics-service-account.json"
 ```
 
 ### 4. API Key (Optional - Not Needed for Data API)
-**Value**: `7a3e7eb3698d8562e83fcb736d4e855db8a0f40c`
+**Value**: `<REDACTED — rotate this key in the Google Cloud console>`
 
-**Note**: This appears to be a GA4 API key or similar. The **Data API** uses the service account JSON file for authentication, not an API key. We'll use the service account approach as documented in the setup guide.
+**Note**: This appears to be a GA4 API key or similar. The **Data API** uses the service account JSON file for authentication, not an API key. We'll use the service account approach as documented in the setup guide. The real value was removed from this file because the repository is public; if it was ever a live key, revoke/rotate it.
 
 ---
 

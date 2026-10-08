@@ -7,6 +7,7 @@ os.environ.setdefault("DATABASE_URL", f"sqlite:///{os.path.join(tempfile.mkdtemp
 os.environ.setdefault("SECRET_KEY", "test-secret-key-0123456789abcdef0123456789")
 
 import hashlib
+from datetime import datetime
 from unittest.mock import MagicMock
 
 import pytest
@@ -24,12 +25,17 @@ from services import beacon_security
 @pytest.fixture()
 def env(tmp_path, monkeypatch):
     monkeypatch.delenv("BEACON_ALLOW_UNSIGNED", raising=False)
+    # Pin the token cutoff so the fixture's build is unambiguously "new".
+    monkeypatch.setenv("BEACON_TOKEN_REQUIRED_FROM", "2026-06-01T00:00:00")
     engine = create_engine(f"sqlite:///{tmp_path / 'beacon.db'}")
     models.Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine)
 
     db = Session()
-    db.add(models.MVPBuild(recommendation_id=1, complexity="LOW", status="LIVE"))
+    db.add(models.MVPBuild(
+        recommendation_id=1, complexity="LOW", status="LIVE",
+        created_at=datetime(2026, 9, 1),  # after cutoff -> token required
+    ))
     db.commit()
     build_id = db.query(models.MVPBuild).first().id
     db.close()
@@ -48,6 +54,19 @@ def env(tmp_path, monkeypatch):
     beacon_security.beacon_limiter.clear()
     yield TestClient(app), Session, build_id
     beacon_security.beacon_limiter.clear()
+
+
+def _add_build(Session, created_at):
+    db = Session()
+    try:
+        build = models.MVPBuild(
+            recommendation_id=1, complexity="LOW", status="LIVE", created_at=created_at,
+        )
+        db.add(build)
+        db.commit()
+        return build.id
+    finally:
+        db.close()
 
 
 def _views(Session):
@@ -110,6 +129,15 @@ def test_beacon_is_rate_limited_per_visitor_and_build(env):
     for _ in range(beacon_security.beacon_limiter.limit + 10):
         assert client.post(f"/api/dashboard/mvp-beacon/{build_id}?t={token}").status_code == 204
     assert _views(Session) == beacon_security.beacon_limiter.limit
+
+
+def test_existing_mvp_built_before_cutoff_counts_without_a_token(env):
+    """Engagement must keep working for MVPs deployed before signed beacons."""
+    client, Session, _ = env
+    legacy_id = _add_build(Session, datetime(2026, 4, 1))  # before the pinned cutoff
+    r = client.post(f"/api/dashboard/mvp-beacon/{legacy_id}", json={"r": "https://example.com"})
+    assert r.status_code == 204
+    assert _views(Session) == 1
 
 
 def test_legacy_unsigned_beacons_work_only_when_explicitly_allowed(env, monkeypatch):

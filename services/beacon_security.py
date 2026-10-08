@@ -6,6 +6,29 @@ import os
 import threading
 import time
 from collections import defaultdict, deque
+from datetime import datetime
+
+# MVPs built before signed beacons were deployed cannot carry a token, so they
+# keep counting unsigned (engagement tracking must not regress). Only builds
+# created after this moment must present a token. Set a little after the deploy
+# so no already-deployed MVP is ever locked out.
+DEFAULT_TOKEN_REQUIRED_FROM = datetime(2026, 10, 8, 22, 30)
+
+
+def token_required_from() -> datetime:
+    raw = (os.getenv("BEACON_TOKEN_REQUIRED_FROM") or "").strip()
+    if raw:
+        try:
+            return datetime.fromisoformat(raw)
+        except ValueError:
+            pass
+    return DEFAULT_TOKEN_REQUIRED_FROM
+
+
+def is_legacy_build(build) -> bool:
+    """True for MVPs created before tokens existed — accepted unsigned."""
+    created = getattr(build, "created_at", None)
+    return created is not None and created < token_required_from()
 
 
 def _secret() -> bytes:

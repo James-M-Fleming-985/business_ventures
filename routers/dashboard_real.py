@@ -5284,18 +5284,15 @@ async def mvp_beacon(build_id: int, request: Request, db: Session = Depends(get_
 
     Stores anonymised visitor data for engagement tracking.
     Called by the JS beacon injected into generated MVP dashboards.
-    Requests without a valid signed token, or above the rate limit, are
-    silently ignored (always 204) so the endpoint cannot be used to forge
-    engagement metrics or to probe for build ids.
+    Existing MVPs (built before signed beacons shipped) keep counting
+    unsigned; MVPs built afterwards must present a valid signed token.
+    Rejected or over-limit requests are silently ignored (always 204) so the
+    endpoint cannot be used to forge engagement metrics or probe for build ids.
     """
     from services import beacon_security
     from services.auth import client_ip as _client_ip
 
     client_ip = _client_ip(request)
-    if not beacon_security.unsigned_allowed() and not beacon_security.verify_token(
-        build_id, request.query_params.get("t")
-    ):
-        return
     if not beacon_security.beacon_limiter.allow(f"{build_id}|{client_ip}"):
         return
 
@@ -5303,6 +5300,14 @@ async def mvp_beacon(build_id: int, request: Request, db: Session = Depends(get_
     build = db.query(MVPBuild).filter(MVPBuild.id == build_id).first()
     if not build:
         return  # silently ignore unknown build IDs
+
+    # Legacy MVPs count unsigned; newer builds need a valid token.
+    if not (
+        beacon_security.unsigned_allowed()
+        or beacon_security.is_legacy_build(build)
+        or beacon_security.verify_token(build_id, request.query_params.get("t"))
+    ):
+        return
 
     # Anonymised visitor fingerprint — keyed hash, no PII stored
     user_agent = (request.headers.get("user-agent") or "")[:500]
