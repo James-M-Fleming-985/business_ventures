@@ -287,6 +287,12 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     is_verified = Column(Boolean, default=False)
     verification_token = Column(String(255))
+
+    # Two-factor authentication (TOTP)
+    totp_secret = Column(String(64))
+    totp_enabled = Column(Boolean, default=False)
+    totp_recovery_hashes = Column(Text)
+    totp_last_step = Column(Integer, default=0)
     
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)

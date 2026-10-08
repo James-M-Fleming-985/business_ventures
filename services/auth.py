@@ -15,7 +15,9 @@ from models import User
 logger = logging.getLogger(__name__)
 
 # Configuration
-SECRET_KEY = os.getenv("SECRET_KEY", secrets.token_urlsafe(32))
+SECRET_KEY = os.getenv("SECRET_KEY") or secrets.token_urlsafe(32)
+if not os.getenv("SECRET_KEY"):
+    logger.warning("SECRET_KEY is not set: sessions use a random per-process key and reset on every restart")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
 REFRESH_TOKEN_EXPIRE_DAYS = 30

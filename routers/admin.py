@@ -2,7 +2,7 @@
 Admin Router for Database Management Operations
 """
 
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from fastapi.responses import JSONResponse
 import logging
 import sys
@@ -10,9 +10,15 @@ import os
 from datetime import datetime
 from typing import Optional
 
+from services.auth import require_admin
+
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/admin", tags=["admin"])
+router = APIRouter(
+    prefix="/api/admin",
+    tags=["admin"],
+    dependencies=[Depends(require_admin)],
+)
 
 # In-memory job tracking (use Redis/DB for production)
 _active_jobs = {}

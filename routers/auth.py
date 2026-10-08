@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from typing import Optional
 import logging
+import os
 
 from database import get_db
 from models import User
@@ -15,6 +16,7 @@ from services.auth import (
     get_user_by_email,
     create_user,
     authenticate_user,
+    verify_password,
     get_current_user,
     require_auth,
     require_admin,
@@ -22,10 +24,26 @@ from services.auth import (
     clear_auth_cookies,
     create_access_token
 )
+from services import mfa
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
+
+
+def _registration_open(db: Session) -> bool:
+    """Registration is closed unless ALLOW_REGISTRATION=true or no users exist yet."""
+    if os.getenv("ALLOW_REGISTRATION", "false").strip().lower() in ("1", "true", "yes"):
+        return True
+    return db.query(User).count() == 0
+
+
+def _client_ip(request: Request) -> str:
+    # The right-most X-Forwarded-For entry is the one appended by the nearest proxy.
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[-1].strip()
+    return request.client.host if request.client else "unknown"
 
 
 @router.get("/check-first-user")
@@ -44,6 +62,11 @@ async def register(
     db: Session = Depends(get_db)
 ):
     """Register a new user - first user becomes superuser"""
+    if not _registration_open(db):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Registration is closed"
+        )
     try:
         # Validate email format
         email = email.lower().strip()
@@ -100,21 +123,57 @@ async def register(
 
 @router.post("/login")
 async def login(
+    request: Request,
     response: Response,
     email: str = Form(...),
     password: str = Form(...),
     remember: bool = Form(False),
+    totp_code: str = Form(None),
     db: Session = Depends(get_db)
 ):
-    """Authenticate user and create session"""
+    """Authenticate user and create session (password, plus 2FA code if enrolled)"""
+    throttle_key = f"{_client_ip(request)}|{email.lower().strip()}"
+    if mfa.login_throttle.is_blocked(throttle_key):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many failed attempts. Try again in 15 minutes."
+        )
+
     user = authenticate_user(db, email, password)
-    
+
     if not user:
+        mfa.login_throttle.record_failure(throttle_key)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password"
         )
-    
+
+    if user.totp_enabled:
+        code = (totp_code or "").strip()
+        if not code:
+            return JSONResponse(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                content={"detail": "Enter your two-factor authentication code", "mfa_required": True},
+            )
+
+        step = mfa.verify_totp(user.totp_secret, code, user.totp_last_step or 0)
+        if step is not None:
+            user.totp_last_step = step
+            db.commit()
+        else:
+            remaining = mfa.consume_recovery_code(user.totp_recovery_hashes, code)
+            if remaining is None:
+                mfa.login_throttle.record_failure(throttle_key)
+                return JSONResponse(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    content={"detail": "Invalid authentication code", "mfa_required": True},
+                )
+            user.totp_recovery_hashes = remaining
+            db.commit()
+            logger.warning(f"Recovery code used for {user.email}")
+
+    mfa.login_throttle.reset(throttle_key)
+
     # Set auth cookies
     set_auth_cookies(response, user)
     
@@ -128,6 +187,79 @@ async def login(
         },
         "redirect": "/dashboard"
     }
+
+
+@router.post("/2fa/setup")
+async def setup_two_factor(
+    current_user: User = Depends(require_auth),
+    db: Session = Depends(get_db)
+):
+    """Start 2FA enrollment: returns a secret to add to an authenticator app."""
+    if current_user.totp_enabled:
+        raise HTTPException(status_code=400, detail="Two-factor authentication is already enabled")
+
+    current_user.totp_secret = mfa.generate_secret()
+    db.commit()
+    return {
+        "secret": current_user.totp_secret,
+        "otpauth_uri": mfa.provisioning_uri(current_user.totp_secret, current_user.email),
+        "next": "Add the secret to your authenticator app, then POST a current code to /api/auth/2fa/enable",
+    }
+
+
+@router.post("/2fa/enable")
+async def enable_two_factor(
+    code: str = Form(...),
+    current_user: User = Depends(require_auth),
+    db: Session = Depends(get_db)
+):
+    """Finish enrollment by proving the authenticator works. Returns recovery codes once."""
+    if current_user.totp_enabled:
+        raise HTTPException(status_code=400, detail="Two-factor authentication is already enabled")
+    if not current_user.totp_secret:
+        raise HTTPException(status_code=400, detail="Call /api/auth/2fa/setup first")
+
+    step = mfa.verify_totp(current_user.totp_secret, code, 0)
+    if step is None:
+        raise HTTPException(status_code=400, detail="Invalid code")
+
+    recovery_codes = mfa.generate_recovery_codes()
+    current_user.totp_enabled = True
+    current_user.totp_last_step = step
+    current_user.totp_recovery_hashes = mfa.serialise_recovery_hashes(recovery_codes)
+    db.commit()
+    return {
+        "message": "Two-factor authentication enabled",
+        "recovery_codes": recovery_codes,
+        "warning": "Store these recovery codes somewhere safe. They are shown only once.",
+    }
+
+
+@router.post("/2fa/disable")
+async def disable_two_factor(
+    password: str = Form(...),
+    code: str = Form(...),
+    current_user: User = Depends(require_auth),
+    db: Session = Depends(get_db)
+):
+    """Turn 2FA off; requires the password and a valid authenticator or recovery code."""
+    if not current_user.totp_enabled:
+        raise HTTPException(status_code=400, detail="Two-factor authentication is not enabled")
+    if not verify_password(password, current_user.password_hash):
+        raise HTTPException(status_code=401, detail="Invalid password")
+
+    valid = mfa.verify_totp(current_user.totp_secret, code, current_user.totp_last_step or 0) is not None
+    if not valid:
+        valid = mfa.consume_recovery_code(current_user.totp_recovery_hashes, code) is not None
+    if not valid:
+        raise HTTPException(status_code=401, detail="Invalid authentication code")
+
+    current_user.totp_enabled = False
+    current_user.totp_secret = None
+    current_user.totp_recovery_hashes = None
+    current_user.totp_last_step = 0
+    db.commit()
+    return {"message": "Two-factor authentication disabled"}
 
 
 @router.post("/logout")

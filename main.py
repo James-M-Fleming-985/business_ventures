@@ -103,6 +103,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Include routers
 app.include_router(dashboard.router)
+app.include_router(dashboard.public_router)  # MVP page-view beacon (no auth)
 app.include_router(admin.router)  # Admin endpoints for database management
 app.include_router(auth.router)  # Authentication endpoints
 app.include_router(subscription.router)  # Stripe subscription endpoints
@@ -205,6 +206,13 @@ async def startup_event():
         from models import Base
         Base.metadata.create_all(bind=engine)
         logger.info("✅ Database tables initialized")
+
+        # Must run before any request reads users: the model now maps TOTP columns.
+        try:
+            from migrations.add_totp_columns import upgrade as _add_totp_columns
+            _add_totp_columns(engine)
+        except Exception as totp_err:
+            logger.error(f"TOTP column migration failed: {totp_err}")
 
         # Add columns that may not exist on older deployments
         from sqlalchemy import text, inspect

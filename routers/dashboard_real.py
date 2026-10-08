@@ -8,6 +8,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from database import get_db
+from services.auth import require_admin
 from models import (
     VariableMetadata, TimeSeriesData, CorrelationResult,
     RollingCorrelation, APIStatus, AnalysisJob, PredictionTracking,
@@ -24,7 +25,13 @@ import os
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
+router = APIRouter(
+    prefix="/api/dashboard",
+    tags=["dashboard"],
+    dependencies=[Depends(require_admin)],
+)
+# Deployed MVPs post page-view beacons here without credentials.
+public_router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 templates = Jinja2Templates(directory="templates")
 
 
@@ -5271,7 +5278,7 @@ async def get_mvp_build_file_content(build_id: int, file_id: int, db: Session = 
 # MVP Engagement Beacon
 # ==============================================================================
 
-@router.post("/mvp-beacon/{build_id}", status_code=204)
+@public_router.post("/mvp-beacon/{build_id}", status_code=204)
 async def mvp_beacon(build_id: int, request: Request, db: Session = Depends(get_db)):
     """Receive page-view beacon pings from deployed MVPs.
 
