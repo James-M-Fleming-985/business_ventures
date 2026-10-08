@@ -3,12 +3,26 @@ AI Provider Abstraction
 
 Provides abstraction layer for multiple AI providers (OpenAI, Anthropic).
 Copied from control_tower for Level 5 autonomy.
-Default model: claude-sonnet-4-20250514 (cost-effective for MVP generation).
+Default Anthropic model comes from ANTHROPIC_MODEL (see DEFAULT_ANTHROPIC_MODEL).
 """
 
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Any
 import os
+
+# Override with the ANTHROPIC_MODEL env var when a model is retired.
+DEFAULT_ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL") or "claude-sonnet-5-5"
+
+
+def response_text(message) -> str:
+    """Join the text blocks of an Anthropic response.
+
+    Newer models can return thinking blocks before the text, so
+    ``message.content[0].text`` is not safe.
+    """
+    return "".join(
+        block.text for block in message.content if getattr(block, "type", None) == "text"
+    )
 
 
 class AIProviderInterface(ABC):
@@ -63,7 +77,7 @@ class AnthropicProvider(AIProviderInterface):
     def __init__(
         self,
         api_key: Optional[str] = None,
-        model: str = "claude-sonnet-4-20250514"
+        model: str = DEFAULT_ANTHROPIC_MODEL
     ):
         self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
         self.model = model
@@ -91,7 +105,7 @@ class AnthropicProvider(AIProviderInterface):
                 logging.getLogger(__name__).warning(
                     f"Response truncated at max_tokens={max_tokens}"
                 )
-            return message.content[0].text
+            return response_text(message)
         except ImportError:
             raise RuntimeError("anthropic package not installed. Install with: pip install anthropic")
         except Exception as e:

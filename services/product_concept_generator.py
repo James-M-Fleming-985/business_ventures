@@ -90,14 +90,15 @@ Output ONLY valid JSON, no markdown fences or explanation."""
 
     try:
         import anthropic
+        from services.ai_provider import DEFAULT_ANTHROPIC_MODEL, response_text
         client = anthropic.Anthropic(api_key=anthropic_key)
         resp = client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model=DEFAULT_ANTHROPIC_MODEL,
             max_tokens=1500,
             messages=[{"role": "user", "content": prompt}],
             timeout=60.0,
         )
-        text = resp.content[0].text.strip()
+        text = response_text(resp).strip()
         cost = (resp.usage.input_tokens * 0.003 + resp.usage.output_tokens * 0.015) / 1000
 
         # Strip markdown fences if present

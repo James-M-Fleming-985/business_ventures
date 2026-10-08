@@ -279,13 +279,14 @@ class MVPBuilderService:
         )
 
         try:
+            from services.ai_provider import DEFAULT_ANTHROPIC_MODEL, response_text
             client = anthropic.Anthropic(api_key=self.anthropic_key)
             resp = client.messages.create(
-                model='claude-sonnet-4-20250514',
+                model=DEFAULT_ANTHROPIC_MODEL,
                 max_tokens=4096,
                 messages=[{'role': 'user', 'content': prompt}],
             )
-            text = resp.content[0].text.strip()
+            text = response_text(resp).strip()
             # Extract JSON array from response
             match = re.search(r'\[.*\]', text, re.DOTALL)
             if match:
