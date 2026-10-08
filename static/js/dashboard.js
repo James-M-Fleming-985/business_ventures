@@ -2811,6 +2811,23 @@ function dashboardData() {
             }
         },
 
+        async cancelBuild(recId, buildId) {
+            if (!buildId || !confirm('Cancel this build? The generation will stop at the next checkpoint.')) return;
+            try {
+                const res = await fetch(`/api/dashboard/exploitation/builds/${buildId}`, { method: 'DELETE' });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    alert('Cancel failed: ' + (err.detail || res.status));
+                    return;
+                }
+                this.buildInProgress = {...this.buildInProgress, [recId]: false};
+                this.pollBuildStatus(recId, buildId);
+            } catch (e) {
+                console.error('Cancel error:', e);
+                alert('Cancel failed: ' + e.message);
+            }
+        },
+
         async pollBuildStatus(recId, buildId) {
             const gen = this._buildPollGen = (this._buildPollGen || 0) + 1;
             const poll = async () => {

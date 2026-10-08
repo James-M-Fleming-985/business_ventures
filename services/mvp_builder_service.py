@@ -638,7 +638,9 @@ class MVPBuilderService:
         """
         from models import MVPBuild, MVPBuildFile
         from services.spec_generator import generate_layer_spec_with_ai
-        from services.ai_code_generator_orchestrator import AICodeGeneratorOrchestrator
+        from services.ai_code_generator_orchestrator import (
+            AICodeGeneratorOrchestrator, BuildCancelled,
+        )
 
         start = time.time()
         all_files: List[Dict[str, Any]] = []
@@ -648,7 +650,22 @@ class MVPBuilderService:
         syntax_errors = 0
         test_errors = 0
 
+        def _is_cancelled() -> bool:
+            if not db_session:
+                return False
+            try:
+                db_session.expire_all()
+                row = db_session.query(MVPBuild).get(build_id)
+            except Exception:
+                return False
+            return bool(
+                row and row.status == 'FAILED'
+                and (row.error_message or '').startswith('Manually cancelled')
+            )
+
         def _step(name: str, detail: str):
+            if _is_cancelled():
+                raise BuildCancelled(f'Build cancelled before {name}')
             steps.append({'step': name, 'at': datetime.utcnow().isoformat(), 'detail': detail})
             if db_session:
                 build = db_session.query(MVPBuild).get(build_id)
@@ -707,6 +724,7 @@ class MVPBuilderService:
                 orchestrator = AICodeGeneratorOrchestrator({
                     'provider': 'anthropic',
                     'output_base_path': str(work_path),
+                    'should_abort': _is_cancelled,
                 })
 
                 # PR7 — stamp the build with the orchestrator's prompt vintage
@@ -991,6 +1009,11 @@ class MVPBuilderService:
                 'tests_passed': tests_passed,
                 'coverage': coverage,
             }
+
+        except BuildCancelled as exc:
+            logger.info(f"Build {build_id} aborted: {exc}")
+            return {'build_id': build_id, 'files': 0, 'errors': 0,
+                    'duration': round(time.time() - start, 2), 'status': 'FAILED'}
 
         except Exception as exc:
             logger.exception(f"Build {build_id} failed: {exc}")

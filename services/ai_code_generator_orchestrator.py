@@ -47,6 +47,10 @@ DEFAULT_MAX_VERIFICATION_RETRIES = 2
 PROMPT_VERSION = "v1.1-track-i-pr2-pr7"
 
 
+class BuildCancelled(Exception):
+    """Raised when a build is cancelled while the orchestrator is running."""
+
+
 class AICodeGeneratorOrchestrator:
     """
     Orchestrates the AI-powered TDD cycle for code generation.
@@ -75,6 +79,9 @@ class AICodeGeneratorOrchestrator:
             config.get('max_verification_retries',
                       os.getenv('MAX_VERIFICATION_RETRIES', DEFAULT_MAX_VERIFICATION_RETRIES))
         )
+
+        # Optional callable returning True when the build was cancelled.
+        self.should_abort = config.get('should_abort')
 
         provider_type = config.get('provider', 'anthropic')
         self.ai_provider = AIProviderFactory.create_provider(provider_type)
@@ -245,6 +252,8 @@ class AICodeGeneratorOrchestrator:
         analysis = {'methods': [], 'classes': []}
 
         for attempt in range(1, self.MAX_GREEN_RETRIES + 1):
+            if self.should_abort and self.should_abort():
+                raise BuildCancelled('Build cancelled during GREEN phase')
             # Build prompt: first attempt uses standard prompt, retries use failure feedback
             if attempt == 1:
                 prompt = self._build_implementation_prompt(
