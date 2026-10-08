@@ -53,7 +53,7 @@ class GitHubService:
             repo = user.create_repo(
                 name=name,
                 description=description[:350] if description else "",
-                private=False,
+                private=True,
                 auto_init=True,
             )
         except GithubException as e:
