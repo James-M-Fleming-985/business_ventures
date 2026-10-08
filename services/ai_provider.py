@@ -8,6 +8,7 @@ Default Anthropic model comes from ANTHROPIC_MODEL (see DEFAULT_ANTHROPIC_MODEL)
 
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Any
+import logging
 import os
 
 # Override with the ANTHROPIC_MODEL env var when a model is retired.
@@ -100,12 +101,17 @@ class AnthropicProvider(AIProviderInterface):
                 messages=[{"role": "user", "content": prompt}],
                 timeout=600.0
             )
+            log = logging.getLogger(__name__)
+            text = response_text(message)
+            log.info(
+                "Anthropic %s: stop_reason=%s blocks=%s output_tokens=%s text_chars=%d",
+                self.model, message.stop_reason,
+                [getattr(b, "type", "?") for b in message.content],
+                getattr(getattr(message, "usage", None), "output_tokens", "?"), len(text),
+            )
             if message.stop_reason == "max_tokens":
-                import logging
-                logging.getLogger(__name__).warning(
-                    f"Response truncated at max_tokens={max_tokens}"
-                )
-            return response_text(message)
+                log.warning(f"Response truncated at max_tokens={max_tokens}")
+            return text
         except ImportError:
             raise RuntimeError("anthropic package not installed. Install with: pip install anthropic")
         except Exception as e:

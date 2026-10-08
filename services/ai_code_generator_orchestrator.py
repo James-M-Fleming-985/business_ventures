@@ -302,6 +302,11 @@ class AICodeGeneratorOrchestrator:
                 "GREEN phase attempt %d/%d: status=%s, tests_passed=%d",
                 attempt, self.MAX_GREEN_RETRIES, status, tests_passed
             )
+            if status != 'PASS':
+                logger.warning(
+                    "GREEN attempt %d impl_chars=%d pytest output tail:\n%s",
+                    attempt, len(impl_code), pytest_output[-3000:]
+                )
 
             # Track best attempt
             if tests_passed > best_passed:
