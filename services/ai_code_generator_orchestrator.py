@@ -1037,9 +1037,10 @@ any classes or functions. Output only valid Python code, no explanations.
 
         beacon_snippet = ''
         if build_id:
+            from services.beacon_security import sign_build_id
             beacon_snippet = (
                 f'Include this beacon script (once, in a script tag): '
-                f'if(!sessionStorage.getItem("_ca_b")){{fetch("https://businessventures-production.up.railway.app/api/dashboard/mvp-beacon/{build_id}",'
+                f'if(!sessionStorage.getItem("_ca_b")){{fetch("https://businessventures-production.up.railway.app/api/dashboard/mvp-beacon/{build_id}?t={sign_build_id(build_id)}",'
                 f'{{method:"POST",mode:"no-cors",headers:{{"Content-Type":"application/json"}},'
                 f'body:JSON.stringify({{r:document.referrer}})}}).catch(function(){{}});'
                 f'sessionStorage.setItem("_ca_b","1")}}'

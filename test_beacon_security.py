@@ -1,0 +1,140 @@
+"""Public MVP beacon: signed tokens, rate limiting and keyed visitor hashes."""
+
+import os
+import tempfile
+
+os.environ.setdefault("DATABASE_URL", f"sqlite:///{os.path.join(tempfile.mkdtemp(), 'beacon.db')}")
+os.environ.setdefault("SECRET_KEY", "test-secret-key-0123456789abcdef0123456789")
+
+import hashlib
+from unittest.mock import MagicMock
+
+import pytest
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+import models
+from database import get_db
+from routers import dashboard_real
+from services import beacon_security
+
+
+@pytest.fixture()
+def env(tmp_path, monkeypatch):
+    monkeypatch.delenv("BEACON_ALLOW_UNSIGNED", raising=False)
+    engine = create_engine(f"sqlite:///{tmp_path / 'beacon.db'}")
+    models.Base.metadata.create_all(engine)
+    Session = sessionmaker(bind=engine)
+
+    db = Session()
+    db.add(models.MVPBuild(recommendation_id=1, complexity="LOW", status="LIVE"))
+    db.commit()
+    build_id = db.query(models.MVPBuild).first().id
+    db.close()
+
+    app = FastAPI()
+    app.include_router(dashboard_real.public_router)
+
+    def _get_db():
+        session = Session()
+        try:
+            yield session
+        finally:
+            session.close()
+
+    app.dependency_overrides[get_db] = _get_db
+    beacon_security.beacon_limiter.clear()
+    yield TestClient(app), Session, build_id
+    beacon_security.beacon_limiter.clear()
+
+
+def _views(Session):
+    db = Session()
+    try:
+        return db.query(models.MvpPageView).count()
+    finally:
+        db.close()
+
+
+def test_token_is_bound_to_the_build_id():
+    token = beacon_security.sign_build_id(5)
+    assert beacon_security.verify_token(5, token)
+    assert not beacon_security.verify_token(6, token)
+    assert not beacon_security.verify_token(5, "")
+    assert not beacon_security.verify_token(5, None)
+    assert not beacon_security.verify_token(5, "0" * 32)
+
+
+def test_visitor_hash_is_keyed_not_a_plain_sha256():
+    plain = hashlib.sha256(b"1.2.3.4:agent").hexdigest()
+    hashed = beacon_security.hash_visitor("1.2.3.4", "agent")
+    assert hashed != plain
+    assert hashed == beacon_security.hash_visitor("1.2.3.4", "agent")
+    assert hashed != beacon_security.hash_visitor("1.2.3.5", "agent")
+
+
+def test_beacon_without_token_is_silently_ignored(env):
+    client, Session, build_id = env
+    r = client.post(f"/api/dashboard/mvp-beacon/{build_id}")
+    assert r.status_code == 204
+    assert _views(Session) == 0
+
+
+def test_beacon_with_wrong_token_is_silently_ignored(env):
+    client, Session, build_id = env
+    r = client.post(f"/api/dashboard/mvp-beacon/{build_id}?t={'0' * 32}")
+    assert r.status_code == 204
+    assert _views(Session) == 0
+
+
+def test_beacon_with_valid_token_is_recorded(env):
+    client, Session, build_id = env
+    token = beacon_security.sign_build_id(build_id)
+    r = client.post(f"/api/dashboard/mvp-beacon/{build_id}?t={token}", json={"r": "https://example.com"})
+    assert r.status_code == 204
+    assert _views(Session) == 1
+
+
+def test_token_for_one_build_does_not_work_for_another(env):
+    client, Session, build_id = env
+    r = client.post(f"/api/dashboard/mvp-beacon/{build_id}?t={beacon_security.sign_build_id(build_id + 1)}")
+    assert r.status_code == 204
+    assert _views(Session) == 0
+
+
+def test_beacon_is_rate_limited_per_visitor_and_build(env):
+    client, Session, build_id = env
+    token = beacon_security.sign_build_id(build_id)
+    for _ in range(beacon_security.beacon_limiter.limit + 10):
+        assert client.post(f"/api/dashboard/mvp-beacon/{build_id}?t={token}").status_code == 204
+    assert _views(Session) == beacon_security.beacon_limiter.limit
+
+
+def test_legacy_unsigned_beacons_work_only_when_explicitly_allowed(env, monkeypatch):
+    client, Session, build_id = env
+    monkeypatch.setenv("BEACON_ALLOW_UNSIGNED", "true")
+    client.post(f"/api/dashboard/mvp-beacon/{build_id}")
+    assert _views(Session) == 1
+
+
+def test_generated_mvp_prompt_contains_the_signed_beacon_url(tmp_path):
+    from services.ai_code_generator_orchestrator import AICodeGeneratorOrchestrator
+
+    orchestrator = AICodeGeneratorOrchestrator({"provider": "anthropic", "output_base_path": str(tmp_path)})
+    captured = {}
+
+    def fake_generate(prompt, **kwargs):
+        captured["prompt"] = prompt
+        return "from fastapi import FastAPI\napp = FastAPI()\n"
+
+    orchestrator.ai_provider = MagicMock(generate_code=fake_generate)
+    src = tmp_path / "src"
+    src.mkdir()
+    (src / "feature.py").write_text("class Thing:\n    def run(self):\n        return 1\n")
+
+    orchestrator._generate_main_wrapper(src, "feature", spec={"feature_name": "x"}, build_id=7)
+
+    expected = f"/api/dashboard/mvp-beacon/7?t={beacon_security.sign_build_id(7)}"
+    assert expected in captured["prompt"]

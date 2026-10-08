@@ -17,6 +17,7 @@ from services.auth import (
     create_user,
     authenticate_user,
     verify_password,
+    client_ip,
     get_current_user,
     require_auth,
     require_admin,
@@ -36,14 +37,6 @@ def _registration_open(db: Session) -> bool:
     if os.getenv("ALLOW_REGISTRATION", "false").strip().lower() in ("1", "true", "yes"):
         return True
     return db.query(User).count() == 0
-
-
-def _client_ip(request: Request) -> str:
-    # The right-most X-Forwarded-For entry is the one appended by the nearest proxy.
-    forwarded = request.headers.get("x-forwarded-for")
-    if forwarded:
-        return forwarded.split(",")[-1].strip()
-    return request.client.host if request.client else "unknown"
 
 
 @router.get("/check-first-user")
@@ -132,7 +125,7 @@ async def login(
     db: Session = Depends(get_db)
 ):
     """Authenticate user and create session (password, plus 2FA code if enrolled)"""
-    throttle_key = f"{_client_ip(request)}|{email.lower().strip()}"
+    throttle_key = f"{client_ip(request)}|{email.lower().strip()}"
     if mfa.login_throttle.is_blocked(throttle_key):
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,

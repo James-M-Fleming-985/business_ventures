@@ -5284,20 +5284,29 @@ async def mvp_beacon(build_id: int, request: Request, db: Session = Depends(get_
 
     Stores anonymised visitor data for engagement tracking.
     Called by the JS beacon injected into generated MVP dashboards.
+    Requests without a valid signed token, or above the rate limit, are
+    silently ignored (always 204) so the endpoint cannot be used to forge
+    engagement metrics or to probe for build ids.
     """
-    import hashlib
+    from services import beacon_security
+    from services.auth import client_ip as _client_ip
+
+    client_ip = _client_ip(request)
+    if not beacon_security.unsigned_allowed() and not beacon_security.verify_token(
+        build_id, request.query_params.get("t")
+    ):
+        return
+    if not beacon_security.beacon_limiter.allow(f"{build_id}|{client_ip}"):
+        return
 
     # Validate build exists
     build = db.query(MVPBuild).filter(MVPBuild.id == build_id).first()
     if not build:
         return  # silently ignore unknown build IDs
 
-    # Anonymised visitor fingerprint — no PII stored
-    client_ip = request.client.host if request.client else "unknown"
+    # Anonymised visitor fingerprint — keyed hash, no PII stored
     user_agent = (request.headers.get("user-agent") or "")[:500]
-    visitor_hash = hashlib.sha256(
-        f"{client_ip}:{user_agent}".encode()
-    ).hexdigest()
+    visitor_hash = beacon_security.hash_visitor(client_ip, user_agent)
 
     # Parse optional referrer from body
     referrer = None

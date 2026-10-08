@@ -13,7 +13,9 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import RevenueEvent, User
 
-router = APIRouter(prefix="/revenue", tags=["revenue"])
+from services.auth import require_admin
+
+router = APIRouter(prefix="/revenue", tags=["revenue"], dependencies=[Depends(require_admin)])
 
 
 @router.get("/dashboard")

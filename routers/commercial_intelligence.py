@@ -29,7 +29,13 @@ from services.commercial_intelligence_service import (
     rank_deployments,
 )
 
-router = APIRouter(prefix="/api/commercial-intelligence", tags=["commercial-intelligence"])
+from services.auth import require_admin
+
+router = APIRouter(
+    prefix="/api/commercial-intelligence",
+    tags=["commercial-intelligence"],
+    dependencies=[Depends(require_admin)],
+)
 
 
 class ConfidenceRequest(BaseModel):

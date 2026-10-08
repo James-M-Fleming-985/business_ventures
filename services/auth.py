@@ -69,6 +69,18 @@ def decode_token(token: str) -> Optional[dict]:
         return None
 
 
+def client_ip(request: Request) -> str:
+    """Best-effort real client IP behind Railway's proxy.
+
+    The right-most X-Forwarded-For entry is the one appended by the nearest proxy,
+    so a caller cannot forge it.
+    """
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[-1].strip()
+    return request.client.host if request.client else "unknown"
+
+
 def get_user_by_email(db: Session, email: str) -> Optional[User]:
     """Get user by email"""
     return db.query(User).filter(User.email == email.lower()).first()

@@ -54,6 +54,7 @@ from routers import ensemble  # Ensemble predictions (M2 Track A)
 
 # Import Commercial Intelligence router (Track G — M2)
 from routers import commercial_intelligence
+from services.auth import require_admin
 
 # Import Signal Radar router from Causal_affect
 try:
@@ -130,14 +131,14 @@ async def _legacy_mvp_beacon(build_id: int, request: _BeaconRequest, db: _Beacon
 
 # Include Signal Radar if available
 if signal_radar_router is not None:
-    app.include_router(signal_radar_router)
+    app.include_router(signal_radar_router, dependencies=[Depends(require_admin)])
     logger.info("✅ Signal Radar endpoints registered at /api/signal-radar")
 else:
     logger.warning("⚠️  Signal Radar endpoints not available")
 
 # Include Causality router if available (CA-002 AI-built features)
 if causality_router is not None:
-    app.include_router(causality_router)
+    app.include_router(causality_router, dependencies=[Depends(require_admin)])
     logger.info("✅ Causality endpoints registered (Granger, Lag Analysis, Regression)")
 else:
     logger.warning("⚠️  Causality endpoints not available")
@@ -583,7 +584,7 @@ class ExplanationRequest(BaseModel):
 # CA-003-01: DRIFT FORECASTING ENDPOINTS
 # ============================================================================
 
-@app.post("/api/v1/forecast", tags=["Forecasting"])
+@app.post("/api/v1/forecast", tags=["Forecasting"], dependencies=[Depends(require_admin)])
 async def create_forecast(request: ForecastRequest):
     """
     Generate drift forecast using simple linear extrapolation.
@@ -645,7 +646,7 @@ async def create_forecast(request: ForecastRequest):
         raise HTTPException(status_code=500, detail=f"Forecast generation failed: {str(e)}")
 
 
-@app.get("/api/v1/forecast/{forecast_id}", tags=["Forecasting"])
+@app.get("/api/v1/forecast/{forecast_id}", tags=["Forecasting"], dependencies=[Depends(require_admin)])
 async def get_forecast(forecast_id: str):
     """Retrieve a previously generated forecast."""
     # TODO: Implement forecast retrieval from database/cache
@@ -656,7 +657,7 @@ async def get_forecast(forecast_id: str):
 # CA-002: CORRELATION ANALYSIS ENDPOINTS
 # ============================================================================
 
-@app.post("/api/v1/correlations", tags=["Correlation Analysis"])
+@app.post("/api/v1/correlations", tags=["Correlation Analysis"], dependencies=[Depends(require_admin)])
 async def analyze_correlations(request: CorrelationRequest):
     """
     Analyze correlations between variables using real statistical methods.
@@ -697,7 +698,7 @@ async def analyze_correlations(request: CorrelationRequest):
 # CA-002-07: NATURAL LANGUAGE EXPLANATION ENDPOINTS
 # ============================================================================
 
-@app.post("/api/v1/explanations", tags=["Explanations"])
+@app.post("/api/v1/explanations", tags=["Explanations"], dependencies=[Depends(require_admin)])
 async def generate_explanation(request: ExplanationRequest):
     """
     Generate natural language explanation for correlation analysis.
@@ -751,7 +752,7 @@ async def generate_explanation(request: ExplanationRequest):
 # DRIFT ANALYSIS ENDPOINT (CA-002-07 Layer 02)
 # ============================================================================
 
-@app.post("/api/v1/drift/analyze", tags=["Drift Analysis"])
+@app.post("/api/v1/drift/analyze", tags=["Drift Analysis"], dependencies=[Depends(require_admin)])
 async def analyze_drift(data: Dict[str, List[float]]):
     """
     Analyze drift patterns in correlation data.

@@ -22,7 +22,13 @@ from services.ensemble_model import EnsembleModel, LAYER1_SOURCES
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/ensemble", tags=["Ensemble Predictions"])
+from services.auth import require_admin
+
+router = APIRouter(
+    prefix="/api/ensemble",
+    tags=["Ensemble Predictions"],
+    dependencies=[Depends(require_admin)],
+)
 
 
 @router.get("/predictions")
