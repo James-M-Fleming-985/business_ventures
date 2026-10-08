@@ -447,11 +447,13 @@ async def register_page(request: Request):
 
 
 @app.get("/logout", tags=["Pages"])
-async def logout_page(response: Response):
+async def logout_page():
     """Log out and redirect to landing page."""
     from services.auth import clear_auth_cookies
+    # Cookies must be cleared on the response that is actually returned.
+    response = RedirectResponse(url="/", status_code=307)
     clear_auth_cookies(response)
-    return RedirectResponse(url="/", status_code=307)
+    return response
 
 
 @app.get("/subscription", response_class=HTMLResponse, tags=["Pages"])

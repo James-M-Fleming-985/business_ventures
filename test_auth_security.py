@@ -245,3 +245,14 @@ def test_totp_migration_upgrades_old_users_table_and_is_idempotent(tmp_path):
     with engine.connect() as conn:
         row = conn.execute(text("SELECT totp_enabled, totp_last_step FROM users")).one()
     assert not row[0] and row[1] == 0
+
+
+# --- logout ----------------------------------------------------------------
+
+def test_logout_page_clears_session_cookies():
+    import main
+    client = TestClient(main.app, follow_redirects=False)
+    r = client.get("/logout", cookies={"access_token": "x", "refresh_token": "y"})
+    cleared = " ".join(v for k, v in r.headers.multi_items() if k == "set-cookie")
+    assert r.status_code == 307
+    assert "access_token" in cleared and "refresh_token" in cleared
