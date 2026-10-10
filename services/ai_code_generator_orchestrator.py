@@ -937,10 +937,8 @@ any classes or functions. Output only valid Python code, no explanations.
 
         # Always include fastapi + uvicorn for deployment
         detected_pkgs.update(['fastapi', 'uvicorn'])
-        # PR8c: include stripe if the platform has Stripe configured, since
-        # the generator prompt instructs the AI to add a checkout endpoint.
-        if (os.getenv("STRIPE_SECRET_KEY") or "").strip():
-            detected_pkgs.add('stripe')
+        # The shared subscription runtime (mvp_runtime.py) uses stripe.
+        detected_pkgs.add('stripe')
         reqs = '\n'.join(sorted(detected_pkgs)) + '\n'
         deploy_files.append({
             'path': 'requirements.txt',
@@ -949,29 +947,34 @@ any classes or functions. Output only valid Python code, no explanations.
             'phase': 'DEPLOY',
         })
 
-        # Detect the main module and check if it has a FastAPI app
+        # Detect the main module name
         module_name = 'app'
-        has_app = False
         if src_dir.exists():
             py_files = [f for f in src_dir.glob('*.py')
                         if f.name != '__init__.py']
             if py_files:
                 module_name = py_files[0].stem
-                code = py_files[0].read_text(errors='replace')
-                has_app = 'app = FastAPI' in code or 'app=FastAPI' in code
 
-        # Always serve main.py: it carries the landing page at "/". When the
-        # module defines its own FastAPI app, mount it behind the wrapper so
-        # its API routes stay reachable (wrapper routes take precedence).
+        # Always serve main.py: it carries the landing page at "/". The
+        # AI-written module is deliberately NOT imported or mounted: its routes
+        # would bypass the paywall, and its code would run in the same process
+        # as the Stripe key and session secret.
         main_py = self._generate_main_wrapper(src_dir, module_name, spec=spec, build_id=build_id)
-        if has_app:
-            main_py = main_py.rstrip('\n') + self._module_app_mount(module_name)
         if build_id:
             main_py = main_py.rstrip('\n') + self._beacon_middleware(build_id)
         deploy_files.append({
             'path': 'main.py',
             'content': main_py,
             'size': len(main_py.encode()),
+            'phase': 'DEPLOY',
+        })
+        # Security-critical subscription code is shipped as-is, not AI-written.
+        from services import mvp_site
+        runtime_src = mvp_site.runtime_source()
+        deploy_files.append({
+            'path': 'mvp_runtime.py',
+            'content': runtime_src,
+            'size': len(runtime_src.encode()),
             'phase': 'DEPLOY',
         })
         procfile = 'web: uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}\n'
@@ -994,18 +997,6 @@ any classes or functions. Output only valid Python code, no explanations.
         return deploy_files
 
     MAIN_WRAPPER_MAX_TOKENS = 32000
-
-    @staticmethod
-    def _module_app_mount(module_name: str) -> str:
-        return (
-            '\n\n\n# Keep the generated module\'s own API routes reachable.\n'
-            'try:\n'
-            f'    from src.{module_name} import app as _module_app\n'
-            '    if _module_app is not app:\n'
-            '        app.mount("/", _module_app)\n'
-            'except Exception as _mount_err:  # pragma: no cover\n'
-            '    print(f"Could not mount module app: {_mount_err}")\n'
-        )
 
     @staticmethod
     def _beacon_middleware(build_id: int) -> str:
@@ -1032,219 +1023,35 @@ any classes or functions. Output only valid Python code, no explanations.
         )
 
     def _generate_main_wrapper(self, src_dir: Path, module_name: str, spec: dict = None, build_id: int = None) -> str:
-        """Generate a main.py via AI that properly wires ALL service classes with rich UI."""
-        import html as _html
+        """Render the MVP's main.py: AI-written *content* inside a fixed, tested subscription site.
 
-        # Read the full implementation code so the AI can see every class/method
-        impl_code = ''
-        if (src_dir / f'{module_name}.py').exists():
-            impl_code = (src_dir / f'{module_name}.py').read_text(errors='replace')
+        The AI only supplies copy, categories and sample items as JSON. That is
+        validated (services/mvp_site.py) and rendered into a template that uses
+        the shared mvp_runtime module for pricing, paywall and Stripe, so no
+        AI-written code handles access control or payments.
+        """
+        from services import mvp_site
 
-        if not impl_code:
-            return self._generate_fallback_wrapper(module_name, spec, build_id)
-
-        # --- Build the hero metadata section for the prompt ---
-        hero_context = ''
-        if spec:
-            hero_context += f"Feature name: {spec.get('feature_name', '')}\n"
-            hero_context += f"Requirement title: {spec.get('requirement_title', '')}\n"
-
-            meta = spec.get('_meta', {})
-            if meta:
-                if meta.get('opportunity_score') is not None:
-                    hero_context += f"Opportunity score: {meta['opportunity_score']:.0f}/100\n"
-                if meta.get('market_category'):
-                    hero_context += f"Market category: {meta['market_category']}\n"
-                if meta.get('build_viability_score') is not None:
-                    hero_context += f"Viability score: {meta['build_viability_score']:.0f}/100\n"
-                if meta.get('reasoning'):
-                    hero_context += f"Description: {meta['reasoning']}\n"
-
-            criteria = spec.get('acceptance_criteria', [])
-            if criteria:
-                hero_context += "\nFeature list for hero section:\n"
-                for ac in criteria[:8]:
-                    crit = ac.get('criterion', '') if isinstance(ac, dict) else str(ac)
-                    if crit:
-                        hero_context += f"  - {crit}\n"
-
-        # --- Get UI/UX requirements from the product brief ---
-        full_req = spec.get('_requirement_text', '') if spec else ''
-
-        # --- Build the AI prompt ---
-        # Truncate impl_code if excessively long to stay within token budget
-        impl_excerpt = impl_code[:12000] if len(impl_code) > 12000 else impl_code
-
-        # The engagement beacon is injected into every HTML page by
-        # _beacon_middleware, so the AI does not need to add it.
-        beacon_snippet = ''
-
-        # PR8b: also inject Google Analytics 4 gtag if a measurement ID is configured
-        ga4_measurement_id = (os.getenv("GA4_MEASUREMENT_ID") or "").strip()
-        if ga4_measurement_id and build_id:
-            beacon_snippet += (
-                f'\n   Also include this Google Analytics 4 snippet inside <head> '
-                f'(two separate <script> tags, exactly as shown):\n'
-                f'   <script async src="https://www.googletagmanager.com/gtag/js?id={ga4_measurement_id}"></script>\n'
-                f'   <script>window.dataLayer=window.dataLayer||[];function gtag(){{dataLayer.push(arguments);}}'
-                f'gtag("js",new Date());gtag("config","{ga4_measurement_id}",{{"send_page_view":true}});</script>'
-            )
-
-        # PR8c: instruct the generator to scaffold a Stripe checkout endpoint
-        # so the MVP can collect subscription revenue with metadata that lets
-        # the platform webhook attribute every event back to this build_id.
-        # Only injected when the platform has Stripe configured + a build_id.
-        stripe_block = ''
-        if (os.getenv("STRIPE_SECRET_KEY") or "").strip() and build_id:
-            stripe_block = (
-                "\n5. STRIPE CHECKOUT (REQUIRED — the platform attributes revenue via metadata):\n"
-                "   Add `import stripe` and at module load:\n"
-                "       stripe.api_key = os.getenv(\"STRIPE_SECRET_KEY\")\n"
-                "       MVP_BUILD_ID = os.getenv(\"MVP_BUILD_ID\", \"\")\n"
-                "       MVP_APP_ID = os.getenv(\"MVP_APP_ID\", \"\")\n"
-                "   Add a POST endpoint `/api/checkout/{tier}` (tier in: pro_monthly, pro_yearly,\n"
-                "   enterprise_monthly, enterprise_yearly) that:\n"
-                "     - Maps tier→price_id via os.getenv(\"STRIPE_PRICE_\" + tier.upper())\n"
-                "     - Calls stripe.checkout.Session.create(\n"
-                "           mode=\"subscription\",\n"
-                "           line_items=[{\"price\": price_id, \"quantity\": 1}],\n"
-                "           success_url=str(request.base_url) + \"checkout/success?session_id={CHECKOUT_SESSION_ID}\",\n"
-                "           cancel_url=str(request.base_url) + \"checkout/cancel\",\n"
-                "           metadata={\"build_id\": MVP_BUILD_ID, \"app_id\": MVP_APP_ID},\n"
-                "           subscription_data={\"metadata\": {\"build_id\": MVP_BUILD_ID, \"app_id\": MVP_APP_ID}},\n"
-                "       )\n"
-                "     - Returns JSONResponse({\"checkout_url\": session.url})\n"
-                "   Add GET `/checkout/success` and GET `/checkout/cancel` returning simple HTMLResponse pages.\n"
-                "   In the HTML dashboard, render Subscribe buttons for each tier whose\n"
-                "   STRIPE_PRICE_* env var is set; the button POSTs to /api/checkout/{tier}\n"
-                "   then `window.location = data.checkout_url`.\n"
-            )
-
-        prompt = f"""Generate a complete Python file (main.py) that creates a FastAPI application
-wrapping the implementation module below. This file will be the deployed web application.
-
-MODULE NAME: src.{module_name}
-All imports must use: from src.{module_name} import <ClassName>
-
-═══ IMPLEMENTATION SOURCE CODE ═══
-{impl_excerpt}
-═══════════════════════════════════
-
-═══ PRODUCT BRIEF & UI/UX REQUIREMENTS ═══
-{full_req}
-═══════════════════════════════════════════
-
-═══ HERO SECTION METADATA ═══
-{hero_context}
-═════════════════════════════
-
-REQUIREMENTS FOR main.py:
-
-1. IMPORTS & SETUP:
-   - Import ALL service classes from src.{module_name} (not just data models)
-   - Create a FastAPI app instance
-   - Include: from fastapi import FastAPI
-   - Include: from fastapi.responses import HTMLResponse, JSONResponse
-   - Include: sys.path.insert(0, os.path.dirname(__file__))
-
-2. REST API ENDPOINTS:
-   - GET / → returns the HTML dashboard (response_class=HTMLResponse)
-   - GET /health → returns {{"status": "healthy"}}
-   - GET /api/status → returns service info
-   - Create GET/POST endpoints for EACH major service class that call real methods
-   - Endpoints should instantiate service classes and call their actual methods
-   - Return real JSON data from the service methods
-   - Handle exceptions gracefully with proper error responses
-
-3. HTML DASHBOARD (as a DASHBOARD_HTML string constant):
-   - Use a dark theme (background: #0f172a, cards: #1e293b) with Tailwind-style CSS
-   - HERO SECTION at top: Show the feature name, requirement title, description,
-     and stat badges (opportunity score, market category, viability) from the metadata above
-   - Feature bullets with checkmark icons from acceptance criteria
-   - THE MAIN UI must implement the UI/UX described in the product brief above:
-     * If the brief mentions a feed/timeline → build a real event feed component
-     * If it mentions heatmaps → build a CSS grid/table heatmap visualization
-     * If it mentions filters → build working filter controls (dropdowns/inputs)
-     * If it mentions charts/dashboards → build metric cards and trend displays
-     * If it mentions search → build a search input
-   - Each UI component should fetch data from YOUR API endpoints via JavaScript fetch()
-   - Make the dashboard INTERACTIVE — filters should re-fetch data, clicking items shows details
-   - Use modern CSS (grid, flexbox) — no external CSS/JS dependencies
-   - The dashboard should be a SINGLE self-contained HTML page
-   {beacon_snippet}
-
-4. CODE QUALITY:
-   - The file must be valid Python that runs with: uvicorn main:app
-   - All string escaping must be correct (triple-quoted HTML string)
-   - Do NOT use placeholder/stub methods — call the real service methods
-   - Use try/except around service calls so the app doesn't crash
-{stripe_block}
-Output ONLY valid Python code. No markdown fences, no explanations.
-"""
-
+        fallback = mvp_site.default_site(spec, build_id, ga4_id=self._ga4_measurement_id())
+        site = fallback
         try:
-            logger.info("Generating AI-powered main.py wrapper for %s", module_name)
-            # The wrapper embeds a full HTML dashboard, so it needs more room
-            # than the default 20480 tokens (thinking counts toward the limit).
-            main_code = self.ai_provider.generate_code(prompt, max_tokens=self.MAIN_WRAPPER_MAX_TOKENS)
-            main_code = self._clean_code_fences(main_code)
-
-            # Basic validation: must contain FastAPI and app
-            if 'FastAPI' not in main_code or 'app' not in main_code:
-                logger.warning("AI wrapper missing FastAPI/app — falling back to template")
-                return self._generate_fallback_wrapper(module_name, spec, build_id)
-
-            # A truncated or otherwise broken wrapper would fail the whole build.
-            try:
-                ast.parse(main_code)
-            except SyntaxError as syn:
-                logger.warning("AI wrapper is not valid Python (%s) — falling back to template", syn)
-                return self._generate_fallback_wrapper(module_name, spec, build_id)
-
-            # Ensure the sys.path fix is present
-            if 'sys.path.insert' not in main_code:
-                main_code = (
-                    'import sys, os\n'
-                    'sys.path.insert(0, os.path.dirname(__file__))\n\n'
-                    + main_code
-                )
-
-            logger.info("AI-generated main.py wrapper: %d lines", main_code.count('\n'))
-            return main_code
-
+            prompt = mvp_site.site_prompt(spec, (spec or {}).get('_requirement_text', ''))
+            text = self.ai_provider.generate_code(prompt, max_tokens=self.MAIN_WRAPPER_MAX_TOKENS)
+            site = mvp_site.normalise_site(mvp_site.parse_site_json(text), fallback)
+            if site is fallback:
+                logger.warning("AI site content was not usable JSON — using default content")
         except Exception as e:
-            logger.error("AI wrapper generation failed: %s — using fallback", e)
-            return self._generate_fallback_wrapper(module_name, spec, build_id)
+            logger.error("AI site content generation failed: %s — using default content", e)
+        return mvp_site.render_main(site)
+
+    @staticmethod
+    def _ga4_measurement_id() -> str:
+        return (os.getenv("GA4_MEASUREMENT_ID") or "").strip()
 
     @staticmethod
     def _generate_fallback_wrapper(module_name: str, spec: dict = None, build_id: int = None) -> str:
-        """Minimal fallback wrapper when AI generation fails."""
-        import html as _html
-        _e = _html.escape
-
-        if spec:
-            title = _e(spec.get('feature_name', '') or module_name.replace('_', ' ').title())
-        else:
-            title = _e(module_name.replace('_', ' ').title())
-
-        return f'''"""Fallback FastAPI wrapper for {module_name}."""
-import sys, os
-sys.path.insert(0, os.path.dirname(__file__))
-
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
-
-app = FastAPI(title="{title}", version="1.0.0")
-
-@app.get("/", response_class=HTMLResponse)
-def dashboard():
-    return "<html><body><h1>{title}</h1><p>MVP deployed — check /api/status</p></body></html>"
-
-@app.get("/api/status")
-def api_status():
-    return {{"service": "{module_name}", "status": "running", "version": "1.0.0"}}
-
-@app.get("/health")
-def health():
-    return {{"status": "healthy"}}
-'''
+        """Default subscription site (placeholder content) when AI content is unavailable."""
+        from services import mvp_site
+        return mvp_site.render_main(
+            mvp_site.default_site(spec, build_id, ga4_id=AICodeGeneratorOrchestrator._ga4_measurement_id())
+        )

@@ -308,12 +308,27 @@ def _log_revenue_event(db: Session, event: dict, event_type: str, data: dict) ->
         except Exception as exc:  # pragma: no cover — never block webhook on this
             logger.warning("PR8c: causal_affect fallback lookup failed: %s", exc)
 
+    # MVPs charge in local currencies but revenue totals sum amount_cents across
+    # rows, so record MVP payments in GBP pence and keep the original alongside.
+    original_amount = None
+    if app_id and str(app_id).startswith("mvp_") and amount_cents and (currency or "").lower() != "gbp":
+        from services.mvp_currency import to_gbp_minor
+        converted = to_gbp_minor(amount_cents, currency)
+        if converted is not None:
+            original_amount = {
+                "original_amount_minor": amount_cents,
+                "original_currency": (currency or "").lower(),
+                "approximate_gbp_conversion": True,
+            }
+            amount_cents, currency = converted, "gbp"
+
     rev = RevenueEvent(
         app_id=app_id,
         build_id=build_id,
         event_type=revenue_event_type,
         amount_cents=amount_cents,
         currency=currency,
+        metadata_json=original_amount,
         stripe_event_id=stripe_event_id,
         stripe_customer_id=stripe_customer_id,
         stripe_subscription_id=stripe_subscription_id,

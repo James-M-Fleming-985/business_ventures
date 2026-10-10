@@ -111,6 +111,14 @@ IMPORTANT CONTEXT FOR REQUIREMENT PARSING:
 - UI/UX STYLE constraints should appear in acceptance criteria related to the interface.
 - REQUIRED INTEGRATIONS should generate dedicated integration test scenarios.
 - TARGET USERS should shape user-facing test scenarios and E2E workflows.
+- If the requirement describes a content or subscription site (it mentions FREE and PREMIUM
+  tiers or a CONTENT SOURCE), the Python module must provide a content catalog layer: a
+  ContentItem dataclass (id, title, category, summary, tier, plus premium detail fields) and a
+  ContentCatalog class with list_items(category=None, search=None) and get_item(item_id).
+  Acceptance criteria must be testable in pure Python, for example: a visitor view of an item
+  contains none of its premium fields; search is case-insensitive; items come from a replaceable
+  data source and are marked as sample data while they are placeholders. Do NOT write criteria
+  about charts, dashboards, correlations or forecasting for such products.
 
 Generate a YAML document with EXACTLY this structure (output ONLY the YAML, no explanation):
 

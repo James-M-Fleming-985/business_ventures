@@ -4145,12 +4145,12 @@ def _run_build(
             idx = rec.selected_concept_index
             if 0 <= idx < len(rec.product_concepts):
                 selected_concept = rec.product_concepts[idx]
-                requirement = (
-                    f"Build: {selected_concept['name']} — {selected_concept['pitch']} "
-                    f"Target customer: {selected_concept.get('target_customer', 'N/A')}. "
-                    f"Revenue model: {selected_concept.get('revenue_model', 'N/A')}. "
-                    f"Signal: {rec.signal_display_name} → {rec.target_display_name}. "
-                    f"{rec.reasoning or ''}"
+                from services.product_concept_generator import build_requirement_text
+                requirement = build_requirement_text(
+                    selected_concept,
+                    rec.signal_display_name,
+                    rec.target_display_name,
+                    rec.reasoning or '',
                 )
 
         # Append or override with user-supplied requirements (structured JSON)
@@ -4346,17 +4346,16 @@ def _run_build(
                             # this exact build via Stripe checkout metadata.
                             env_vars["MVP_BUILD_ID"] = str(build_id)
                             env_vars["MVP_APP_ID"] = f"mvp_{build_id}"
-                            for _stripe_var in (
-                                "STRIPE_SECRET_KEY",
-                                "STRIPE_PUBLISHABLE_KEY",
-                                "STRIPE_PRICE_PRO_MONTHLY",
-                                "STRIPE_PRICE_PRO_YEARLY",
-                                "STRIPE_PRICE_ENTERPRISE_MONTHLY",
-                                "STRIPE_PRICE_ENTERPRISE_YEARLY",
-                            ):
-                                _val = os.getenv(_stripe_var)
-                                if _val:
-                                    env_vars[_stripe_var] = _val
+                            # Never the platform's full secret key: MVPs are
+                            # generated, public apps. See services/mvp_stripe.py.
+                            from services.mvp_stripe import (
+                                mvp_stripe_env,
+                                new_session_secret,
+                            )
+                            env_vars.update(mvp_stripe_env())
+                            env_vars["MVP_SESSION_SECRET"] = new_session_secret()
+                            if domain_url:
+                                env_vars["MVP_PUBLIC_URL"] = domain_url
                             # GA4 measurement ID for client-side gtag in MVP
                             _ga4 = os.getenv("GA4_MEASUREMENT_ID")
                             if _ga4:

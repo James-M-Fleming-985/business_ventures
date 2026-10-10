@@ -1,6 +1,7 @@
 """Every route must require a login unless it is explicitly public by design."""
 
 import os
+import sys
 import tempfile
 
 os.environ.setdefault("DATABASE_URL", f"sqlite:///{os.path.join(tempfile.mkdtemp(), 'guard.db')}")
@@ -29,6 +30,9 @@ PUBLIC_ROUTES = {
 
 
 def test_no_route_is_open_unless_allowlisted():
+    stale = sys.modules.get("main")
+    if stale is not None and not hasattr(stale, "BUILD_VERSION"):
+        sys.modules.pop("main")  # a generated MVP's main left behind by another test
     import main
 
     spec = main.app.openapi()

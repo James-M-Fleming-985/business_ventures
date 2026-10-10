@@ -164,17 +164,30 @@ def test_deployed_mvp_pages_carry_the_signed_beacon(tmp_path, monkeypatch):
     orchestrator.ai_provider.generate_code.side_effect = RuntimeError("no AI")
     files = {f["path"]: f["content"] for f in orchestrator._generate_deployment_files(
         Path(tmp_path), spec={"feature_name": "x"}, build_id=7)}
-    (tmp_path / "main.py").write_text(files["main.py"])
+    for path, content in files.items():
+        (tmp_path / path).write_text(content)
     monkeypatch.syspath_prepend(str(tmp_path))
-    for name in ("main", "src", "src.layer_mvp_0007"):
+    names = ("main", "mvp_runtime", "src", "src.layer_mvp_0007")
+    saved = {name: sys.modules.get(name) for name in names}
+    for name in names:
         sys.modules.pop(name, None)
-    client = TestClient(importlib.import_module("main").app)
+    try:
+        client = TestClient(importlib.import_module("main").app)
+        pages = [client.get(path).text for path in ("/", "/explore", "/pricing", "/account")]
+        api = client.get("/api/x")
+    finally:
+        for name, module in saved.items():
+            if module is None:
+                sys.modules.pop(name, None)
+            else:
+                sys.modules[name] = module
 
-    page = client.get("/").text
-    assert f"/api/dashboard/mvp-beacon/7?t={beacon_security.sign_build_id(7)}" in page
-    assert page.count(beacon_security.BEACON_MARKER) == 1
-    assert '"click"' in page
-    assert client.get("/api/x").json() == {"x": 1}
+    for page in pages:
+        assert f"/api/dashboard/mvp-beacon/7?t={beacon_security.sign_build_id(7)}" in page
+        assert page.count(beacon_security.BEACON_MARKER) == 1  # exactly one beacon, never doubled
+        assert '"click"' in page
+    # the AI-written module's own routes are deliberately not served (they would bypass the paywall)
+    assert api.status_code == 404
 
 
 def test_clicks_are_recorded_separately_from_views(env):

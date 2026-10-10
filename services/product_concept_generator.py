@@ -21,6 +21,90 @@ def _stamp(concepts: List[Dict], source: str) -> List[Dict]:
     return concepts
 
 
+FORMATS = ("directory", "comparison", "calendar", "guide", "digest", "hub")
+COMPLEXITIES = ("LOW", "MEDIUM", "HIGH")
+# Pricing is decided by the platform (see templates/mvp/runtime/mvp_runtime.py),
+# never by the AI, so every concept carries the same revenue model.
+REVENUE_MODEL = "Monthly subscription from £0.99, adjusted to local purchasing power and currency"
+SAMPLE_SOURCE = "Placeholder sample data until a real source is connected"
+
+
+def _clip(value, limit: int) -> str:
+    if not isinstance(value, (str, int, float)) or isinstance(value, bool):
+        return ""
+    return " ".join(str(value).encode("utf-8", "ignore").decode("utf-8").split())[:limit]
+
+
+def normalise_concepts(raw) -> List[Dict]:
+    """Validate AI output into at most 3 concepts with a fixed shape.
+
+    The original keys (name, pitch, target_customer, revenue_model, defensibility,
+    complexity) are always present so the dashboard keeps working.
+    """
+    if not isinstance(raw, list):
+        raise ValueError("Expected a JSON array")
+    concepts: List[Dict] = []
+    for entry in raw:
+        if not isinstance(entry, dict):
+            continue
+        name, pitch = _clip(entry.get("name"), 80), _clip(entry.get("pitch"), 220)
+        if not name or not pitch:
+            continue
+        fmt = _clip(entry.get("format"), 20).lower()
+        complexity = _clip(entry.get("complexity"), 10).upper()
+        concepts.append({
+            "name": name,
+            "format": fmt if fmt in FORMATS else "hub",
+            "pitch": pitch,
+            "target_customer": _clip(entry.get("target_customer"), 220) or "People interested in this topic",
+            "why_now": _clip(entry.get("why_now"), 200),
+            "free_tier": _clip(entry.get("free_tier"), 220),
+            "premium_tier": _clip(entry.get("premium_tier"), 220),
+            "content_source": _clip(entry.get("content_source"), 220) or SAMPLE_SOURCE,
+            "revenue_model": REVENUE_MODEL,
+            "defensibility": _clip(entry.get("defensibility"), 220),
+            "complexity": complexity if complexity in COMPLEXITIES else "LOW",
+        })
+        if len(concepts) == 3:
+            break
+    if not concepts:
+        raise ValueError("No usable concepts in AI response")
+    for rank, concept in enumerate(concepts, start=1):
+        concept["rank"] = rank
+    return concepts
+
+
+def build_requirement_text(
+    concept: Optional[Dict],
+    signal_display: str,
+    target_display: str,
+    reasoning: str = "",
+) -> str:
+    """The build requirement. The signal is timing context, never the subject of the product."""
+    timing = (
+        f"Timing context only (do NOT build around this): {signal_display} predicts "
+        f"{target_display}. {reasoning or ''}"
+    ).strip()
+    if not concept:
+        return (
+            f"Build a subscription website for people interested in {target_display}. "
+            f"Offer a free preview and premium content. {timing}"
+        )
+    parts = [f"Build: {concept['name']} ({concept.get('format', 'hub')}) — {concept['pitch']}"]
+    for label, key in (
+        ("Audience", "target_customer"),
+        ("Why now", "why_now"),
+        ("FREE", "free_tier"),
+        ("PREMIUM", "premium_tier"),
+        ("CONTENT SOURCE", "content_source"),
+        ("Revenue model", "revenue_model"),
+    ):
+        if concept.get(key):
+            parts.append(f"{label}: {concept[key]}.")
+    parts.append(timing)
+    return " ".join(parts)
+
+
 def generate_product_concepts(
     signal_display: str,
     target_display: str,
@@ -55,36 +139,60 @@ def generate_product_concepts(
     if db_session:
         outcome_context = _get_outcome_context(db_session, market_category)
 
-    prompt = f"""You are a product strategist for an autonomous business-building system. Given a statistically validated market signal, generate 3 specific, commercially defensible product concepts.
+    direction = (
+        f"- Predicted direction: {predicted_direction} by {abs(predicted_change_pct or 0):.1f}%"
+        " (if \"down\", build for people looking for alternatives, savings or substitutes)\n"
+        if predicted_direction
+        else ""
+    )
+    confidence = f"- AI ensemble confidence: {ensemble_confidence}\n" if ensemble_confidence else ""
+    prompt = f"""You are the product strategist for an autonomous system that SENSES emerging signals, \
+PREDICTS which demand will grow or shrink because of them, and builds subscription products that \
+EXPLOIT that predicted demand.
 
-MARKET SIGNAL:
-- Signal: "{signal_display}" (Wikipedia search interest)
-- Target: "{target_display}" (correlated activity)
-- Relationship: {signal_display} Granger-causes {target_display} (p={p_value:.4f}, r={correlation:.3f}, lag={lag} months)
+HOW TO USE THE SIGNAL (important):
+The statistical relationship tells us WHEN and WHERE demand is moving. It is the reason to build now.
+It is NOT the product. Do not build a tracker, dashboard, forecaster or analytics tool of the
+relationship, and do not make the leading signal the subject of the product. Build something for the
+PEOPLE who are becoming interested in the predicted-demand topic.
+
+PREDICTED DEMAND:
+- Audience topic (the demand we expect to move): "{target_display}"
+- Leading signal (timing evidence only): "{signal_display}"
+- Evidence: {signal_display} Granger-causes {target_display} (p={p_value:.4f}, r={correlation:.3f}, lag={lag} months)
 - Market category: {market_category.replace('_', ' ')}
-- Monthly search demand: ~{estimated_monthly_searches:,}
-- Demand trend: {search_trend_direction}
-- Competition: {competition_level}
-- Revenue potential: {revenue_potential}
+- Monthly search demand: ~{estimated_monthly_searches:,}; demand trend: {search_trend_direction}
+- Competition: {competition_level}; revenue potential: {revenue_potential}
 - Opportunity score: {opportunity_score:.0f}/100
-{f'- Predicted direction: {predicted_direction} by {abs(predicted_change_pct or 0):.1f}%' if predicted_direction else ''}
-{f'- AI ensemble confidence: {ensemble_confidence}' if ensemble_confidence else ''}
-{outcome_context}
+{direction}{confidence}{outcome_context}
 
-REQUIREMENTS:
-1. Each concept must be a SPECIFIC product (not generic like "analytics dashboard")
-2. Each must have a clear target customer who would PAY for it
-3. Each must have defensibility (proprietary data enrichment, workflow integration, or unique insight)
-4. Rank by commercial viability — concept 1 should be the strongest
-5. Consider the statistical relationship — use the lag/prediction as the product's core value
+TASK: propose 3 subscription products for the audience of "{target_display}".
 
-Return ONLY a JSON array with exactly 3 objects, each with these fields:
+RULES:
+1. Each product is a SPECIFIC site people would subscribe to for information or content, for example a
+   curated directory or guide, a price or deal comparison, a release or event calendar, a buyer's guide,
+   a curated digest, or a resources hub. Not a generic "analytics dashboard".
+2. Use at least 2 different formats across the 3 concepts.
+3. State what is FREE (enough to attract and convince visitors) and what is PREMIUM (what a subscriber
+   pays for). Premium must be concrete details, not just "more".
+4. State the content source: where the real content would come from (public datasets, APIs, official
+   sites, curation). Never rely on invented facts, prices, addresses or contacts.
+5. Include a one-line "why now" that uses the prediction as the timing hook.
+6. It must be buildable as a LOW-complexity MVP.
+7. Do not propose prices. Pricing is fixed by the platform.
+8. Rank by likelihood of turning visitors into paying subscribers; concept 1 is the strongest.
+
+Return ONLY a JSON array of exactly 3 objects with these fields:
 - "name": short product name (3-6 words)
-- "pitch": one-sentence value proposition (what it does for the customer)
-- "target_customer": who pays (be specific: role, company type, pain point)
-- "revenue_model": how it makes money (subscription, usage-based, freemium, etc.)
-- "defensibility": why competitors can't easily replicate this
-- "complexity": "LOW", "MEDIUM", or "HIGH"
+- "format": one of directory, comparison, calendar, guide, digest, hub
+- "pitch": one-sentence value to the subscriber
+- "target_customer": the audience (who they are and what they want)
+- "why_now": one line tying the prediction to timing
+- "free_tier": what visitors see for free
+- "premium_tier": what subscribers get
+- "content_source": where the real content comes from
+- "defensibility": why it is hard to copy
+- "complexity": "LOW", "MEDIUM" or "HIGH"
 
 Output ONLY valid JSON, no markdown fences or explanation."""
 
@@ -109,15 +217,7 @@ Output ONLY valid JSON, no markdown fences or explanation."""
         if text.startswith("json"):
             text = text[4:].lstrip()
 
-        concepts = json.loads(text)
-        if not isinstance(concepts, list) or len(concepts) == 0:
-            raise ValueError("Expected a non-empty JSON array")
-
-        # Ensure exactly 3 concepts
-        concepts = concepts[:3]
-        for i, c in enumerate(concepts):
-            c["rank"] = i + 1
-            c.setdefault("complexity", "MEDIUM")
+        concepts = normalise_concepts(json.loads(text))
 
         logger.info(
             f"Generated {len(concepts)} product concepts for "
@@ -176,91 +276,43 @@ def _get_outcome_context(db_session, market_category: str) -> str:
 def _fallback_concepts(
     signal_display: str, target_display: str, market_category: str
 ) -> List[Dict]:
-    """Template-based fallback when AI is unavailable."""
-    category_templates = {
-        "health_tech": [
-            {
-                "name": f"{signal_display} Clinical Alert Service",
-                "pitch": f"Real-time alerts when {signal_display} search interest predicts changes in {target_display} activity",
-                "target_customer": "Healthcare market researchers and pharma business development teams",
-                "revenue_model": "Monthly subscription ($49-199/mo based on alert frequency)",
-                "defensibility": "Proprietary Granger-causal signal processing with predictive lead time",
-                "complexity": "MEDIUM",
-            },
-            {
-                "name": f"{target_display} Trend Forecaster",
-                "pitch": f"Forecast {target_display} trends using leading indicators from public search behaviour",
-                "target_customer": "Clinical trial recruitment firms needing demand forecasting",
-                "revenue_model": "Usage-based API pricing ($0.01/query)",
-                "defensibility": "Multi-source ensemble model with continuously validated predictions",
-                "complexity": "LOW",
-            },
-            {
-                "name": f"{market_category.replace('_', ' ').title()} Intelligence Dashboard",
-                "pitch": f"Monitor {signal_display} signals and their downstream impact on {target_display}",
-                "target_customer": "Health tech investors evaluating market timing",
-                "revenue_model": "Freemium with premium tier ($99/mo)",
-                "defensibility": "Curated signal→outcome mappings with accuracy tracking",
-                "complexity": "HIGH",
-            },
-        ],
-        "fintech": [
-            {
-                "name": f"{signal_display} Market Signal API",
-                "pitch": f"Trade signals based on {signal_display} interest predicting {target_display} movements",
-                "target_customer": "Quantitative traders and algorithmic trading firms",
-                "revenue_model": "Monthly subscription with tiered data access ($99-499/mo)",
-                "defensibility": "Validated causal relationships with documented prediction accuracy",
-                "complexity": "MEDIUM",
-            },
-            {
-                "name": f"{target_display} Sentiment Tracker",
-                "pitch": f"Track public sentiment shifts that lead {target_display} by {2} months",
-                "target_customer": "Retail investors and financial advisors",
-                "revenue_model": "Freemium with premium alerts ($19/mo)",
-                "defensibility": "Real-time sentiment scoring from multiple public data sources",
-                "complexity": "LOW",
-            },
-            {
-                "name": f"Alternative Data for {target_display}",
-                "pitch": f"Alternative data feed combining {signal_display} trends with {target_display} predictions",
-                "target_customer": "Hedge funds and asset managers",
-                "revenue_model": "Enterprise licensing ($2,000/mo)",
-                "defensibility": "Ensemble model with walk-forward validation and documented Sharpe ratio",
-                "complexity": "HIGH",
-            },
-        ],
-    }
-
-    # Generic fallback
-    default = [
+    """Template concepts when the AI is unavailable: sites for the audience of the predicted topic."""
+    topic = target_display
+    return normalise_concepts([
         {
-            "name": f"{signal_display} Prediction API",
-            "pitch": f"API service predicting {target_display} changes based on {signal_display} trends",
-            "target_customer": f"Analysts and researchers in the {market_category.replace('_', ' ')} space",
-            "revenue_model": "Usage-based API pricing with free tier",
-            "defensibility": "Statistically validated causal model with continuous accuracy tracking",
+            "name": f"{topic} Guide",
+            "format": "guide",
+            "pitch": f"A curated guide to {topic}, so enthusiasts find the best of it faster.",
+            "target_customer": f"People who are getting more interested in {topic}",
+            "why_now": f"Interest in {topic} is predicted to move soon",
+            "free_tier": "Browse the guide and read short summaries of the top entries",
+            "premium_tier": "Full details, insider tips and contact information for every entry",
+            "content_source": SAMPLE_SOURCE,
+            "defensibility": "Curation quality and a growing archive",
             "complexity": "LOW",
         },
         {
-            "name": f"{signal_display} Alert Service",
-            "pitch": f"Automated alerts when {signal_display} signals predict significant {target_display} movements",
-            "target_customer": f"Decision-makers in {market_category.replace('_', ' ')} needing early warning",
-            "revenue_model": "Monthly subscription ($29-99/mo)",
-            "defensibility": "Proprietary signal processing with documented lead time advantage",
-            "complexity": "MEDIUM",
+            "name": f"{topic} Deal Watch",
+            "format": "comparison",
+            "pitch": f"Compare options and spot good value in {topic}.",
+            "target_customer": f"Value-conscious buyers of {topic}",
+            "why_now": f"Demand for {topic} is expected to change, which moves prices",
+            "free_tier": "A weekly shortlist of the best-value picks",
+            "premium_tier": "The full comparison table and price-drop alerts",
+            "content_source": SAMPLE_SOURCE,
+            "defensibility": "A price history nobody else keeps",
+            "complexity": "LOW",
         },
         {
-            "name": f"{market_category.replace('_', ' ').title()} Intelligence Platform",
-            "pitch": f"Full analytics platform connecting {signal_display} trends to {target_display} outcomes",
-            "target_customer": f"Strategy teams and consultants in {market_category.replace('_', ' ')}",
-            "revenue_model": "Freemium with enterprise tier",
-            "defensibility": "Multi-signal ensemble model with feedback loop improving over time",
-            "complexity": "HIGH",
+            "name": f"{topic} Weekly Digest",
+            "format": "digest",
+            "pitch": f"One short weekly email on what is new in {topic}.",
+            "target_customer": f"Busy fans of {topic} who want the highlights",
+            "why_now": f"The audience for {topic} is growing right now",
+            "free_tier": "The headline items each week",
+            "premium_tier": "The complete digest with the full archive",
+            "content_source": SAMPLE_SOURCE,
+            "defensibility": "Consistent curation and a loyal readership",
+            "complexity": "LOW",
         },
-    ]
-
-    concepts = category_templates.get(market_category, default)
-    for i, c in enumerate(concepts):
-        c["rank"] = i + 1
-    return concepts
+    ])
