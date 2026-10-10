@@ -7,6 +7,9 @@ uvicorn[standard]==0.24.0
 pydantic==2.5.0
 pydantic-settings==2.1.0
 python-multipart==0.0.6
+# Needed by fastapi.testclient in generated MVP tests. anthropic>=1.x no longer
+# pulls it in (it uses httpx2), and httpx 0.28 breaks starlette 0.27's TestClient.
+httpx>=0.24,<0.28
 
 # Data Processing & Statistics
 pandas==2.1.3
