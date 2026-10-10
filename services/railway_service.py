@@ -176,6 +176,26 @@ class RailwayService:
         domain = data.get("serviceDomainCreate", {}).get("domain")
         return f"https://{domain}" if domain else None
 
+    def connect_repo(self, service_id: str, repo_full_name: str, branch: str = "main") -> None:
+        """Connect a service to a GitHub repo. Railway then builds and deploys it.
+
+        Railway's GitHub app must have access to the repo (private MVP repos
+        included), otherwise this raises.
+        """
+        if not self.enabled:
+            raise RuntimeError("Railway not configured")
+        self._gql(
+            """
+            mutation($id: String!, $input: ServiceConnectInput!) {
+                serviceConnect(id: $id, input: $input) {
+                    id
+                }
+            }
+            """,
+            {"id": service_id, "input": {"repo": repo_full_name, "branch": branch}},
+        )
+        logger.info(f"Connected Railway service {service_id} to {repo_full_name}@{branch}")
+
     # ------------------------------------------------------------------
     # Environment variables
     # ------------------------------------------------------------------

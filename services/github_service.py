@@ -60,6 +60,9 @@ class GitHubService:
             if e.status == 422:  # Repo already exists
                 repo = self.client.get_repo(f"{self.org}/{name}")
                 logger.info(f"GitHub repo already exists: {repo.full_name}")
+                if not repo.private:
+                    repo.edit(private=True)
+                    logger.warning(f"Made existing public repo private: {repo.full_name}")
             else:
                 raise
 
@@ -68,6 +71,7 @@ class GitHubService:
             "full_name": repo.full_name,
             "html_url": repo.html_url,
             "clone_url": repo.clone_url,
+            "default_branch": repo.default_branch,
         }
 
     def push_files(

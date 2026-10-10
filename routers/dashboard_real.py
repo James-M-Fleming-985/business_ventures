@@ -4243,12 +4243,27 @@ def _run_build(
         if build and build.status in ('LIVE', 'DEPLOYING'):
             build.status = 'LIVE'
             db.commit()
+
+            def _deploy_step(name: str, detail: str):
+                """Record a publish/deploy outcome on the build card."""
+                b = db.query(MVPBuild).filter(MVPBuild.id == build_id).first()
+                if b is not None:
+                    b.build_steps = list(b.build_steps or []) + [
+                        {"step": name, "at": datetime.utcnow().isoformat(), "detail": detail}
+                    ]
+                    db.commit()
+
             try:
 
                 from services.github_service import GitHubService
                 github_svc = GitHubService()
                 repo_name = None
+                repo_full_name = None
+                repo_branch = "main"
                 github_url = None
+
+                if not github_svc.enabled:
+                    _deploy_step("GITHUB_SKIPPED", "GITHUB_TOKEN or GITHUB_ORG not set")
 
                 if github_svc.enabled:
                     repo_name = GitHubService.slugify(
@@ -4262,6 +4277,8 @@ def _run_build(
                         ),
                     )
                     github_url = repo_info["html_url"]
+                    repo_full_name = repo_info["full_name"]
+                    repo_branch = repo_info.get("default_branch") or "main"
 
                     build_files = (
                         db.query(MVPBuildFile)
@@ -4282,11 +4299,14 @@ def _run_build(
                     logger.info(
                         f"Build {build_id}: pushed to GitHub {github_url}"
                     )
+                    _deploy_step("GITHUB_PUSHED", f"{github_url} (private)")
 
-                # Railway: create project (deployment requires GitHub
-                # integration on Railway — connect repo in Railway UI).
+                # Railway: create project + service, set env vars, then connect
+                # the GitHub repo so Railway builds and deploys it.
                 from services.railway_service import RailwayService
                 railway_svc = RailwayService()
+                if not railway_svc.enabled:
+                    _deploy_step("RAILWAY_SKIPPED", "RAILWAY_TOKEN not set")
                 if railway_svc.enabled and repo_name:
                     try:
                         # Railway has stricter name validation than GitHub —
@@ -4302,12 +4322,12 @@ def _run_build(
                         env_id = railway_svc.get_default_environment(
                             project["id"]
                         )
+                        domain_url = None
                         if env_id and service.get("id"):
                             domain_url = railway_svc.generate_domain(
                                 service["id"], env_id
                             )
                             if domain_url:
-                                build.railway_url = domain_url
                                 logger.info(
                                     f"Build {build_id}: Railway domain "
                                     f"{domain_url}"
@@ -4371,11 +4391,38 @@ def _run_build(
                                     f"Build {build_id}: failed to set "
                                     f"env vars: {var_err}"
                                 )
+
+                        # Connect the repo last so the first deploy already
+                        # has the env vars above.
+                        if service.get("id") and repo_full_name:
+                            try:
+                                railway_svc.connect_repo(
+                                    service["id"], repo_full_name, repo_branch
+                                )
+                                if domain_url:
+                                    build.railway_url = domain_url
+                                db.commit()
+                                _deploy_step(
+                                    "RAILWAY_DEPLOY_STARTED",
+                                    f"{domain_url or 'no domain'} (live in a few minutes)",
+                                )
+                            except Exception as conn_err:
+                                logger.warning(
+                                    f"Build {build_id}: could not connect "
+                                    f"{repo_full_name} to Railway: {conn_err}"
+                                )
+                                _deploy_step(
+                                    "RAILWAY_DEPLOY_FAILED",
+                                    "Could not connect repo to Railway. Give Railway's "
+                                    "GitHub app access to private repos, then connect "
+                                    f"it in Railway. Error: {str(conn_err)[:200]}",
+                                )
                     except Exception as rail_err:
                         logger.warning(
                             f"Build {build_id}: Railway setup failed "
                             f"(GitHub push OK): {rail_err}"
                         )
+                        _deploy_step("RAILWAY_DEPLOY_FAILED", str(rail_err)[:300])
 
                 # Create ProductDeployment record
                 deployment = ProductDeployment(
@@ -4409,6 +4456,7 @@ def _run_build(
                 )
                 try:
                     db.rollback()
+                    _deploy_step("PUBLISH_FAILED", str(deploy_err)[:300])
                     build = db.query(MVPBuild).filter(
                         MVPBuild.id == build_id
                     ).first()
