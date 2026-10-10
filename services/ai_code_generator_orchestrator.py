@@ -960,19 +960,19 @@ any classes or functions. Output only valid Python code, no explanations.
                 code = py_files[0].read_text(errors='replace')
                 has_app = 'app = FastAPI' in code or 'app=FastAPI' in code
 
+        # Always serve main.py: it carries the landing page at "/". When the
+        # module defines its own FastAPI app, mount it behind the wrapper so
+        # its API routes stay reachable (wrapper routes take precedence).
+        main_py = self._generate_main_wrapper(src_dir, module_name, spec=spec, build_id=build_id)
         if has_app:
-            procfile = f'web: uvicorn src.{module_name}:app --host 0.0.0.0 --port ${{PORT:-8000}}\n'
-        else:
-            # Generate a thin main.py wrapper that imports the module and
-            # exposes its classes/functions via a FastAPI health + info API.
-            main_py = self._generate_main_wrapper(src_dir, module_name, spec=spec, build_id=build_id)
-            deploy_files.append({
-                'path': 'main.py',
-                'content': main_py,
-                'size': len(main_py.encode()),
-                'phase': 'DEPLOY',
-            })
-            procfile = f'web: uvicorn main:app --host 0.0.0.0 --port ${{PORT:-8000}}\n'
+            main_py = main_py.rstrip('\n') + self._module_app_mount(module_name)
+        deploy_files.append({
+            'path': 'main.py',
+            'content': main_py,
+            'size': len(main_py.encode()),
+            'phase': 'DEPLOY',
+        })
+        procfile = 'web: uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}\n'
 
         deploy_files.append({
             'path': 'Procfile',
@@ -990,6 +990,18 @@ any classes or functions. Output only valid Python code, no explanations.
         })
 
         return deploy_files
+
+    @staticmethod
+    def _module_app_mount(module_name: str) -> str:
+        return (
+            '\n\n\n# Keep the generated module\'s own API routes reachable.\n'
+            'try:\n'
+            f'    from src.{module_name} import app as _module_app\n'
+            '    if _module_app is not app:\n'
+            '        app.mount("/", _module_app)\n'
+            'except Exception as _mount_err:  # pragma: no cover\n'
+            '    print(f"Could not mount module app: {_mount_err}")\n'
+        )
 
     def _generate_main_wrapper(self, src_dir: Path, module_name: str, spec: dict = None, build_id: int = None) -> str:
         """Generate a main.py via AI that properly wires ALL service classes with rich UI."""
