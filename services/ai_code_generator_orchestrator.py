@@ -11,6 +11,7 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone
 import ast
 import os
+import sys
 import yaml
 import subprocess
 import re
@@ -922,6 +923,11 @@ any classes or functions. Output only valid Python code, no explanations.
             'matplotlib': 'matplotlib',
         }
 
+        # A pip install of a standard-library name (e.g. __future__) fails the
+        # whole Railway build, so rely on Python's own list as well.
+        stdlib |= set(getattr(sys, 'stdlib_module_names', ()))
+        local_modules = {'src', 'main', 'mvp_runtime', 'conftest', 'tests'}
+
         detected_pkgs: set = set()
         src_dir = output_base / 'src'
         if src_dir.exists():
@@ -930,9 +936,15 @@ any classes or functions. Output only valid Python code, no explanations.
                     line = line.strip()
                     if line.startswith('import ') or line.startswith('from '):
                         mod = line.replace('import ', '').replace('from ', '').split('.')[0].split(' ')[0]
+                        mod = mod.split(',')[0].strip()
                         if mod in import_to_pkg:
                             detected_pkgs.add(import_to_pkg[mod])
-                        elif mod not in stdlib and not mod.startswith('layer_mvp'):
+                        elif (
+                            mod.isidentifier()
+                            and mod not in stdlib
+                            and mod not in local_modules
+                            and not mod.startswith('layer_mvp')
+                        ):
                             detected_pkgs.add(mod)
 
         # Always include fastapi + uvicorn for deployment
