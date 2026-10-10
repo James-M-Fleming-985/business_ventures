@@ -227,6 +227,8 @@ def test_landing_explore_item_and_pricing_pages_render(ai_site):
     pricing = client.get("/pricing?country=GB")
     assert pricing.status_code == 200 and "£0.99" in pricing.text and 'id="subscribe"' in pricing.text
     assert client.get("/health").json() == {"status": "healthy"}
+    assert client.get("/favicon.ico").status_code == 200
+    assert '<link rel="icon" href="/favicon.ico"' in home.text
 
 
 def test_visitor_never_receives_premium_content_anywhere(ai_site):

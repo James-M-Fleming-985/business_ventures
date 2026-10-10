@@ -657,3 +657,25 @@ def test_lone_surrogates_in_configuration_do_not_break_pages(env):
     rt.configure("Hub \ud800 name", "tag \udfff line", ["feature \ud800"], ["premium \udc00"])
     response = client.get("/pricing")
     assert response.status_code == 200 and "Hub  name" in response.text.replace("\ufffd", "")
+
+
+# --- favicon --------------------------------------------------------------------
+
+def test_favicon_matches_the_platform_files():
+    root = Path(__file__).parent / "static"
+    assert rt._FAVICON_ICO == (root / "favicon.ico").read_bytes()
+    assert rt.FAVICON_SVG.strip() == (root / "favicon.svg").read_text().strip()
+
+
+def test_favicon_is_served_and_linked_from_every_page(env):
+    client, _ = env
+    ico = client.get("/favicon.ico")
+    assert ico.status_code == 200 and ico.headers["content-type"] == "image/x-icon"
+    assert ico.content == rt._FAVICON_ICO and "max-age=86400" in ico.headers["cache-control"]
+    svg = client.get("/favicon.svg")
+    assert svg.status_code == 200 and svg.headers["content-type"].startswith("image/svg+xml")
+    assert svg.headers["x-content-type-options"] == "nosniff"
+    for path in ("/pricing", "/account", "/checkout/cancel"):
+        html = client.get(path).text
+        assert '<link rel="icon" href="/favicon.svg" type="image/svg+xml">' in html, path
+        assert '<link rel="icon" href="/favicon.ico" sizes="any">' in html, path
