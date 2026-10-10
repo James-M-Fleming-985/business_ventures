@@ -821,6 +821,7 @@ class MvpPageView(Base):
     visitor_hash = Column(String(64), nullable=False)  # SHA-256(IP + UA), no PII
     user_agent = Column(String(500))
     referrer = Column(String(500))
+    event_type = Column(String(20), default='view', server_default='view')  # 'view' or 'click'
     created_at = Column(DateTime, default=datetime.utcnow)
 
     build = relationship('MVPBuild', backref='page_views')

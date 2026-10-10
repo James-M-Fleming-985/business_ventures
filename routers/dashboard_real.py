@@ -5225,6 +5225,25 @@ async def list_builds_portfolio(
         for d in dep_rows:
             deps_by_build.setdefault(d.build_id, []).append(d)
 
+    # Engagement straight from the beacon events (all-time), so the column
+    # doesn't depend on which aggregation job last wrote ProductMetrics.
+    beacon_stats = {}  # build_id -> (visitors, page_views, clicks)
+    if build_ids:
+        from sqlalchemy import case, func as _f
+        is_click = _f.coalesce(MvpPageView.event_type, "view") == "click"
+        for bid, visitors, views, clicks in (
+            db.query(
+                MvpPageView.build_id,
+                _f.count(_f.distinct(MvpPageView.visitor_hash)),
+                _f.sum(case((is_click, 0), else_=1)),
+                _f.sum(case((is_click, 1), else_=0)),
+            )
+            .filter(MvpPageView.build_id.in_(build_ids))
+            .group_by(MvpPageView.build_id)
+            .all()
+        ):
+            beacon_stats[bid] = (int(visitors or 0), int(views or 0), int(clicks or 0))
+
     # Batch-fetch latest metrics per deployment
     dep_ids = [d.id for d in dep_rows] if build_ids else []
     metrics_map = {}  # deployment_id → ProductMetrics
@@ -5276,7 +5295,11 @@ async def list_builds_portfolio(
                 dep_status = dep.status
             if dep.outcome:
                 dep_outcome = dep.outcome
-        d["engagement"] = engagement
+        visitors, page_views, clicks = beacon_stats.get(b.id, (0, 0, 0))
+        # GA4 can see visitors the beacon missed (e.g. very old MVPs).
+        d["engagement"] = max(visitors, engagement)
+        d["page_views"] = page_views
+        d["clicks"] = clicks
         d["revenue_mrr"] = revenue_mrr
         d["deployment_status"] = dep_status
         d["deployment_outcome"] = dep_outcome
@@ -5361,11 +5384,15 @@ async def mvp_beacon(build_id: int, request: Request, db: Session = Depends(get_
     user_agent = (request.headers.get("user-agent") or "")[:500]
     visitor_hash = beacon_security.hash_visitor(client_ip, user_agent)
 
-    # Parse optional referrer from body
+    # Optional body: {"r": referrer, "e": "view" | "click"}. Older MVPs send no "e".
     referrer = None
+    event_type = "view"
     try:
         body = await request.json()
-        referrer = (body.get("r") or "")[:500] if isinstance(body, dict) else None
+        if isinstance(body, dict):
+            referrer = (body.get("r") or "")[:500]
+            if body.get("e") == "click":
+                event_type = "click"
     except Exception:
         pass
 
@@ -5374,6 +5401,7 @@ async def mvp_beacon(build_id: int, request: Request, db: Session = Depends(get_
         visitor_hash=visitor_hash,
         user_agent=user_agent,
         referrer=referrer,
+        event_type=event_type,
     )
     db.add(pv)
     db.flush()
@@ -5412,6 +5440,7 @@ async def mvp_beacon(build_id: int, request: Request, db: Session = Depends(get_
             .filter(
                 MvpPageView.build_id == build_id,
                 MvpPageView.created_at >= period_start,
+                func.coalesce(MvpPageView.event_type, "view") == "view",
             )
             .one()
         )

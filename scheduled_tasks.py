@@ -234,6 +234,7 @@ def aggregate_page_views(db_session_factory):
                 func.count(MvpPageView.id).label("total_views"),
                 func.count(func.distinct(MvpPageView.visitor_hash)).label("unique_visitors"),
             )
+            .filter(func.coalesce(MvpPageView.event_type, "view") == "view")
             .group_by(MvpPageView.build_id)
             .all()
         )

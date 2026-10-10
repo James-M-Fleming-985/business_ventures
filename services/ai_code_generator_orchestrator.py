@@ -966,6 +966,8 @@ any classes or functions. Output only valid Python code, no explanations.
         main_py = self._generate_main_wrapper(src_dir, module_name, spec=spec, build_id=build_id)
         if has_app:
             main_py = main_py.rstrip('\n') + self._module_app_mount(module_name)
+        if build_id:
+            main_py = main_py.rstrip('\n') + self._beacon_middleware(build_id)
         deploy_files.append({
             'path': 'main.py',
             'content': main_py,
@@ -1003,6 +1005,30 @@ any classes or functions. Output only valid Python code, no explanations.
             '        app.mount("/", _module_app)\n'
             'except Exception as _mount_err:  # pragma: no cover\n'
             '    print(f"Could not mount module app: {_mount_err}")\n'
+        )
+
+    @staticmethod
+    def _beacon_middleware(build_id: int) -> str:
+        """main.py code that adds the engagement beacon to every HTML response."""
+        from services.beacon_security import beacon_script, BEACON_MARKER
+        return (
+            '\n\n\n# Engagement tracking: add the platform beacon to every HTML page.\n'
+            'from starlette.responses import Response as _CaResponse\n'
+            f'_CA_BEACON = {beacon_script(build_id)!r}.encode()\n'
+            '\n\n'
+            '@app.middleware("http")\n'
+            'async def _ca_beacon(request, call_next):\n'
+            '    response = await call_next(request)\n'
+            '    if "text/html" not in response.headers.get("content-type", ""):\n'
+            '        return response\n'
+            '    body = b"".join([chunk async for chunk in response.body_iterator])\n'
+            f'    if b"{BEACON_MARKER}" not in body:\n'
+            '        if b"</body>" in body:\n'
+            '            body = body.replace(b"</body>", _CA_BEACON + b"</body>", 1)\n'
+            '        else:\n'
+            '            body += _CA_BEACON\n'
+            '    headers = {k: v for k, v in response.headers.items() if k.lower() != "content-length"}\n'
+            '    return _CaResponse(body, status_code=response.status_code, headers=headers)\n'
         )
 
     def _generate_main_wrapper(self, src_dir: Path, module_name: str, spec: dict = None, build_id: int = None) -> str:
@@ -1049,16 +1075,9 @@ any classes or functions. Output only valid Python code, no explanations.
         # Truncate impl_code if excessively long to stay within token budget
         impl_excerpt = impl_code[:12000] if len(impl_code) > 12000 else impl_code
 
+        # The engagement beacon is injected into every HTML page by
+        # _beacon_middleware, so the AI does not need to add it.
         beacon_snippet = ''
-        if build_id:
-            from services.beacon_security import sign_build_id
-            beacon_snippet = (
-                f'Include this beacon script (once, in a script tag): '
-                f'if(!sessionStorage.getItem("_ca_b")){{fetch("https://businessventures-production.up.railway.app/api/dashboard/mvp-beacon/{build_id}?t={sign_build_id(build_id)}",'
-                f'{{method:"POST",mode:"no-cors",headers:{{"Content-Type":"application/json"}},'
-                f'body:JSON.stringify({{r:document.referrer}})}}).catch(function(){{}});'
-                f'sessionStorage.setItem("_ca_b","1")}}'
-            )
 
         # PR8b: also inject Google Analytics 4 gtag if a measurement ID is configured
         ga4_measurement_id = (os.getenv("GA4_MEASUREMENT_ID") or "").strip()

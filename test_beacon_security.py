@@ -147,22 +147,66 @@ def test_legacy_unsigned_beacons_work_only_when_explicitly_allowed(env, monkeypa
     assert _views(Session) == 1
 
 
-def test_generated_mvp_prompt_contains_the_signed_beacon_url(tmp_path):
+def test_deployed_mvp_pages_carry_the_signed_beacon(tmp_path, monkeypatch):
+    import importlib
+    import sys
+    from pathlib import Path
     from services.ai_code_generator_orchestrator import AICodeGeneratorOrchestrator
 
-    orchestrator = AICodeGeneratorOrchestrator({"provider": "anthropic", "output_base_path": str(tmp_path)})
-    captured = {}
-
-    def fake_generate(prompt, **kwargs):
-        captured["prompt"] = prompt
-        return "from fastapi import FastAPI\napp = FastAPI()\n"
-
-    orchestrator.ai_provider = MagicMock(generate_code=fake_generate)
     src = tmp_path / "src"
     src.mkdir()
-    (src / "feature.py").write_text("class Thing:\n    def run(self):\n        return 1\n")
+    (src / "__init__.py").write_text("")
+    (src / "layer_mvp_0007.py").write_text(
+        "from fastapi import FastAPI\napp = FastAPI()\n\n@app.get('/api/x')\ndef x():\n    return {'x': 1}\n"
+    )
+    orchestrator = AICodeGeneratorOrchestrator({"provider": "anthropic", "output_base_path": str(tmp_path)})
+    orchestrator.ai_provider = MagicMock()
+    orchestrator.ai_provider.generate_code.side_effect = RuntimeError("no AI")
+    files = {f["path"]: f["content"] for f in orchestrator._generate_deployment_files(
+        Path(tmp_path), spec={"feature_name": "x"}, build_id=7)}
+    (tmp_path / "main.py").write_text(files["main.py"])
+    monkeypatch.syspath_prepend(str(tmp_path))
+    for name in ("main", "src", "src.layer_mvp_0007"):
+        sys.modules.pop(name, None)
+    client = TestClient(importlib.import_module("main").app)
 
-    orchestrator._generate_main_wrapper(src, "feature", spec={"feature_name": "x"}, build_id=7)
+    page = client.get("/").text
+    assert f"/api/dashboard/mvp-beacon/7?t={beacon_security.sign_build_id(7)}" in page
+    assert page.count(beacon_security.BEACON_MARKER) == 1
+    assert '"click"' in page
+    assert client.get("/api/x").json() == {"x": 1}
 
-    expected = f"/api/dashboard/mvp-beacon/7?t={beacon_security.sign_build_id(7)}"
-    assert expected in captured["prompt"]
+
+def test_clicks_are_recorded_separately_from_views(env):
+    client, Session, build_id = env
+    url = f"/api/dashboard/mvp-beacon/{build_id}?t={beacon_security.sign_build_id(build_id)}"
+    client.post(url, content='{"e":"view","r":""}', headers={"content-type": "text/plain"})
+    client.post(url, content='{"e":"click"}', headers={"content-type": "text/plain"})
+    client.post(url, content='{"e":"click"}', headers={"content-type": "text/plain"})
+    client.post(url, json={"r": "x"})  # older MVPs send no event type
+
+    db = Session()
+    try:
+        kinds = sorted(v.event_type for v in db.query(models.MvpPageView).all())
+    finally:
+        db.close()
+    assert kinds == ["click", "click", "view", "view"]
+
+
+def test_portfolio_engagement_shows_visitors_views_and_clicks(env):
+    import asyncio
+
+    client, Session, build_id = env
+    url = f"/api/dashboard/mvp-beacon/{build_id}?t={beacon_security.sign_build_id(build_id)}"
+    client.post(url, content='{"e":"view"}', headers={"user-agent": "browser-a"})
+    client.post(url, content='{"e":"click"}', headers={"user-agent": "browser-a"})
+    client.post(url, content='{"e":"click"}', headers={"user-agent": "browser-a"})
+    client.post(url, content='{"e":"view"}', headers={"user-agent": "browser-b"})
+
+    db = Session()
+    try:
+        result = asyncio.run(dashboard_real.list_builds_portfolio(db=db))
+    finally:
+        db.close()
+    row = next(b for b in result["builds"] if b["id"] == build_id)
+    assert (row["engagement"], row["page_views"], row["clicks"]) == (2, 2, 2)

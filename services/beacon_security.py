@@ -88,4 +88,22 @@ class SlidingWindowLimiter:
             self._hits.clear()
 
 
-beacon_limiter = SlidingWindowLimiter()
+# Views + throttled clicks (max one per 2s) from one visitor stay under this.
+beacon_limiter = SlidingWindowLimiter(limit=60)
+
+
+PLATFORM_URL = (os.getenv("PLATFORM_PUBLIC_URL") or "https://businessventures-production.up.railway.app").rstrip("/")
+BEACON_MARKER = "data-ca-beacon"
+
+
+def beacon_script(build_id) -> str:
+    """Script tag injected into every MVP page: one event per page load and per click."""
+    url = f"{PLATFORM_URL}/api/dashboard/mvp-beacon/{int(build_id)}?t={sign_build_id(build_id)}"
+    return (
+        f'<script {BEACON_MARKER}>(function(){{var u="{url}";'
+        'function s(e){try{var b=JSON.stringify({e:e,r:document.referrer});'
+        'if(navigator.sendBeacon){navigator.sendBeacon(u,new Blob([b],{type:"text/plain"}));}'
+        'else{fetch(u,{method:"POST",mode:"no-cors",keepalive:true,body:b});}}catch(_){}}'
+        's("view");var l=0;document.addEventListener("click",function(){var n=Date.now();'
+        'if(n-l>2000){l=n;s("click");}},true);})();</script>'
+    )

@@ -2590,7 +2590,13 @@
                                     <!-- Engagement -->
                                     <td class="py-2 px-3 text-xs"
                                         :class="(b.engagement || 0) > 0 ? 'text-cyan-400' : 'text-slate-600'"
-                                        x-text="(b.engagement || 0) > 0 ? b.engagement.toLocaleString() : '—'"></td>
+                                        :title="'Unique visitors (all-time), page views and clicks'">
+                                        <span x-text="(b.engagement || 0) > 0 ? b.engagement.toLocaleString() + ' visitor' + (b.engagement === 1 ? '' : 's') : '—'"></span>
+                                        <template x-if="(b.page_views || 0) + (b.clicks || 0) > 0">
+                                            <div class="text-[10px] text-slate-500"
+                                                 x-text="(b.page_views || 0).toLocaleString() + ' views · ' + (b.clicks || 0).toLocaleString() + ' clicks'"></div>
+                                        </template>
+                                    </td>
                                     <!-- Revenue (MRR) -->
                                     <td class="py-2 px-3 text-xs"
                                         :class="(b.revenue_mrr || 0) > 0 ? 'text-green-400 font-mono' : 'text-slate-600'"

@@ -290,6 +290,11 @@ async def startup_event():
                 conn.execute(text("CREATE INDEX IF NOT EXISTS ix_pm_build ON product_metrics (build_id)"))
                 conn.commit()
                 logger.info("✅ Added build_id column to product_metrics")
+            mpv_cols = {c['name'] for c in inspector.get_columns('mvp_page_views')} if 'mvp_page_views' in table_names else set()
+            if mpv_cols and 'event_type' not in mpv_cols:
+                conn.execute(text("ALTER TABLE mvp_page_views ADD COLUMN event_type VARCHAR(20) DEFAULT 'view'"))
+                conn.commit()
+                logger.info("✅ Added event_type column to mvp_page_views")
             # build_telemetry is a brand-new table; Base.metadata.create_all handles
             # creation on first boot, but log here so it's visible in Railway logs.
             if 'build_telemetry' not in table_names:
