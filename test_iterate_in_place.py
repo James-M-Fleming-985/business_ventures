@@ -335,3 +335,105 @@ def test_keep_identity_restores_the_name_after_ai_renames_it():
                                    mvp_site.default_site(spec))
     assert mvp_site.keep_identity(site, spec)["name"] == "Crude Signals Weekly"
     assert mvp_site.keep_identity(site, {})["name"] == "Brand New Name"
+
+
+# --- Builds table: one row per MVP ----------------------------------------------------
+
+def test_group_revisions_groups_by_original_build():
+    rows = [{"id": 47}, {"id": 46}, {"id": 45}, {"id": 44}]
+    parents = {47: 46, 46: 45, 45: None, 44: None}
+    products = mvp_product.group_revisions(rows, parents)
+    assert {k: [r["id"] for r in v] for k, v in products.items()} == {45: [45, 46, 47], 44: [44]}
+
+
+def test_group_revisions_looks_up_parents_outside_the_page_and_survives_cycles():
+    rows = [{"id": 9}]
+    assert list(mvp_product.group_revisions(rows, {9: 5}, lambda bid: {5: 2, 2: None}[bid])) == [2]
+    assert len(mvp_product.group_revisions([{"id": 1}, {"id": 2}], {1: 2, 2: 1})) >= 1
+
+
+def test_builds_portfolio_shows_one_row_per_mvp(env):
+    import asyncio
+
+    Session, rec_id = env
+    v1 = publish_parent(Session, rec_id)
+    v2 = publish_parent(Session, rec_id, parent_build_id=v1, iteration_number=2, ai_cost_usd=0.04)
+    v3 = add_build(Session, rec_id, parent_build_id=v2, iteration_number=3)
+    other = add_build(Session, rec_id, status="LIVE")
+
+    db = Session()
+    for bid, vhash, kind in ((v1, "alice", "view"), (v1, "alice", "click"), (v2, "alice", "view"), (v2, "bob", "view")):
+        db.add(models.MvpPageView(build_id=bid, visitor_hash=vhash, event_type=kind))
+    db.commit()
+    try:
+        result = asyncio.run(dashboard_real.list_builds_portfolio(db=db))
+    finally:
+        db.close()
+
+    rows = {r["product_id"]: r for r in result["builds"]}
+    assert set(rows) == {v1, other}
+    mvp = rows[v1]
+    assert mvp["id"] == v3 and mvp["iteration_number"] == 3 and mvp["status"] == "QUEUED"  # actions use the latest
+    assert [r["id"] for r in mvp["revisions"]] == [v1, v2, v3]
+    assert mvp["engagement"] == 2  # alice visited two versions but counts once
+    assert (mvp["page_views"], mvp["clicks"]) == (3, 1)
+    assert mvp["total_ai_cost_usd"] == 0.04
+    assert result["summary"]["total"] == 2 and result["summary"]["in_progress"] == 1
+
+
+def test_builds_table_labels_and_sorts_by_mvp_number():
+    from pathlib import Path
+
+    html = (Path(__file__).parent / "templates" / "dashboard.html").read_text()
+    js = (Path(__file__).parent / "static" / "js" / "dashboard.js").read_text()
+    assert "MVP # <span" in html and "'#' + (b.product_id || b.id)" in html
+    assert "x-for=\"r in (b.revisions || [])\"" in html
+    assert "case 'id': va = a.product_id || a.id || 0;" in js
+
+
+# --- builds killed by a restart must not block iterations ----------------------------
+
+def test_stale_builds_are_marked_failed_and_fresh_ones_are_left_alone(env):
+    from datetime import datetime, timedelta
+
+    Session, rec_id = env
+    old = add_build(Session, rec_id, status="QUEUED")
+    fresh = add_build(Session, rec_id, status="GENERATING")
+    done = add_build(Session, rec_id, status="LIVE")
+    db = Session()
+    db.query(models.MVPBuild).filter_by(id=old).update({"updated_at": datetime.utcnow() - timedelta(minutes=45)})
+    db.query(models.MVPBuild).filter_by(id=done).update({"updated_at": datetime.utcnow() - timedelta(days=3)})
+    db.commit()
+
+    assert mvp_product.fail_stale_builds(db) == 1
+    statuses = {b.id: b.status for b in db.query(models.MVPBuild).all()}
+    assert statuses[old] == "FAILED" and statuses[fresh] == "GENERATING" and statuses[done] == "LIVE"
+    stale = db.query(models.MVPBuild).get(old)
+    assert "Interrupted" in stale.error_message and stale.build_steps[-1]["step"] == "INTERRUPTED"
+    db.close()
+
+
+def test_iterate_is_not_blocked_by_a_build_killed_by_a_restart(env, monkeypatch):
+    import asyncio
+    from datetime import datetime, timedelta
+    from types import SimpleNamespace
+
+    Session, rec_id = env
+    live = publish_parent(Session, rec_id)
+    dead = add_build(Session, rec_id, status="QUEUED", parent_build_id=live, iteration_number=2)
+    db = Session()
+    db.query(models.MVPBuild).filter_by(id=dead).update({"updated_at": datetime.utcnow() - timedelta(hours=1)})
+    db.commit()
+
+    class Request:
+        headers = {"content-type": "application/json"}
+
+        async def json(self):
+            return {"reason": "manual"}
+
+    tasks = SimpleNamespace(add_task=lambda *a, **k: None)
+    try:
+        result = asyncio.run(dashboard_real.iterate_mvp_build(live, Request(), tasks, db))
+    finally:
+        db.close()
+    assert result["status"] == "QUEUED" and result["parent_build_id"] == live

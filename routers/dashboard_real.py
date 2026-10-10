@@ -5174,6 +5174,9 @@ async def iterate_mvp_build(
         )
     
     # Concurrency guard: check for active builds in the same chain
+    # (builds killed by a restart no longer count as active)
+    from services.mvp_product import fail_stale_builds
+    fail_stale_builds(db)
     active_sibling = db.query(MVPBuild).filter(
         MVPBuild.recommendation_id == parent.recommendation_id,
         MVPBuild.status.in_(["QUEUED", "GENERATING", "UPLOADING", "DEPLOYING"]),
@@ -5287,6 +5290,7 @@ async def list_builds_portfolio(
     # Engagement straight from the beacon events (all-time), so the column
     # doesn't depend on which aggregation job last wrote ProductMetrics.
     beacon_stats = {}  # build_id -> (visitors, page_views, clicks)
+    visitor_hashes = {}
     if build_ids:
         from sqlalchemy import case, func as _f
         is_click = _f.coalesce(MvpPageView.event_type, "view") == "click"
@@ -5302,6 +5306,14 @@ async def list_builds_portfolio(
             .all()
         ):
             beacon_stats[bid] = (int(visitors or 0), int(views or 0), int(clicks or 0))
+        visitor_hashes = {}  # build_id -> set of visitor hashes (dedupe across versions)
+        for bid, vhash in (
+            db.query(MvpPageView.build_id, MvpPageView.visitor_hash)
+            .filter(MvpPageView.build_id.in_(build_ids))
+            .distinct()
+            .all()
+        ):
+            visitor_hashes.setdefault(bid, set()).add(vhash)
 
     # Batch-fetch latest metrics per deployment
     dep_ids = [d.id for d in dep_rows] if build_ids else []
@@ -5364,12 +5376,49 @@ async def list_builds_portfolio(
         d["deployment_outcome"] = dep_outcome
         result.append(d)
     
-    # Summary stats
+    # One row per MVP (product): its versions are revisions of the same site,
+    # so the table shows the original MVP number, the latest version, and
+    # engagement/revenue across all versions. Actions use the latest version.
+    from services.mvp_product import group_revisions
+
+    def _parent_lookup(build_id):
+        row = db.query(MVPBuild.parent_build_id).filter(MVPBuild.id == build_id).first()
+        return row[0] if row else None
+
+    total_cost = sum(b.get("ai_cost_usd") or 0 for b in result)
+    products = group_revisions(
+        result, {b.id: b.parent_build_id for b in builds}, _parent_lookup
+    )
+    rows = []
+    for product_id, revisions in products.items():
+        latest = revisions[-1]
+        row = dict(latest)
+        row["product_id"] = product_id
+        row["revision_count"] = len(revisions)
+        row["revisions"] = [
+            {k: r.get(k) for k in ("id", "iteration_number", "status", "created_at",
+                                   "duration_seconds", "ai_cost_usd", "railway_url")}
+            for r in revisions
+        ]
+        hashes = set()
+        for r in revisions:
+            hashes |= visitor_hashes.get(r["id"], set())
+        row["engagement"] = max([len(hashes)] + [r.get("engagement") or 0 for r in revisions])
+        row["page_views"] = sum(r.get("page_views") or 0 for r in revisions)
+        row["clicks"] = sum(r.get("clicks") or 0 for r in revisions)
+        # Versions share one app id, so their revenue rows describe the same money.
+        row["revenue_mrr"] = max(r.get("revenue_mrr") or 0 for r in revisions)
+        row["total_ai_cost_usd"] = round(sum(r.get("ai_cost_usd") or 0 for r in revisions), 4)
+        row["first_created_at"] = revisions[0].get("created_at")
+        rows.append(row)
+    rows.sort(key=lambda r: r["product_id"], reverse=True)
+    result = rows
+
+    # Summary stats (per MVP; cost covers every version)
     total = len(result)
     live = sum(1 for b in result if b["status"] == "LIVE")
     failed = sum(1 for b in result if b["status"] == "FAILED")
     in_progress = sum(1 for b in result if b["status"] in ("QUEUED", "GENERATING", "UPLOADING", "DEPLOYING"))
-    total_cost = sum(b.get("ai_cost_usd") or 0 for b in result)
     
     return {
         "builds": result,

@@ -165,3 +165,72 @@ def chain_site(db, build) -> Optional[Dict[str, Any]]:
             return site
         current = parent
     return None
+
+
+def group_revisions(rows, parent_of, extra_parent_lookup=None):
+    """Group per-build rows (dicts with "id") into one row per product.
+
+    ``parent_of`` maps build id -> parent build id for every known build.
+    ``extra_parent_lookup(build_id)`` may return the parent of a build that is
+    not in ``parent_of`` (e.g. an older root outside the listed page).
+    Returns ``{root_id: [rows oldest first]}``.
+    """
+    parent_of = dict(parent_of)
+
+    def root_of(build_id):
+        seen = set()
+        current = build_id
+        for _ in range(MAX_CHAIN_DEPTH):
+            if current in seen:
+                return current
+            seen.add(current)
+            if current not in parent_of and extra_parent_lookup is not None:
+                parent_of[current] = extra_parent_lookup(current)
+            parent = parent_of.get(current)
+            if not parent:
+                return current
+            current = parent
+        return current
+
+    products = {}
+    for row in rows:
+        products.setdefault(root_of(row["id"]), []).append(row)
+    for revisions in products.values():
+        revisions.sort(key=lambda r: r["id"])
+    return products
+
+
+ACTIVE_STATUSES = ("QUEUED", "GENERATING", "UPLOADING", "DEPLOYING")
+STALE_AFTER_MINUTES = 30
+
+
+def fail_stale_builds(db, now=None, max_idle_minutes: int = STALE_AFTER_MINUTES) -> int:
+    """Mark builds that stopped making progress (e.g. killed by a server restart) as FAILED.
+
+    Builds run inside the web process, so a restart kills them silently and
+    they would otherwise stay QUEUED for ever and block iterations.
+    """
+    from datetime import datetime, timedelta
+
+    from models import MVPBuild
+
+    cutoff = (now or datetime.utcnow()) - timedelta(minutes=max_idle_minutes)
+    stale = (
+        db.query(MVPBuild)
+        .filter(MVPBuild.status.in_(ACTIVE_STATUSES))
+        .filter(MVPBuild.updated_at < cutoff)
+        .all()
+    )
+    for build in stale:
+        build.status = "FAILED"
+        build.error_message = (
+            f"Interrupted: no progress for {max_idle_minutes} minutes "
+            "(usually a server restart). Iterate or rebuild to try again."
+        )
+        build.build_steps = list(build.build_steps or []) + [
+            {"step": "INTERRUPTED", "at": datetime.utcnow().isoformat(), "detail": build.error_message}
+        ]
+    if stale:
+        db.commit()
+        logger.info("Marked %d stale build(s) as FAILED", len(stale))
+    return len(stale)

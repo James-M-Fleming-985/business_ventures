@@ -2686,7 +2686,7 @@ function dashboardData() {
             builds.sort((a, b) => {
                 let va, vb;
                 switch (col) {
-                    case 'id': va = a.id || 0; vb = b.id || 0; break;
+                    case 'id': va = a.product_id || a.id || 0; vb = b.product_id || b.id || 0; break;
                     case 'iteration': va = a.iteration_number || 1; vb = b.iteration_number || 1; break;
                     case 'recommendation': va = ((a.signal_display_name || '') + (a.target_display_name || '')).toLowerCase(); vb = ((b.signal_display_name || '') + (b.target_display_name || '')).toLowerCase(); break;
                     case 'status': va = statusMap[a.status] || 0; vb = statusMap[b.status] || 0; break;

@@ -2500,7 +2500,7 @@
                         <thead>
                             <tr class="text-slate-400 border-b border-slate-700">
                                 <th class="text-left py-2 px-3 cursor-pointer select-none hover:text-white transition" @click="toggleBuildsSort('id')">
-                                    Build # <span x-show="buildsSortCol === 'id'" x-text="buildsSortDir === 'asc' ? '▲' : '▼'" class="text-cyan-400"></span>
+                                    MVP # <span x-show="buildsSortCol === 'id'" x-text="buildsSortDir === 'asc' ? '▲' : '▼'" class="text-cyan-400"></span>
                                 </th>
                                 <th class="text-left py-2 px-3 cursor-pointer select-none hover:text-white transition" @click="toggleBuildsSort('iteration')">
                                     Iter <span x-show="buildsSortCol === 'iteration'" x-text="buildsSortDir === 'asc' ? '▲' : '▼'" class="text-cyan-400"></span>
@@ -2539,8 +2539,8 @@
                             <template x-for="b in buildsPaged()" :key="b.id">
                                 <tr class="border-b border-slate-700/50 hover:bg-slate-700/30 transition cursor-pointer"
                                     @click="buildsExpandedRow = buildsExpandedRow === b.id ? null : b.id">
-                                    <!-- Build # -->
-                                    <td class="py-2 px-3 text-slate-300 font-mono" x-text="'#' + b.id"></td>
+                                    <!-- MVP # (stays the same across iterations) -->
+                                    <td class="py-2 px-3 text-slate-300 font-mono" x-text="'#' + (b.product_id || b.id)"></td>
                                     <!-- Iteration -->
                                     <td class="py-2 px-3">
                                         <span class="px-1.5 py-0.5 rounded text-xs font-medium"
@@ -2685,8 +2685,18 @@
                                                     <i data-lucide="git-branch" class="w-4 h-4 inline mr-1 text-cyan-400"></i>
                                                     Iteration Chain
                                                 </h5>
+                                                <div x-show="(b.revisions || []).length > 1" class="text-xs text-slate-400 mb-2 space-y-0.5">
+                                                    <template x-for="r in (b.revisions || [])" :key="r.id">
+                                                        <div>
+                                                            <span class="font-mono text-cyan-400" x-text="'v' + (r.iteration_number || 1)"></span>
+                                                            <span class="text-slate-500" x-text="'build #' + r.id"></span>
+                                                            <span class="ml-1" :class="r.status === 'LIVE' ? 'text-green-400' : (r.status === 'FAILED' ? 'text-red-400' : 'text-slate-400')" x-text="r.status"></span>
+                                                            <span class="ml-1 text-slate-500" x-text="r.created_at ? new Date(r.created_at).toLocaleString() : ''"></span>
+                                                        </div>
+                                                    </template>
+                                                </div>
                                                 <div x-show="b.parent_build_id" class="text-xs text-slate-400 mb-2">
-                                                    Parent: <span class="text-cyan-400 font-mono" x-text="'#' + b.parent_build_id"></span>
+                                                    Latest version's parent: <span class="text-cyan-400 font-mono" x-text="'build #' + b.parent_build_id"></span>
                                                     <span x-show="b.iterate_reason" class="ml-2 px-1.5 py-0.5 bg-slate-700 rounded text-slate-300" x-text="b.iterate_reason"></span>
                                                 </div>
                                                 <div x-show="!b.parent_build_id && (b.iteration_number || 1) === 1" class="text-xs text-slate-600 italic">

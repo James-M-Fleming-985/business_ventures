@@ -828,6 +828,18 @@ async def startup_event():
     logger.info("📈 CA-003: Drift Forecasting - Ready")
     logger.info("💬 CA-002-07: Natural Language Explanations - Ready")
 
+    # Builds run in-process, so a restart kills them; don't leave them QUEUED for ever.
+    try:
+        from database import SessionLocal as _StaleSession
+        from services.mvp_product import fail_stale_builds
+        _stale_db = _StaleSession()
+        try:
+            fail_stale_builds(_stale_db)
+        finally:
+            _stale_db.close()
+    except Exception as exc:
+        logger.warning(f"Stale build recovery skipped: {type(exc).__name__}: {exc}")
+
     # Recover any concept-generation rows stuck in 'generating' state from a
     # crashed/restarted background task. Threshold = 10 minutes (LLM call ~60s).
     try:
