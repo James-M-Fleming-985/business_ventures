@@ -991,6 +991,8 @@ any classes or functions. Output only valid Python code, no explanations.
 
         return deploy_files
 
+    MAIN_WRAPPER_MAX_TOKENS = 32000
+
     @staticmethod
     def _module_app_mount(module_name: str) -> str:
         return (
@@ -1163,12 +1165,21 @@ Output ONLY valid Python code. No markdown fences, no explanations.
 
         try:
             logger.info("Generating AI-powered main.py wrapper for %s", module_name)
-            main_code = self.ai_provider.generate_code(prompt)
+            # The wrapper embeds a full HTML dashboard, so it needs more room
+            # than the default 20480 tokens (thinking counts toward the limit).
+            main_code = self.ai_provider.generate_code(prompt, max_tokens=self.MAIN_WRAPPER_MAX_TOKENS)
             main_code = self._clean_code_fences(main_code)
 
             # Basic validation: must contain FastAPI and app
             if 'FastAPI' not in main_code or 'app' not in main_code:
                 logger.warning("AI wrapper missing FastAPI/app — falling back to template")
+                return self._generate_fallback_wrapper(module_name, spec, build_id)
+
+            # A truncated or otherwise broken wrapper would fail the whole build.
+            try:
+                ast.parse(main_code)
+            except SyntaxError as syn:
+                logger.warning("AI wrapper is not valid Python (%s) — falling back to template", syn)
                 return self._generate_fallback_wrapper(module_name, spec, build_id)
 
             # Ensure the sys.path fix is present
