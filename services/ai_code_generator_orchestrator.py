@@ -1054,7 +1054,7 @@ any classes or functions. Output only valid Python code, no explanations.
                 logger.warning("AI site content was not usable JSON — using default content")
         except Exception as e:
             logger.error("AI site content generation failed: %s — using default content", e)
-        return mvp_site.render_main(site)
+        return mvp_site.render_main(mvp_site.keep_identity(site, spec))
 
     @staticmethod
     def _ga4_measurement_id() -> str:

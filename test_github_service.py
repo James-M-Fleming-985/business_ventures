@@ -6,9 +6,18 @@ from unittest.mock import MagicMock, patch
 
 
 def _load_service_module():
+    import services
+
+    original = getattr(services, "github_service", None)
     with patch.dict(sys.modules, {"github": MagicMock()}):
         sys.modules.pop("services.github_service", None)
-        return importlib.import_module("services.github_service")
+        module = importlib.import_module("services.github_service")
+    # Don't leave the copy built on a fake `github` library attached to the package.
+    if original is not None:
+        services.github_service = original
+    else:
+        delattr(services, "github_service")
+    return module
 
 
 def test_create_repository_is_private():

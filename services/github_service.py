@@ -79,6 +79,7 @@ class GitHubService:
         repo_name: str,
         files: List[Tuple[str, str]],
         commit_message: str = "Initial MVP build",
+        replace: bool = False,
     ) -> str:
         """Push files to a GitHub repo.
 
@@ -86,6 +87,9 @@ class GitHubService:
             repo_name: Name of the repo (under self.org).
             files: List of (file_path, content) tuples.
             commit_message: Git commit message.
+            replace: If True the commit contains exactly ``files`` (files from
+                the previous version are removed), used when a new revision of
+                a site replaces the old one.
 
         Returns:
             Commit SHA.
@@ -111,7 +115,11 @@ class GitHubService:
                 )
             )
 
-        new_tree = repo.create_git_tree(tree_elements, base_tree)
+        new_tree = (
+            repo.create_git_tree(tree_elements)
+            if replace
+            else repo.create_git_tree(tree_elements, base_tree)
+        )
         parent = repo.get_git_commit(base_sha)
         commit = repo.create_git_commit(commit_message, new_tree, [parent])
         ref.edit(commit.sha)

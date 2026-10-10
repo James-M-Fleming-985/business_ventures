@@ -78,7 +78,37 @@ def _concept(spec: Optional[dict]) -> Dict[str, Any]:
     return meta.get("selected_concept") or {}
 
 
+def _parent_site(spec: Optional[dict]) -> Optional[Dict[str, Any]]:
+    parent = ((spec or {}).get("_iteration_meta") or {}).get("parent_site")
+    return parent if isinstance(parent, dict) else None
+
+
 def default_site(spec: Optional[dict], build_id: Optional[int] = None, ga4_id: str = "") -> Dict[str, Any]:
+    """Content used when the AI is unavailable.
+
+    For an iteration this is the live site's current content, so a failed AI
+    call never replaces real content with placeholders.
+    """
+    base = _new_default_site(spec, build_id, ga4_id)
+    parent = _parent_site(spec)
+    if parent:
+        site = normalise_site(parent, base)
+        site.update(tracking_config(ga4_id))
+        return site
+    return base
+
+
+def keep_identity(site: Dict[str, Any], spec: Optional[dict]) -> Dict[str, Any]:
+    """An iteration keeps the product's name (brand, search ranking, subscribers' expectations)."""
+    parent = _parent_site(spec)
+    name = _text((parent or {}).get("name"), 60)
+    if name:
+        site = dict(site)
+        site["name"] = name
+    return site
+
+
+def _new_default_site(spec: Optional[dict], build_id: Optional[int] = None, ga4_id: str = "") -> Dict[str, Any]:
     """A complete, safe site built only from what we already know. Used when the AI is unavailable."""
     spec = spec or {}
     meta = spec.get("_meta") or {}
@@ -199,6 +229,7 @@ def site_prompt(spec: Optional[dict], requirement: str = "") -> str:
         + line("Free tier", concept.get("free_tier"))
         + line("Premium tier", concept.get("premium_tier"))
         + line("Requirement", requirement)
+        + _iteration_brief(spec)
         + "\nRULES\n"
         f"1. Write for people interested in {topic}. Do not mention statistics, signals, correlations, "
         "forecasts or dashboards.\n"
@@ -214,6 +245,49 @@ def site_prompt(spec: Optional[dict], requirement: str = "") -> str:
         '"premium_fields": [{"key": "details", "label": "Full details"}], '
         '"items": [{"id": "slug", "title": "...", "category": "...", "summary": "...", '
         '"tier": "free", "details": "..."}]}\n'
+    )
+
+
+def _iteration_brief(spec: Optional[dict]) -> str:
+    """Prompt section for an iteration: the live site and how it is performing."""
+    parent = _parent_site(spec)
+    if not parent:
+        return ""
+    meta = dict((spec or {}).get("_iteration_meta") or {})
+    meta.pop("parent_site", None)
+    evidence = ""
+    try:
+        from services.build_intelligence_service import format_intelligence_for_prompt
+        evidence = format_intelligence_for_prompt(meta)[:2500]
+    except Exception:
+        evidence = ""
+    current = {
+        "name": parent.get("name"),
+        "tagline": parent.get("tagline"),
+        "why_now": parent.get("why_now"),
+        "free_features": parent.get("free_features"),
+        "premium_features": parent.get("premium_features"),
+        "premium_fields": [
+            {"key": k, "label": (parent.get("field_labels") or {}).get(k, k)}
+            for k in (parent.get("premium_fields") or [])
+        ],
+        "items": [
+            {k: item.get(k) for k in ("id", "title", "category", "summary", "tier")}
+            for item in (parent.get("items") or [])[:MAX_ITEMS]
+            if isinstance(item, dict)
+        ],
+    }
+    return (
+        "\nTHIS IS AN ITERATION: IMPROVE THE EXISTING LIVE SITE, DO NOT START OVER\n"
+        f'- Keep the name exactly: "{_text(parent.get("name"), 60)}".\n'
+        "- Keep the same id for every item you keep, so existing links and search rankings survive.\n"
+        "- Use the evidence below to decide what to change:\n"
+        "  * few or no visitors: make titles, tagline and summaries clearer and more specific to what people search for;\n"
+        "  * visitors but little engagement: make items more useful and the categories easier to browse;\n"
+        "  * engagement but no subscriptions: make the premium value more concrete and the free preview a better taster.\n"
+        "- Replace weak items, add better ones, keep good ones.\n"
+        "CURRENT SITE (JSON):\n" + json.dumps(current, ensure_ascii=False)[:6000] + "\n"
+        + ("PERFORMANCE EVIDENCE:\n" + evidence + "\n" if evidence else "")
     )
 
 

@@ -4224,6 +4224,14 @@ def _run_build(
                     f"Build {build_id}: failed to gather iteration intelligence "
                     f"from parent #{parent_build_id}: {exc}"
                 )
+            try:
+                from services.mvp_product import chain_site
+                current_site = chain_site(db, build)
+                if current_site:
+                    iteration_meta = dict(iteration_meta or {})
+                    iteration_meta["parent_site"] = current_site
+            except Exception as exc:
+                logger.warning(f"Build {build_id}: could not read the live site's content: {exc}")
 
         s3 = S3Service()
         builder = MVPBuilderService(s3)
@@ -4265,7 +4273,19 @@ def _run_build(
                 if not github_svc.enabled:
                     _deploy_step("GITHUB_SKIPPED", "GITHUB_TOKEN or GITHUB_ORG not set")
 
-                if github_svc.enabled:
+                # Iterations update the existing product (same repo, Railway
+                # service, address, app id and subscribers) instead of creating
+                # a new site. See services/mvp_product.py.
+                from services.mvp_product import iteration_target, product_app_id
+                target = iteration_target(db, build) if parent_build_id else None
+                app_id = product_app_id(db, build)
+                in_place = bool(target and target.has_repo)
+
+                if github_svc.enabled and in_place:
+                    repo_name = target.repo_name
+                    repo_full_name = target.repo_full_name
+                    github_url = target.github_url
+                elif github_svc.enabled:
                     repo_name = GitHubService.slugify(
                         f"mvp-{build_id}-{rec.signal_display_name[:30]}"
                     )
@@ -4280,6 +4300,8 @@ def _run_build(
                     repo_full_name = repo_info["full_name"]
                     repo_branch = repo_info.get("default_branch") or "main"
 
+                if github_svc.enabled:
+
                     build_files = (
                         db.query(MVPBuildFile)
                         .filter(MVPBuildFile.build_id == build_id)
@@ -4291,15 +4313,26 @@ def _run_build(
                         if f.content
                     ]
                     if files:
-                        github_svc.push_files(
-                            repo_name, files, f"MVP Build #{build_id}"
-                        )
+                        if in_place:
+                            github_svc.push_files(
+                                repo_name, files,
+                                f"Iteration v{build.iteration_number or 2} (build #{build_id})",
+                                replace=True,
+                            )
+                        else:
+                            github_svc.push_files(
+                                repo_name, files, f"MVP Build #{build_id}"
+                            )
                     build.github_url = github_url
-                    build.railway_url = github_url  # fallback until Railway domain generated
+                    # Fallback until Railway gives the address; iterations keep the live one.
+                    build.railway_url = (target.railway_url if in_place else None) or github_url
                     logger.info(
                         f"Build {build_id}: pushed to GitHub {github_url}"
                     )
-                    _deploy_step("GITHUB_PUSHED", f"{github_url} (private)")
+                    _deploy_step(
+                        "GITHUB_PUSHED",
+                        f"{github_url} (private, new revision)" if in_place else f"{github_url} (private)",
+                    )
 
                 # Railway: create project + service, set env vars, then connect
                 # the GitHub repo so Railway builds and deploys it.
@@ -4307,7 +4340,33 @@ def _run_build(
                 railway_svc = RailwayService()
                 if not railway_svc.enabled:
                     _deploy_step("RAILWAY_SKIPPED", "RAILWAY_TOKEN not set")
-                if railway_svc.enabled and repo_name:
+                if railway_svc.enabled and repo_name and in_place and target.has_railway:
+                    try:
+                        env_id = railway_svc.get_default_environment(target.railway_project_id)
+                        build.railway_project_id = target.railway_project_id
+                        build.railway_service_id = target.railway_service_id
+                        if target.railway_url:
+                            build.railway_url = target.railway_url
+                        if env_id:
+                            from services.mvp_stripe import mvp_stripe_env
+                            # Only what a revision may change. The app id, session
+                            # secret and address stay, so subscribers stay signed in.
+                            env_vars = {"MVP_BUILD_ID": str(build_id)}
+                            env_vars.update(mvp_stripe_env())
+                            railway_svc.upsert_variables(
+                                target.railway_project_id, env_id,
+                                target.railway_service_id, env_vars,
+                            )
+                        db.commit()
+                        _deploy_step(
+                            "RAILWAY_UPDATED_IN_PLACE",
+                            f"{build.railway_url or 'existing site'} keeps its address and "
+                            "subscribers; Railway redeploys from the new commit",
+                        )
+                    except Exception as rail_err:
+                        logger.warning(f"Build {build_id}: in-place Railway update failed: {rail_err}")
+                        _deploy_step("RAILWAY_DEPLOY_FAILED", str(rail_err)[:300])
+                elif railway_svc.enabled and repo_name:
                     try:
                         # Railway has stricter name validation than GitHub —
                         # use a short alphanumeric name to avoid rejection.
@@ -4345,7 +4404,7 @@ def _run_build(
                             # so the generated MVP can attribute revenue back to
                             # this exact build via Stripe checkout metadata.
                             env_vars["MVP_BUILD_ID"] = str(build_id)
-                            env_vars["MVP_APP_ID"] = f"mvp_{build_id}"
+                            env_vars["MVP_APP_ID"] = app_id
                             # Never the platform's full secret key: MVPs are
                             # generated, public apps. See services/mvp_stripe.py.
                             from services.mvp_stripe import (
@@ -4363,6 +4422,7 @@ def _run_build(
                             # Scan generated code for os.getenv() calls
                             try:
                                 import re as _re
+                                from services.mvp_product import PROTECTED_ENV_VARS
                                 build_files_q = (
                                     db.query(MVPBuildFile)
                                     .filter(MVPBuildFile.build_id == build_id)
@@ -4375,7 +4435,7 @@ def _run_build(
                                             bf.content,
                                         ):
                                             var = m.group(1)
-                                            if var not in env_vars:
+                                            if var not in env_vars and var not in PROTECTED_ENV_VARS:
                                                 env_vars[var] = "CONFIGURE_ME"
                                 set_count = railway_svc.upsert_variables(
                                     project["id"], env_id,
@@ -4428,7 +4488,7 @@ def _run_build(
                     recommendation_id=recommendation_id,
                     build_id=build_id,
                     product_name=repo_name or f"mvp-{build_id}",
-                    app_id=f"mvp_{build_id}",
+                    app_id=app_id,
                     description=(
                         f"Auto-generated MVP: "
                         f"{rec.signal_display_name} → {rec.target_display_name}"
